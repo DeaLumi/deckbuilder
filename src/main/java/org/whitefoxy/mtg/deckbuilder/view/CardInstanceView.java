@@ -6,8 +6,8 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
-import org.whitefoxy.lib.mtg.card.Card;
-import org.whitefoxy.lib.mtg.data.ImageSource;
+import emi.lib.mtg.card.Card;
+import emi.lib.mtg.data.ImageSource;
 import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
 
 import java.io.IOException;

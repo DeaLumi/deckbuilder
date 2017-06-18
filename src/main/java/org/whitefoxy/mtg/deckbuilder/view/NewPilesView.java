@@ -4,9 +4,9 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
 import javafx.scene.layout.GridPane;
-import org.whitefoxy.lib.mtg.characteristic.Color;
-import org.whitefoxy.lib.mtg.characteristic.ManaSymbol;
-import org.whitefoxy.lib.mtg.data.ImageSource;
+import emi.lib.mtg.characteristic.Color;
+import emi.lib.mtg.characteristic.ManaSymbol;
+import emi.lib.mtg.data.ImageSource;
 import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
 
 import java.io.IOException;

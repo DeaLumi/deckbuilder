@@ -1,6 +1,6 @@
 package org.whitefoxy.mtg.deckbuilder.model;
 
-import org.whitefoxy.lib.mtg.card.Card;
+import emi.lib.mtg.card.Card;
 
 import java.io.Serializable;
 

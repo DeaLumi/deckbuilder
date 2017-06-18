@@ -10,11 +10,11 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
-import org.whitefoxy.lib.mtg.characteristic.CardRarity;
-import org.whitefoxy.lib.mtg.data.CardSource;
-import org.whitefoxy.lib.mtg.data.ImageSource;
-import org.whitefoxy.lib.mtg.data.mtgjson.MtgJsonCardSource;
-import org.whitefoxy.lib.mtg.data.xlhq.XlhqImageSource;
+import emi.lib.mtg.characteristic.CardRarity;
+import emi.lib.mtg.data.CardSource;
+import emi.lib.mtg.data.ImageSource;
+import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
+import emi.lib.mtg.data.xlhq.XlhqImageSource;
 import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
 
 import java.util.ArrayList;
