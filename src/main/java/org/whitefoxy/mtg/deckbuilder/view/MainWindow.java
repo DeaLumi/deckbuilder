@@ -10,7 +10,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
 import org.whitefoxy.lib.mtg.data.CardSource;
+import org.whitefoxy.lib.mtg.data.ImageSource;
 import org.whitefoxy.lib.mtg.data.mtgjson.MtgJsonCardSource;
+import org.whitefoxy.lib.mtg.data.xlhq.XlhqImageSource;
 import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
 import org.whitefoxy.mtg.deckbuilder.view.CardInstanceView;
 import org.whitefoxy.mtg.deckbuilder.view.PileView;
@@ -28,6 +30,7 @@ public class MainWindow extends Application {
 	@Override
 	public void start(Stage stage) throws Exception {
 		CardSource cs = new MtgJsonCardSource();
+		ImageSource is = new XlhqImageSource();
 
 		stage.setTitle("MTG Deckbuilder - Main Window");
 
@@ -40,18 +43,19 @@ public class MainWindow extends Application {
 
 		ScrollPane scroll = new ScrollPane();
 
-		PilesView pilesView = new PilesView(cs);
+		PilesView pilesView = new PilesView(cs, is);
 
 		for (int i = 11; i <= 16; ++i) {
 			final int finalI = i;
-			PileView pileView = new PileView(cs);
+			PileView pileView = new PileView(cs, is);
 			cs.cards().stream()
 					.filter(c -> c.manaCost() != null && c.manaCost().convertedCost() == finalI)
+//					.filter(c -> "Storm Crow".equals(c.name()))
 					.sorted((c1, c2) -> c1.set().name().compareTo(c2.set().name()))
 					.map(CardInstance::new)
 					.map(ci -> {
 						try {
-							return new CardInstanceView(ci);
+							return new CardInstanceView(ci, is);
 						} catch (IOException e) {
 							e.printStackTrace();
 							return null;

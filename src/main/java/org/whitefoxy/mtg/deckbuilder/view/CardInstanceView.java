@@ -6,9 +6,12 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import org.whitefoxy.lib.mtg.card.Card;
+import org.whitefoxy.lib.mtg.data.ImageSource;
 import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,14 +21,26 @@ import java.util.Map;
 public class CardInstanceView extends ImageView {
 	static final DataFormat CARD_INSTANCE_VIEW = new DataFormat(CardInstanceView.class.getCanonicalName());
 
-	private static final Map<String, Image> imageCache = new HashMap<>();
-	private static final Map<String, Image> thumbnailCache = new HashMap<>();
+	private static final Image defaultImage = new Image("file:Back.xlhq.jpg", true);
+	private static final Image defaultThumbnail = new Image("file:Back.xlhq.jpg", 200, 280, true, true, false);
+	private static final Map<Card, Image> imageCache = new HashMap<>();
+	private static final Map<Card, Image> thumbnailCache = new HashMap<>();
 
 	public final CardInstance instance;
 
-	public CardInstanceView(CardInstance instance) throws IOException {
+	public CardInstanceView(CardInstance instance, ImageSource is) throws IOException {
+		this.setPreserveRatio(true);
+
 		this.instance = instance;
-		setImage(imageCache.computeIfAbsent(instance.card.illustration().toString(), k -> new Image(k, true)));
+		setImage(imageCache.computeIfAbsent(instance.card, c -> {
+			URL url = is.find(c);
+
+			if (url == null) {
+				return defaultImage;
+			} else {
+				return new Image(url.toString(), true);
+			}
+		}));
 		this.setSmooth(true);
 
 		this.setOnDragDetected(me -> {
@@ -34,7 +49,15 @@ public class CardInstanceView extends ImageView {
 			ClipboardContent content = new ClipboardContent();
 			content.put(CARD_INSTANCE_VIEW, this.instance.card.id());
 			db.setContent(content);
-			db.setDragView(thumbnailCache.computeIfAbsent(instance.card.illustration().toString(), k -> new Image(k, 200, 280, true, true, false)));
+			db.setDragView(thumbnailCache.computeIfAbsent(instance.card, c -> {
+				URL url = is.find(c);
+
+				if (url == null) {
+					return defaultThumbnail;
+				} else {
+					return new Image(url.toString(), 200, 280, true, true, false);
+				}
+			}));
 
 			me.consume();
 		});

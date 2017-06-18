@@ -4,6 +4,7 @@ import javafx.geometry.Point2D;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import org.whitefoxy.lib.mtg.data.CardSource;
+import org.whitefoxy.lib.mtg.data.ImageSource;
 import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
 
 import java.io.IOException;
@@ -13,7 +14,7 @@ import java.util.UUID;
  * Created by Emi on 6/15/2017.
  */
 public class PilesView extends HBox {
-	public PilesView(CardSource cs) {
+	public PilesView(CardSource cs, ImageSource is) {
 		super(50);
 
 		this.setOnDragOver(de -> {
@@ -23,7 +24,7 @@ public class PilesView extends HBox {
 
 		this.setOnDragDropped(de -> {
 			try {
-				CardInstanceView view = new CardInstanceView(new CardInstance(cs.get((UUID) de.getDragboard().getContent(CardInstanceView.CARD_INSTANCE_VIEW))));
+				CardInstanceView view = new CardInstanceView(new CardInstance(cs.get((UUID) de.getDragboard().getContent(CardInstanceView.CARD_INSTANCE_VIEW))), is);
 
 				int index;
 				for (index = 0; index < this.getChildren().size(); ++index) {
@@ -40,7 +41,7 @@ public class PilesView extends HBox {
 				} else if (((PileView) this.getChildren().get(index - 1)).getChildren().isEmpty()) {
 					pileView = (PileView) this.getChildren().get(index - 1);
 				} else {
-					pileView = new PileView(cs);
+					pileView = new PileView(cs, is);
 					this.getChildren().add(index, pileView);
 				}
 
