@@ -64,7 +64,8 @@ public class CardInstanceView extends ImageView {
 
 		this.setOnDragDone(de -> {
 			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-				((PileView) this.getParent()).getChildren().remove(this);
+//				((PileView) this.getParent()).getChildren().remove(this);
+				// TODO: Remove from parent container
 			}
 		});
 	}

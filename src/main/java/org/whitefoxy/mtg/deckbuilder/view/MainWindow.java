@@ -1,23 +1,24 @@
 package org.whitefoxy.mtg.deckbuilder.view;
 
+import com.sun.javafx.collections.ObservableListWrapper;
 import javafx.application.Application;
+import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
+import org.whitefoxy.lib.mtg.characteristic.CardRarity;
 import org.whitefoxy.lib.mtg.data.CardSource;
 import org.whitefoxy.lib.mtg.data.ImageSource;
 import org.whitefoxy.lib.mtg.data.mtgjson.MtgJsonCardSource;
 import org.whitefoxy.lib.mtg.data.xlhq.XlhqImageSource;
 import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
-import org.whitefoxy.mtg.deckbuilder.view.CardInstanceView;
-import org.whitefoxy.mtg.deckbuilder.view.PileView;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Emi on 5/20/2017.
@@ -38,38 +39,29 @@ public class MainWindow extends Application {
 
 		BorderPane layout = new BorderPane();
 
-		Slider zoom = new Slider(0.25, 1.0, 0.5);
+		Slider zoom = new Slider(0.25, 1.5, 0.5);
 		layout.setTop(zoom);
 
 		ScrollPane scroll = new ScrollPane();
 
-		PilesView pilesView = new PilesView(cs, is);
+		List<CardInstance> cards = new ArrayList<>();
+		cs.cards().stream()
+				.filter(c -> "AVR".equals(c.set().code()))
+				.filter(c -> c.manaCost() != null && c.manaCost().convertedCost() <= 4)
+//				.filter(c -> CardRarity.Rare.equals(c.rarity()) || CardRarity.MythicRare.equals(c.rarity()))
+//				.filter(c -> c.color().size() > 1)
+				.map(CardInstance::new)
+				.forEach(cards::add);
+		ObservableList<CardInstance> model = new ObservableListWrapper<>(cards);
 
-		for (int i = 11; i <= 16; ++i) {
-			final int finalI = i;
-			PileView pileView = new PileView(cs, is);
-			cs.cards().stream()
-					.filter(c -> c.manaCost() != null && c.manaCost().convertedCost() == finalI)
-//					.filter(c -> "Storm Crow".equals(c.name()))
-					.sorted((c1, c2) -> c1.set().name().compareTo(c2.set().name()))
-					.map(CardInstance::new)
-					.map(ci -> {
-						try {
-							return new CardInstanceView(ci, is);
-						} catch (IOException e) {
-							e.printStackTrace();
-							return null;
-						}
-					})
-					.forEach(pileView.getChildren()::add);
-			pilesView.getChildren().add(i - 11, pileView);
-		}
+		NewPilesView pilesView = new NewPilesView(is, model, NewPilesView.COLOR_SORT.thenComparing(NewPilesView.NAME_SORT), ci -> ci.card.rarity().toString(), (r1, r2) -> CardRarity.forString(r1).compareTo(CardRarity.forString(r2)));
 
 		final Scale zoomXform = new Scale(0.5, 0.5);
 
 		zoom.valueProperty().addListener(change -> {
 			zoomXform.setX(zoom.getValue());
 			zoomXform.setY(zoom.getValue());
+			scroll.requestLayout();
 		});
 
 		pilesView.getTransforms().add(zoomXform);
