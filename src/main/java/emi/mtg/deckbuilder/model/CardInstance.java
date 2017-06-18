@@ -1,4 +1,4 @@
-package org.whitefoxy.mtg.deckbuilder.model;
+package emi.mtg.deckbuilder.model;
 
 import emi.lib.mtg.card.Card;
 

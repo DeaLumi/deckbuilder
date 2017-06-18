@@ -1,4 +1,4 @@
-package org.whitefoxy.mtg.deckbuilder.view;
+package emi.mtg.deckbuilder.view;
 
 import com.sun.javafx.collections.ObservableListWrapper;
 import javafx.application.Application;
@@ -15,7 +15,7 @@ import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
 import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
 import emi.lib.mtg.data.xlhq.XlhqImageSource;
-import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.CardInstance;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package org.whitefoxy.mtg.deckbuilder.view;
+package emi.mtg.deckbuilder.view;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -8,7 +8,7 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.ImageSource;
-import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.CardInstance;
 
 import java.io.IOException;
 import java.net.URL;

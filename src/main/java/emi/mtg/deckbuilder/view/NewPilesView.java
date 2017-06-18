@@ -1,4 +1,4 @@
-package org.whitefoxy.mtg.deckbuilder.view;
+package emi.mtg.deckbuilder.view;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -7,7 +7,7 @@ import javafx.scene.layout.GridPane;
 import emi.lib.mtg.characteristic.Color;
 import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.lib.mtg.data.ImageSource;
-import org.whitefoxy.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.CardInstance;
 
 import java.io.IOException;
 import java.util.Comparator;
