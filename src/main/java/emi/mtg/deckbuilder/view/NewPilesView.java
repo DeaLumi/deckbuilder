@@ -69,8 +69,8 @@ public class NewPilesView extends GridPane implements ListChangeListener<CardIns
 	public NewPilesView(ImageSource images, ObservableList<CardInstance> cards, Comparator<CardInstance> sort, Function<CardInstance, String> group, Comparator<String> groupSort) throws IOException {
 		super();
 
-		this.setVgap(-900);
-		this.setHgap(50);
+		this.setVgap(CardInstanceView.HEIGHT * -8.85 / 10.0);
+		this.setHgap(CardInstanceView.WIDTH * 1.0 / 10.0);
 
 		this.images = images;
 		this.viewMap = new HashMap<>();
