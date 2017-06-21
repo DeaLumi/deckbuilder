@@ -1,19 +1,20 @@
 package emi.mtg.deckbuilder.view;
 
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.SortedList;
-import javafx.scene.layout.GridPane;
 import emi.lib.mtg.characteristic.Color;
 import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.SortedList;
+import javafx.scene.layout.GridPane;
 
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by Emi on 6/17/2017.
@@ -85,11 +86,11 @@ public class NewPilesView extends GridPane implements ListChangeListener<CardIns
 	}
 
 	public NewPilesView(ImageSource images, ObservableList<CardInstance> cards, Function<CardInstance, String> group) throws IOException {
-		this(images, cards, NAME_SORT, group, String::compareTo);
+		this(images, cards, COLOR_SORT.thenComparing(NAME_SORT), group, String::compareTo);
 	}
 
 	public NewPilesView(ImageSource images, ObservableList<CardInstance> cards) throws IOException {
-		this(images, cards, NAME_SORT, CMC_GROUP, CMC_SORT);
+		this(images, cards, COLOR_SORT.thenComparing(NAME_SORT), CMC_GROUP, CMC_SORT);
 	}
 
 	public void reconfigure(Comparator<CardInstance> sort, Function<CardInstance, String> group, Comparator<String> groupSort) {
@@ -114,24 +115,18 @@ public class NewPilesView extends GridPane implements ListChangeListener<CardIns
 	@Override
 	public void onChanged(Change<? extends CardInstance> c) {
 		while(c.next()) {
-			if (c != null) {
-				c.getRemoved().forEach(ci -> {
-					this.getChildren().remove(this.viewMap.get(ci));
-					this.viewMap.remove(ci);
-				});
-			}
+			c.getRemoved().forEach(this.viewMap::remove);
+			this.getChildren().removeAll(c.getRemoved());
 
-			this.sortedCards.forEach(ci -> {
-				if (!viewMap.containsKey(ci)) {
-					try {
+			this.getChildren().addAll(this.sortedCards.stream()
+					.filter(ci -> !viewMap.containsKey(ci))
+					.map(ci -> {
 						CardInstanceView view = new CardInstanceView(ci, this.images);
 						viewMap.put(ci, view);
-						this.getChildren().add(view);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			});
+						return view;
+					})
+					.filter(civ -> civ != null)
+					.collect(Collectors.toList()));
 
 			String currentGroup = null;
 			int row = -1, column = -1;
@@ -148,5 +143,13 @@ public class NewPilesView extends GridPane implements ListChangeListener<CardIns
 		}
 
 		requestLayout();
+	}
+
+	public void unloadAll() {
+		viewMap.values().forEach(CardInstanceView::unloadImage);
+	}
+
+	public void loadAll() {
+		viewMap.values().forEach(CardInstanceView::loadImage);
 	}
 }
