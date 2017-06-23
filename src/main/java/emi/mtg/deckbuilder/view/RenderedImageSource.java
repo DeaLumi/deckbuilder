@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.ImageSource;
+import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -38,10 +39,8 @@ public class RenderedImageSource implements ImageSource {
 
 	@Override
 	public URL find(Card card) {
-
-
-		return imageCache.computeIfAbsent(card, c -> {
-			File f = new File(new File(String.format("rs%s", c.set().code())), String.format("%s%s.png", c.name(), c.variation() > 0 ? Integer.toString(c.variation()) : ""));
+		if (!imageCache.containsKey(card)) {
+			File f = new File(new File(String.format("rs%s", card.set().code())), String.format("%s%s.png", card.name(), card.variation() > 0 ? Integer.toString(card.variation()) : ""));
 
 			if (f.exists()) {
 				try {
@@ -57,9 +56,9 @@ public class RenderedImageSource implements ImageSource {
 			VBox nameTypeLine = new VBox();
 			BorderPane nameCostLine = new BorderPane();
 
-			Text name = new Text(c.name());
+			Text name = new Text(card.name());
 			name.setFont(NAME_FONT);
-			Text cost = new Text(c.manaCost().toString());
+			Text cost = new Text(card.manaCost().toString());
 			cost.setFont(NAME_FONT);
 			cost.setTextAlignment(TextAlignment.RIGHT);
 			nameCostLine.setLeft(name);
@@ -70,9 +69,9 @@ public class RenderedImageSource implements ImageSource {
 
 			BorderPane typeRarityLine = new BorderPane();
 
-			Text type = new Text(c.type().toString());
+			Text type = new Text(card.type().toString());
 			type.setFont(NAME_FONT);
-			Text setRarity = new Text(String.format("%s-%s", c.rarity().name().substring(0,1), c.set().code()));
+			Text setRarity = new Text(String.format("%s-%s", card.rarity().name().substring(0,1), card.set().code()));
 			setRarity.setFont(NAME_FONT);
 			setRarity.setTextAlignment(TextAlignment.RIGHT);
 			typeRarityLine.setLeft(type);
@@ -84,9 +83,9 @@ public class RenderedImageSource implements ImageSource {
 			layout.setTop(nameTypeLine);
 
 			TextFlow textBox = new TextFlow();
-			Text rules = new Text(c.text() + "\n\n");
+			Text rules = new Text(card.text() + "\n\n");
 			rules.setFont(TEXT_FONT);
-			Text flavor = new Text(c.flavor());
+			Text flavor = new Text(card.flavor());
 			flavor.setFont(FLAVOR_FONT);
 
 			textBox.getChildren().addAll(rules, flavor);
@@ -95,10 +94,10 @@ public class RenderedImageSource implements ImageSource {
 			layout.setCenter(textBox);
 
 			Text ptbox;
-			if (c.power() != null && c.toughness() != null) {
-				ptbox = new Text(String.format("%s / %s", c.power(), c.toughness()));
-			} else if (c.loyalty() != null) {
-				ptbox = new Text(c.loyalty());
+			if (card.power() != null && card.toughness() != null) {
+				ptbox = new Text(String.format("%s / %s", card.power(), card.toughness()));
+			} else if (card.loyalty() != null) {
+				ptbox = new Text(card.loyalty());
 			} else {
 				ptbox = new Text("");
 			}
@@ -141,19 +140,35 @@ public class RenderedImageSource implements ImageSource {
 
 			layout.setBackground(new Background(new BackgroundFill(bgColor, new CornerRadii(WIDTH / 12.0), null)));
 
-			Scene scene = new Scene(layout, WIDTH, HEIGHT, Color.TRANSPARENT);
+			Platform.runLater(() -> {
+				Scene scene = new Scene(layout, WIDTH, HEIGHT, Color.TRANSPARENT);
 
-			if (!f.getParentFile().exists() && !f.mkdirs()) {
-				throw new Error("Unable to create parent directories for " + f.getAbsolutePath());
-			}
+				if (!f.getParentFile().exists() && !f.mkdirs()) {
+					throw new Error("Unable to create parent directories for " + f.getAbsolutePath());
+				}
 
-			try {
-				WritableImage image = scene.snapshot(null);
-				ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", f);
-				return f.toURI().toURL();
-			} catch (IOException e) {
-				throw new Error(e);
+				try {
+					WritableImage image = scene.snapshot(null);
+					ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", f);
+
+					synchronized(RenderedImageSource.this) {
+						imageCache.put(card, f.toURI().toURL());
+					}
+				} catch (IOException e) {
+					throw new Error(e);
+				}
+			});
+
+			while (!imageCache.containsKey(card)) {
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					return null;
+				}
 			}
-		});
+		}
+
+		return imageCache.get(card);
 	}
 }
