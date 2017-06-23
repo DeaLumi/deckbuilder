@@ -38,6 +38,8 @@ public class RenderedImageSource implements ImageSource {
 
 	@Override
 	public URL find(Card card) {
+
+
 		return imageCache.computeIfAbsent(card, c -> {
 			File f = new File(new File(String.format("rs%s", c.set().code())), String.format("%s%s.png", c.name(), c.variation() > 0 ? Integer.toString(c.variation()) : ""));
 

@@ -1,25 +1,23 @@
 package emi.mtg.deckbuilder.view;
 
+import com.google.gson.Gson;
 import emi.lib.mtg.characteristic.Color;
 import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.SortedList;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Created by Emi on 6/17/2017.
  */
-public class NewPilesView extends GridPane implements ListChangeListener<CardInstance> {
+public class NewPilesView extends GridPane implements CardViewManager.ManagedView {
 	public final static Comparator<CardInstance> NAME_SORT = (c1, c2) -> c1.card.name().compareTo(c2.card.name());
 	public final static Function<CardInstance, String> CMC_GROUP = c -> c.card.manaCost().varies() ? "X" : Integer.toString(c.card.manaCost().convertedCost());
 	public final static Comparator<String> CMC_SORT = (s1, s2) -> {
@@ -60,96 +58,68 @@ public class NewPilesView extends GridPane implements ListChangeListener<CardIns
 		return 0;
 	};
 
-	private final ImageSource images;
-	private final Map<CardInstance, CardInstanceView> viewMap;
-	private final SortedList<CardInstance> sortedCards;
-	private Comparator<CardInstance> sort;
-	private Function<CardInstance, String> group;
-	private Comparator<String> groupSort;
+	private final CardViewManager manager;
 
-	public NewPilesView(ImageSource images, ObservableList<CardInstance> cards, Comparator<CardInstance> sort, Function<CardInstance, String> group, Comparator<String> groupSort) throws IOException {
+	public NewPilesView(ImageSource images, Gson gson, ObservableList<CardInstance> cards, Comparator<CardInstance> sort, Function<CardInstance, String> group, Comparator<String> groupSort) throws IOException {
 		super();
 
 		this.setVgap(CardInstanceView.HEIGHT * -8.85 / 10.0);
 		this.setHgap(CardInstanceView.WIDTH * 1.0 / 10.0);
 
-		this.images = images;
-		this.viewMap = new HashMap<>();
+		this.manager = new CardViewManager(this, images, gson, cards, ci -> true, sort, group, groupSort);
+		this.manager.reconfigure(ci -> true, sort, group, groupSort);
 
-		this.sortedCards = cards.sorted(sort);
-		this.sortedCards.addListener(this);
-		this.reconfigure(sort, group, groupSort);
+		this.setOnDragOver(de -> {
+			de.acceptTransferModes(TransferMode.MOVE);
+			de.consume();
+		});
+
+		this.setOnDragDropped(de -> {
+			CardInstance instance = gson.fromJson(de.getDragboard().getContent(CardInstanceView.CARD_INSTANCE_VIEW).toString(), CardInstance.class);
+			cards.add(instance);
+			de.setDropCompleted(true);
+			de.consume();
+			manager.reconfigure(null, null, null, null);
+		});
 	}
 
-	public NewPilesView(ImageSource images, ObservableList<CardInstance> cards, Comparator<CardInstance> sort) throws IOException {
-		this(images, cards, sort, CMC_GROUP, CMC_SORT);
+	public NewPilesView(ImageSource images, Gson gson, ObservableList<CardInstance> cards, Comparator<CardInstance> sort) throws IOException {
+		this(images, gson, cards, sort, CMC_GROUP, CMC_SORT);
 	}
 
-	public NewPilesView(ImageSource images, ObservableList<CardInstance> cards, Function<CardInstance, String> group) throws IOException {
-		this(images, cards, COLOR_SORT.thenComparing(NAME_SORT), group, String::compareTo);
+	public NewPilesView(ImageSource images, Gson gson, ObservableList<CardInstance> cards, Function<CardInstance, String> group) throws IOException {
+		this(images, gson, cards, COLOR_SORT.thenComparing(NAME_SORT), group, String::compareTo);
 	}
 
-	public NewPilesView(ImageSource images, ObservableList<CardInstance> cards) throws IOException {
-		this(images, cards, COLOR_SORT.thenComparing(NAME_SORT), CMC_GROUP, CMC_SORT);
-	}
-
-	public void reconfigure(Comparator<CardInstance> sort, Function<CardInstance, String> group, Comparator<String> groupSort) {
-		if (sort != null) {
-			this.sort = sort;
-		}
-
-		if (group != null) {
-			this.group = group;
-		}
-
-		if (groupSort != null) {
-			this.groupSort = groupSort;
-		}
-
-		Comparator<CardInstance> groupSort2 = (c1, c2) -> this.groupSort.compare(this.group.apply(c1), this.group.apply(c2));
-		Comparator<CardInstance> overall = groupSort2.thenComparing(this.sort);
-
-		this.sortedCards.setComparator(overall);
+	public NewPilesView(ImageSource images, Gson gson, ObservableList<CardInstance> cards) throws IOException {
+		this(images, gson, cards, COLOR_SORT.thenComparing(NAME_SORT), CMC_GROUP, CMC_SORT);
 	}
 
 	@Override
-	public void onChanged(Change<? extends CardInstance> c) {
-		while(c.next()) {
-			c.getRemoved().forEach(this.viewMap::remove);
-			this.getChildren().removeAll(c.getRemoved());
+	public Pane parentOf(CardInstance instance) {
+		return this;
+	}
 
-			this.getChildren().addAll(this.sortedCards.stream()
-					.filter(ci -> !viewMap.containsKey(ci))
-					.map(ci -> {
-						CardInstanceView view = new CardInstanceView(ci, this.images);
-						viewMap.put(ci, view);
-						return view;
-					})
-					.filter(civ -> civ != null)
-					.collect(Collectors.toList()));
-
-			String currentGroup = null;
-			int row = -1, column = -1;
-			for (CardInstance ci : sortedCards) {
-				String cardGroup = group.apply(ci);
-				if (!cardGroup.equals(currentGroup)) {
-					row = -1;
-					++column;
-					currentGroup = cardGroup;
-				}
-
-				GridPane.setConstraints(viewMap.get(ci), column, ++row);
+	@Override
+	public void adjustLayout() {
+		String currentGroup = null;
+		int row = -1, column = -1;
+		for (CardInstance ci : manager.sortedCards) {
+			String cardGroup = manager.group.apply(ci);
+			if (!cardGroup.equals(currentGroup)) {
+				row = -1;
+				++column;
+				currentGroup = cardGroup;
 			}
+
+			GridPane.setConstraints(manager.viewMap.get(ci), column, ++row);
 		}
 
 		requestLayout();
 	}
 
-	public void unloadAll() {
-		viewMap.values().forEach(CardInstanceView::unloadImage);
-	}
-
-	public void loadAll() {
-		viewMap.values().forEach(CardInstanceView::loadImage);
+	@Override
+	public CardViewManager manager() {
+		return manager;
 	}
 }

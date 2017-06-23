@@ -1,9 +1,12 @@
 package emi.mtg.deckbuilder.view;
 
+import com.google.gson.Gson;
 import emi.lib.mtg.card.Card;
+import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.scene.CacheHint;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -28,8 +31,8 @@ public class CardInstanceView extends ImageView {
 
 	static final DataFormat CARD_INSTANCE_VIEW = new DataFormat(CardInstanceView.class.getCanonicalName());
 
-	public static final double WIDTH = 745;
-	public static final double HEIGHT = 1040;
+	public static final double WIDTH = 200; // 745;
+	public static final double HEIGHT = 280; // 1040;
 
 	public static final double THUMBNAIL_FACTOR = 1.0 / 4.0;
 
@@ -42,7 +45,7 @@ public class CardInstanceView extends ImageView {
 
 	private final ImageSource images;
 
-	public CardInstanceView(CardInstance instance, ImageSource is) {
+	public CardInstanceView(ObservableList<CardInstance> list, CardInstance instance, ImageSource is, Gson gson) {
 		this.setPreserveRatio(true);
 
 		Rectangle clip = new Rectangle(WIDTH, HEIGHT);
@@ -60,13 +63,13 @@ public class CardInstanceView extends ImageView {
 		this.loadImage();
 		this.setSmooth(true);
 		this.setCache(true);
-		this.setCacheHint(CacheHint.SCALE);
+//		this.setCacheHint(CacheHint.SCALE);
 
 		this.setOnDragDetected(me -> {
 			Dragboard db = this.startDragAndDrop(TransferMode.MOVE);
 
 			ClipboardContent content = new ClipboardContent();
-			content.put(CARD_INSTANCE_VIEW, this.instance.card.id());
+			content.put(CARD_INSTANCE_VIEW, gson.toJson(instance, CardInstance.class));
 			db.setContent(content);
 			db.setDragView(thumbnailCache.getOrDefault(this.instance.card, DEFAULT_THUMBNAIL));
 
@@ -75,8 +78,8 @@ public class CardInstanceView extends ImageView {
 
 		this.setOnDragDone(de -> {
 			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-//				((PileView) this.getParent()).getChildren().remove(this);
-				// TODO: Remove from parent container
+				list.remove(instance);
+				de.consume();
 			}
 		});
 
