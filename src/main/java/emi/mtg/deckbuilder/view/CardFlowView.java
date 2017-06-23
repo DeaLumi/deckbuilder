@@ -20,6 +20,7 @@ public class CardFlowView extends FlowPane implements CardViewManager.ManagedVie
 	public CardFlowView(ImageSource images, Gson gson, ObservableList<CardInstance> cards, Comparator<CardInstance> sort, Function<CardInstance, String> group, Comparator<String> groupSort) throws IOException {
 		super(CardInstanceView.WIDTH * 5.0 / 100.0, CardInstanceView.WIDTH * 5.0 / 100.0);
 
+		this.setCache(true);
 		this.setPrefWrapLength(CardInstanceView.WIDTH * 20.0);
 
 		this.manager = new CardViewManager(this, images, gson, cards, ci -> true, sort, group, groupSort);

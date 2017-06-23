@@ -63,6 +63,7 @@ public class NewPilesView extends GridPane implements CardViewManager.ManagedVie
 	public NewPilesView(ImageSource images, Gson gson, ObservableList<CardInstance> cards, Comparator<CardInstance> sort, Function<CardInstance, String> group, Comparator<String> groupSort) throws IOException {
 		super();
 
+		this.setCache(true);
 		this.setVgap(CardInstanceView.HEIGHT * -8.85 / 10.0);
 		this.setHgap(CardInstanceView.WIDTH * 1.0 / 10.0);
 

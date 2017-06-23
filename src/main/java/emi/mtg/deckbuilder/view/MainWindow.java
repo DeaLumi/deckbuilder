@@ -14,6 +14,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
+import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
@@ -67,7 +68,7 @@ public class MainWindow extends Application {
 	@Override
 	public void start(Stage stage) throws Exception {
 		CardSource cs = new MtgJsonCardSource();
-		ImageSource is = new XlhqImageSource();
+		ImageSource is = new RenderedImageSource(); // new XlhqImageSource();
 
 		Gson gson = new GsonBuilder()
 				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))
@@ -114,9 +115,8 @@ public class MainWindow extends Application {
 		deckPiles.setMinSize(CardInstanceView.WIDTH, CardInstanceView.HEIGHT);
 		deckScroll.setContent(deckPiles);
 
-		VBox deckEdit = new VBox(collectionPane, deckScroll);
-		VBox.setVgrow(collectionPane, Priority.SOMETIMES);
-		VBox.setVgrow(deckScroll, Priority.SOMETIMES);
+		SplitPane deckEdit = new SplitPane(collectionPane, deckScroll);
+		deckEdit.setOrientation(Orientation.VERTICAL);
 
 		// Assembly
 
@@ -164,7 +164,7 @@ public class MainWindow extends Application {
 		});
 
 		stage.setScene(new Scene(root));
-		stage.setMaximized(true);
+//		stage.setMaximized(true);
 		stage.show();
 	}
 }
