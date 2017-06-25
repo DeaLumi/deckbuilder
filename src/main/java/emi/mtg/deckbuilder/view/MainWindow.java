@@ -40,7 +40,7 @@ public class MainWindow extends Application {
 		List<CardInstance> cards = new ArrayList<>();
 		cs.cards().stream()
 //				.filter(c -> "Storm Crow".equals(c.name()))
-				.filter(c -> "AVR".equals(c.set().code()) || "ALL".equals(c.set().code()))
+//				.filter(c -> "AVR".equals(c.set().code()) || "ALL".equals(c.set().code()))
 //				.filter(c -> c.manaCost() != null && c.manaCost().convertedCost() <= 4)
 //				.filter(c -> CardRarity.Rare.equals(c.rarity()) || CardRarity.MythicRare.equals(c.rarity()))
 //				.filter(c -> CardRarity.MythicRare.equals(c.rarity()))
@@ -115,7 +115,8 @@ public class MainWindow extends Application {
 		deckPiles.setMinSize(CardInstanceView.WIDTH, CardInstanceView.HEIGHT);
 		deckScroll.setContent(deckPiles);
 
-		SplitPane deckEdit = new SplitPane(collectionPane, deckScroll);
+		SplitPane deckEdit = new SplitPane();
+		deckEdit.getItems().addAll(collectionPane, deckScroll);
 		deckEdit.setOrientation(Orientation.VERTICAL);
 
 		// Assembly

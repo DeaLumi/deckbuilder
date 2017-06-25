@@ -79,8 +79,15 @@ public class CardViewManager implements ListChangeListener<CardInstance> {
 		this.filteredCards.setPredicate(this.filter);
 	}
 
+	public final long MAX_CARDS_IN_VIEW = 1000;
+
 	@Override
 	public void onChanged(Change<? extends CardInstance> c) {
+		if (this.sortedCards.size() > MAX_CARDS_IN_VIEW) {
+			System.err.println("Too many cards in " + this.toString());
+			return;
+		}
+
 		while(c.next()) {
 			Map<Pane, List<CardInstanceView>> addRemoveMap = new LinkedHashMap<>();
 			c.getRemoved().forEach(ci -> addRemoveMap.computeIfAbsent(managed.parentOf(ci), k -> new ArrayList<>()).add(this.viewMap.remove(ci)));
