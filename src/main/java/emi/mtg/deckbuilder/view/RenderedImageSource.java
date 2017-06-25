@@ -5,12 +5,16 @@ import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.ImageSource;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.geometry.VPos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.text.*;
 
 import javax.imageio.ImageIO;
@@ -18,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,84 +43,57 @@ public class RenderedImageSource implements ImageSource {
 
 	private final Map<Card, URL> imageCache = new HashMap<>();
 
-	private final int WIDTH = 200;
-	private final int HEIGHT = 280;
+	private static Font fallback(FontWeight weight, FontPosture posture, double size, String... families) {
+		Font font;
 
-	private final Font NAME_FONT = Font.font("Beleren", FontWeight.BOLD, WIDTH / 20.0);
-	private final Font TEXT_FONT = Font.font("serif", WIDTH / 22.5);
-	private final Font FLAVOR_FONT = Font.font("serif", FontPosture.ITALIC, WIDTH / 22.5);
+		for(String family : families) {
+			font = Font.font(family, weight, posture, size);
 
-	@Override
-	public URL find(Card card) {
-		if (!imageCache.containsKey(card)) {
-			File f = new File(new File(PARENT_DIR, String.format("s%s", card.set().code())), String.format("%s%s.png", card.name(), card.variation() > 0 ? Integer.toString(card.variation()) : ""));
-
-			if (f.exists()) {
-				try {
-					return f.toURI().toURL();
-				} catch (MalformedURLException e) {
-					throw new Error(e);
-				}
+			if (family.toLowerCase().equals(font.getFamily().toLowerCase())) {
+				return font;
 			}
+		}
 
-			BorderPane layout = new BorderPane();
-			layout.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 15.0), new BorderWidths(WIDTH / 25.0))));
+		return Font.font(Font.getDefault().getFamily(), weight, posture, size);
+	}
 
-			VBox nameTypeLine = new VBox();
-			BorderPane nameCostLine = new BorderPane();
+	private static Font fallback(FontWeight weight, double size, String... families) {
+		return fallback(weight, FontPosture.REGULAR, size, families);
+	}
 
-			Text name = new Text(card.name());
-			name.setFont(NAME_FONT);
-			Text cost = new Text(card.manaCost().toString());
-			cost.setFont(NAME_FONT);
-			cost.setTextAlignment(TextAlignment.RIGHT);
-			nameCostLine.setLeft(name);
-			nameCostLine.setRight(cost);
-			VBox.setMargin(nameCostLine, new Insets(WIDTH / 40.0, WIDTH / 40.0, WIDTH / 40.0, WIDTH / 40.0));
+	private static Font fallback(FontPosture posture, double size, String... families) {
+		return fallback(FontWeight.NORMAL, posture, size, families);
+	}
 
-			nameTypeLine.getChildren().add(nameCostLine);
+	private static Font fallback(double size, String... families) {
+		return fallback(FontWeight.NORMAL, FontPosture.REGULAR, size, families);
+	}
 
-			Text type = new Text(card.type().toString());
-			type.setFont(NAME_FONT);
-			Text setRarity = new Text(String.format("%s-%s", card.rarity().name().substring(0,1), card.set().code()));
-			setRarity.setFont(NAME_FONT);
-			setRarity.setTextAlignment(TextAlignment.RIGHT);
+	private static final int WIDTH = 400;
+	private static final int HEIGHT = 560;
 
-			AnchorPane typeRarityLine = new AnchorPane(type, setRarity);
-			AnchorPane.setLeftAnchor(type, 0.0);
-			AnchorPane.setRightAnchor(setRarity, 0.0);
+	private static final String[] NAME_FAMILIES = { "Beleren", "Gaudy Medieval", "Times New Roman", "serif" };
+	private static final String[] TEXT_FAMILIES = { "Gaudy Medieval", "Times New Roman", "serif" };
 
-			VBox.setMargin(typeRarityLine, new Insets(WIDTH / 40.0, WIDTH / 40.0, WIDTH / 40.0, WIDTH / 40.0));
+	private static final Font NAME_FONT = fallback(FontWeight.BOLD, WIDTH / 15.0, NAME_FAMILIES);
+	private static final Font TEXT_FONT = fallback(WIDTH / 18.5, TEXT_FAMILIES);
+	private static final Font FLAVOR_FONT = fallback(FontPosture.ITALIC, WIDTH / 18.5, TEXT_FAMILIES);
 
-			nameTypeLine.getChildren().add(typeRarityLine);
+	private static class CardRenderLayout extends Pane {
+		public enum Characteristic {
+			Name,
+			ManaCost,
+			TypeLine,
+			SetCode,
+			RulesText,
+			FlavorText,
+			PTBox
+		}
 
-			layout.setTop(nameTypeLine);
+		private Map<Characteristic, Node> nodes = new EnumMap<>(Characteristic.class);
 
-			TextFlow textBox = new TextFlow();
-			Text rules = new Text(card.text() + "\n\n");
-			rules.setFont(TEXT_FONT);
-			Text flavor = new Text(card.flavor());
-			flavor.setFont(FLAVOR_FONT);
-
-			textBox.getChildren().addAll(rules, flavor);
-			BorderPane.setMargin(textBox, new Insets(WIDTH / 40.0, WIDTH / 40.0, WIDTH / 40.0, WIDTH / 40.0));
-
-			layout.setCenter(textBox);
-
-			Text ptbox;
-			if (!card.power().isEmpty() && !card.toughness().isEmpty()) {
-				ptbox = new Text(String.format("%s / %s", card.power(), card.toughness()));
-			} else if (!card.loyalty().isEmpty()) {
-				ptbox = new Text(card.loyalty());
-			} else {
-				ptbox = new Text("");
-			}
-			ptbox.setTextAlignment(TextAlignment.RIGHT);
-			ptbox.setFont(NAME_FONT);
-			BorderPane ptboxbox = new BorderPane();
-			ptboxbox.setRight(ptbox);
-			layout.setBottom(ptboxbox);
-			BorderPane.setMargin(ptboxbox, new Insets(WIDTH / 40.0, WIDTH / 40.0, WIDTH / 40.0, WIDTH / 40.0));
+		public CardRenderLayout(Card card) {
+			setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 15.0), new BorderWidths(WIDTH / 25.0))));
 
 			Color bgColor;
 			if (card.color().size() > 1) {
@@ -147,7 +125,170 @@ public class RenderedImageSource implements ImageSource {
 				}
 			}
 
-			layout.setBackground(new Background(new BackgroundFill(bgColor, new CornerRadii(WIDTH / 12.0), null)));
+			setBackground(new Background(new BackgroundFill(bgColor, new CornerRadii(WIDTH / 12.0), null)));
+
+			{
+				Label name = new Label(card.name());
+				name.setFont(NAME_FONT);
+				getChildren().add(name);
+				nodes.put(Characteristic.Name, name);
+			}
+
+			{
+				Label mc = new Label(card.manaCost().toString());
+				mc.setFont(NAME_FONT);
+				getChildren().add(mc);
+				nodes.put(Characteristic.ManaCost, mc);
+			}
+
+			{
+				Label type = new Label(card.type().toString());
+				type.setFont(NAME_FONT);
+				getChildren().add(type);
+				nodes.put(Characteristic.TypeLine, type);
+			}
+
+			{
+				Label set = new Label(String.format("%s-%s", card.set().code(), card.rarity().name().substring(0, 1)));
+				set.setFont(NAME_FONT);
+				getChildren().add(set);
+				nodes.put(Characteristic.SetCode, set);
+			}
+
+			{
+				Label rules = new Label(card.text());
+				rules.setWrapText(true);
+				rules.setFont(TEXT_FONT);
+				getChildren().add(rules);
+				nodes.put(Characteristic.RulesText, rules);
+			}
+
+			{
+				Label flavor = new Label(card.flavor());
+				flavor.setWrapText(true);
+				flavor.setFont(FLAVOR_FONT);
+				getChildren().add(flavor);
+				nodes.put(Characteristic.FlavorText, flavor);
+			}
+
+			{
+				Label pt;
+				if (!card.power().isEmpty() && !card.toughness().isEmpty()) {
+					pt = new Label(String.format("%s / %s", card.power(), card.toughness()));
+				} else if (!card.loyalty().isEmpty()) {
+					pt = new Label(card.loyalty());
+				} else {
+					pt = new Label("");
+				}
+				pt.setFont(NAME_FONT);
+				getChildren().add(pt);
+				nodes.put(Characteristic.PTBox, pt);
+			}
+		}
+
+		protected void layoutManaCost(Node mc) {
+			double w = mc.prefWidth(getWidth() / 20.0);
+			double h = mc.prefHeight(w);
+			double x = getWidth() * 19.0 / 20.0 - w;
+			double y = getWidth() / 20.0;
+
+			layoutInArea(mc, x, y, w, h, 0.0, HPos.RIGHT, VPos.TOP);
+		}
+
+		protected void layoutName(Node name, Node mc) {
+			double w = name.prefWidth(getWidth() / 20.0);
+			double h = name.prefHeight(w);
+			double x = getWidth() / 20.0;
+			double y = getWidth() / 20.0;
+
+			w = Math.min(w, mc.getBoundsInParent().getMinX() - x);
+
+			layoutInArea(name, x, y, w, h, 0.0, HPos.LEFT, VPos.TOP);
+		}
+
+		protected void layoutSetCode(Node set, Node mc) {
+			double w = set.prefWidth(getWidth() / 20.0);
+			double h = set.prefHeight(w);
+			double x = getWidth() * 19.0 / 20.0 - w;
+			double y = mc.getBoundsInParent().getMaxY() + getWidth() / 40.0;
+
+			layoutInArea(set, x, y, w, h, 0.0, HPos.RIGHT, VPos.TOP);
+		}
+
+		protected void layoutType(Node type, Node name, Node set) {
+			double w = type.prefWidth(getWidth() / 20.0);
+			double h = type.prefWidth(w);
+			double x = getWidth() / 20.0;
+			double y = name.getBoundsInParent().getMaxY() + getWidth() / 40.0;
+
+			w = Math.min(w, set.getBoundsInParent().getMinX() - x);
+
+			layoutInArea(type, x, y, w, h, 0.0, HPos.RIGHT, VPos.TOP);
+		}
+
+		protected void layoutRules(Node rules, Node type) {
+			double w = getWidth() * 18.0 / 20.0;
+			double x = getWidth() / 20.0;
+			double y = type.getBoundsInParent().getMaxY() + getWidth() / 40.0;
+			double h = (getHeight() * 18.0 / 20.0 - y) * 3.0 / 4.0;
+
+			layoutInArea(rules, x, y, w, h, 0.0, HPos.LEFT, VPos.TOP);
+		}
+
+		protected void layoutFlavor(Node flavor, Node rules) {
+			double x = getWidth() * 1.0 / 20.0;
+			double w = getWidth() * 18.0 / 20.0;
+			double y = rules.getBoundsInParent().getMaxY() + getWidth() / 40.0;
+			double h = (getHeight() * 18.0 / 20.0 - y);
+
+			layoutInArea(flavor, x, y, w, h, 0.0, HPos.LEFT, VPos.TOP);
+		}
+
+		protected void layoutPT(Node ptbox) {
+			double x = getWidth() * 19.0 / 20.0 - ptbox.getLayoutBounds().getWidth();
+			double y = getHeight() - getWidth() * 1.0 / 20.0 - ptbox.getLayoutBounds().getHeight();
+			double w = ptbox.getLayoutBounds().getWidth();
+			double h = ptbox.getLayoutBounds().getHeight();
+
+			layoutInArea(ptbox, x, y, w, h, 0.0, HPos.RIGHT, VPos.TOP);
+		}
+
+		@Override
+		protected void layoutChildren() {
+			super.layoutChildren();
+
+			Node name = nodes.get(Characteristic.Name);
+			Node mc = nodes.get(Characteristic.ManaCost);
+			Node set = nodes.get(Characteristic.SetCode);
+			Node type = nodes.get(Characteristic.TypeLine);
+			Node rules = nodes.get(Characteristic.RulesText);
+			Node flavor = nodes.get(Characteristic.FlavorText);
+			Node pt = nodes.get(Characteristic.PTBox);
+
+			layoutManaCost(mc);
+			layoutName(name, mc);
+			layoutSetCode(set, name);
+			layoutType(type, name, set);
+			layoutRules(rules, type);
+			layoutFlavor(flavor, rules);
+			layoutPT(pt);
+		}
+	}
+
+	@Override
+	public URL find(Card card) {
+		if (!imageCache.containsKey(card)) {
+			File f = new File(new File(PARENT_DIR, String.format("s%s", card.set().code())), String.format("%s%s.png", card.name(), card.variation() > 0 ? Integer.toString(card.variation()) : ""));
+
+			if (f.exists()) {
+				try {
+					return f.toURI().toURL();
+				} catch (MalformedURLException e) {
+					throw new Error(e);
+				}
+			}
+
+			CardRenderLayout layout = new CardRenderLayout(card);
 
 			Platform.runLater(() -> {
 				Scene scene = new Scene(layout, WIDTH, HEIGHT, Color.TRANSPARENT);
