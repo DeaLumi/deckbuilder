@@ -66,7 +66,7 @@ public class CardInstanceView extends ImageView {
 //		this.setCacheHint(CacheHint.SCALE);
 
 		this.setOnDragDetected(me -> {
-			Dragboard db = this.startDragAndDrop(TransferMode.MOVE);
+			Dragboard db = this.startDragAndDrop(TransferMode.MOVE, TransferMode.LINK);
 
 			ClipboardContent content = new ClipboardContent();
 			content.put(CARD_INSTANCE_VIEW, gson.toJson(instance, CardInstance.class));
@@ -79,8 +79,9 @@ public class CardInstanceView extends ImageView {
 		this.setOnDragDone(de -> {
 			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
 				list.remove(instance);
-				de.consume();
 			}
+
+			de.consume();
 		});
 
 		this.setOnMouseClicked(me -> {
