@@ -102,7 +102,7 @@ public class MainWindow extends Application {
 		collectionFilter.setOnAction(ae -> collection.manager().reconfigure(ci -> {
 			String searchText = collectionFilter.getText();
 
-			return ci.card.name().contains(searchText) || ci.card.text().contains(searchText);
+			return ci.card().name().contains(searchText) || ci.card().text().contains(searchText);
 		}, null, null, null));
 
 		BorderPane collectionPane = new BorderPane();

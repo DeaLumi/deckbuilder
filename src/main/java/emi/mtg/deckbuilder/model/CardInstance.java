@@ -8,7 +8,7 @@ import emi.lib.mtg.data.CardSource;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by Emi on 6/15/2017.
@@ -28,9 +28,23 @@ public class CardInstance implements Serializable {
 		};
 	}
 
-	public final Card card;
+	private Card card;
+	private Set<String> tags;
 
-	public CardInstance(Card card) {
+	public CardInstance(Card card, Collection<String> tags) {
 		this.card = card;
+		this.tags = new HashSet<>(tags);
+	}
+
+	public CardInstance(Card card, String... tags) {
+		this(card, Arrays.asList(tags));
+	}
+
+	public Card card() {
+		return card;
+	}
+
+	public Set<String> tags() {
+		return tags;
 	}
 }

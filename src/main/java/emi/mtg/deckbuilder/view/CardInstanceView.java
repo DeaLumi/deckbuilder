@@ -71,7 +71,7 @@ public class CardInstanceView extends ImageView {
 			ClipboardContent content = new ClipboardContent();
 			content.put(CARD_INSTANCE_VIEW, gson.toJson(instance, CardInstance.class));
 			db.setContent(content);
-			db.setDragView(thumbnailCache.getOrDefault(this.instance.card, DEFAULT_THUMBNAIL));
+			db.setDragView(thumbnailCache.getOrDefault(this.instance.card(), DEFAULT_THUMBNAIL));
 
 			me.consume();
 		});
@@ -97,8 +97,8 @@ public class CardInstanceView extends ImageView {
 	public void loadImage() {
 		IMAGE_LOAD_POOL.execute(() -> {
 			Image image;
-			if (!imageCache.containsKey(instance.card) || imageCache.get(instance.card).get() == null) {
-				URL url = this.images.find(instance.card);
+			if (!imageCache.containsKey(instance.card()) || imageCache.get(instance.card()).get() == null) {
+				URL url = this.images.find(instance.card());
 
 				Image thumbnail;
 				if (url == null) {
@@ -109,10 +109,10 @@ public class CardInstanceView extends ImageView {
 					thumbnail = new Image(url.toString(), WIDTH * THUMBNAIL_FACTOR, HEIGHT * THUMBNAIL_FACTOR, true, true, false);
 				}
 
-				imageCache.put(instance.card, new WeakReference<>(image));
-				thumbnailCache.put(instance.card, thumbnail);
+				imageCache.put(instance.card(), new WeakReference<>(image));
+				thumbnailCache.put(instance.card(), thumbnail);
 			} else {
-				image = imageCache.get(instance.card).get();
+				image = imageCache.get(instance.card()).get();
 			}
 
 			Platform.runLater(() -> setImage(image));
@@ -121,6 +121,6 @@ public class CardInstanceView extends ImageView {
 
 	public void unloadImage() {
 		setImage(DEFAULT_IMAGE);
-		thumbnailCache.remove(instance.card);
+		thumbnailCache.remove(instance.card());
 	}
 }

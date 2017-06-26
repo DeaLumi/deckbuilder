@@ -18,8 +18,8 @@ import java.util.function.Function;
  * Created by Emi on 6/17/2017.
  */
 public class NewPilesView extends GridPane implements CardViewManager.ManagedView {
-	public final static Comparator<CardInstance> NAME_SORT = (c1, c2) -> c1.card.name().compareTo(c2.card.name());
-	public final static Function<CardInstance, String> CMC_GROUP = c -> c.card.manaCost().varies() ? "X" : Integer.toString(c.card.manaCost().convertedCost());
+	public final static Comparator<CardInstance> NAME_SORT = Comparator.comparing(c -> c.card().name());
+	public final static Function<CardInstance, String> CMC_GROUP = c -> c.card().manaCost().varies() ? "X" : Integer.toString(c.card().manaCost().convertedCost());
 	public final static Comparator<String> CMC_SORT = (s1, s2) -> {
 		if ("X".equals(s1)) {
 			return "X".equals(s2) ? 0 : 1;
@@ -31,13 +31,13 @@ public class NewPilesView extends GridPane implements CardViewManager.ManagedVie
 	};
 
 	public final static Comparator<CardInstance> COLOR_SORT = (c1, c2) -> {
-		if (c1.card.color().size() != c2.card.color().size()) {
-			int s1 = c1.card.color().size();
+		if (c1.card().color().size() != c2.card().color().size()) {
+			int s1 = c1.card().color().size();
 			if (s1 == 0) {
 				s1 = Color.values().length + 1;
 			}
 
-			int s2 = c2.card.color().size();
+			int s2 = c2.card().color().size();
 			if (s2 == 0) {
 				s2 = Color.values().length + 1;
 			}
@@ -47,8 +47,8 @@ public class NewPilesView extends GridPane implements CardViewManager.ManagedVie
 
 		for (int i = Color.values().length - 1; i >= 0; --i) {
 			Color c = Color.values()[i];
-			long n1 = -c1.card.manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
-			long n2 = -c2.card.manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
+			long n1 = -c1.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
+			long n2 = -c2.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
 
 			if (n1 != n2) {
 				return (int) (n2 - n1);
