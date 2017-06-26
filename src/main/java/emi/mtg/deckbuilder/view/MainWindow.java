@@ -110,10 +110,11 @@ public class MainWindow extends Application {
 		collectionPane.setCenter(collectionScroll);
 
 		ScrollPane deckScroll = new ScrollPane();
+		deckScroll.setFitToWidth(true);
 		ObservableList<CardInstance> deckModel = deckModel(cs);
-		NewPilesView deckPiles = new NewPilesView(is, gson, deckModel);
-		deckPiles.setMinSize(CardInstanceView.WIDTH, CardInstanceView.HEIGHT);
-		deckScroll.setContent(deckPiles);
+		CardView deckView = new CardView(deckModel, NewPilesView.CMC_GROUP, NewPilesView.COLOR_SORT, is);
+		deckView.setMinWidth(800.0);
+		deckScroll.setContent(deckView);
 
 		SplitPane deckEdit = new SplitPane();
 		deckEdit.getItems().addAll(collectionPane, deckScroll);
@@ -165,7 +166,7 @@ public class MainWindow extends Application {
 		});
 
 		stage.setScene(new Scene(root));
-//		stage.setMaximized(true);
+		stage.setMaximized(true);
 		stage.show();
 	}
 }
