@@ -30,13 +30,13 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 	@Service({ImageSource.class, ObservableList.class})
 	@Service.Property.String(name="name")
 	public interface LayoutEngine {
-		double minWidth(Canvas parent, double height);
-		double prefWidth(Canvas parent, double height);
-		double maxWidth(Canvas parent, double height);
-		double minHeight(Canvas parent, double width);
-		double prefHeight(Canvas parent, double width);
-		double maxHeight(Canvas parent, double width);
-		CardInstance cardAt(Canvas parent, double x, double y);
+		double minWidth(double height);
+		double prefWidth(double height);
+		double maxWidth(double height);
+		double minHeight(double width);
+		double prefHeight(double width);
+		double maxHeight(double width);
+		CardInstance cardAt(double x, double y);
 		void render(GraphicsContext graphics);
 	}
 
@@ -58,52 +58,42 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		public Flow(ImageSource images, ObservableList<CardInstance> cards) {
 			this.images = images;
 			this.cards = cards;
+			this.stride = 1;
 		}
 
 		@Override
-		public double minWidth(Canvas parent, double height) {
+		public double minWidth(double height) {
 			return PADDING + WIDTH + PADDING;
 		}
 
 		@Override
-		public double prefWidth(Canvas parent, double height) {
+		public double prefWidth(double height) {
 			return PADDING + (WIDTH + PADDING) * cards.size();
 		}
 
 		@Override
-		public double maxWidth(Canvas parent, double height) {
-			return prefWidth(parent, height);
+		public double maxWidth(double height) {
+			return prefWidth(height);
 		}
 
 		@Override
-		public double minHeight(Canvas parent, double width) {
-			return prefHeight(parent, width);
+		public double minHeight(double width) {
+			return prefHeight(width);
 		}
 
 		@Override
-		public double prefHeight(Canvas parent, double width) {
-/*
-			int newStride = Math.max(1, (int) Math.floor((width - PADDING) / (WIDTH + PADDING)));
-
-			if (this.stride != newStride) {
-				this.stride = newStride;
-
-				if (parent.getParent() != null) {
-					parent.getParent().requestLayout();
-				}
-			}
-*/
+		public double prefHeight(double width) {
 			return PADDING + Math.ceil((double) cards.size() / (double) stride) * (HEIGHT + PADDING);
 		}
 
 		@Override
-		public double maxHeight(Canvas parent, double width) {
-			return prefHeight(parent, width);
+		public double maxHeight(double width) {
+			return prefHeight(width);
 		}
 
 		@Override
-		public CardInstance cardAt(Canvas parent, double x, double y) {
-			double fRow = y / (HEIGHT + PADDING);
+		public CardInstance cardAt(double x, double y) {
+			double fRow = (y - PADDING) / (HEIGHT + PADDING);
 			int row = (int) fRow;
 			double yInRow = (fRow - row) * (HEIGHT + PADDING);
 
@@ -228,7 +218,7 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 				return;
 			}
 
-			CardInstance ci = this.engine.cardAt(this, de.getX(), de.getY());
+			CardInstance ci = this.engine.cardAt(de.getX(), de.getY());
 
 			if (ci == null) {
 				return;
@@ -270,32 +260,32 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 	@Override
 	public double minWidth(double height) {
-		return engine.minWidth(this, height < 0 ? getHeight() : height);
+		return engine.minWidth(height < 0 ? getHeight() : height);
 	}
 
 	@Override
 	public double prefWidth(double height) {
-		return engine.prefWidth(this, height < 0 ? getHeight() : height);
+		return engine.prefWidth(height < 0 ? getHeight() : height);
 	}
 
 	@Override
 	public double maxWidth(double height) {
-		return engine.maxWidth(this, height < 0 ? getHeight() : height);
+		return engine.maxWidth(height < 0 ? getHeight() : height);
 	}
 
 	@Override
 	public double minHeight(double width) {
-		return engine.minHeight(this, width < 0 ? getWidth() : width);
+		return engine.minHeight(width < 0 ? getWidth() : width);
 	}
 
 	@Override
 	public double prefHeight(double width) {
-		return engine.prefHeight(this, width < 0 ? getWidth() : width);
+		return engine.prefHeight(width < 0 ? getWidth() : width);
 	}
 
 	@Override
 	public double maxHeight(double width) {
-		return engine.maxHeight(this, width < 0 ? getWidth() : width);
+		return engine.maxHeight(width < 0 ? getWidth() : width);
 	}
 
 	@Override
