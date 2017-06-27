@@ -282,6 +282,7 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 	private final SortedList<CardInstance> cards;
 	private final TransferMode[] dragModes, dropModes;
 	private LayoutEngine engine;
+	private CardInstance draggingCard;
 
 	public CardGroup(String group, Gson gson, ImageSource images, FilteredList<CardInstance> cards, Comparator<CardInstance> sort, String engine, TransferMode[] dragModes, TransferMode[] dropModes) {
 		super(1024, 1024);
@@ -295,14 +296,7 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		this.dragModes = dragModes;
 		this.dropModes = dropModes;
 		this.engine = layoutEngines.containsKey(engine) ? layoutEngines.get(engine).uncheckedInstance(images, this.cards) : null;
-/*
-		this.setOnDragDone(de -> {
-		if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-			list.remove(instance);
-		}
 
-		de.consume();
-*/
 		this.setOnDragDetected(de -> {
 			if (this.engine == null) {
 				return;
@@ -319,7 +313,8 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 			ClipboardContent content = new ClipboardContent();
 			content.put(DataFormat.PLAIN_TEXT, gson.toJson(ci, CardInstance.class));
 			db.setContent(content);
-			db.setDragView(thumbnailCache.computeIfAbsent(ci.card(), c -> new Image(images.find(c).toString())));
+			db.setDragView(thumbnailCache.computeIfAbsent(ci.card(), c -> new Image(images.find(c).toString(), 200, 280, true, true)));
+			draggingCard = ci;
 
 			de.consume();
 		});
@@ -330,11 +325,39 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		});
 
 		this.setOnDragDropped(de -> {
+			if (de.getGestureSource() instanceof CardGroup) {
+				CardInstance card = ((CardGroup) de.getGestureSource()).draggingCard;
+				assert card != null : "CardGroup received a DnD from another CardGroup with no draggingCard...";
 
+				switch (de.getAcceptedTransferMode()) {
+					case COPY:
+						card = new CardInstance(card.card(), card.tags());
+						cards.add(card);
+						// intentional fallthrough
+					case MOVE:
+						card.tags().remove(((CardGroup) de.getGestureSource()).group);
+						card.tags().add(group);
+						break;
+					default:
+						assert false : "TODO: Implement other transfer modes...";
+				}
+
+				getParent().requestLayout();
+				de.setDropCompleted(true);
+			}
+
+			de.consume();
 		});
 
 		this.setOnDragDone(de -> {
+			if (draggingCard == null) {
+				return;
+			}
 
+			draggingCard = null;
+			getParent().requestLayout();
+
+			de.consume();
 		});
 	}
 
