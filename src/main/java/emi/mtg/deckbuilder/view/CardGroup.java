@@ -20,6 +20,8 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
@@ -263,6 +265,19 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		}
 	}
 
+	private static Method refilter;
+
+	static {
+		Method refilterProxy;
+		try {
+			refilterProxy = FilteredList.class.getDeclaredMethod("refilter");
+			refilterProxy.setAccessible(true);
+		} catch (NoSuchMethodException nsme) {
+			throw new Error("Couldn't find 'refilter' method on FilteredList.class... has JavaFX changed?");
+		}
+		refilter = refilterProxy;
+	}
+
 	private static final Map<String, Service.Loader<LayoutEngine>.Stub> layoutEngines;
 
 	static {
@@ -363,7 +378,7 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 	@Override
 	public void onChanged(Change<? extends CardInstance> c) {
-		render();
+		getParent().requestLayout();
 	}
 
 	@Override
@@ -408,7 +423,21 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		render();
 	}
 
+	private boolean noRerender = false;
+
 	public void render() {
+		if (!noRerender) {
+			noRerender = true;
+
+			try {
+				refilter.invoke(this.cards.getSource());
+			} catch (IllegalAccessException | InvocationTargetException e) {
+				new Throwable("Error while trying to refilter cards for group " + group + " (recoverable)", e).printStackTrace();
+			}
+
+			noRerender = false;
+		}
+
 		if (engine == null) {
 			return;
 		}
