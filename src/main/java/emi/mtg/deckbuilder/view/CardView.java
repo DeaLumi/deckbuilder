@@ -8,37 +8,30 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
  * Created by Emi on 6/25/2017.
  */
 public class CardView extends VBox {
-	private Map<String, CardGroup> groupMap = new HashMap<>();
+	private SortedMap<String, CardGroup> groupMap;
 
-	public CardView(ObservableList<CardInstance> cards, Function<CardInstance, String> group, Comparator<CardInstance> sort, ImageSource images, Gson gson) {
+	public CardView(ObservableList<CardInstance> cards, Comparator<String> groupSort, Function<CardInstance, String> group, Comparator<CardInstance> sort, ImageSource images, Gson gson) {
 		setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(5.0))));
 		setFillWidth(true);
 		setPrefWidth(Double.MAX_VALUE);
 
+		this.groupMap = new TreeMap<>(groupSort);
+
 		for (CardInstance ci : cards) {
-			groupMap.computeIfAbsent(group.apply(ci), g -> {
-				CardGroup groupNode = new CardGroup(g, gson, images, cards.filtered(c -> g.equals(group.apply(c))), sort, "Flow", TransferMode.ANY, TransferMode.NONE);
-				CardView.this.getChildren().add(groupNode);
-				return groupNode;
-			});
+			final String groupName = group.apply(ci);
+			ci.tags().add(groupName);
+			this.groupMap.computeIfAbsent(groupName, g -> new CardGroup(g, gson, images, cards.filtered(c -> c.tags().contains(g)), sort, "Flow", TransferMode.ANY, new TransferMode[] { TransferMode.MOVE }));
 		}
 
-		groupMap.values().forEach(CardGroup::render);
-
-		this.setOnMouseClicked(ce -> {
-			groupMap.values().forEach(CardGroup::render);
-			requestLayout();
-			ce.consume();
-		});
+		getChildren().addAll(this.groupMap.values());
+		this.groupMap.values().forEach(CardGroup::render);
 	}
 
 	@Override

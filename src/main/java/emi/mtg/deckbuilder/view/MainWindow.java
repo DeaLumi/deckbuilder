@@ -112,7 +112,7 @@ public class MainWindow extends Application {
 		ScrollPane deckScroll = new ScrollPane();
 		deckScroll.setFitToWidth(true);
 		ObservableList<CardInstance> deckModel = deckModel(cs);
-		CardView deckView = new CardView(deckModel, NewPilesView.CMC_GROUP, NewPilesView.COLOR_SORT, is, gson);
+		CardView deckView = new CardView(deckModel, NewPilesView.CMC_SORT, NewPilesView.CMC_GROUP, NewPilesView.COLOR_SORT, is, gson);
 		deckView.setMinWidth(800.0);
 		deckScroll.setContent(deckView);
 
