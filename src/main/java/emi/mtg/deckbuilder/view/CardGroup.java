@@ -43,13 +43,13 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 	private final static Map<Card, Image> imageCache = new HashMap<>();
 	private final static Map<Card, Image> thumbnailCache = new HashMap<>();
 
+	private final static double WIDTH = 200;
+	private final static double HEIGHT = 280;
+	private final static double PADDING = 10;
+
 	@Service.Provider(CardGroup.LayoutEngine.class)
 	@Service.Property.String(name="name", value="Flow")
 	public static class Flow implements LayoutEngine {
-		private final static double WIDTH = 200;
-		private final static double HEIGHT = 280;
-		private final static double PADDING = 10;
-
 		private final ImageSource images;
 		private final ObservableList<CardInstance> cards;
 
@@ -165,8 +165,101 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 				x += PADDING + WIDTH;
 			}
+		}
+	}
 
+	@Service.Provider(LayoutEngine.class)
+	@Service.Property.String(name="name", value="Piles")
+	public static class Pile implements LayoutEngine {
+		private final static double SPACING_FACTOR = 15.0 / 100.0;
 
+		private final ImageSource images;
+		private final ObservableList<CardInstance> cards;
+
+		public Pile(ImageSource images, ObservableList<CardInstance> cards) {
+			this.images = images;
+			this.cards = cards;
+		}
+
+		@Override
+		public double minWidth(double height) {
+			return prefWidth(height);
+		}
+
+		@Override
+		public double prefWidth(double height) {
+			return PADDING + WIDTH + PADDING;
+		}
+
+		@Override
+		public double maxWidth(double height) {
+			return prefWidth(height);
+		}
+
+		@Override
+		public double minHeight(double width) {
+			return prefHeight(width);
+		}
+
+		@Override
+		public double prefHeight(double width) {
+			if (cards.size() == 0) {
+				return PADDING + PADDING;
+			} else {
+				return PADDING + (HEIGHT * SPACING_FACTOR) * (cards.size() - 1) + HEIGHT + PADDING;
+			}
+		}
+
+		@Override
+		public double maxHeight(double width) {
+			return prefHeight(width);
+		}
+
+		@Override
+		public CardInstance cardAt(double x, double y) {
+			if (x < PADDING || x > prefWidth(-1) - PADDING || y < PADDING || y > prefHeight(-1) - PADDING) {
+				return null;
+			}
+
+			int i = Math.min((int) Math.floor((y - PADDING) / (HEIGHT * SPACING_FACTOR)), cards.size() - 1);
+
+			return cards.get(i);
+		}
+
+		@Override
+		public void render(GraphicsContext graphics) {
+			double y = PADDING;
+
+			for (int i = 0; i < cards.size(); ++i) {
+				final CardInstance ci = cards.get(i);
+				if (imageCache.containsKey(ci.card())) {
+					graphics.drawImage(imageCache.get(ci.card()), PADDING, y, WIDTH, HEIGHT);
+				} else {
+					Task<Image> loadImageTask = new Task<Image>() {
+						@Override
+						protected Image call() throws Exception {
+							Image image = new Image(images.find(ci.card()).toString());
+							imageCache.put(ci.card(), image);
+							return image;
+						}
+					};
+					loadImageTask.setOnSucceeded(wse -> Platform.runLater(() -> {
+						int newI = this.cards.indexOf(ci);
+
+						if (newI >= 0) {
+							double newY = PADDING + newI * (HEIGHT * SPACING_FACTOR);
+							double h = (newI == this.cards.size() - 1) ? 1.0 : SPACING_FACTOR;
+
+							graphics.drawImage(loadImageTask.getValue(),
+									0, 0, loadImageTask.getValue().getWidth(), loadImageTask.getValue().getHeight() * h,
+									PADDING, newY, WIDTH, HEIGHT * h);
+						}
+					}));
+					ForkJoinPool.commonPool().submit(loadImageTask);
+				}
+
+				y += HEIGHT * SPACING_FACTOR;
+			}
 		}
 	}
 
