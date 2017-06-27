@@ -1,23 +1,27 @@
 package emi.mtg.deckbuilder.view;
 
+import com.google.gson.Gson;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
+import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.concurrent.Task;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.DataFormat;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Created by Emi on 6/25/2017.
@@ -26,17 +30,22 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 	@Service({ImageSource.class, ObservableList.class})
 	@Service.Property.String(name="name")
 	public interface LayoutEngine {
-		CardInstance cardAt(double x, double y);
-		double width(double height);
-		double height(double width);
+		double minWidth(Canvas parent, double height);
+		double prefWidth(Canvas parent, double height);
+		double maxWidth(Canvas parent, double height);
+		double minHeight(Canvas parent, double width);
+		double prefHeight(Canvas parent, double width);
+		double maxHeight(Canvas parent, double width);
+		CardInstance cardAt(Canvas parent, double x, double y);
 		void render(GraphicsContext graphics);
 	}
+
+	private final static Map<Card, Image> imageCache = new HashMap<>();
+	private final static Map<Card, Image> thumbnailCache = new HashMap<>();
 
 	@Service.Provider(CardGroup.LayoutEngine.class)
 	@Service.Property.String(name="name", value="Flow")
 	public static class Flow implements LayoutEngine {
-		private final static Map<Card, Image> imageCache = new HashMap<>();
-
 		private final static double WIDTH = 200;
 		private final static double HEIGHT = 280;
 		private final static double PADDING = 10;
@@ -52,7 +61,48 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		}
 
 		@Override
-		public CardInstance cardAt(double x, double y) {
+		public double minWidth(Canvas parent, double height) {
+			return PADDING + WIDTH + PADDING;
+		}
+
+		@Override
+		public double prefWidth(Canvas parent, double height) {
+			return PADDING + (WIDTH + PADDING) * cards.size();
+		}
+
+		@Override
+		public double maxWidth(Canvas parent, double height) {
+			return prefWidth(parent, height);
+		}
+
+		@Override
+		public double minHeight(Canvas parent, double width) {
+			return prefHeight(parent, width);
+		}
+
+		@Override
+		public double prefHeight(Canvas parent, double width) {
+/*
+			int newStride = Math.max(1, (int) Math.floor((width - PADDING) / (WIDTH + PADDING)));
+
+			if (this.stride != newStride) {
+				this.stride = newStride;
+
+				if (parent.getParent() != null) {
+					parent.getParent().requestLayout();
+				}
+			}
+*/
+			return PADDING + Math.ceil((double) cards.size() / (double) stride) * (HEIGHT + PADDING);
+		}
+
+		@Override
+		public double maxHeight(Canvas parent, double width) {
+			return prefHeight(parent, width);
+		}
+
+		@Override
+		public CardInstance cardAt(Canvas parent, double x, double y) {
 			double fRow = y / (HEIGHT + PADDING);
 			int row = (int) fRow;
 			double yInRow = (fRow - row) * (HEIGHT + PADDING);
@@ -75,18 +125,16 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		}
 
 		@Override
-		public double width(double height) {
-			return Double.MAX_VALUE;
-		}
-
-		@Override
-		public double height(double width) {
-			return Math.ceil((double) cards.size() / (double) stride) * (HEIGHT + PADDING) + PADDING;
-		}
-
-		@Override
 		public void render(GraphicsContext graphics) {
-			stride = (int) Math.floor((graphics.getCanvas().getWidth() - PADDING) / (WIDTH + PADDING));
+			int renderStride = Math.max(1, (int) Math.floor((graphics.getCanvas().getWidth() - PADDING) / (WIDTH + PADDING)));
+
+			if (renderStride != stride) {
+				this.stride = renderStride;
+
+				if (graphics.getCanvas().getParent() != null) {
+					graphics.getCanvas().getParent().requestLayout();
+				}
+			}
 
 			if (stride <= 0) {
 				return;
@@ -100,12 +148,38 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 					y += PADDING + HEIGHT;
 				}
 
-				graphics.drawImage(imageCache.computeIfAbsent(cards.get(i).card(), c -> {
-					return new Image(images.find(c).toString()); // TODO: Flesh this out... no lazy loading sucks.
-				}), x, y, WIDTH, HEIGHT);
+				final CardInstance ci = cards.get(i);
+				if (imageCache.containsKey(ci.card())) {
+					graphics.drawImage(imageCache.get(ci.card()), x, y, WIDTH, HEIGHT);
+				} else {
+					Task<Image> loadImageTask = new Task<Image>() {
+						@Override
+						protected Image call() throws Exception {
+							Image image = new Image(images.find(ci.card()).toString());
+							imageCache.put(ci.card(), image);
+							return image;
+						}
+					};
+					loadImageTask.setOnSucceeded(wse -> Platform.runLater(() -> {
+						int newI = this.cards.indexOf(ci);
+
+						if (newI >= 0) {
+							int row = newI / this.stride;
+							int col = newI % this.stride;
+
+							double newX = PADDING + col * (WIDTH + PADDING);
+							double newY = PADDING + row * (HEIGHT + PADDING);
+
+							graphics.drawImage(loadImageTask.getValue(), newX, newY, WIDTH, HEIGHT);
+						}
+					}));
+					ForkJoinPool.commonPool().submit(loadImageTask);
+				}
 
 				x += PADDING + WIDTH;
 			}
+
+
 		}
 	}
 
@@ -129,7 +203,7 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 	private final TransferMode[] dragModes, dropModes;
 	private LayoutEngine engine;
 
-	public CardGroup(String group, ImageSource images, FilteredList<CardInstance> cards, Comparator<CardInstance> sort, String engine, TransferMode[] dragModes, TransferMode[] dropModes) {
+	public CardGroup(String group, Gson gson, ImageSource images, FilteredList<CardInstance> cards, Comparator<CardInstance> sort, String engine, TransferMode[] dragModes, TransferMode[] dropModes) {
 		super(1024, 1024);
 
 		getGraphicsContext2D().setFill(Color.MAGENTA);
@@ -141,11 +215,46 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		this.dragModes = dragModes;
 		this.dropModes = dropModes;
 		this.engine = layoutEngines.containsKey(engine) ? layoutEngines.get(engine).uncheckedInstance(images, this.cards) : null;
+/*
+		this.setOnDragDone(de -> {
+		if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
+			list.remove(instance);
+		}
 
-		this.render();
+		de.consume();
+*/
+		this.setOnDragDetected(de -> {
+			if (this.engine == null) {
+				return;
+			}
 
-		this.setOnMouseClicked(me -> {
-			this.render();
+			CardInstance ci = this.engine.cardAt(this, de.getX(), de.getY());
+
+			if (ci == null) {
+				return;
+			}
+
+			Dragboard db = this.startDragAndDrop(dragModes);
+
+			ClipboardContent content = new ClipboardContent();
+			content.put(DataFormat.PLAIN_TEXT, gson.toJson(ci, CardInstance.class));
+			db.setContent(content);
+			db.setDragView(thumbnailCache.computeIfAbsent(ci.card(), c -> new Image(images.find(c).toString())));
+
+			de.consume();
+		});
+
+		this.setOnDragOver(de -> {
+			de.acceptTransferModes(dropModes);
+			de.consume();
+		});
+
+		this.setOnDragDropped(de -> {
+
+		});
+
+		this.setOnDragDone(de -> {
+
 		});
 	}
 
@@ -161,32 +270,32 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 	@Override
 	public double minWidth(double height) {
-		return 0;
+		return engine.minWidth(this, height < 0 ? getHeight() : height);
 	}
 
 	@Override
 	public double prefWidth(double height) {
-		return engine.width(height);
+		return engine.prefWidth(this, height < 0 ? getHeight() : height);
 	}
 
 	@Override
 	public double maxWidth(double height) {
-		return Double.MAX_VALUE;
+		return engine.maxWidth(this, height < 0 ? getHeight() : height);
 	}
 
 	@Override
 	public double minHeight(double width) {
-		return 0;
+		return engine.minHeight(this, width < 0 ? getWidth() : width);
 	}
 
 	@Override
 	public double prefHeight(double width) {
-		return engine.height(width);
+		return engine.prefHeight(this, width < 0 ? getWidth() : width);
 	}
 
 	@Override
 	public double maxHeight(double width) {
-		return Double.MAX_VALUE;
+		return engine.maxHeight(this, width < 0 ? getWidth() : width);
 	}
 
 	@Override
@@ -194,7 +303,6 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		setWidth(width);
 		setHeight(height);
 		render();
-		System.out.println(String.format("%s: %f x %f", group, width, height));
 	}
 
 	public void render() {

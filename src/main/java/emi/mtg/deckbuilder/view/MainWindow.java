@@ -112,7 +112,7 @@ public class MainWindow extends Application {
 		ScrollPane deckScroll = new ScrollPane();
 		deckScroll.setFitToWidth(true);
 		ObservableList<CardInstance> deckModel = deckModel(cs);
-		CardView deckView = new CardView(deckModel, NewPilesView.CMC_GROUP, NewPilesView.COLOR_SORT, is);
+		CardView deckView = new CardView(deckModel, NewPilesView.CMC_GROUP, NewPilesView.COLOR_SORT, is, gson);
 		deckView.setMinWidth(800.0);
 		deckScroll.setContent(deckView);
 
@@ -165,7 +165,7 @@ public class MainWindow extends Application {
 			}
 		});
 
-		stage.setScene(new Scene(root));
+		stage.setScene(new Scene(root, 1024, 1024));
 		stage.setMaximized(true);
 		stage.show();
 	}
