@@ -97,15 +97,15 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 			int row = (int) fRow;
 			double yInRow = (fRow - row) * (HEIGHT + PADDING);
 
-			if (yInRow > HEIGHT) {
+			if (yInRow < 0 || yInRow > HEIGHT) {
 				return null;
 			}
 
-			double fCol = x / (WIDTH + PADDING);
+			double fCol = (x - PADDING) / (WIDTH + PADDING);
 			int col = (int) fCol;
 			double xInCol = (fCol - col) * (WIDTH + PADDING);
 
-			if (xInCol > WIDTH) {
+			if (xInCol < 0 || xInCol > WIDTH) {
 				return null;
 			}
 
@@ -122,12 +122,9 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 				this.stride = renderStride;
 
 				if (graphics.getCanvas().getParent() != null) {
-					graphics.getCanvas().getParent().requestLayout();
+					graphics.getCanvas().getParent().layout();
+					return;
 				}
-			}
-
-			if (stride <= 0) {
-				return;
 			}
 
 			double x = PADDING, y = PADDING;
