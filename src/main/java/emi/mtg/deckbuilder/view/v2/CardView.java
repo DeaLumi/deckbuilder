@@ -4,7 +4,6 @@ import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.CardGroup;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -181,7 +180,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
         this.images = images;
         this.model = model;
         this.filteredModel = model.filtered(ci -> true);
-        this.sortedModel = this.filteredModel.sorted(CardGroup.NAME_SORT);
+        this.sortedModel = this.filteredModel.sorted(CardPane.NAME_SORT);
 
         this.groupIndexMap = new HashMap<>();
         setOnScroll(se -> {
