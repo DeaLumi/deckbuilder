@@ -8,10 +8,10 @@ import emi.lib.mtg.characteristic.CardRarity;
 import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
 import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
-import emi.lib.mtg.data.xlhq.XlhqImageSource;
 import emi.mtg.deckbuilder.controller.SerdesControl;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.view.v2.CardPane;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
@@ -66,7 +66,7 @@ public class MainWindow extends Application {
 	@Override
 	public void start(Stage stage) throws Exception {
 		CardSource cs = new MtgJsonCardSource();
-		ImageSource is = new XlhqImageSource(); // new RenderedImageSource();
+		ImageSource is = new RenderedImageSource(); // new XlhqImageSource();
 
 		Gson gson = new GsonBuilder()
 				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))
@@ -80,51 +80,24 @@ public class MainWindow extends Application {
 		MenuBar menu = new MenuBar();
 		MenuItem loadDeck = new MenuItem("Load deck...");
 		MenuItem saveDeck = new MenuItem("Save deck...");
-		MenuItem unloadAll = new MenuItem("Unload All Images");
-		MenuItem loadAll = new MenuItem("Load All Images");
-		MenuItem gc = new MenuItem("Collect Garbage");
 		Menu file = new Menu("File");
-		file.getItems().addAll(loadDeck, saveDeck, new SeparatorMenuItem(), unloadAll, loadAll, gc);
+		file.getItems().addAll(loadDeck, saveDeck);
 		menu.getMenus().add(file);
 
 		// Deck editing view
-
-		TextField collectionFilter = new TextField();
-		collectionFilter.setPromptText("Filter by name or text...");
 		ObservableList<CardInstance> collectionModel = collectionModel(cs);
-		CardView collection = new CardView(collectionModel, CardGroup.RARITY_SORT, CardGroup.RARITY_GROUP, CardGroup.COLOR_SORT, is, gson, "Flow");
-
-		collectionFilter.setOnAction(ae -> collection.filter(ci -> {
-			String searchText = collectionFilter.getText();
-
-			return ci.card().name().contains(searchText) || ci.card().text().contains(searchText);
-		}));
-
-		BorderPane collectionPane = new BorderPane();
-		collectionPane.setTop(collectionFilter);
-		collectionPane.setCenter(collection);
+		CardPane collectionView = new CardPane(is, collectionModel, "Flow");
 
 		ObservableList<CardInstance> deckModel = deckModel(cs);
-		CardView deckView = new CardView(deckModel, CardGroup.CMC_SORT, CardGroup.CMC_GROUP, CardGroup.COLOR_SORT, is, gson, "Piles");
+		CardPane deckEdit = new CardPane(is, deckModel, "Piles");
 
-		SplitPane deckEdit = new SplitPane();
-		deckEdit.getItems().addAll(collectionPane, deckView);
-		deckEdit.setOrientation(Orientation.VERTICAL);
+		SplitPane splitter = new SplitPane(collectionView, deckEdit);
+		splitter.setOrientation(Orientation.VERTICAL);
 
 		// Assembly
-
 		BorderPane root = new BorderPane();
 		root.setTop(menu);
-		root.setCenter(deckEdit);
-
-/*
-		unloadAll.setOnAction(ae -> cardsView.manager().unloadAll());
-		loadAll.setOnAction(ae -> cardsView.manager().loadAll());
-		gc.setOnAction(ae -> {
-			System.gc();
-			System.gc();
-		});
-*/
+		root.setCenter(splitter);
 
 		SerdesControl serdesControl = new SerdesControl(gson);
 		FileChooser chooser = new FileChooser();
