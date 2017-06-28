@@ -1,0 +1,8 @@
+1. WIPE OUT CURRENT SYSTEM
+2. Use a pseudo-infinite-canvas:
+	a. Manage scrolling manually with an offset, triggered on drag from cardAt = null
+	b. Bound-out coordinates of offscreen objects
+	c. Handle labels like before!
+	d. Define a layout engine to assign coordinates to cards, and nothing more!
+
+This should absolve us of the responsibility for the render-layout loop (layout just resizes the canvas and rerenders. EZPZ.).
