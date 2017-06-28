@@ -4,77 +4,43 @@ import com.google.gson.Gson;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 
-import java.io.IOException;
 import java.util.Comparator;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Created by Emi on 6/17/2017.
  */
-public class CardFlowView extends FlowPane implements CardViewManager.ManagedView {
-	private final CardViewManager manager;
+public class CardFlowView extends VBox {
+	private final FilteredList<CardInstance> filteredCards;
+	private final SortedMap<String, CardGroup> groupMap;
 
-	public CardFlowView(ImageSource images, Gson gson, ObservableList<CardInstance> cards, Comparator<CardInstance> sort, Function<CardInstance, String> group, Comparator<String> groupSort) throws IOException {
-		super(CardInstanceView.WIDTH * 5.0 / 100.0, CardInstanceView.WIDTH * 5.0 / 100.0);
+	public CardFlowView(ObservableList<CardInstance> cards, Comparator<String> groupSort, Function<CardInstance, String> group, Comparator<CardInstance> sort, ImageSource images, Gson gson) {
+		setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(5.0))));
+		setFillWidth(true);
+		setPrefWidth(Double.MAX_VALUE);
 
-		this.setCache(true);
-		this.setPrefWrapLength(CardInstanceView.WIDTH * 20.0);
+		this.filteredCards = cards.filtered(c -> true);
+		this.groupMap = new TreeMap<>(groupSort);
 
-		this.manager = new CardViewManager(this, images, gson, cards, ci -> true, sort, group, groupSort);
-		this.manager.reconfigure(ci -> true, sort, group, groupSort);
-
-		this.setOnDragOver(de -> {
-			de.acceptTransferModes(TransferMode.MOVE);
-			de.consume();
-		});
-
-		this.setOnDragDropped(de -> {
-			CardInstance instance = gson.fromJson(de.getDragboard().getContent(CardInstanceView.CARD_INSTANCE_VIEW).toString(), CardInstance.class);
-			cards.add(instance);
-			manager.reconfigure(null, null, null, null);
-			de.setDropCompleted(true);
-			de.consume();
-		});
-	}
-
-	public CardFlowView(ImageSource images, Gson gson, ObservableList<CardInstance> cards, Comparator<CardInstance> sort) throws IOException {
-		this(images, gson, cards, sort, NewPilesView.CMC_GROUP, NewPilesView.CMC_SORT);
-	}
-
-	public CardFlowView(ImageSource images, Gson gson, ObservableList<CardInstance> cards, Function<CardInstance, String> group) throws IOException {
-		this(images, gson, cards, NewPilesView.COLOR_SORT.thenComparing(NewPilesView.NAME_SORT), group, String::compareTo);
-	}
-
-	public CardFlowView(ImageSource images, Gson gson, ObservableList<CardInstance> cards) throws IOException {
-		this(images, gson, cards, NewPilesView.COLOR_SORT.thenComparing(NewPilesView.NAME_SORT), NewPilesView.CMC_GROUP, NewPilesView.CMC_SORT);
-	}
-
-	@Override
-	public Pane parentOf(CardInstance instance) {
-		return this;
-	}
-
-	@Override
-	public void adjustLayout() {
-		/*
-		int column = -1, row = 0;
-		for (CardInstance ci : manager.sortedCards) {
-			GridPane.setConstraints(manager.viewMap.get(ci), ++column, row);
-
-			if (column * CardInstanceView.WIDTH * 11.0 / 10.0 > getWidth()) {
-				column = -1;
-				++row;
-			}
+		for (CardInstance ci : cards) {
+			final String groupName = group.apply(ci);
+			ci.tags().add(groupName);
+			this.groupMap.computeIfAbsent(groupName, g -> new CardGroup(g, gson, images, filteredCards, sort, "Flow", TransferMode.ANY, new TransferMode[] { TransferMode.MOVE }));
 		}
-		*/
+
+		getChildren().addAll(this.groupMap.values());
+		this.groupMap.values().forEach(CardGroup::render);
 	}
 
-	@Override
-	public CardViewManager manager() {
-		return manager;
+	public void filter(Predicate<CardInstance> filter) {
+		filteredCards.setPredicate(filter);
 	}
-
 }

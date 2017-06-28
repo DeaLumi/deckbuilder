@@ -7,7 +7,6 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
-import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 
 import java.util.*;
@@ -46,7 +45,7 @@ public class CardViewManager implements ListChangeListener<CardInstance> {
 
 		this.cards = cards;
 		this.filteredCards = this.cards.filtered(ci -> true);
-		this.sortedCards = this.filteredCards.sorted(NewPilesView.NAME_SORT);
+		this.sortedCards = this.filteredCards.sorted(CardGroup.NAME_SORT);
 		this.sortedCards.addListener(this);
 
 		this.filter = filter;

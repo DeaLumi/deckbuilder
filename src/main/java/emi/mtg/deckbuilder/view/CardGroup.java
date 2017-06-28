@@ -3,6 +3,8 @@ package emi.mtg.deckbuilder.view;
 import com.google.gson.Gson;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
+import emi.lib.mtg.characteristic.CardRarity;
+import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
@@ -10,7 +12,9 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.collections.transformation.TransformationList;
 import javafx.concurrent.Task;
+import javafx.scene.CacheHint;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
@@ -20,15 +24,59 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 
+import javax.xml.crypto.dsig.Transform;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 
 /**
  * Created by Emi on 6/25/2017.
  */
 public class CardGroup extends Canvas implements ListChangeListener<CardInstance> {
+	public final static Comparator<CardInstance> NAME_SORT = Comparator.comparing(c -> c.card().name());
+	public final static Function<CardInstance, String> CMC_GROUP = c -> c.card().manaCost().varies() ? "X" : Integer.toString(c.card().manaCost().convertedCost());
+	public final static Comparator<String> CMC_SORT = (s1, s2) -> {
+		if ("X".equals(s1)) {
+			return "X".equals(s2) ? 0 : 1;
+		} else if ("X".equals(s2)) {
+			return "X".equals(s1) ? 0 : -1;
+		} else {
+			return Integer.parseInt(s1) - Integer.parseInt(s2);
+		}
+	};
+	public final static Comparator<CardInstance> COLOR_SORT = (c1, c2) -> {
+		if (c1.card().color().size() != c2.card().color().size()) {
+			int s1 = c1.card().color().size();
+			if (s1 == 0) {
+				s1 = emi.lib.mtg.characteristic.Color.values().length + 1;
+			}
+
+			int s2 = c2.card().color().size();
+			if (s2 == 0) {
+				s2 = emi.lib.mtg.characteristic.Color.values().length + 1;
+			}
+
+			return s1 - s2;
+		}
+
+		for (int i = emi.lib.mtg.characteristic.Color.values().length - 1; i >= 0; --i) {
+			emi.lib.mtg.characteristic.Color c = emi.lib.mtg.characteristic.Color.values()[i];
+			long n1 = -c1.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
+			long n2 = -c2.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
+
+			if (n1 != n2) {
+				return (int) (n2 - n1);
+			}
+		}
+
+		return 0;
+	};
+	public final static Function<CardInstance, String> RARITY_GROUP = c -> c.card().rarity().toString();
+	public final static Comparator<String> RARITY_SORT = Comparator.comparing(CardRarity::forString);
+
 	@Service({ImageSource.class, ObservableList.class})
 	@Service.Property.String(name="name")
 	public interface LayoutEngine {
@@ -45,9 +93,12 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 	private final static Map<Card, Image> imageCache = new HashMap<>();
 	private final static Map<Card, Image> thumbnailCache = new HashMap<>();
 
-	private final static double WIDTH = 200;
-	private final static double HEIGHT = 280;
-	private final static double PADDING = 10;
+	private final static double WIDTH = 300;
+	private final static double HEIGHT = 420;
+	private final static double PADDING = 15;
+
+	private final static Image CARD_BACK = new Image("file:Back.xlhq.jpg");
+	private final static Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
 
 	@Service.Provider(CardGroup.LayoutEngine.class)
 	@Service.Property.String(name="name", value="Flow")
@@ -70,12 +121,12 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 		@Override
 		public double prefWidth(double height) {
-			return PADDING + (WIDTH + PADDING) * cards.size();
+			return maxWidth(height);
 		}
 
 		@Override
 		public double maxWidth(double height) {
-			return prefWidth(height);
+			return Double.MAX_VALUE;
 		}
 
 		@Override
@@ -85,6 +136,10 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 		@Override
 		public double prefHeight(double width) {
+			if (width > 0) {
+				this.stride = Math.max(1, (int) Math.floor((width - PADDING) / (WIDTH + PADDING)));
+			}
+
 			return PADDING + Math.ceil((double) cards.size() / (double) stride) * (HEIGHT + PADDING);
 		}
 
@@ -122,11 +177,6 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 			if (renderStride != stride) {
 				this.stride = renderStride;
-
-				if (graphics.getCanvas().getParent() != null) {
-					graphics.getCanvas().getParent().layout();
-					return;
-				}
 			}
 
 			double x = PADDING, y = PADDING;
@@ -144,7 +194,8 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 					Task<Image> loadImageTask = new Task<Image>() {
 						@Override
 						protected Image call() throws Exception {
-							Image image = new Image(images.find(ci.card()).toString());
+							URL url = images.find(ci.card());
+							Image image = url != null ? new Image(url.toString()) : CARD_BACK;
 							imageCache.put(ci.card(), image);
 							return image;
 						}
@@ -240,7 +291,8 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 					Task<Image> loadImageTask = new Task<Image>() {
 						@Override
 						protected Image call() throws Exception {
-							Image image = new Image(images.find(ci.card()).toString());
+							URL url = images.find(ci.card());
+							Image image = url != null ? new Image(url.toString()) : CARD_BACK;
 							imageCache.put(ci.card(), image);
 							return image;
 						}
@@ -299,14 +351,28 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 	private LayoutEngine engine;
 	private CardInstance draggingCard;
 
+	private static <T> ObservableList<T> allSource(TransformationList<T, T> derived) {
+		TransformationList<? extends T, ? extends T> source = derived;
+
+		while (source.getSource() != null) {
+			if (source.getSource() instanceof TransformationList) {
+				source = (TransformationList<? extends T, ? extends T>) source.getSource();
+			} else {
+				return (ObservableList<T>) source.getSource();
+			}
+		}
+
+		return null;
+	}
+
 	public CardGroup(String group, Gson gson, ImageSource images, FilteredList<CardInstance> cards, Comparator<CardInstance> sort, String engine, TransferMode[] dragModes, TransferMode[] dropModes) {
 		super(1024, 1024);
 
-		getGraphicsContext2D().setFill(Color.MAGENTA);
-		getGraphicsContext2D().fill();
+		setCache(true);
+		setCacheHint(CacheHint.SCALE);
 
 		this.group = group;
-		this.cards = cards.sorted(sort);
+		this.cards = cards.filtered(ci -> ci.tags().contains(group)).sorted(sort);
 		this.cards.addListener(this);
 		this.dragModes = dragModes;
 		this.dropModes = dropModes;
@@ -328,7 +394,10 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 			ClipboardContent content = new ClipboardContent();
 			content.put(DataFormat.PLAIN_TEXT, gson.toJson(ci, CardInstance.class));
 			db.setContent(content);
-			db.setDragView(thumbnailCache.computeIfAbsent(ci.card(), c -> new Image(images.find(c).toString(), 200, 280, true, true)));
+			db.setDragView(thumbnailCache.computeIfAbsent(ci.card(), c -> {
+				URL url = images.find(c);
+				return url != null ? new Image(url.toString(), WIDTH, HEIGHT, true, true) : CARD_BACK_THUMB;
+			}));
 			draggingCard = ci;
 
 			de.consume();
@@ -341,23 +410,29 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 		this.setOnDragDropped(de -> {
 			if (de.getGestureSource() instanceof CardGroup) {
-				CardInstance card = ((CardGroup) de.getGestureSource()).draggingCard;
+				CardGroup source = (CardGroup) de.getGestureSource();
+				CardInstance card = source.draggingCard;
 				assert card != null : "CardGroup received a DnD from another CardGroup with no draggingCard...";
 
-				switch (de.getAcceptedTransferMode()) {
-					case COPY:
-						card = new CardInstance(card.card(), card.tags());
-						cards.add(card);
-						// intentional fallthrough
-					case MOVE:
-						card.tags().remove(((CardGroup) de.getGestureSource()).group);
-						card.tags().add(group);
-						break;
-					default:
-						assert false : "TODO: Implement other transfer modes...";
+				// n.b. .contains checks up the transformation list (I guess!?)
+				if (de.getAcceptedTransferMode() == TransferMode.MOVE && this.cards.contains(card)) {
+					card.tags().remove(source.group);
+					card.tags().add(this.group);
+				} else if (de.getAcceptedTransferMode() == TransferMode.MOVE || de.getAcceptedTransferMode() == TransferMode.COPY) {
+					CardInstance newCard = new CardInstance(card.card(), card.tags());
+					newCard.tags().remove(source.group);
+					newCard.tags().add(this.group);
+					allSource(this.cards).add(newCard);
+
+					if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
+						allSource(source.cards).remove(card);
+					}
+				} else {
+					assert false;
 				}
 
-				getParent().requestLayout();
+				this.getParent().requestLayout();
+				this.scheduleRender();
 				de.setDropCompleted(true);
 			}
 
@@ -371,14 +446,10 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 			draggingCard = null;
 			getParent().requestLayout();
+			scheduleRender();
 
 			de.consume();
 		});
-	}
-
-	@Override
-	public void onChanged(Change<? extends CardInstance> c) {
-		getParent().requestLayout();
 	}
 
 	@Override
@@ -416,29 +487,47 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		return engine.maxHeight(width < 0 ? getWidth() : width);
 	}
 
+	private volatile boolean renderScheduled = false;
+	private volatile boolean noRefilter = false;
+
 	@Override
 	public void resize(double width, double height) {
 		setWidth(width);
 		setHeight(height);
-		render();
+		scheduleRender();
 	}
 
-	private boolean noRerender = false;
+	@Override
+	public void onChanged(Change<? extends CardInstance> c) {
+		if (!noRefilter) {
+			getParent().requestLayout();
+			scheduleRender();
+		}
+	}
 
-	public void render() {
-		if (!noRerender) {
-			noRerender = true;
+	public synchronized void scheduleRender() {
+		if (!renderScheduled) {
+			renderScheduled = true;
+			Platform.runLater(() -> {
+				this.render();
+				renderScheduled = false;
+			});
+		}
+	}
 
+	protected void render() {
+		if (!noRefilter) {
+			noRefilter = true;
 			try {
 				refilter.invoke(this.cards.getSource());
 			} catch (IllegalAccessException | InvocationTargetException e) {
 				new Throwable("Error while trying to refilter cards for group " + group + " (recoverable)", e).printStackTrace();
 			}
-
-			noRerender = false;
+			noRefilter = false;
 		}
 
-		if (engine == null) {
+		// TODO: Fix this with some sort of pagination.
+		if (engine == null || this.cards.size() > 150) {
 			return;
 		}
 

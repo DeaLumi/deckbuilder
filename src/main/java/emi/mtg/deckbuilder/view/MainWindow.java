@@ -18,8 +18,6 @@ import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -68,7 +66,7 @@ public class MainWindow extends Application {
 	@Override
 	public void start(Stage stage) throws Exception {
 		CardSource cs = new MtgJsonCardSource();
-		ImageSource is = new RenderedImageSource(); // new XlhqImageSource();
+		ImageSource is = new XlhqImageSource(); // new RenderedImageSource();
 
 		Gson gson = new GsonBuilder()
 				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))
@@ -95,25 +93,24 @@ public class MainWindow extends Application {
 		collectionFilter.setPromptText("Filter by name or text...");
 		ScrollPane collectionScroll = new ScrollPane();
 		collectionScroll.setFitToWidth(true);
+		collectionScroll.setFitToWidth(true);
 		ObservableList<CardInstance> collectionModel = collectionModel(cs);
-		CardFlowView collection = new CardFlowView(is, gson, collectionModel);
+		CardFlowView collection = new CardFlowView(collectionModel, CardGroup.RARITY_SORT, CardGroup.RARITY_GROUP, CardGroup.COLOR_SORT, is, gson);
 		collectionScroll.setContent(collection);
 
-		collectionFilter.setOnAction(ae -> collection.manager().reconfigure(ci -> {
+		collectionFilter.setOnAction(ae -> collection.filter(ci -> {
 			String searchText = collectionFilter.getText();
 
 			return ci.card().name().contains(searchText) || ci.card().text().contains(searchText);
-		}, null, null, null));
+		}));
 
 		BorderPane collectionPane = new BorderPane();
 		collectionPane.setTop(collectionFilter);
 		collectionPane.setCenter(collectionScroll);
 
 		ScrollPane deckScroll = new ScrollPane();
-		deckScroll.setFitToWidth(true);
 		ObservableList<CardInstance> deckModel = deckModel(cs);
-		CardView deckView = new CardView(deckModel, NewPilesView.CMC_SORT, NewPilesView.CMC_GROUP, NewPilesView.COLOR_SORT, is, gson);
-		deckView.setMinWidth(800.0);
+		NewPilesView deckView = new NewPilesView(deckModel, CardGroup.CMC_SORT, CardGroup.CMC_GROUP, CardGroup.COLOR_SORT, is, gson);
 		deckScroll.setContent(deckView);
 
 		SplitPane deckEdit = new SplitPane();
