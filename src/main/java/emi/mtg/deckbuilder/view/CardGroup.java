@@ -14,6 +14,7 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.collections.transformation.TransformationList;
 import javafx.concurrent.Task;
+import javafx.geometry.Orientation;
 import javafx.scene.CacheHint;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -102,6 +103,7 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 	@Service.Provider(CardGroup.LayoutEngine.class)
 	@Service.Property.String(name="name", value="Flow")
+	@Service.Property.Boolean(name="vertical", value=true)
 	public static class Flow implements LayoutEngine {
 		private final ImageSource images;
 		private final ObservableList<CardInstance> cards;
@@ -223,6 +225,7 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 	@Service.Provider(LayoutEngine.class)
 	@Service.Property.String(name="name", value="Piles")
+	@Service.Property.Boolean(name="vertical", value=false)
 	public static class Pile implements LayoutEngine {
 		private final static double SPACING_FACTOR = 15.0 / 100.0;
 
@@ -345,6 +348,11 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		return layoutEngines.keySet();
 	}
 
+	public static Orientation layoutEngineOrientation(String engine) {
+		return layoutEngines.containsKey(engine) ? (layoutEngines.get(engine).bool("vertical") ? Orientation.VERTICAL : Orientation.HORIZONTAL) : null;
+	}
+
+	private final ImageSource images;
 	private final String group;
 	private final SortedList<CardInstance> cards;
 	private final TransferMode[] dragModes, dropModes;
@@ -372,6 +380,7 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 		setCacheHint(CacheHint.SCALE);
 
 		this.group = group;
+		this.images = images;
 		this.cards = cards.filtered(ci -> ci.tags().contains(group)).sorted(sort);
 		this.cards.addListener(this);
 		this.dragModes = dragModes;
@@ -450,6 +459,11 @@ public class CardGroup extends Canvas implements ListChangeListener<CardInstance
 
 			de.consume();
 		});
+	}
+
+	public void layout(String engine) {
+		this.engine = layoutEngines.containsKey(engine) ? layoutEngines.get(engine).uncheckedInstance(this.images, this.cards) : this.engine;
+		scheduleRender();
 	}
 
 	@Override

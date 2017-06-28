@@ -91,12 +91,8 @@ public class MainWindow extends Application {
 
 		TextField collectionFilter = new TextField();
 		collectionFilter.setPromptText("Filter by name or text...");
-		ScrollPane collectionScroll = new ScrollPane();
-		collectionScroll.setFitToWidth(true);
-		collectionScroll.setFitToWidth(true);
 		ObservableList<CardInstance> collectionModel = collectionModel(cs);
-		CardFlowView collection = new CardFlowView(collectionModel, CardGroup.RARITY_SORT, CardGroup.RARITY_GROUP, CardGroup.COLOR_SORT, is, gson);
-		collectionScroll.setContent(collection);
+		CardView collection = new CardView(collectionModel, CardGroup.RARITY_SORT, CardGroup.RARITY_GROUP, CardGroup.COLOR_SORT, is, gson, "Flow");
 
 		collectionFilter.setOnAction(ae -> collection.filter(ci -> {
 			String searchText = collectionFilter.getText();
@@ -106,15 +102,13 @@ public class MainWindow extends Application {
 
 		BorderPane collectionPane = new BorderPane();
 		collectionPane.setTop(collectionFilter);
-		collectionPane.setCenter(collectionScroll);
+		collectionPane.setCenter(collection);
 
-		ScrollPane deckScroll = new ScrollPane();
 		ObservableList<CardInstance> deckModel = deckModel(cs);
-		NewPilesView deckView = new NewPilesView(deckModel, CardGroup.CMC_SORT, CardGroup.CMC_GROUP, CardGroup.COLOR_SORT, is, gson);
-		deckScroll.setContent(deckView);
+		CardView deckView = new CardView(deckModel, CardGroup.CMC_SORT, CardGroup.CMC_GROUP, CardGroup.COLOR_SORT, is, gson, "Piles");
 
 		SplitPane deckEdit = new SplitPane();
-		deckEdit.getItems().addAll(collectionPane, deckScroll);
+		deckEdit.getItems().addAll(collectionPane, deckView);
 		deckEdit.setOrientation(Orientation.VERTICAL);
 
 		// Assembly
