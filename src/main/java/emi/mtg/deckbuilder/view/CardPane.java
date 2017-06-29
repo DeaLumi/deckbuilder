@@ -4,10 +4,14 @@ import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 
 import java.util.Comparator;
 import java.util.function.Function;
@@ -17,7 +21,6 @@ import java.util.regex.Pattern;
 
 public class CardPane extends BorderPane {
 	public final static Comparator<CardInstance> NAME_SORT = Comparator.comparing(c -> c.card().name());
-	public final static Function<CardInstance, String> CMC_GROUP = c -> c.card().manaCost().varies() ? "X" : Integer.toString(c.card().manaCost().convertedCost());
 	public final static Comparator<CardInstance> COLOR_SORT = (c1, c2) -> {
 		if (c1.card().color().size() != c2.card().color().size()) {
 			int s1 = c1.card().color().size();
@@ -45,10 +48,17 @@ public class CardPane extends BorderPane {
 
 		return 0;
 	};
+
+	public final static String[] CMC_GROUPS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "X" };
+	public final static Function<CardInstance, String> CMC_GROUP_EXTRACTOR = c -> c.card().manaCost().varies() ? "X" : Integer.toString(c.card().manaCost().convertedCost());
+
+	public final static String[] RARITY_GROUPS = { "Special", "Mythic Rare", "Rare", "Uncommon", "Common", "Basic Land" };
 	public final static Function<CardInstance, String> RARITY_GROUP = c -> c.card().rarity().toString();
+
 	private final CardView cardView;
 
-	private static final Pattern OMNIFILTER_PATTERN = Pattern.compile("(?:(?<characteristic>[^:]+)(?<operator>(?:[<>]=?|=|:)))?(?<value>[^ \"]+|\"[^\"]*\")");
+	private static final Pattern OMNIFILTER_PATTERN = Pattern.compile("(?:(?<characteristic>[^ :<>=]+)(?<operator>(?:[<>=]|:)))?(?<value>[^ \"]+|\"[^\"]*\")");
+	private static final String OMNIFILTER_PROMPT = "text:rules o:text cmc>X type:\"supertype cardtype\" t:subtype";
 
 	private static final Predicate<CardInstance> createOmnifilter(String query) {
 		Matcher m = OMNIFILTER_PATTERN.matcher(query);
@@ -117,44 +127,41 @@ public class CardPane extends BorderPane {
 		return predicate;
 	}
 
-	public CardPane(ImageSource images, ObservableList<CardInstance> model, String initEngine) {
-		HBox controlBar = new HBox();
+	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine) {
+		super();
 
-		this.cardView = new CardView(images, model);
-		this.cardView.filter(c -> true);
-		this.cardView.sort(COLOR_SORT.thenComparing(NAME_SORT));
-		this.cardView.group(new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "X" }, CMC_GROUP);
-		this.cardView.layout(initEngine);
+		this.cardView = new CardView(images, model, initEngine);
 		this.setCenter(this.cardView);
 
 		ComboBox<String> displayBox = new ComboBox<>();
-		displayBox.setValue("Flow");
-		displayBox.setOnAction(ae -> this.cardView.layout(displayBox.getValue()));
+		displayBox.setValue(initEngine);
+		displayBox.setOnAction(ae -> {
+			this.cardView.layout(displayBox.getValue());
+			this.cardView.requestFocus();
+		});
 		for (String engine : CardView.engineNames()) {
 			displayBox.getItems().add(engine);
 		}
 
 		TextField filter = new TextField();
-		filter.setPromptText("Omnifilter...");
+		filter.setPromptText(OMNIFILTER_PROMPT);
 		filter.setPrefWidth(250.0);
 		filter.setOnAction(ae -> {
 			this.cardView.filter(createOmnifilter(filter.getText()));
+			this.cardView.requestFocus();
 		});
 
+		HBox controlBar = new HBox(8.0);
+		controlBar.setPadding(new Insets(8.0));
+		controlBar.setAlignment(Pos.BASELINE_LEFT);
+		controlBar.getChildren().add(new Label(title));
 		controlBar.getChildren().add(filter);
 		controlBar.getChildren().add(displayBox);
+		HBox.setHgrow(filter, Priority.SOMETIMES);
 		this.setTop(controlBar);
 	}
 
-	public void filter(Predicate<CardInstance> filter) {
-		this.cardView.filter(filter);
-	}
-
-	public void sort(Comparator<CardInstance> sort) {
-		this.cardView.sort(sort);
-	}
-
-	public void group(String[] groups, Function<CardInstance, String> groupExtractor) {
-		this.cardView.group(groups, groupExtractor);
+	public CardView view() {
+		return this.cardView;
 	}
 }

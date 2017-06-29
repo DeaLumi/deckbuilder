@@ -30,13 +30,13 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public CardView.MVec2d coordinatesOf(CardView.Indices indices, CardView.MVec2d buffer) {
+	public CardView.MVec2d coordinatesOf(int group, int card, CardView.MVec2d buffer) {
 		if (buffer == null) {
 			buffer = new CardView.MVec2d();
 		}
 
-		buffer.x = (PADDING + WIDTH + PADDING) * indices.group + PADDING;
-		buffer.y = PADDING + (HEIGHT * OVERLAP_FACTOR) * indices.card;
+		buffer.x = (PADDING + WIDTH + PADDING) * group + PADDING;
+		buffer.y = PADDING + (HEIGHT * OVERLAP_FACTOR) * card;
 
 		return buffer;
 	}
@@ -47,8 +47,9 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public int cardAt(CardView.MVec2d point, int groupSize) {
-		if (point.x < PADDING || point.x > PADDING + WIDTH) {
+	public int cardAt(CardView.MVec2d point, int group, int groupSize) {
+		double x = point.x - group * (PADDING + WIDTH + PADDING);
+		if (x < PADDING || x > PADDING + WIDTH) {
 			return -1;
 		}
 
@@ -60,6 +61,8 @@ public class Piles implements CardView.LayoutEngine {
 			return groupSize - 1;
 		}
 
-		return (int) ((point.y - PADDING) / (HEIGHT * OVERLAP_FACTOR));
+		int idx = (int) ((point.y - PADDING) / (HEIGHT * OVERLAP_FACTOR));
+
+		return idx < 0 || idx >= groupSize ? -1 : idx;
 	}
 }

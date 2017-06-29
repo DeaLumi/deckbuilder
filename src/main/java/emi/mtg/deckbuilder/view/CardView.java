@@ -12,6 +12,9 @@ import javafx.collections.transformation.SortedList;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.input.DataFormat;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
@@ -19,6 +22,7 @@ import javafx.scene.text.TextAlignment;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -106,40 +110,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	public static class Indices {
-		public int group, card;
-
-		public Indices(int group, int card) {
-			set(group, card);
-		}
-
-		public Indices() {
-			this(0, 0);
-		}
-
-		public Indices set(int group, int card) {
-			this.group = group;
-			this.card = card;
-			return this;
-		}
-
-		public Indices set(Indices other) {
-			return set(other.group, other.card);
-		}
-	}
-
 	@Service(CardView.class)
 	@Service.Property.String(name="name")
 	public interface LayoutEngine {
-		default boolean layoutChanged() {
-			return false;
-		}
-
 		Bounds[] layoutGroups(int[] groupSizes);
 
-		MVec2d coordinatesOf(Indices indices, MVec2d buffer);
+		MVec2d coordinatesOf(int group, int card, MVec2d buffer);
 		int groupAt(MVec2d point);
-		int cardAt(MVec2d point, int groupSize);
+		int cardAt(MVec2d point, int group, int groupSize);
 	}
 
 	private static final Map<String, Service.Loader<LayoutEngine>.Stub> engineMap = new HashMap<>();
@@ -157,7 +135,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private static final Map<Card, Image> imageCache = new HashMap<>();
+	private static final Map<Card, Image> thumbanilCache = new HashMap<>();
 	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
+	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
 
 	private final ImageSource images;
 
@@ -175,20 +155,144 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private double scrollX, scrollY;
 
-	public CardView(ImageSource images, ObservableList<CardInstance> model) {
+	private CardList[] cardLists;
+	private CardInstance draggingCard;
+	private TransferMode[] dragModes, dropModes;
+
+	private Consumer<CardInstance> doubleClick;
+
+	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine) {
 		super(1024, 1024);
+
+		setFocusTraversable(true);
 
 		this.images = images;
 		this.model = model;
-		this.filteredModel = model.filtered(ci -> true);
-		this.sortedModel = this.filteredModel.sorted(CardPane.NAME_SORT);
+		this.filteredModel = this.model.filtered(this.filter = ci -> true);
+		this.sortedModel = this.filteredModel.sorted(this.sort = CardPane.COLOR_SORT.thenComparing(CardPane.NAME_SORT));
 
+		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
+		this.groups = CardPane.CMC_GROUPS;
+		this.groupExtractor = CardPane.CMC_GROUP_EXTRACTOR;
 		this.groupIndexMap = new HashMap<>();
+
+		for (int i = 0; i < this.groups.length; ++i) {
+			this.groupIndexMap.put(this.groups[i], i);
+		}
+
+		this.scrollX = this.scrollY = 0;
+
+		this.cardLists = null;
+		this.draggingCard = null;
+		this.dragModes = TransferMode.COPY_OR_MOVE;
+		this.dropModes = TransferMode.COPY_OR_MOVE;
+
+		this.doubleClick = ci -> {};
+
 		setOnScroll(se -> {
 			scrollX += se.getDeltaX();
 			scrollY += se.getDeltaY();
 			scheduleRender();
 		});
+
+		setOnDragDetected(de -> {
+			if (this.engine == null) {
+				return;
+			}
+
+			this.draggingCard = cardAt(de.getX(), de.getY());
+
+			if (this.draggingCard == null) {
+				return;
+			}
+
+			Dragboard db = this.startDragAndDrop(dragModes);
+			db.setDragView(thumbanilCache.getOrDefault(draggingCard.card(), CARD_BACK_THUMB));
+			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, draggingCard.card().name()));
+
+			de.consume();
+		});
+
+		setOnDragOver(de -> {
+			if (de.getGestureSource() instanceof CardView && ((CardView) de.getGestureSource()).draggingCard != null) {
+				de.acceptTransferModes(dropModes);
+				de.consume();
+			}
+		});
+
+		setOnDragDropped(de -> {
+			if (!(de.getGestureSource() instanceof CardView)) {
+				return; // TODO: Accept drag/drop from other programs...?
+			}
+
+			CardView source = (CardView) de.getGestureSource();
+
+			if (source == this) {
+				return; // TODO: Group switching within same CardView.
+			}
+
+			CardInstance ci = source.draggingCard;
+
+			switch (de.getAcceptedTransferMode()) {
+				case COPY:
+//					model.add(new CardInstance(ci.card(), ci.tags()));
+					model.add(ci); // TODO: Is this a problem...?
+					scheduleRender();
+					break;
+				case MOVE:
+					source.model.remove(ci);
+					model.add(ci);
+					source.scheduleRender();
+					scheduleRender();
+					break;
+				case LINK:
+					break;
+				default:
+					assert false;
+					break;
+			}
+
+			source.draggingCard = null;
+
+			// TODO: Group switching.
+		});
+
+		setOnMousePressed(me -> this.requestFocus());
+
+		setOnMouseClicked(me -> {
+			if (me.getClickCount() % 2 == 0) {
+				CardInstance ci = cardAt(me.getX(), me.getY());
+
+				if (ci != null) {
+					doubleClick.accept(ci);
+					scheduleRender();
+				}
+			}
+		});
+
+		// TODO: Mouse drag panning
+	}
+
+	private CardInstance cardAt(double x, double y) {
+		MVec2d point = new MVec2d(x - scrollX, y - scrollY);
+		int group = this.engine.groupAt(point);
+
+		if (group < 0) {
+			return null;
+		}
+
+		// TODO: Optimize to "take Nth and count"? Only really reduces memory usage.
+		CardInstance[] cardsInGroup = this.sortedModel.stream()
+				.filter(ci -> groups[group].equals(groupExtractor.apply(ci)))
+				.toArray(CardInstance[]::new);
+
+		int card = this.engine.cardAt(point, group, cardsInGroup.length);
+
+		if (card < 0) {
+			return null;
+		}
+
+		return cardsInGroup[card];
 	}
 
 	public void layout(String engine) {
@@ -218,6 +322,18 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.groupExtractor = groupExtractor;
 		scheduleRender();
+	}
+
+	public void dragModes(TransferMode... dragModes) {
+		this.dragModes = dragModes;
+	}
+
+	public void dropModes(TransferMode... dropModes) {
+		this.dropModes = dropModes;
+	}
+
+	public void doubleClick(Consumer<CardInstance> doubleClick) {
+		this.doubleClick = doubleClick;
 	}
 
 	@Override
@@ -292,13 +408,36 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	protected void render() {
 		if (engine == null) {
+			Platform.runLater(() -> {
+				GraphicsContext gfx = getGraphicsContext2D();
+				gfx.setFill(Color.WHITE);
+				gfx.fillRect(0, 0, getWidth(), getHeight());
+				gfx.setTextAlign(TextAlignment.CENTER);
+				gfx.setFill(Color.BLACK);
+				gfx.setFont(new Font(null, getHeight() / 10.0));
+				gfx.fillText("Select a valid display layout.", getWidth() / 2, getHeight() / 2);
+			});
+			return;
+		}
+
+		if (sortedModel.isEmpty()) {
+			Platform.runLater(() -> {
+				GraphicsContext gfx = getGraphicsContext2D();
+				gfx.setFill(Color.WHITE);
+				gfx.fillRect(0, 0, getWidth(), getHeight());
+				gfx.setTextAlign(TextAlignment.CENTER);
+				gfx.setFill(Color.BLACK);
+				gfx.setFont(new Font(null, getHeight() / 10.0));
+				gfx.fillText("No cards to display.", getWidth() / 2, getHeight() / 2);
+			});
 			return;
 		}
 
 		if (sortedModel.size() > 200) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
-				gfx.clearRect(0, 0, getWidth(), getHeight());
+				gfx.setFill(Color.WHITE);
+				gfx.fillRect(0, 0, getWidth(), getHeight());
 				gfx.setTextAlign(TextAlignment.CENTER);
 				gfx.setFill(Color.BLACK);
 				gfx.setFont(new Font(null, getHeight() / 10.0));
@@ -346,11 +485,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 
 		// TODO: Create min/max scroll X/Y properties and draw scroll bars at edges.
-		scrollX = -Math.min(high.x - getWidth(), Math.max(-scrollX, low.x));
-		scrollY = -Math.min(high.y - getHeight(), Math.max(-scrollY, low.y));
+		scrollX = -Math.max(Math.min(high.x - getWidth(), -scrollX), low.x);
+		scrollY = -Math.max(Math.min(high.y - getHeight(), -scrollY), low.y);
 
 		SortedMap<MVec2d, Image> renderMap = new TreeMap<>();
-		Indices ind = new Indices();
 		MVec2d loc = new MVec2d();
 
 		for (int i = 0; i < groups.length; ++i) {
@@ -365,11 +503,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				continue;
 			}
 
-			ind.group = i;
 			for (int j = 0; j < cardLists[i].size(); ++j) {
-				ind.card = j;
-
-				loc = engine.coordinatesOf(ind, loc);
+				loc = engine.coordinatesOf(i, j, loc);
 				loc = loc.plus(scrollX, scrollY);
 
 				if (loc.x < -WIDTH || loc.x > getWidth() || loc.y < -HEIGHT || loc.y > getHeight()) {
@@ -399,7 +534,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		Platform.runLater(() -> {
 			GraphicsContext gfx = getGraphicsContext2D();
-			gfx.clearRect(0, 0, getWidth(), getHeight());
+			gfx.setFill(Color.WHITE);
+			gfx.fillRect(0, 0, getWidth(), getHeight());
 			for (Map.Entry<MVec2d, Image> img : renderMap.entrySet()) {
 				gfx.drawImage(img.getValue(), img.getKey().x, img.getKey().y, WIDTH, HEIGHT);
 			}

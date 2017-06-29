@@ -16,7 +16,10 @@ import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SplitPane;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -86,10 +89,13 @@ public class MainWindow extends Application {
 
 		// Deck editing view
 		ObservableList<CardInstance> collectionModel = collectionModel(cs);
-		CardPane collectionView = new CardPane(is, collectionModel, "Flow");
-
 		ObservableList<CardInstance> deckModel = deckModel(cs);
-		CardPane deckEdit = new CardPane(is, deckModel, "Piles");
+
+		CardPane collectionView = new CardPane("Collection", is, collectionModel, "Flow");
+		collectionView.view().doubleClick(deckModel::add);
+
+		CardPane deckEdit = new CardPane("Mainboard", is, deckModel, "Piles");
+		deckEdit.view().doubleClick(deckModel::remove);
 
 		SplitPane splitter = new SplitPane();
 		splitter.getItems().addAll(collectionView, deckEdit);

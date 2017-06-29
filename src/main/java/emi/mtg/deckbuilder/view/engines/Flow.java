@@ -26,7 +26,7 @@ public class Flow implements CardView.LayoutEngine {
 			ys = new double[groupSizes.length];
 		}
 
-		stride = (int) Math.floor(parent.getWidth() / (PADDING + WIDTH + PADDING));
+		stride = Math.max(1, (int) Math.floor(parent.getWidth() / (PADDING + WIDTH + PADDING)));
 
 		double y = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
@@ -43,7 +43,7 @@ public class Flow implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public CardView.MVec2d coordinatesOf(CardView.Indices indices, CardView.MVec2d buffer) {
+	public CardView.MVec2d coordinatesOf(int group, int card, CardView.MVec2d buffer) {
 		if (this.ys == null) {
 			throw new IllegalStateException("Haven't layoutGroups yet!");
 		}
@@ -52,8 +52,8 @@ public class Flow implements CardView.LayoutEngine {
 			buffer = new CardView.MVec2d();
 		}
 
-		buffer.x = PADDING + (indices.card % stride) * (PADDING + WIDTH + PADDING);
-		buffer.y = ys[indices.group] + PADDING + Math.floor(indices.card / stride) * (PADDING + HEIGHT + PADDING);
+		buffer.x = PADDING + (card % stride) * (PADDING + WIDTH + PADDING);
+		buffer.y = ys[group] + PADDING + Math.floor(card / stride) * (PADDING + HEIGHT + PADDING);
 
 		return buffer;
 	}
@@ -74,11 +74,29 @@ public class Flow implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public int cardAt(CardView.MVec2d point, int groupSize) {
+	public int cardAt(CardView.MVec2d point, int group, int groupSize) {
 		if (this.ys == null) {
 			throw new IllegalStateException("Haven't layoutGroups yet!");
 		}
 
-		
+		double fRow = (point.y - ys[group]) / (PADDING + HEIGHT + PADDING);
+		int iRow = (int) Math.floor(fRow);
+		double yInRow = (fRow - iRow) * (PADDING + HEIGHT + PADDING);
+
+		if (yInRow < PADDING || yInRow > PADDING + HEIGHT) {
+			return -1;
+		}
+
+		double fCol = point.x / (PADDING + WIDTH + PADDING);
+		int iCol = (int) Math.floor(fCol);
+		double xInCol = (fCol - iCol) * (PADDING + HEIGHT + PADDING);
+
+		if (xInCol < PADDING || xInCol > PADDING + WIDTH) {
+			return -1;
+		}
+
+		int idx = iRow * stride + iCol;
+
+		return idx < 0 || idx >= groupSize ? -1 : idx;
 	}
 }
