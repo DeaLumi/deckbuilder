@@ -58,7 +58,7 @@ public class CardPane extends BorderPane {
 
 	private final CardView cardView;
 
-	private static final Pattern OMNIFILTER_PATTERN = Pattern.compile("(?:(?<characteristic>[^ :<>=]+)(?<operator>(?:[<>=]|:)))?(?<value>[^ \"]+|\"[^\"]*\")");
+	private static final Pattern OMNIFILTER_PATTERN = Pattern.compile("(?:(?<characteristic>[^ :<>=]+)(?<operator>(?:[<>=:])))?(?<value>[^ \"]+|\"[^\"]*\")");
 	private static final String OMNIFILTER_PROMPT = "text:rules o:text cmc>X type:\"supertype cardtype\" t:subtype";
 
 	private static final Predicate<CardInstance> createOmnifilter(String query) {
@@ -107,14 +107,8 @@ public class CardPane extends BorderPane {
 							case ">":
 								subPredicate = c -> c.card().manaCost().convertedCost() > ivalue;
 								break;
-							case ">=":
-								subPredicate = c -> c.card().manaCost().convertedCost() >= ivalue;
-								break;
 							case "<":
 								subPredicate = c -> c.card().manaCost().convertedCost() < ivalue;
-								break;
-							case "<=":
-								subPredicate = c -> c.card().manaCost().convertedCost() <= ivalue;
 								break;
 							default:
 								throw new Error("Unrecognized operator " + m.group("operator"));

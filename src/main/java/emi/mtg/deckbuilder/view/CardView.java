@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 
 public class CardView extends Canvas implements ListChangeListener<CardInstance> {
 	// TODO: Turn these into properties that can change? This renderer is FAST!
-	public static final double WIDTH = 200.0;
-	public static final double HEIGHT = 280.0;
-	public static final double PADDING = WIDTH / 20.0;
+	public static final double WIDTH = 220.0;
+	public static final double HEIGHT = 308.0;
+	public static final double PADDING = WIDTH / 40.0;
 
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
