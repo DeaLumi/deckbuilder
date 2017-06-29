@@ -91,6 +91,13 @@ public class CardPane extends BorderPane {
 					case "type":
 						subPredicate = c -> c.card().type().toString().toLowerCase().contains(value.toLowerCase());
 						break;
+					case "set":
+						subPredicate = c -> c.card().set().name().toLowerCase().contains(value.toLowerCase());
+						break;
+					case "setcode":
+					case "sc":
+						subPredicate = c -> c.card().set().code().equals(value.toUpperCase());
+						break;
 					case "cmc":
 						int ivalue = Integer.parseInt(value);
 						switch (m.group("operator")) {
