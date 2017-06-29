@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.view.v2;
+package emi.mtg.deckbuilder.view;
 
 import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.lib.mtg.data.ImageSource;

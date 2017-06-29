@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.view.v2;
+package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;

@@ -1,9 +1,9 @@
-package emi.mtg.deckbuilder.view.v2.engines;
+package emi.mtg.deckbuilder.view.engines;
 
 import emi.lib.Service;
-import emi.mtg.deckbuilder.view.v2.CardView;
+import emi.mtg.deckbuilder.view.CardView;
 
-import static emi.mtg.deckbuilder.view.v2.CardView.*;
+import static emi.mtg.deckbuilder.view.CardView.*;
 
 @Service.Provider(CardView.LayoutEngine.class)
 @Service.Property.String(name="name", value="Piles")

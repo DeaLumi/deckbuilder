@@ -8,10 +8,10 @@ import emi.lib.mtg.characteristic.CardRarity;
 import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
 import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
+import emi.lib.mtg.data.xlhq.XlhqImageSource;
 import emi.mtg.deckbuilder.controller.SerdesControl;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
-import emi.mtg.deckbuilder.view.v2.CardPane;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
@@ -91,7 +91,8 @@ public class MainWindow extends Application {
 		ObservableList<CardInstance> deckModel = deckModel(cs);
 		CardPane deckEdit = new CardPane(is, deckModel, "Piles");
 
-		SplitPane splitter = new SplitPane(collectionView, deckEdit);
+		SplitPane splitter = new SplitPane();
+		splitter.getItems().addAll(collectionView, deckEdit);
 		splitter.setOrientation(Orientation.VERTICAL);
 
 		// Assembly
