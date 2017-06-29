@@ -138,7 +138,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		Bounds[] layoutGroups(int[] groupSizes);
 
 		MVec2d coordinatesOf(Indices indices, MVec2d buffer);
-		Indices indicesAt(MVec2d point, Indices buffer);
+		int groupAt(MVec2d point);
+		int cardAt(MVec2d point, int groupSize);
 	}
 
 	private static final Map<String, Service.Loader<LayoutEngine>.Stub> engineMap = new HashMap<>();

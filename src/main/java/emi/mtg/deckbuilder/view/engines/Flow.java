@@ -59,15 +59,26 @@ public class Flow implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public CardView.Indices indicesAt(CardView.MVec2d point, CardView.Indices buffer) {
+	public int groupAt(CardView.MVec2d point) {
 		if (this.ys == null) {
 			throw new IllegalStateException("Haven't layoutGroups yet!");
 		}
 
-		if (buffer == null) {
-			buffer = new CardView.Indices();
+		for (int i = 0; i < ys.length; ++i) {
+			if (ys[i] > point.y) {
+				return i - 1;
+			}
 		}
 
-		return buffer;
+		return -1;
+	}
+
+	@Override
+	public int cardAt(CardView.MVec2d point, int groupSize) {
+		if (this.ys == null) {
+			throw new IllegalStateException("Haven't layoutGroups yet!");
+		}
+
+		
 	}
 }

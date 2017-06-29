@@ -42,19 +42,24 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public CardView.Indices indicesAt(CardView.MVec2d point, CardView.Indices buffer) {
-		if (buffer == null) {
-			buffer = new CardView.Indices();
+	public int groupAt(CardView.MVec2d point) {
+		return (int) (point.x / (PADDING + WIDTH + PADDING));
+	}
+
+	@Override
+	public int cardAt(CardView.MVec2d point, int groupSize) {
+		if (point.x < PADDING || point.x > PADDING + WIDTH) {
+			return -1;
 		}
 
-		buffer.group = (int) (point.x / (WIDTH + PADDING + WIDTH));
-		if (buffer.group < 0) {
-			buffer.card = 0;
-			return buffer;
+		if (point.y < PADDING || point.y > PADDING + (HEIGHT * OVERLAP_FACTOR) * (groupSize - 1) + HEIGHT) {
+			return -1;
 		}
 
-		buffer.card = (int) ((point.y - PADDING) / (HEIGHT * OVERLAP_FACTOR));
+		if (point.y > PADDING + (HEIGHT * OVERLAP_FACTOR) * (groupSize - 1)) {
+			return groupSize - 1;
+		}
 
-		return buffer;
+		return (int) ((point.y - PADDING) / (HEIGHT * OVERLAP_FACTOR));
 	}
 }
