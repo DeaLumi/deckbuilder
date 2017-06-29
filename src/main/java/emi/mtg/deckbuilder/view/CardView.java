@@ -23,8 +23,8 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class CardView extends Canvas implements ListChangeListener<CardInstance> {
 	// TODO: Turn these into properties that can change? This renderer is FAST!
@@ -120,7 +120,17 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		int cardAt(MVec2d point, int group, int groupSize);
 	}
 
+	@Service
+	@Service.Property.String(name="name")
+	public interface Grouping {
+		String[] groups();
+		String extract(CardInstance ci);
+		void add(CardInstance ci, String which);
+		void remove(CardInstance ci, String which);
+	}
+
 	private static final Map<String, Service.Loader<LayoutEngine>.Stub> engineMap = new HashMap<>();
+	private static final Map<String, Grouping> groupingMap;
 
 	static {
 		Service.Loader<LayoutEngine> loader = Service.Loader.load(LayoutEngine.class);
@@ -128,10 +138,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		for (Service.Loader<LayoutEngine>.Stub stub : loader) {
 			engineMap.put(stub.string("name"), stub);
 		}
+
+		groupingMap = Service.Loader.load(Grouping.class).stream()
+				.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
 	}
 
 	public static Set<String> engineNames() {
 		return CardView.engineMap.keySet();
+	}
+	public static Set<String> groupingNames() {
+		return CardView.groupingMap.keySet();
 	}
 
 	private static final Map<Card, Image> imageCache = new HashMap<>();
@@ -148,8 +164,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private LayoutEngine engine;
 	private Predicate<CardInstance> filter;
 	private Comparator<CardInstance> sort;
-	private String[] groups;
-	private Function<CardInstance, String> groupExtractor;
+	private Grouping grouping;
 
 	private final Map<String, Integer> groupIndexMap;
 
@@ -161,7 +176,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private Consumer<CardInstance> doubleClick;
 
-	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine) {
+	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine, String grouping) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
@@ -172,12 +187,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.sortedModel = this.filteredModel.sorted(this.sort = CardPane.COLOR_SORT.thenComparing(CardPane.NAME_SORT));
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
-		this.groups = CardPane.CMC_GROUPS;
-		this.groupExtractor = CardPane.CMC_GROUP_EXTRACTOR;
-		this.groupIndexMap = new HashMap<>();
+		this.grouping = CardView.groupingMap.get(grouping);
 
-		for (int i = 0; i < this.groups.length; ++i) {
-			this.groupIndexMap.put(this.groups[i], i);
+		this.groupIndexMap = new HashMap<>();
+		if (this.grouping != null) {
+			for (int i = 0; i < this.grouping.groups().length; ++i) {
+				this.groupIndexMap.put(this.grouping.groups()[i], i);
+			}
 		}
 
 		this.scrollX = this.scrollY = 0;
@@ -283,7 +299,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		// TODO: Optimize to "take Nth and count"? Only really reduces memory usage.
 		CardInstance[] cardsInGroup = this.sortedModel.stream()
-				.filter(ci -> groups[group].equals(groupExtractor.apply(ci)))
+				.filter(ci -> grouping.groups()[group].equals(grouping.extract(ci)))
 				.toArray(CardInstance[]::new);
 
 		int card = this.engine.cardAt(point, group, cardsInGroup.length);
@@ -312,16 +328,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.sortedModel.setComparator(sort);
 	}
 
-	public void group(String[] groups, Function<CardInstance, String> groupExtractor) {
-		this.groups = groups;
-
-		this.groupIndexMap.clear();
-		for (int i = 0; i < groups.length; ++i) {
-			this.groupIndexMap.put(groups[i], i);
+	public void group(String grouping) {
+		if (CardView.groupingMap.containsKey(grouping)) {
+			this.grouping = CardView.groupingMap.get(grouping);
+			groupIndexMap.clear();
+			for (int i = 0; i < this.grouping.groups().length; ++i) {
+				groupIndexMap.put(this.grouping.groups()[i], i);
+			}
+			scheduleRender();
 		}
-
-		this.groupExtractor = groupExtractor;
-		scheduleRender();
 	}
 
 	public void dragModes(TransferMode... dragModes) {
@@ -407,7 +422,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	protected void render() {
-		if (engine == null) {
+		if (engine == null || grouping == null) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
 				gfx.setFill(Color.WHITE);
@@ -415,7 +430,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				gfx.setTextAlign(TextAlignment.CENTER);
 				gfx.setFill(Color.BLACK);
 				gfx.setFont(new Font(null, getHeight() / 10.0));
-				gfx.fillText("Select a valid display layout.", getWidth() / 2, getHeight() / 2);
+				gfx.fillText("Select a valid display layout/card grouping.", getWidth() / 2, getHeight() / 2);
 			});
 			return;
 		}
@@ -446,12 +461,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		int[] groupSizes = new int[groups.length];
-		CardList[] cardLists = new CardList[groups.length];
+		int[] groupSizes = new int[grouping.groups().length];
+		CardList[] cardLists = new CardList[groupSizes.length];
 
 		// One complete pass through the list... TODO: use streams?
 		for (CardInstance ci : sortedModel) {
-			final int i = groupIndexMap.get(groupExtractor.apply(ci));
+			final int i = groupIndexMap.get(grouping.extract(ci));
 			if (cardLists[i] == null) {
 				cardLists[i] = new CardList();
 			}
@@ -491,7 +506,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		SortedMap<MVec2d, Image> renderMap = new TreeMap<>();
 		MVec2d loc = new MVec2d();
 
-		for (int i = 0; i < groups.length; ++i) {
+		for (int i = 0; i < cardLists.length; ++i) {
 			if (cardLists[i] == null) {
 				continue;
 			}

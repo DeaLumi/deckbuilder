@@ -8,7 +8,7 @@ import static emi.mtg.deckbuilder.view.CardView.PADDING;
 import static emi.mtg.deckbuilder.view.CardView.WIDTH;
 
 @Service.Provider(CardView.LayoutEngine.class)
-@Service.Property.String(name="name", value="Flow")
+@Service.Property.String(name="name", value="Flow Grid")
 public class Flow implements CardView.LayoutEngine {
 	private final CardView parent;
 	private int stride;

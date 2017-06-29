@@ -12,6 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.text.Font;
 
 import java.util.Comparator;
 import java.util.function.Function;
@@ -130,8 +131,29 @@ public class CardPane extends BorderPane {
 	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine) {
 		super();
 
-		this.cardView = new CardView(images, model, initEngine);
+		this.cardView = new CardView(images, model, initEngine, "CMC");
 		this.setCenter(this.cardView);
+
+		Label label = new Label(title);
+		label.setFont(Font.font(18.0));
+
+		TextField filter = new TextField();
+		filter.setPromptText(OMNIFILTER_PROMPT);
+		filter.setPrefWidth(250.0);
+		filter.setOnAction(ae -> {
+			this.cardView.filter(createOmnifilter(filter.getText()));
+			this.cardView.requestFocus();
+		});
+
+		ComboBox<String> groupingBox = new ComboBox<>();
+		groupingBox.setValue("CMC");
+		groupingBox.setOnAction(ae -> {
+			this.cardView.group(groupingBox.getValue());
+			this.cardView.requestFocus();
+		});
+		for (String grouping : CardView.groupingNames()) {
+			groupingBox.getItems().add(grouping);
+		}
 
 		ComboBox<String> displayBox = new ComboBox<>();
 		displayBox.setValue(initEngine);
@@ -143,19 +165,14 @@ public class CardPane extends BorderPane {
 			displayBox.getItems().add(engine);
 		}
 
-		TextField filter = new TextField();
-		filter.setPromptText(OMNIFILTER_PROMPT);
-		filter.setPrefWidth(250.0);
-		filter.setOnAction(ae -> {
-			this.cardView.filter(createOmnifilter(filter.getText()));
-			this.cardView.requestFocus();
-		});
-
 		HBox controlBar = new HBox(8.0);
 		controlBar.setPadding(new Insets(8.0));
 		controlBar.setAlignment(Pos.BASELINE_LEFT);
-		controlBar.getChildren().add(new Label(title));
+		controlBar.getChildren().add(label);
 		controlBar.getChildren().add(filter);
+		controlBar.getChildren().add(new Label("Group by:"));
+		controlBar.getChildren().add(groupingBox);
+		controlBar.getChildren().add(new Label("Display as:"));
 		controlBar.getChildren().add(displayBox);
 		HBox.setHgrow(filter, Priority.SOMETIMES);
 		this.setTop(controlBar);

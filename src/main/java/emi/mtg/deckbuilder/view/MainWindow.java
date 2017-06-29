@@ -91,7 +91,7 @@ public class MainWindow extends Application {
 		ObservableList<CardInstance> collectionModel = collectionModel(cs);
 		ObservableList<CardInstance> deckModel = deckModel(cs);
 
-		CardPane collectionView = new CardPane("Collection", is, collectionModel, "Flow");
+		CardPane collectionView = new CardPane("Collection", is, collectionModel, "Flow Grid");
 		collectionView.view().doubleClick(deckModel::add);
 
 		CardPane deckEdit = new CardPane("Mainboard", is, deckModel, "Piles");
