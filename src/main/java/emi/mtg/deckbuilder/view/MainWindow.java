@@ -69,7 +69,7 @@ public class MainWindow extends Application {
 	@Override
 	public void start(Stage stage) throws Exception {
 		CardSource cs = new MtgJsonCardSource();
-		ImageSource is = new RenderedImageSource(); // new XlhqImageSource();
+		ImageSource is = new UnifiedImageSource(); // new XlhqImageSource(); // new RenderedImageSource();
 
 		Gson gson = new GsonBuilder()
 				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))
