@@ -4,6 +4,7 @@ import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.ImageSource;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -19,7 +20,9 @@ import javafx.scene.text.*;
 
 import javax.imageio.ImageIO;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.EnumMap;
@@ -40,8 +43,6 @@ public class RenderedImageSource implements ImageSource {
 			throw new Error("Unable to create a directory for rendered images...");
 		}
 	}
-
-	private final Map<Card, URL> imageCache = new HashMap<>();
 
 	private static Font fallback(FontWeight weight, FontPosture posture, double size, String... families) {
 		Font font;
@@ -275,50 +276,41 @@ public class RenderedImageSource implements ImageSource {
 		}
 	}
 
-	@Override
-	public URL find(Card card) {
-		if (!imageCache.containsKey(card)) {
-			File f = new File(new File(PARENT_DIR, String.format("s%s", card.set().code())), String.format("%s%s.png", card.name(), card.variation() > 0 ? Integer.toString(card.variation()) : ""));
+	public InputStream open(Card card) throws IOException {
+		File f = new File(new File(PARENT_DIR, String.format("s%s", card.set().code())), String.format("%s%s.png", card.name(), card.variation() > 0 ? Integer.toString(card.variation()) : ""));
 
-			if (f.exists()) {
-				try {
-					return f.toURI().toURL();
-				} catch (MalformedURLException e) {
-					throw new Error(e);
-				}
-			}
+		if (f.exists()) {
+			return new FileInputStream(f);
+		}
 
-			CardRenderLayout layout = new CardRenderLayout(card);
+		CardRenderLayout layout = new CardRenderLayout(card);
 
-			Platform.runLater(() -> {
+		Task<Void> imageRenderTask = new Task<Void>() {
+			@Override
+			protected Void call() throws Exception {
 				Scene scene = new Scene(layout, WIDTH, HEIGHT, Color.TRANSPARENT);
 
 				if (!f.getParentFile().exists() && !f.mkdirs()) {
 					throw new Error("Unable to create parent directories for " + f.getAbsolutePath());
 				}
 
-				try {
-					WritableImage image = scene.snapshot(null);
-					ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", f);
+				WritableImage image = scene.snapshot(null);
+				ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", f);
+				return null;
+			}
+		};
 
-					synchronized(RenderedImageSource.this) {
-						imageCache.put(card, f.toURI().toURL());
-					}
-				} catch (IOException e) {
-					throw new Error(e);
-				}
-			});
+		Platform.runLater(imageRenderTask);
 
-			while (!imageCache.containsKey(card)) {
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-					return null;
-				}
+		// I don't like blocking here...
+		while (!imageRenderTask.isDone()) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException ie) {
+				break;
 			}
 		}
 
-		return imageCache.get(card);
+		return new FileInputStream(f);
 	}
 }
