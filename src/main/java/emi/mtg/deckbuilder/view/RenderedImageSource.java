@@ -34,6 +34,7 @@ import java.util.Map;
  */
 @Service.Provider(ImageSource.class)
 @Service.Property.String(name="name", value="Cheap Card Renderer")
+@Service.Property.Number(name="priority", value=0.01)
 public class RenderedImageSource implements ImageSource {
 
 	private static final File PARENT_DIR = new File(new File("images"), "rendered");
