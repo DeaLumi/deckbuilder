@@ -19,6 +19,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
@@ -185,6 +186,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.model = model;
 		this.filteredModel = this.model.filtered(this.filter = ci -> true);
 		this.sortedModel = this.filteredModel.sorted(this.sort = CardPane.COLOR_SORT.thenComparing(CardPane.NAME_SORT));
+		this.sortedModel.addListener(this);
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
 		this.grouping = CardView.groupingMap.get(grouping);
@@ -395,21 +397,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	@Override
 	public void onChanged(Change<? extends CardInstance> c) {
-		while (c.next()) {
-			if (!c.wasAdded()) {
-				continue;
-			}
-
-			// TODO: Background load here
-			for (CardInstance ci : c.getAddedSubList()) {
-				URL url = this.images.find(ci.card());
-
-				if (url != null) {
-					imageCache.put(ci.card(), new Image(url.toString(), WIDTH, HEIGHT, true, true));
-				}
-			}
-		}
-
 		scheduleRender();
 	}
 
@@ -531,12 +518,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					renderMap.put(new MVec2d(loc), CardView.imageCache.get(card));
 				} else {
 					renderMap.put(new MVec2d(loc), CARD_BACK);
+					CardView.imageCache.put(card, CARD_BACK);
 
 					ForkJoinPool.commonPool().submit(() -> {
-						URL url = this.images.find(card);
+						InputStream in = this.images.openSafely(card);
 
-						if (url != null) {
-							CardView.imageCache.put(card, new Image(url.toString(), WIDTH, HEIGHT, true, true, false));
+						if (in != null) {
+							CardView.imageCache.put(card, new Image(in, WIDTH, HEIGHT, true, true));
 							scheduleRender();
 						} else {
 							System.err.println("Unable to load image for " + card.set().code() + "/" + card.name());
