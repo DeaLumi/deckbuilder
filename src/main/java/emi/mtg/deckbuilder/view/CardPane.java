@@ -15,7 +15,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 
 import java.util.Comparator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,12 +48,6 @@ public class CardPane extends BorderPane {
 
 		return 0;
 	};
-
-	public final static String[] CMC_GROUPS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "X" };
-	public final static Function<CardInstance, String> CMC_GROUP_EXTRACTOR = c -> c.card().manaCost().varies() ? "X" : Integer.toString(c.card().manaCost().convertedCost());
-
-	public final static String[] RARITY_GROUPS = { "Special", "Mythic Rare", "Rare", "Uncommon", "Common", "Basic Land" };
-	public final static Function<CardInstance, String> RARITY_GROUP = c -> c.card().rarity().toString();
 
 	private final CardView cardView;
 
