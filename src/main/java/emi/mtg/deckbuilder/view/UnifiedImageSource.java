@@ -11,9 +11,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Created by Emi on 6/29/2017.
- */
 public class UnifiedImageSource implements ImageSource {
 	private static final List<ImageSource> sources;
 

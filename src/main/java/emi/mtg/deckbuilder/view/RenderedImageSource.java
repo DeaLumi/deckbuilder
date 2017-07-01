@@ -29,9 +29,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by Emi on 6/19/2017.
- */
 @Service.Provider(ImageSource.class)
 @Service.Property.String(name="name", value="Cheap Card Renderer")
 @Service.Property.Number(name="priority", value=0.01)

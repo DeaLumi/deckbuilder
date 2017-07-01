@@ -3,9 +3,6 @@ package emi.mtg.deckbuilder.model;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by Emi on 5/20/2017.
- */
 public class DeckList {
 
 	public final String name;

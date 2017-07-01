@@ -10,9 +10,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Created by Emi on 6/15/2017.
- */
 public class CardInstance implements Serializable {
 	public static TypeAdapter<Card> createCardAdapter(CardSource cards) {
 		return new TypeAdapter<Card>() {

@@ -5,9 +5,6 @@ import emi.lib.mtg.characteristic.ManaCost;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.CardView;
 
-/**
- * Created by stuyvenberg on 6/29/17.
- */
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="CMC")
 public class ConvertedManaCost implements CardView.Grouping {

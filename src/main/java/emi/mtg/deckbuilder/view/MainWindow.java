@@ -29,9 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Emi on 5/20/2017.
- */
 public class MainWindow extends Application {
 	public static void main(String[] args) {
 		launch(args);

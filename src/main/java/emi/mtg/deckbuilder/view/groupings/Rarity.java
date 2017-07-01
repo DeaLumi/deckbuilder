@@ -7,9 +7,6 @@ import emi.mtg.deckbuilder.view.CardView;
 
 import java.util.Arrays;
 
-/**
- * Created by stuyvenberg on 6/29/17.
- */
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="Rarity")
 public class Rarity implements CardView.Grouping {

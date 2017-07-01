@@ -8,9 +8,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-/**
- * Created by Emi on 6/22/2017.
- */
 public class SerdesControl {
 	private final Gson gson;
 
