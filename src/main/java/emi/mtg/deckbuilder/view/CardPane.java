@@ -159,6 +159,16 @@ public class CardPane extends BorderPane {
 			displayBox.getItems().add(engine);
 		}
 
+		ComboBox<String> sortingBox = new ComboBox<>();
+		sortingBox.setValue("Mana Cost");
+		sortingBox.setOnAction(ae -> {
+			this.cardView.sort(sortingBox.getValue());
+			this.cardView.requestFocus();
+		});
+		for (String sorting : CardView.sortingNames()) {
+			sortingBox.getItems().add(sorting);
+		}
+
 		HBox controlBar = new HBox(8.0);
 		controlBar.setPadding(new Insets(8.0));
 		controlBar.setAlignment(Pos.BASELINE_LEFT);

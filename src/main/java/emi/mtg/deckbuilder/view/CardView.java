@@ -129,8 +129,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		void remove(CardInstance ci, String which);
 	}
 
+	@Service
+	@Service.Property.String(name="name")
+	public interface Sorting extends Comparator<CardInstance> {
+		// nothing to do...
+	}
+
 	private static final Map<String, Service.Loader<LayoutEngine>.Stub> engineMap = new HashMap<>();
 	private static final Map<String, Grouping> groupingMap;
+	private static final Map<String, Sorting> sortingMap;
 
 	static {
 		Service.Loader<LayoutEngine> loader = Service.Loader.load(LayoutEngine.class);
@@ -141,6 +148,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		groupingMap = Service.Loader.load(Grouping.class).stream()
 				.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
+
+		sortingMap = Service.Loader.load(Sorting.class).stream()
+				.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
 	}
 
 	public static Set<String> engineNames() {
@@ -148,6 +158,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 	public static Set<String> groupingNames() {
 		return CardView.groupingMap.keySet();
+	}
+	public static Set<String> sortingNames() {
+		return CardView.sortingMap.keySet();
 	}
 
 	private static final Map<Card, Image> imageCache = new HashMap<>();
@@ -324,9 +337,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.filteredModel.setPredicate(filter);
 	}
 
-	public void sort(Comparator<CardInstance> sort) {
-		this.sort = sort;
-		this.sortedModel.setComparator(sort);
+	public void sort(String sort) {
+		if (CardView.sortingMap.containsKey(sort)) {
+			this.sort = CardView.sortingMap.get(sort);
+			this.sortedModel.setComparator(this.sort);
+		}
 	}
 
 	public void group(String grouping) {
