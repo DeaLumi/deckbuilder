@@ -2,7 +2,6 @@ package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
-import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
@@ -521,7 +520,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					CardView.imageCache.put(card, CARD_BACK);
 
 					ForkJoinPool.commonPool().submit(() -> {
-						InputStream in = this.images.openSafely(card, CardFace.Kind.Front);
+						InputStream in = this.images.openSafely(card.front());
 
 						if (in != null) {
 							CardView.imageCache.put(card, new Image(in, WIDTH, HEIGHT, true, true));
