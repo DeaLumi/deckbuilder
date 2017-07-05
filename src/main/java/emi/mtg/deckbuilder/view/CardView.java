@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
+import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
@@ -150,8 +150,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return CardView.groupingMap.keySet();
 	}
 
-	private static final Map<Card, Image> imageCache = new HashMap<>();
-	private static final Map<Card, Image> thumbanilCache = new HashMap<>();
+	private static final Map<CardFace, Image> imageCache = new HashMap<>();
+	private static final Map<CardFace, Image> thumbanilCache = new HashMap<>();
 	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
 	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
 
@@ -512,7 +512,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					continue;
 				}
 
-				final Card card = cardLists[i].get(j).card();
+				final CardFace card = cardLists[i].get(j).card();
 				if (CardView.imageCache.containsKey(card)) {
 					renderMap.put(new MVec2d(loc), CardView.imageCache.get(card));
 				} else {

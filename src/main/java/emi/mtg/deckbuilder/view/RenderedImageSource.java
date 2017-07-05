@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
+import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -88,7 +88,7 @@ public class RenderedImageSource implements ImageSource {
 
 		private Map<Characteristic, Node> nodes = new EnumMap<>(Characteristic.class);
 
-		public CardRenderLayout(Card card) {
+		public CardRenderLayout(CardFace card) {
 			setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 15.0), new BorderWidths(WIDTH / 25.0))));
 
 			Color bgColor;
@@ -271,7 +271,7 @@ public class RenderedImageSource implements ImageSource {
 		}
 	}
 
-	public InputStream open(Card card) throws IOException {
+	public InputStream open(CardFace card) throws IOException {
 		File f = new File(new File(PARENT_DIR, String.format("s%s", card.set().code())), String.format("%s%s.png", card.name(), card.variation() > 0 ? Integer.toString(card.variation()) : ""));
 
 		if (f.exists()) {

@@ -3,7 +3,7 @@ package emi.mtg.deckbuilder.view;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sun.javafx.collections.ObservableListWrapper;
-import emi.lib.mtg.card.Card;
+import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.characteristic.CardRarity;
 import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
@@ -68,7 +68,7 @@ public class MainWindow extends Application {
 		ImageSource is = new UnifiedImageSource(); // new XlhqImageSource(); // new RenderedImageSource();
 
 		Gson gson = new GsonBuilder()
-				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))
+				.registerTypeHierarchyAdapter(CardFace.class, CardInstance.createCardAdapter(cs))
 				.setPrettyPrinting()
 				.create();
 

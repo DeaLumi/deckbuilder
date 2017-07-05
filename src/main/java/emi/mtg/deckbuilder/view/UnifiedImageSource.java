@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
+import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 
 import java.io.IOException;
@@ -21,7 +21,7 @@ public class UnifiedImageSource implements ImageSource {
 	}
 
 	@Override
-	public InputStream open(Card card) throws IOException {
+	public InputStream open(CardFace card) throws IOException {
 		for (ImageSource source : sources) {
 			try {
 				InputStream input = source.open(card);
