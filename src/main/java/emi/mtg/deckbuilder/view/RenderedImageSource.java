@@ -89,7 +89,7 @@ public class RenderedImageSource implements ImageSource {
 
 		private Map<Characteristic, Node> nodes = new EnumMap<>(Characteristic.class);
 
-		public CardRenderLayout(Card card, CardFace face) {
+		public CardRenderLayout(CardFace face) {
 			setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 15.0), new BorderWidths(WIDTH / 25.0))));
 
 			Color bgColor;
@@ -146,7 +146,7 @@ public class RenderedImageSource implements ImageSource {
 			}
 
 			{
-				Label set = new Label(String.format("%s-%s", card.set().code(), card.rarity().name().substring(0, 1)));
+				Label set = new Label(String.format("%s-%s", face.card().set().code(), face.card().rarity().name().substring(0, 1)));
 				set.setFont(NAME_FONT);
 				getChildren().add(set);
 				nodes.put(Characteristic.SetCode, set);
@@ -273,14 +273,14 @@ public class RenderedImageSource implements ImageSource {
 	}
 
 	@Override
-	public InputStream open(Card card, CardFace.Kind face) throws IOException {
-		File f = new File(new File(PARENT_DIR, String.format("s%s", card.set().code())), String.format("%s%d.png", card.face(face).name(), card.variation()));
+	public InputStream open(CardFace face) throws IOException {
+		File f = new File(new File(PARENT_DIR, String.format("s%s", face.card().set().code())), String.format("%s%d.png", face.name(), face.card().variation()));
 
 		if (f.exists()) {
 			return new FileInputStream(f);
 		}
 
-		CardRenderLayout layout = new CardRenderLayout(card, card.face(face));
+		CardRenderLayout layout = new CardRenderLayout(face);
 
 		Task<Void> imageRenderTask = new Task<Void>() {
 			@Override

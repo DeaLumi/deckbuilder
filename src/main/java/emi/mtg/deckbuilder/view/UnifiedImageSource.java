@@ -22,10 +22,10 @@ public class UnifiedImageSource implements ImageSource {
 	}
 
 	@Override
-	public InputStream open(Card card, CardFace.Kind face) throws IOException {
+	public InputStream open(CardFace face) throws IOException {
 		for (ImageSource source : sources) {
 			try {
-				InputStream input = source.open(card, face);
+				InputStream input = source.open(face);
 
 				if (input != null) {
 					return input;
