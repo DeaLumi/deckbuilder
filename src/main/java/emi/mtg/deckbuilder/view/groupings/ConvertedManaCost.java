@@ -17,7 +17,7 @@ public class ConvertedManaCost implements CardView.Grouping {
 
 	@Override
 	public String extract(CardInstance ci) {
-		ManaCost mc = ci.card().manaCost();
+		ManaCost mc = ci.card().front().manaCost();
 		return mc.varies() ? "X" : Integer.toString(mc.convertedCost());
 	}
 

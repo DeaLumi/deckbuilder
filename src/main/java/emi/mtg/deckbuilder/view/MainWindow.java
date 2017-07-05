@@ -35,7 +35,8 @@ public class MainWindow extends Application {
 
 	private ObservableList<CardInstance> collectionModel(CardSource cs) {
 		List<CardInstance> cards = new ArrayList<>();
-		cs.cards().stream()
+		cs.sets().stream()
+				.flatMap(s -> s.cards().stream())
 //				.filter(c -> "Storm Crow".equals(c.name()))
 //				.filter(c -> "AVR".equals(c.set().code()) || "ALL".equals(c.set().code()))
 //				.filter(c -> c.manaCost() != null && c.manaCost().convertedCost() <= 4)
@@ -49,7 +50,8 @@ public class MainWindow extends Application {
 
 	private ObservableList<CardInstance> deckModel(CardSource cs) {
 		List<CardInstance> cards = new ArrayList<>();
-		cs.cards().stream()
+		cs.sets().stream()
+				.flatMap(s -> s.cards().stream())
 //				.filter(c -> "Storm Crow".equals(c.name()))
 				.filter(c -> "AVR".equals(c.set().code()))
 //				.filter(c -> c.manaCost() != null && c.manaCost().convertedCost() <= 4)

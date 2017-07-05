@@ -38,8 +38,8 @@ public class CardPane extends BorderPane {
 
 		for (int i = emi.lib.mtg.characteristic.Color.values().length - 1; i >= 0; --i) {
 			emi.lib.mtg.characteristic.Color c = emi.lib.mtg.characteristic.Color.values()[i];
-			long n1 = -c1.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
-			long n2 = -c2.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
+			long n1 = -c1.card().front().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
+			long n2 = -c2.card().front().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
 
 			if (n1 != n2) {
 				return (int) (n2 - n1);
@@ -76,11 +76,11 @@ public class CardPane extends BorderPane {
 				switch (characteristic) {
 					case "o":
 					case "text":
-						subPredicate = c -> c.card().text().toLowerCase().contains(value.toLowerCase());
+						subPredicate = c -> c.card().front().text().toLowerCase().contains(value.toLowerCase());
 						break;
 					case "t":
 					case "type":
-						subPredicate = c -> c.card().type().toString().toLowerCase().contains(value.toLowerCase());
+						subPredicate = c -> c.card().front().type().toString().toLowerCase().contains(value.toLowerCase());
 						break;
 					case "set":
 						subPredicate = c -> c.card().set().name().toLowerCase().contains(value.toLowerCase());
@@ -93,13 +93,13 @@ public class CardPane extends BorderPane {
 						int ivalue = Integer.parseInt(value);
 						switch (m.group("operator")) {
 							case "=":
-								subPredicate = c -> c.card().manaCost().convertedCost() == ivalue;
+								subPredicate = c -> c.card().front().manaCost().convertedCost() == ivalue;
 								break;
 							case ">":
-								subPredicate = c -> c.card().manaCost().convertedCost() > ivalue;
+								subPredicate = c -> c.card().front().manaCost().convertedCost() > ivalue;
 								break;
 							case "<":
-								subPredicate = c -> c.card().manaCost().convertedCost() < ivalue;
+								subPredicate = c -> c.card().front().manaCost().convertedCost() < ivalue;
 								break;
 							default:
 								throw new Error("Unrecognized operator " + m.group("operator"));

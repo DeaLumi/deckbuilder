@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
+import emi.lib.mtg.card.Card;
 import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 import javafx.application.Platform;
@@ -88,16 +89,16 @@ public class RenderedImageSource implements ImageSource {
 
 		private Map<Characteristic, Node> nodes = new EnumMap<>(Characteristic.class);
 
-		public CardRenderLayout(CardFace card) {
+		public CardRenderLayout(Card card, CardFace face) {
 			setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 15.0), new BorderWidths(WIDTH / 25.0))));
 
 			Color bgColor;
-			if (card.color().size() > 1) {
+			if (face.color().size() > 1) {
 				bgColor = Color.PALEGOLDENROD;
-			} else if (card.color().isEmpty()) {
+			} else if (face.color().isEmpty()) {
 				bgColor = Color.LIGHTGRAY;
 			} else {
-				switch (card.color().iterator().next()) {
+				switch (face.color().iterator().next()) {
 					case WHITE:
 						bgColor = Color.WHITE;
 						break;
@@ -124,21 +125,21 @@ public class RenderedImageSource implements ImageSource {
 			setBackground(new Background(new BackgroundFill(bgColor, new CornerRadii(WIDTH / 12.0), null)));
 
 			{
-				Label name = new Label(card.name());
+				Label name = new Label(face.name());
 				name.setFont(NAME_FONT);
 				getChildren().add(name);
 				nodes.put(Characteristic.Name, name);
 			}
 
 			{
-				Label mc = new Label(card.manaCost().toString());
+				Label mc = new Label(face.manaCost().toString());
 				mc.setFont(NAME_FONT);
 				getChildren().add(mc);
 				nodes.put(Characteristic.ManaCost, mc);
 			}
 
 			{
-				Label type = new Label(card.type().toString());
+				Label type = new Label(face.type().toString());
 				type.setFont(NAME_FONT);
 				getChildren().add(type);
 				nodes.put(Characteristic.TypeLine, type);
@@ -152,7 +153,7 @@ public class RenderedImageSource implements ImageSource {
 			}
 
 			{
-				Label rules = new Label(card.text());
+				Label rules = new Label(face.text());
 				rules.setWrapText(true);
 				rules.setFont(TEXT_FONT);
 				getChildren().add(rules);
@@ -160,7 +161,7 @@ public class RenderedImageSource implements ImageSource {
 			}
 
 			{
-				Label flavor = new Label(card.flavor());
+				Label flavor = new Label(face.flavor());
 				flavor.setWrapText(true);
 				flavor.setFont(FLAVOR_FONT);
 				getChildren().add(flavor);
@@ -169,10 +170,10 @@ public class RenderedImageSource implements ImageSource {
 
 			{
 				Label pt;
-				if (!card.power().isEmpty() && !card.toughness().isEmpty()) {
-					pt = new Label(String.format("%s / %s", card.power(), card.toughness()));
-				} else if (!card.loyalty().isEmpty()) {
-					pt = new Label(card.loyalty());
+				if (!face.power().isEmpty() && !face.toughness().isEmpty()) {
+					pt = new Label(String.format("%s / %s", face.power(), face.toughness()));
+				} else if (!face.loyalty().isEmpty()) {
+					pt = new Label(face.loyalty());
 				} else {
 					pt = new Label("");
 				}
@@ -271,14 +272,15 @@ public class RenderedImageSource implements ImageSource {
 		}
 	}
 
-	public InputStream open(CardFace card) throws IOException {
-		File f = new File(new File(PARENT_DIR, String.format("s%s", card.set().code())), String.format("%s%s.png", card.name(), card.variation() > 0 ? Integer.toString(card.variation()) : ""));
+	@Override
+	public InputStream open(Card card, CardFace.Kind face) throws IOException {
+		File f = new File(new File(PARENT_DIR, String.format("s%s", card.set().code())), String.format("%s%d.png", card.face(face).name(), card.variation()));
 
 		if (f.exists()) {
 			return new FileInputStream(f);
 		}
 
-		CardRenderLayout layout = new CardRenderLayout(card);
+		CardRenderLayout layout = new CardRenderLayout(card, card.face(face));
 
 		Task<Void> imageRenderTask = new Task<Void>() {
 			@Override
