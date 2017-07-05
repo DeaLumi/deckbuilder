@@ -151,7 +151,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private static final Map<CardFace, Image> imageCache = new HashMap<>();
-	private static final Map<CardFace, Image> thumbanilCache = new HashMap<>();
+	private static final Map<CardFace, Image> thumbnailCache = new HashMap<>();
 	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
 	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
 
@@ -224,7 +224,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			Dragboard db = this.startDragAndDrop(dragModes);
-			db.setDragView(thumbanilCache.getOrDefault(draggingCard.card(), CARD_BACK_THUMB));
+			db.setDragView(thumbnailCache.getOrDefault(draggingCard.card(), CARD_BACK_THUMB));
 			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, draggingCard.card().name()));
 
 			de.consume();
