@@ -8,7 +8,6 @@ import emi.lib.mtg.characteristic.CardRarity;
 import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
 import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
-import emi.lib.mtg.data.xlhq.XlhqImageSource;
 import emi.mtg.deckbuilder.controller.SerdesControl;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;

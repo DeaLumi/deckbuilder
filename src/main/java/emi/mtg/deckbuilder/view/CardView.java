@@ -20,7 +20,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 
 import java.io.InputStream;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;

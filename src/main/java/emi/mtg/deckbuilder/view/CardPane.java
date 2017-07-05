@@ -49,8 +49,6 @@ public class CardPane extends BorderPane {
 		return 0;
 	};
 
-	private final CardView cardView;
-
 	private static final Pattern OMNIFILTER_PATTERN = Pattern.compile("(?:(?<characteristic>[^ :<>=]+)(?<operator>(?:[<>=:])))?(?<value>[^ \"]+|\"[^\"]*\")");
 	private static final String OMNIFILTER_PROMPT = "text:rules o:text cmc>X type:\"supertype cardtype\" t:subtype";
 
@@ -121,6 +119,8 @@ public class CardPane extends BorderPane {
 
 		return predicate;
 	}
+
+	private final CardView cardView;
 
 	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine) {
 		super();
