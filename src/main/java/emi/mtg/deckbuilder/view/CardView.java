@@ -573,7 +573,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						InputStream in = this.images.openSafely(card.front());
 
 						if (in != null) {
-							CardView.imageCache.put(card, new Image(in, WIDTH, HEIGHT, true, true));
+							CardView.imageCache.put(card, new Image(in, WIDTH*2.0, HEIGHT*2.0, true, true));
 							scheduleRender();
 						} else {
 							System.err.println("Unable to load image for " + card.set().code() + "/" + card.name());
