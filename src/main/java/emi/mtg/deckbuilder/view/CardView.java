@@ -14,6 +14,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -183,6 +184,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private double scrollX, scrollY;
 
+	private boolean panning;
+	private double lastDragX, lastDragY;
+
 	private CardList[] cardLists;
 	private CardInstance draggingCard;
 	private TransferMode[] dragModes, dropModes;
@@ -226,6 +230,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		});
 
 		setOnDragDetected(de -> {
+			if (de.getButton() != MouseButton.PRIMARY) {
+				return;
+			}
+
 			if (this.engine == null) {
 				return;
 			}
@@ -298,6 +306,33 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					scheduleRender();
 				}
 			}
+		});
+
+		setOnMousePressed(me -> {
+			if (me.getButton() == MouseButton.MIDDLE || (me.getButton() == MouseButton.PRIMARY && cardAt(me.getX(), me.getY()) == null)) {
+				panning = true;
+				lastDragX = me.getX();
+				lastDragY = me.getY();
+				me.consume();
+			}
+		});
+
+		setOnMouseDragged(me -> {
+			if (panning) {
+				scrollX += me.getX() - lastDragX;
+				scrollY += me.getY() - lastDragY;
+				scheduleRender();
+
+				lastDragX = me.getX();
+				lastDragY = me.getY();
+				me.consume();
+			}
+		});
+
+		setOnMouseReleased(me -> {
+			lastDragX = -1;
+			lastDragY = -1;
+			panning = false;
 		});
 
 		// TODO: Mouse drag panning
