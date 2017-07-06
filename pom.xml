@@ -16,7 +16,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>emi.lib</groupId>
+            <groupId>emi.lib.mtg</groupId>
             <artifactId>mtg</artifactId>
             <version>LATEST</version>
         </dependency>
