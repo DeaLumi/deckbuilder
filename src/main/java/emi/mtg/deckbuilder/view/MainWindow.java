@@ -157,12 +157,17 @@ public class MainWindow extends Application {
 			ObservableList<CardInstance> zoneCards = deckModel.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>()));
 			CardPane zoneEdit = new CardPane(zone.name(), is, zoneCards, "Piles");
 			zoneEdit.view().doubleClick(zoneCards::remove);
+			zoneEdit.view().dragModes(TransferMode.MOVE);
+			zoneEdit.view().dropModes(TransferMode.COPY_OR_MOVE);
 			deckPanes.put(zone, zoneEdit);
 		}
 
 		zoneSplitter = new SplitPane();
 		zoneSplitter.setOrientation(Orientation.HORIZONTAL);
 		sideboard = new CardPane("Sideboard", is, sideboardModel, "Piles");
+		sideboard.view().doubleClick(sideboardModel::remove);
+		sideboard.view().dragModes(TransferMode.MOVE);
+		sideboard.view().dropModes(TransferMode.COPY_OR_MOVE);
 		setFormat(formats.values().iterator().next());
 
 		SplitPane splitter = new SplitPane();
