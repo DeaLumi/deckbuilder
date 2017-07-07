@@ -10,6 +10,8 @@ import static emi.mtg.deckbuilder.view.CardView.*;
 public class Piles implements CardView.LayoutEngine {
 	private final static double OVERLAP_FACTOR = 0.125;
 
+	private double[] xs;
+
 	public Piles(CardView c) {
 
 	}
@@ -18,12 +20,19 @@ public class Piles implements CardView.LayoutEngine {
 	public CardView.Bounds[] layoutGroups(int[] groupSizes) {
 		CardView.Bounds[] bounds = new CardView.Bounds[groupSizes.length];
 
+		if (xs == null || xs.length != groupSizes.length) {
+			xs = new double[groupSizes.length];
+		}
+
+		double x = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
 			bounds[i] = new Bounds();
-			bounds[i].pos.x = (PADDING + WIDTH + PADDING) * i;
+			bounds[i].pos.x = xs[i] = x;
 			bounds[i].pos.y = 0.0;
-			bounds[i].dim.x = PADDING + WIDTH + PADDING;
+			bounds[i].dim.x = PADDING + (groupSizes[i] > 0 ? WIDTH : 0) + PADDING;
 			bounds[i].dim.y = PADDING + (HEIGHT * OVERLAP_FACTOR) * (groupSizes[i] - 1) + HEIGHT + PADDING;
+
+			x += bounds[i].dim.x;
 		}
 
 		return bounds;
@@ -31,11 +40,15 @@ public class Piles implements CardView.LayoutEngine {
 
 	@Override
 	public CardView.MVec2d coordinatesOf(int group, int card, CardView.MVec2d buffer) {
+		if (this.xs == null) {
+			throw new IllegalStateException("Haven't layoutGroups yet!");
+		}
+
 		if (buffer == null) {
 			buffer = new CardView.MVec2d();
 		}
 
-		buffer.x = (PADDING + WIDTH + PADDING) * group + PADDING;
+		buffer.x = xs[group] + PADDING;
 		buffer.y = PADDING + (HEIGHT * OVERLAP_FACTOR) * card;
 
 		return buffer;
@@ -43,12 +56,26 @@ public class Piles implements CardView.LayoutEngine {
 
 	@Override
 	public int groupAt(CardView.MVec2d point) {
-		return (int) (point.x / (PADDING + WIDTH + PADDING));
+		if (this.xs == null) {
+			throw new IllegalStateException("Haven't layoutGroups yet!");
+		}
+
+		for (int i = 0; i < xs.length; ++i) {
+			if (xs[i] > point.x) {
+				return i - 1;
+			}
+		}
+
+		return xs.length - 1;
 	}
 
 	@Override
 	public int cardAt(CardView.MVec2d point, int group, int groupSize) {
-		double x = point.x - group * (PADDING + WIDTH + PADDING);
+		if (this.xs == null) {
+			throw new IllegalStateException("Haven't layoutGroups yet!");
+		}
+
+		double x = point.x - xs[group];
 		if (x < PADDING || x > PADDING + WIDTH) {
 			return -1;
 		}

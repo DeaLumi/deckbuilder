@@ -70,7 +70,7 @@ public class Flow implements CardView.LayoutEngine {
 			}
 		}
 
-		return -1;
+		return ys.length - 1;
 	}
 
 	@Override
