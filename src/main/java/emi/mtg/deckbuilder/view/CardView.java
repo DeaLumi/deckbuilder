@@ -12,6 +12,7 @@ import javafx.collections.transformation.SortedList;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
@@ -33,6 +34,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	// TODO: Turn these into properties that can change? This renderer is FAST!
 	public static final double WIDTH = 220.0;
 	public static final double HEIGHT = 308.0;
+	public static final double ROUND_RADIUS = WIDTH / 10.0;
 	public static final double PADDING = WIDTH / 40.0;
 	private static final int MAX_CARDS_IN_VIEW = 1000;
 
@@ -586,7 +588,39 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						InputStream in = this.images.openSafely(card.front());
 
 						if (in != null) {
-							CardView.imageCache.put(card, new Image(in, WIDTH*2.0, HEIGHT*2.0, true, true));
+							Image src = new Image(in, WIDTH*2.0, HEIGHT*2.0, true, true);
+							WritableImage dst = new WritableImage((int) src.getWidth(), (int) src.getHeight());
+
+							for (int y = 0; y < src.getHeight(); ++y) {
+								for (int x = 0; x < src.getWidth(); ++x) {
+									Color c = src.getPixelReader().getColor(x, y);
+
+									// possibly modify color if near corner
+									double ux = -1, uy = -1;
+									if (x <= ROUND_RADIUS) {
+										ux = x;
+									} else if (x >= dst.getWidth() - ROUND_RADIUS) {
+										ux = dst.getWidth() - x;
+									}
+
+									if (y <= ROUND_RADIUS) {
+										uy = y;
+									} else if (y >= dst.getHeight() - ROUND_RADIUS) {
+										uy = dst.getHeight() - y;
+									}
+
+									if (ux >= 0 && uy >= 0) {
+										double dx = ux - ROUND_RADIUS, dy = uy - ROUND_RADIUS;
+										double d = Math.sqrt(dx*dx + dy*dy);
+										double dd = Math.max(ROUND_RADIUS - 0.5, Math.min(d, ROUND_RADIUS + 0.5));
+										c = c.interpolate(Color.TRANSPARENT, dd - ROUND_RADIUS + 0.5);
+									}
+
+									dst.getPixelWriter().setColor(x, y, c);
+								}
+							}
+
+							CardView.imageCache.put(card, dst);
 							scheduleRender();
 						} else {
 							System.err.println("Unable to load image for " + card.set().code() + "/" + card.name());
