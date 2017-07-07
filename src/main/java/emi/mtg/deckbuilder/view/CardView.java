@@ -22,6 +22,8 @@ import javafx.scene.text.TextAlignment;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -462,6 +464,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	}
 
+	private static final ExecutorService IMAGE_LOAD_POOL = Executors.newCachedThreadPool(r -> {
+		Thread th = Executors.defaultThreadFactory().newThread(r);
+		th.setDaemon(true);
+		return th;
+	});
+
 	protected void render() {
 		if (engine == null || grouping == null) {
 			Platform.runLater(() -> {
@@ -574,7 +582,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					renderMap.put(new MVec2d(loc), CARD_BACK);
 					CardView.imageCache.put(card, CARD_BACK);
 
-					ForkJoinPool.commonPool().submit(() -> {
+					IMAGE_LOAD_POOL.submit(() -> {
 						InputStream in = this.images.openSafely(card.front());
 
 						if (in != null) {
