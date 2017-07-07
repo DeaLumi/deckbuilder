@@ -32,6 +32,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public static final double WIDTH = 220.0;
 	public static final double HEIGHT = 308.0;
 	public static final double PADDING = WIDTH / 40.0;
+	private static final int MAX_CARDS_IN_VIEW = 1000;
 
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
@@ -339,6 +340,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private CardInstance cardAt(double x, double y) {
+		if (sortedModel.size() == 0 || sortedModel.size() > MAX_CARDS_IN_VIEW) {
+			return null;
+		}
+
 		MVec2d point = new MVec2d(x - scrollX, y - scrollY);
 		int group = this.engine.groupAt(point);
 
@@ -484,7 +489,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		if (sortedModel.size() > 400) {
+		if (sortedModel.size() > MAX_CARDS_IN_VIEW) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
 				gfx.setFill(Color.WHITE);
