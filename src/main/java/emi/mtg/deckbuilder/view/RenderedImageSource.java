@@ -1,7 +1,6 @@
 package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
 import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 import javafx.application.Platform;
@@ -90,7 +89,7 @@ public class RenderedImageSource implements ImageSource {
 		private Map<Characteristic, Node> nodes = new EnumMap<>(Characteristic.class);
 
 		public CardRenderLayout(CardFace face) {
-			setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 15.0), new BorderWidths(WIDTH / 25.0))));
+			setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 20.0), new BorderWidths(WIDTH / 30.0))));
 
 			Color bgColor;
 			if (face.color().size() > 1) {
@@ -122,7 +121,7 @@ public class RenderedImageSource implements ImageSource {
 				}
 			}
 
-			setBackground(new Background(new BackgroundFill(bgColor, new CornerRadii(WIDTH / 12.0), null)));
+			setBackground(new Background(new BackgroundFill(bgColor, new CornerRadii(WIDTH / 15.0), null)));
 
 			{
 				Label name = new Label(face.name());
