@@ -479,7 +479,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				gfx.setTextAlign(TextAlignment.CENTER);
 				gfx.setFill(Color.BLACK);
 				gfx.setFont(new Font(null, getHeight() / 10.0));
-				gfx.fillText("Select a valid display layout/card grouping.", getWidth() / 2, getHeight() / 2);
+				gfx.fillText("Select a valid display layout/card grouping.", getWidth() / 2, getHeight() / 2, getWidth());
 			});
 			return;
 		}
@@ -492,7 +492,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				gfx.setTextAlign(TextAlignment.CENTER);
 				gfx.setFill(Color.BLACK);
 				gfx.setFont(new Font(null, getHeight() / 10.0));
-				gfx.fillText("No cards to display.", getWidth() / 2, getHeight() / 2);
+				gfx.fillText("No cards to display.", getWidth() / 2, getHeight() / 2, getWidth());
 			});
 			return;
 		}
@@ -505,7 +505,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				gfx.setTextAlign(TextAlignment.CENTER);
 				gfx.setFill(Color.BLACK);
 				gfx.setFont(new Font(null, getHeight() / 10.0));
-				gfx.fillText("Too many cards to display.", getWidth() / 2, getHeight() / 2);
+				gfx.fillText("Too many cards to display.", getWidth() / 2, getHeight() / 2, getWidth());
 			});
 			return;
 		}
