@@ -3,11 +3,15 @@ package emi.mtg.deckbuilder.view;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sun.javafx.collections.ObservableListWrapper;
-import emi.lib.mtg.card.CardFace;
+import emi.lib.Service;
+import emi.lib.mtg.card.Card;
 import emi.lib.mtg.characteristic.CardRarity;
 import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
 import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
+import emi.lib.mtg.game.Format;
+import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.controller.SerdesControl;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -15,23 +19,40 @@ import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.SplitPane;
+import javafx.scene.control.*;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class MainWindow extends Application {
 	public static void main(String[] args) {
 		launch(args);
 	}
+
+	private static final CardSource cs;
+
+	static {
+		CardSource csTmp;
+		try {
+			csTmp = new MtgJsonCardSource();
+		} catch (IOException e) {
+			throw new Error("Couldn't create MtgJsonCardSource for import/export.");
+		}
+		cs = csTmp;
+	}
+
+	private static final Map<String, Format> formats = Service.Loader.load(Format.class).stream()
+			.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
+
+	private static final Map<FileChooser.ExtensionFilter, DeckImportExport> importExports = Service.Loader.load(DeckImportExport.class).stream()
+			.collect(Collectors.toMap(dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
+					dies -> dies.uncheckedInstance(cs)));
 
 	private ObservableList<CardInstance> collectionModel(CardSource cs) {
 		List<CardInstance> cards = new ArrayList<>();
@@ -64,13 +85,26 @@ public class MainWindow extends Application {
 		return new ObservableListWrapper<>(cards);
 	}
 
+	private Format format;
+	private Map<Zone, CardPane> deckPanes;
+	private CardPane sideboard;
+	private SplitPane zoneSplitter;
+
+	private void setFormat(Format format) {
+		this.format = format;
+		zoneSplitter.getItems().clear();
+		for (Zone zone : format.deckZones()) {
+			zoneSplitter.getItems().add(deckPanes.get(zone));
+		}
+		zoneSplitter.getItems().add(sideboard);
+	}
+
 	@Override
 	public void start(Stage stage) throws Exception {
-		CardSource cs = new MtgJsonCardSource();
 		ImageSource is = new UnifiedImageSource(); // new XlhqImageSource(); // new RenderedImageSource();
 
 		Gson gson = new GsonBuilder()
-				.registerTypeHierarchyAdapter(CardFace.class, CardInstance.createCardAdapter(cs))
+				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))
 				.setPrettyPrinting()
 				.create();
 
@@ -79,25 +113,60 @@ public class MainWindow extends Application {
 		// Menu bar
 
 		MenuBar menu = new MenuBar();
+
+		Menu newDeck = new Menu("Set Format");
+		for (Map.Entry<String, Format> format : formats.entrySet()) {
+			MenuItem newDeckOfFormat = new MenuItem(format.getKey());
+			newDeckOfFormat.setOnAction(ae -> setFormat(format.getValue()));
+			newDeck.getItems().add(newDeckOfFormat);
+		}
+
+		Map<Zone, ObservableList<CardInstance>> deckModel = new EnumMap<>(Zone.class);
+		ObservableList<CardInstance> sideboardModel = new ObservableListWrapper<>(new ArrayList<>());
+
+		MenuItem validateDeck = new MenuItem("Validate Deck");
+		validateDeck.setOnAction(ae -> {
+			DeckList tmp = new DeckList("Blah");
+
+			for (Zone zone : Zone.values()) {
+				tmp.cards.put(zone, deckModel.get(zone));
+			}
+
+			Set<String> messages = this.format.validate(tmp);
+			String joined = messages.isEmpty() ? "Deck is valid." : messages.stream().collect(Collectors.joining("\n"));
+
+			new Alert(Alert.AlertType.INFORMATION, joined).show();
+		});
+
 		MenuItem loadDeck = new MenuItem("Load deck...");
 		MenuItem saveDeck = new MenuItem("Save deck...");
 		Menu file = new Menu("File");
-		file.getItems().addAll(loadDeck, saveDeck);
+		file.getItems().addAll(newDeck, loadDeck, saveDeck, validateDeck);
 		menu.getMenus().add(file);
 
 		// Deck editing view
 		ObservableList<CardInstance> collectionModel = collectionModel(cs);
-		ObservableList<CardInstance> deckModel = deckModel(cs);
 
 		CardPane collectionView = new CardPane("Collection", is, collectionModel, "Flow Grid");
+		collectionView.view().dragModes(TransferMode.COPY);
 		collectionView.view().dropModes();
-		collectionView.view().doubleClick(deckModel::add);
+		collectionView.view().doubleClick(deckModel.computeIfAbsent(Zone.Library, z -> new ObservableListWrapper<>(new ArrayList<>()))::add);
 
-		CardPane deckEdit = new CardPane("Mainboard", is, deckModel, "Piles");
-		deckEdit.view().doubleClick(deckModel::remove);
+		deckPanes = new EnumMap<>(Zone.class);
+		for (Zone zone : Zone.values()) {
+			ObservableList<CardInstance> zoneCards = deckModel.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>()));
+			CardPane zoneEdit = new CardPane(zone.name(), is, zoneCards, "Piles");
+			zoneEdit.view().doubleClick(zoneCards::remove);
+			deckPanes.put(zone, zoneEdit);
+		}
+
+		zoneSplitter = new SplitPane();
+		zoneSplitter.setOrientation(Orientation.HORIZONTAL);
+		sideboard = new CardPane("Sideboard", is, sideboardModel, "Piles");
+		setFormat(formats.values().iterator().next());
 
 		SplitPane splitter = new SplitPane();
-		splitter.getItems().addAll(collectionView, deckEdit);
+		splitter.getItems().addAll(collectionView, zoneSplitter);
 		splitter.setOrientation(Orientation.VERTICAL);
 
 		// Assembly
@@ -107,14 +176,24 @@ public class MainWindow extends Application {
 
 		SerdesControl serdesControl = new SerdesControl(gson);
 		FileChooser chooser = new FileChooser();
-		chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("JSON file (*.json)", "*.json"), new FileChooser.ExtensionFilter("All Files (*.*)", "*.*"));
+//		chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("JSON file (*.json)", "*.json"), new FileChooser.ExtensionFilter("All Files (*.*)", "*.*"));
+		chooser.getExtensionFilters().setAll(importExports.keySet());
 		loadDeck.setOnAction(ae -> {
 			File f = chooser.showOpenDialog(stage);
 
+			DeckImportExport die = importExports.get(chooser.getSelectedExtensionFilter());
+
 			if (f != null) {
 				try {
-					DeckList deckList = serdesControl.loadDeck(f);
-					deckModel.setAll(deckList.cards);
+					DeckList list = die.importDeck(f);
+
+					for (Zone zone : Zone.values()) {
+						if (list.cards.containsKey(zone)) {
+							deckModel.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>())).setAll(list.cards.get(zone));
+						}
+					}
+
+					sideboardModel.setAll(list.sideboard);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -124,11 +203,21 @@ public class MainWindow extends Application {
 		saveDeck.setOnAction(ae -> {
 			File f = chooser.showSaveDialog(stage);
 
+			DeckImportExport die = importExports.get(chooser.getSelectedExtensionFilter());
+
 			if (f != null) {
 				try {
 					DeckList deckList = new DeckList("Bleh");
-					deckList.cards.addAll(deckModel);
-					serdesControl.saveDeck(deckList, f);
+
+					for (Zone zone : Zone.values()) {
+						if (deckModel.containsKey(zone) && !deckModel.get(zone).isEmpty()) {
+							deckList.cards.computeIfAbsent(zone, z -> new ArrayList<>()).addAll(deckModel.get(zone));
+						}
+					}
+
+					deckList.sideboard.addAll(sideboardModel);
+
+					die.exportDeck(deckList, f);
 				} catch (IOException ioe) {
 					ioe.printStackTrace();
 				}
