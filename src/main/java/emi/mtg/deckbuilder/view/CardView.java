@@ -36,7 +36,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public static final double HEIGHT = 308.0;
 	public static final double ROUND_RADIUS = WIDTH / 10.0;
 	public static final double PADDING = WIDTH / 40.0;
-	private static final int MAX_CARDS_IN_VIEW = 1000;
 
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
@@ -344,7 +343,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private CardInstance cardAt(double x, double y) {
-		if (sortedModel.size() == 0 || sortedModel.size() > MAX_CARDS_IN_VIEW) {
+		if (sortedModel.size() == 0) {
 			return null;
 		}
 
@@ -495,19 +494,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				gfx.setFill(Color.BLACK);
 				gfx.setFont(new Font(null, getHeight() / 10.0));
 				gfx.fillText("No cards to display.", getWidth() / 2, getHeight() / 2, getWidth());
-			});
-			return;
-		}
-
-		if (sortedModel.size() > MAX_CARDS_IN_VIEW) {
-			Platform.runLater(() -> {
-				GraphicsContext gfx = getGraphicsContext2D();
-				gfx.setFill(Color.WHITE);
-				gfx.fillRect(0, 0, getWidth(), getHeight());
-				gfx.setTextAlign(TextAlignment.CENTER);
-				gfx.setFill(Color.BLACK);
-				gfx.setFont(new Font(null, getHeight() / 10.0));
-				gfx.fillText("Too many cards to display.", getWidth() / 2, getHeight() / 2, getWidth());
 			});
 			return;
 		}
