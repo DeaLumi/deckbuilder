@@ -8,13 +8,11 @@ import emi.lib.mtg.card.Card;
 import emi.lib.mtg.characteristic.CardRarity;
 import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
-import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.lib.mtg.scryfall.ScryfallCardSource;
 import emi.lib.mtg.scryfall.ScryfallImageSource;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
-import emi.mtg.deckbuilder.controller.SerdesControl;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import javafx.application.Application;
@@ -181,9 +179,7 @@ public class MainWindow extends Application {
 		root.setTop(menu);
 		root.setCenter(splitter);
 
-		SerdesControl serdesControl = new SerdesControl(gson);
 		FileChooser chooser = new FileChooser();
-//		chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("JSON file (*.json)", "*.json"), new FileChooser.ExtensionFilter("All Files (*.*)", "*.*"));
 		chooser.getExtensionFilters().setAll(importExports.keySet());
 		loadDeck.setOnAction(ae -> {
 			File f = chooser.showOpenDialog(stage);
