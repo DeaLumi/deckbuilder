@@ -9,7 +9,7 @@ import emi.mtg.deckbuilder.view.CardView;
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="CMC")
 public class ConvertedManaCost implements CardView.Grouping {
-	private static final String[] GROUPS = { "Land", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "X" };
+	private static final String[] GROUPS = { "Land", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "1000000", "X" };
 
 	@Override
 	public String[] groups() {
@@ -23,7 +23,7 @@ public class ConvertedManaCost implements CardView.Grouping {
 		}
 
 		ManaCost mc = ci.card().manaCost();
-		return mc.varies() ? "X" : Integer.toString(mc.convertedCost());
+		return mc.varies() ? "X" : Integer.toString((int) mc.convertedCost());
 	}
 
 	@Override

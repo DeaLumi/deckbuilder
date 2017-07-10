@@ -504,7 +504,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		// One complete pass through the list... TODO: use streams?
 		for (CardInstance ci : sortedModel) {
-			final int i = groupIndexMap.get(grouping.extract(ci));
+			final Integer i = groupIndexMap.get(grouping.extract(ci));
+			if (i == null) {
+				System.err.println("Warning: Couldn't find group for " + ci.card().name());
+				continue;
+			}
+
 			if (cardLists[i] == null) {
 				cardLists[i] = new CardList();
 			}
