@@ -20,5 +20,10 @@
             <artifactId>mtg</artifactId>
             <version>LATEST</version>
         </dependency>
+        <dependency>
+            <groupId>emi.lib.mtg</groupId>
+            <artifactId>scryfall</artifactId>
+            <version>LATEST</version>
+        </dependency>
     </dependencies>
 </project>

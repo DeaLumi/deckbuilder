@@ -18,11 +18,11 @@ public class ConvertedManaCost implements CardView.Grouping {
 
 	@Override
 	public String extract(CardInstance ci) {
-		if (ci.card().front().type().cardTypes().contains(CardType.Land)) {
+		if (ci.card().front() != null && ci.card().front().type().cardTypes().contains(CardType.Land)) {
 			return "Land";
 		}
 
-		ManaCost mc = ci.card().front().manaCost();
+		ManaCost mc = ci.card().manaCost();
 		return mc.varies() ? "X" : Integer.toString(mc.convertedCost());
 	}
 

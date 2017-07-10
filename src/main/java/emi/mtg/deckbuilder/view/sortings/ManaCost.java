@@ -26,8 +26,8 @@ public class ManaCost implements CardView.Sorting {
 
 		for (int i = emi.lib.mtg.characteristic.Color.values().length - 1; i >= 0; --i) {
 			emi.lib.mtg.characteristic.Color c = emi.lib.mtg.characteristic.Color.values()[i];
-			long n1 = -c1.card().front().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
-			long n2 = -c2.card().front().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
+			long n1 = -c1.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
+			long n2 = -c2.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
 
 			if (n1 != n2) {
 				return (int) (n2 - n1);

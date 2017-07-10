@@ -11,6 +11,8 @@ import emi.lib.mtg.data.ImageSource;
 import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.lib.mtg.scryfall.ScryfallCardSource;
+import emi.lib.mtg.scryfall.ScryfallImageSource;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.controller.SerdesControl;
 import emi.mtg.deckbuilder.model.CardInstance;
@@ -40,9 +42,9 @@ public class MainWindow extends Application {
 	static {
 		CardSource csTmp;
 		try {
-			csTmp = new MtgJsonCardSource();
+			csTmp = new ScryfallCardSource();
 		} catch (IOException e) {
-			throw new Error("Couldn't create MtgJsonCardSource for import/export.");
+			throw new Error("Couldn't create ScryfallCardSource for import/export.");
 		}
 		cs = csTmp;
 	}
@@ -101,7 +103,7 @@ public class MainWindow extends Application {
 
 	@Override
 	public void start(Stage stage) throws Exception {
-		ImageSource is = new UnifiedImageSource(); // new XlhqImageSource(); // new RenderedImageSource();
+		ImageSource is = new ScryfallImageSource(); // new UnifiedImageSource(); // new XlhqImageSource(); // new RenderedImageSource();
 
 		Gson gson = new GsonBuilder()
 				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))

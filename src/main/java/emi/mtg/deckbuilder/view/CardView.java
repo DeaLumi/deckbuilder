@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
+import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
@@ -571,7 +572,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					CardView.imageCache.put(card, CARD_BACK);
 
 					IMAGE_LOAD_POOL.submit(() -> {
-						InputStream in = this.images.openSafely(card.front());
+						InputStream in = this.images.openSafely(card.front() == null ? card.face(CardFace.Kind.Left) : card.front());
 
 						if (in != null) {
 							Image src = new Image(in, WIDTH*2.0, HEIGHT*2.0, true, true);
