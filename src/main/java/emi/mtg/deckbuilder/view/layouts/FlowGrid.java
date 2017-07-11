@@ -9,18 +9,18 @@ import static emi.mtg.deckbuilder.view.CardView.WIDTH;
 
 @Service.Provider(CardView.LayoutEngine.class)
 @Service.Property.String(name="name", value="Flow Grid")
-public class Flow implements CardView.LayoutEngine {
+public class FlowGrid implements CardView.LayoutEngine {
 	private final CardView parent;
 	private int stride;
 	private double[] ys;
 
-	public Flow(CardView parent) {
+	public FlowGrid(CardView parent) {
 		this.parent = parent;
 	}
 
 	@Override
 	public String toString() {
-		return "Flow Grid";
+		return "FlowGrid Grid";
 	}
 
 	@Override
