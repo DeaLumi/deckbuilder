@@ -2,7 +2,7 @@ package emi.mtg.deckbuilder.view;
 
 import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.mtg.card.CardFace;
-import emi.lib.mtg.characteristic.ManaSymbol;
+import emi.lib.mtg.characteristic.Color;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
@@ -18,7 +18,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -55,6 +54,24 @@ public class CardPane extends BorderPane {
 					case "text":
 						subPredicate = c -> Arrays.stream(CardFace.Kind.values()).map(c.card()::face).filter(Objects::nonNull).map(CardFace::text).map(String::toLowerCase).anyMatch(s -> s.contains(value.toLowerCase()));
 						break;
+					case "c":
+					case "color": {
+						EnumSet<Color> tmp = Arrays.stream(Color.values()).filter(c -> value.toLowerCase().contains(c.letter.toLowerCase())).collect(() -> EnumSet.noneOf(Color.class), Set::add, Set::addAll);
+						EnumSet<Color> colors = !negate ? tmp : EnumSet.complementOf(tmp);
+
+						negate = false;
+						subPredicate = c -> colors.containsAll(c.card().color());
+						break;
+					}
+					case "ci":
+					case "identity": {
+						EnumSet<Color> tmp = Arrays.stream(Color.values()).filter(c -> value.toLowerCase().contains(c.letter.toLowerCase())).collect(() -> EnumSet.noneOf(Color.class), Set::add, Set::addAll);
+						EnumSet<Color> colors = !negate ? tmp : EnumSet.complementOf(tmp);
+
+						negate = false;
+						subPredicate = c -> colors.containsAll(c.card().colorIdentity());
+						break;
+					}
 					case "t":
 					case "type":
 						subPredicate = c -> Arrays.stream(CardFace.Kind.values()).map(c.card()::face).filter(Objects::nonNull).map(cf -> cf.type().toString().toLowerCase()).anyMatch(s -> s.contains(value.toLowerCase()));
