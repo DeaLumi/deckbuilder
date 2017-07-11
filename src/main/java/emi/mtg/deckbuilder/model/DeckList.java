@@ -26,24 +26,24 @@ public class DeckList implements Deck {
 		}
 	}
 
-	private String name;
-	private String author;
-	private String description;
-	private Map<Zone, List<CardInstance>> cards;
-	private List<CardInstance> sideboard;
+	public String name;
+	public String author;
+	public String description;
+	public Map<Zone, List<CardInstance>> cards;
+	public List<CardInstance> sideboard;
 
 	private transient final CardInstanceListWrapper sideboardWrapper;
 
 	public DeckList() {
-		this("<No Name>", "<No Author>", "<No Description>");
+		this("<No Name>", "<No Author>", "<No Description>", new EnumMap<>(Zone.class), new ArrayList<>());
 	}
 
-	public DeckList(String name, String author, String description) {
+	public DeckList(String name, String author, String description, Map<Zone, List<CardInstance>> cards, List<CardInstance> sideboard) {
 		this.name = name;
 		this.author = author;
 		this.description = description;
-		this.cards = new EnumMap<>(Zone.class);
-		this.sideboard = new ArrayList<>();
+		this.cards = cards;
+		this.sideboard = sideboard;
 		this.sideboardWrapper = new CardInstanceListWrapper(this.sideboard);
 	}
 
@@ -63,12 +63,12 @@ public class DeckList implements Deck {
 	}
 
 	@Override
-	public Map<Zone, List<Card>> cards() {
-		return new AbstractMap<Zone, List<Card>>() {
+	public Map<Zone, List<? extends Card>> cards() {
+		return new AbstractMap<Zone, List<? extends Card>>() {
 			@Override
-			public Set<Entry<Zone, List<Card>>> entrySet() {
+			public Set<Entry<Zone, List<? extends Card>>> entrySet() {
 				return cards.entrySet().stream()
-						.map(e -> new Map.Entry<Zone, List<Card>>() {
+						.map(e -> new Map.Entry<Zone, List<? extends Card>>() {
 							CardInstanceListWrapper wrapped = new CardInstanceListWrapper(e.getValue());
 
 							@Override
@@ -77,12 +77,12 @@ public class DeckList implements Deck {
 							}
 
 							@Override
-							public List<Card> getValue() {
+							public List<? extends Card> getValue() {
 								return wrapped;
 							}
 
 							@Override
-							public List<Card> setValue(List<Card> value) {
+							public List<? extends Card> setValue(List<? extends Card> value) {
 								throw new UnsupportedOperationException();
 							}
 						}).collect(Collectors.toSet());
@@ -91,7 +91,7 @@ public class DeckList implements Deck {
 	}
 
 	@Override
-	public List<Card> sideboard() {
+	public List<? extends Card> sideboard() {
 		return this.sideboardWrapper;
 	}
 }

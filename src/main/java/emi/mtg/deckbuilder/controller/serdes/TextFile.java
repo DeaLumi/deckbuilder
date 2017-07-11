@@ -33,10 +33,10 @@ public class TextFile implements DeckImportExport {
 	public DeckList importDeck(File from) throws IOException {
 		Scanner scanner = new Scanner(from);
 
-		DeckList list = new DeckList(from.getName());
-		List<CardInstance> cards = new ArrayList<>();
-		list.cards.put(Zone.Library, cards);
+		DeckList list = new DeckList();
+		list.name = from.getName();
 
+		Zone zone = Zone.Library;
 		boolean sideboarding = false;
 
 		while (scanner.hasNextLine()) {
@@ -46,14 +46,21 @@ public class TextFile implements DeckImportExport {
 				continue;
 			}
 
-			if ("Sideboard:".equals(line.trim())) {
-				sideboarding = true;
-				continue;
-			}
-
 			Matcher m = LINE_PATTERN.matcher(line);
 
 			if (!m.matches()) {
+				if ("Sideboard:".equals(line.trim())) {
+					sideboarding = true;
+					continue;
+				}
+
+				try {
+					zone = Zone.valueOf(line.trim());
+					continue;
+				} catch (IllegalArgumentException iae) {
+					// do nothing
+				}
+
 				throw new IOException("Malformed line " + line);
 			}
 
@@ -71,7 +78,7 @@ public class TextFile implements DeckImportExport {
 
 			CardInstance ci = new CardInstance(card);
 			for (int i = 0; i < count; ++i) {
-				(sideboarding ? list.sideboard : cards).add(ci);
+				(sideboarding ? list.sideboard : list.cards.computeIfAbsent(zone, z -> new ArrayList<>())).add(ci);
 			}
 		}
 

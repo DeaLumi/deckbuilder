@@ -126,7 +126,7 @@ public class MainWindow extends Application {
 
 		MenuItem validateDeck = new MenuItem("Validate Deck");
 		validateDeck.setOnAction(ae -> {
-			DeckList tmp = new DeckList("Blah");
+			DeckList tmp = new DeckList();
 
 			for (Zone zone : Zone.values()) {
 				tmp.cards.put(zone, deckModel.get(zone));
@@ -210,7 +210,7 @@ public class MainWindow extends Application {
 
 			if (f != null) {
 				try {
-					DeckList deckList = new DeckList("Bleh");
+					DeckList deckList = new DeckList();
 
 					for (Zone zone : Zone.values()) {
 						if (deckModel.containsKey(zone) && !deckModel.get(zone).isEmpty()) {
