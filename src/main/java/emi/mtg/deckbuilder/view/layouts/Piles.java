@@ -10,10 +10,11 @@ import static emi.mtg.deckbuilder.view.CardView.*;
 public class Piles implements CardView.LayoutEngine {
 	private final static double OVERLAP_FACTOR = 0.125;
 
+	private final CardView parent;
 	private double[] xs;
 
-	public Piles(CardView c) {
-
+	public Piles(CardView parent) {
+		this.parent = parent;
 	}
 
 	@Override
@@ -29,13 +30,17 @@ public class Piles implements CardView.LayoutEngine {
 			xs = new double[groupSizes.length];
 		}
 
+		double p = parent.cardPadding();
+		double w = parent.cardWidth();
+		double h = parent.cardHeight();
+
 		double x = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
 			bounds[i] = new Bounds();
 			bounds[i].pos.x = xs[i] = x;
 			bounds[i].pos.y = 0.0;
-			bounds[i].dim.x = PADDING + (groupSizes[i] > 0 ? WIDTH : 0) + PADDING;
-			bounds[i].dim.y = PADDING + (HEIGHT * OVERLAP_FACTOR) * (groupSizes[i] - 1) + HEIGHT + PADDING;
+			bounds[i].dim.x = p + (groupSizes[i] > 0 ? w : 0) + p;
+			bounds[i].dim.y = p + (h * OVERLAP_FACTOR) * (groupSizes[i] - 1) + h + p;
 
 			x += bounds[i].dim.x;
 		}
@@ -53,8 +58,11 @@ public class Piles implements CardView.LayoutEngine {
 			buffer = new CardView.MVec2d();
 		}
 
-		buffer.x = xs[group] + PADDING;
-		buffer.y = PADDING + (HEIGHT * OVERLAP_FACTOR) * card;
+		double p = parent.cardPadding();
+		double h = parent.cardHeight();
+
+		buffer.x = xs[group] + p;
+		buffer.y = p + (h * OVERLAP_FACTOR) * card;
 
 		return buffer;
 	}
@@ -80,20 +88,24 @@ public class Piles implements CardView.LayoutEngine {
 			throw new IllegalStateException("Haven't layoutGroups yet!");
 		}
 
+		double p = parent.cardPadding();
+		double w = parent.cardWidth();
+		double h = parent.cardHeight();
+
 		double x = point.x - xs[group];
-		if (x < PADDING || x > PADDING + WIDTH) {
+		if (x < p || x > p + w) {
 			return -1;
 		}
 
-		if (point.y < PADDING || point.y > PADDING + (HEIGHT * OVERLAP_FACTOR) * (groupSize - 1) + HEIGHT) {
+		if (point.y < p || point.y > p + (h * OVERLAP_FACTOR) * (groupSize - 1) + h) {
 			return -1;
 		}
 
-		if (point.y > PADDING + (HEIGHT * OVERLAP_FACTOR) * (groupSize - 1)) {
+		if (point.y > p + (h * OVERLAP_FACTOR) * (groupSize - 1)) {
 			return groupSize - 1;
 		}
 
-		int idx = (int) ((point.y - PADDING) / (HEIGHT * OVERLAP_FACTOR));
+		int idx = (int) ((point.y - p) / (h * OVERLAP_FACTOR));
 
 		return idx < 0 || idx >= groupSize ? -1 : idx;
 	}

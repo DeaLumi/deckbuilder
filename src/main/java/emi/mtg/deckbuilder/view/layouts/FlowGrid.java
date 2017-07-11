@@ -3,10 +3,6 @@ package emi.mtg.deckbuilder.view.layouts;
 import emi.lib.Service;
 import emi.mtg.deckbuilder.view.CardView;
 
-import static emi.mtg.deckbuilder.view.CardView.HEIGHT;
-import static emi.mtg.deckbuilder.view.CardView.PADDING;
-import static emi.mtg.deckbuilder.view.CardView.WIDTH;
-
 @Service.Provider(CardView.LayoutEngine.class)
 @Service.Property.String(name="name", value="Flow Grid")
 public class FlowGrid implements CardView.LayoutEngine {
@@ -31,7 +27,11 @@ public class FlowGrid implements CardView.LayoutEngine {
 			ys = new double[groupSizes.length];
 		}
 
-		stride = Math.max(1, (int) Math.floor(parent.getWidth() / (PADDING + WIDTH + PADDING)));
+		double p = parent.cardPadding();
+		double pwp = p + parent.cardWidth() + p;
+		double php = p + parent.cardHeight() + p;
+
+		stride = Math.max(1, (int) Math.floor(parent.getWidth() / pwp));
 
 		double y = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
@@ -40,7 +40,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 			bounds[i].pos.y = ys[i] = y;
 			bounds[i].dim.x = parent.getWidth();
 
-			bounds[i].dim.y = Math.ceil((double) groupSizes[i] / (double) stride) * (PADDING + HEIGHT + PADDING);
+			bounds[i].dim.y = Math.ceil((double) groupSizes[i] / (double) stride) * php;
 			y += bounds[i].dim.y;
 		}
 
@@ -57,8 +57,12 @@ public class FlowGrid implements CardView.LayoutEngine {
 			buffer = new CardView.MVec2d();
 		}
 
-		buffer.x = PADDING + (card % stride) * (PADDING + WIDTH + PADDING);
-		buffer.y = ys[group] + PADDING + Math.floor(card / stride) * (PADDING + HEIGHT + PADDING);
+		double p = parent.cardPadding();
+		double pwp = p + parent.cardWidth() + p;
+		double php = p + parent.cardHeight() + p;
+
+		buffer.x = p + (card % stride) * pwp;
+		buffer.y = ys[group] + p + Math.floor(card / stride) * php;
 
 		return buffer;
 	}
@@ -84,19 +88,23 @@ public class FlowGrid implements CardView.LayoutEngine {
 			throw new IllegalStateException("Haven't layoutGroups yet!");
 		}
 
-		double fRow = (point.y - ys[group]) / (PADDING + HEIGHT + PADDING);
-		int iRow = (int) Math.floor(fRow);
-		double yInRow = (fRow - iRow) * (PADDING + HEIGHT + PADDING);
+		double p = parent.cardPadding();
+		double pwp = p + parent.cardWidth() + p;
+		double php = p + parent.cardHeight() + p;
 
-		if (yInRow < PADDING || yInRow > PADDING + HEIGHT) {
+		double fRow = (point.y - ys[group]) / php;
+		int iRow = (int) Math.floor(fRow);
+		double yInRow = (fRow - iRow) * php;
+
+		if (yInRow < p || yInRow > php - p) {
 			return -1;
 		}
 
-		double fCol = point.x / (PADDING + WIDTH + PADDING);
+		double fCol = point.x / pwp;
 		int iCol = (int) Math.floor(fCol);
-		double xInCol = (fCol - iCol) * (PADDING + WIDTH + PADDING);
+		double xInCol = (fCol - iCol) * pwp;
 
-		if (xInCol < PADDING || xInCol > PADDING + WIDTH) {
+		if (xInCol < p || xInCol > pwp - p) {
 			return -1;
 		}
 

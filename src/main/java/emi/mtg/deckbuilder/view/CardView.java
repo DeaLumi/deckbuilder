@@ -7,6 +7,8 @@ import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.sortings.Name;
 import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -30,11 +32,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class CardView extends Canvas implements ListChangeListener<CardInstance> {
-	// TODO: Turn these into properties that can change? This renderer is FAST!
-	public static final double WIDTH = 220.0;
-	public static final double HEIGHT = 308.0;
-	public static final double ROUND_RADIUS = WIDTH / 10.0;
-	public static final double PADDING = WIDTH / 40.0;
+	private static final double CARD_WIDTH = 220.0;
+	private static final double CARD_HEIGHT = 308.0;
+	private static final double CARD_PADDING = CARD_WIDTH / 40.0;
 
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
@@ -173,8 +173,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private static final Map<Card, Image> imageCache = new HashMap<>();
 	private static final Map<Card, Image> thumbnailCache = new HashMap<>();
-	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
-	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", WIDTH, HEIGHT, true, true);
+	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
+	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 
 	private final ImageSource images;
 
@@ -200,6 +200,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private Consumer<CardInstance> doubleClick;
 
+	private DoubleProperty cardScaleProperty;
+
 	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine, Grouping grouping, Sorting... sorts) {
 		super(1024, 1024);
 
@@ -209,6 +211,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.model = model;
 		this.filteredModel = this.model.filtered(this.filter = ci -> true);
 		this.sortedModel = this.filteredModel.sorted(new Name());
+
+		this.cardScaleProperty = new SimpleDoubleProperty(1.0);
+		this.cardScaleProperty.addListener(ce -> scheduleRender());
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
 
@@ -424,6 +429,22 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.doubleClick = doubleClick;
 	}
 
+	public DoubleProperty cardScaleProperty() {
+		return cardScaleProperty;
+	}
+
+	public double cardWidth() {
+		return CARD_WIDTH * cardScaleProperty.doubleValue();
+	}
+
+	public double cardHeight() {
+		return CARD_HEIGHT * cardScaleProperty.doubleValue();
+	}
+
+	public double cardPadding() {
+		return CARD_PADDING;
+	}
+
 	@Override
 	public boolean isResizable() {
 		return true;
@@ -578,7 +599,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				loc = engine.coordinatesOf(i, j, loc);
 				loc = loc.plus(scrollX, scrollY);
 
-				if (loc.x < -WIDTH || loc.x > getWidth() || loc.y < -HEIGHT || loc.y > getHeight()) {
+				if (loc.x < -cardWidth() || loc.x > getWidth() || loc.y < -cardHeight() || loc.y > getHeight()) {
 					continue;
 				}
 
@@ -593,7 +614,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						InputStream in = this.images.openSafely(card.front() == null ? card.face(CardFace.Kind.Left) : card.front());
 
 						if (in != null) {
-							Image src = new Image(in, WIDTH*2.0, HEIGHT*2.0, true, true);
+							Image src = new Image(in, CARD_WIDTH*2.0, CARD_HEIGHT*2.0, true, true);
 /*
 							WritableImage dst = new WritableImage((int) src.getWidth(), (int) src.getHeight());
 							for (int y = 0; y < src.getHeight(); ++y) {
@@ -646,12 +667,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			gfx.setFill(Color.WHITE);
 			gfx.fillRect(0, 0, getWidth(), getHeight());
 			for (Map.Entry<MVec2d, Image> img : renderMap.entrySet()) {
-				gfx.drawImage(img.getValue(), img.getKey().x, img.getKey().y, WIDTH, HEIGHT);
+				gfx.drawImage(img.getValue(), img.getKey().x, img.getKey().y, cardWidth(), cardHeight());
 			}
 
 			if (zoomedCard != null) {
 				Image img = imageCache.getOrDefault(zoomedCard.card(), CARD_BACK);
-				double h = getHeight() - PADDING - PADDING;
+				double h = getHeight() - 2*cardPadding();
 				double w = img.getWidth() / img.getHeight() * h;
 				gfx.drawImage(img, getWidth() / 2 - w / 2, getHeight() / 2 - h / 2, w, h);
 			}

@@ -184,6 +184,13 @@ public class CardPane extends BorderPane {
 		});
 		deckMenu.getItems().add(sortButton);
 
+		CustomMenuItem cardScale = new CustomMenuItem();
+		Slider cardScaleSlider = new Slider(0.25, 1.5, 1.0);
+		this.cardView.cardScaleProperty().bind(cardScaleSlider.valueProperty());
+		cardScale.setContent(cardScaleSlider);
+		cardScale.setHideOnClick(false);
+		deckMenu.getItems().add(cardScale);
+
 		label.setOnAction(ae -> {
 			deckMenu.show(label, Side.BOTTOM, 0, 0);
 		});
