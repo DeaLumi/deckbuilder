@@ -19,6 +19,11 @@ public class Flow implements CardView.LayoutEngine {
 	}
 
 	@Override
+	public String toString() {
+		return "Flow Grid";
+	}
+
+	@Override
 	public CardView.Bounds[] layoutGroups(int[] groupSizes) {
 		CardView.Bounds[] bounds = new CardView.Bounds[groupSizes.length];
 

@@ -17,6 +17,11 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
+	public String toString() {
+		return "Piles";
+	}
+
+	@Override
 	public CardView.Bounds[] layoutGroups(int[] groupSizes) {
 		CardView.Bounds[] bounds = new CardView.Bounds[groupSizes.length];
 

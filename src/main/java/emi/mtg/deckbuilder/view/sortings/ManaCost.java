@@ -36,4 +36,9 @@ public class ManaCost implements CardView.Sorting {
 
 		return 0;
 	}
+
+	@Override
+	public String toString() {
+		return "Mana Cost";
+	}
 }

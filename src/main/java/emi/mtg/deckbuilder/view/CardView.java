@@ -5,6 +5,7 @@ import emi.lib.mtg.card.Card;
 import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.view.sortings.Name;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -142,8 +143,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private static final Map<String, Service.Loader<LayoutEngine>.Stub> engineMap = new HashMap<>();
-	private static final Map<String, Grouping> groupingMap;
-	private static final Map<String, Sorting> sortingMap;
+	private static final List<Grouping> groupings;
+	private static final List<Sorting> sortings;
 
 	static {
 		Service.Loader<LayoutEngine> loader = Service.Loader.load(LayoutEngine.class);
@@ -152,21 +153,25 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			engineMap.put(stub.string("name"), stub);
 		}
 
-		groupingMap = Service.Loader.load(Grouping.class).stream()
-				.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
+		groupings = Collections.unmodifiableList(Service.Loader.load(Grouping.class).stream()
+				.map(s -> s.uncheckedInstance())
+				.collect(Collectors.toList()));
 
-		sortingMap = Service.Loader.load(Sorting.class).stream()
-				.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
+		sortings = Collections.unmodifiableList(Service.Loader.load(Sorting.class).stream()
+				.map(s -> s.uncheckedInstance())
+				.collect(Collectors.toList()));
 	}
 
 	public static Set<String> engineNames() {
 		return CardView.engineMap.keySet();
 	}
-	public static Set<String> groupingNames() {
-		return CardView.groupingMap.keySet();
+
+	public static List<Grouping> groupings() {
+		return CardView.groupings;
 	}
-	public static Set<String> sortingNames() {
-		return CardView.sortingMap.keySet();
+
+	public static List<Sorting> sortings() {
+		return CardView.sortings;
 	}
 
 	private static final Map<Card, Image> imageCache = new HashMap<>();
@@ -198,7 +203,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private Consumer<CardInstance> doubleClick;
 
-	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine, String grouping) {
+	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine, Grouping grouping, Sorting... sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
@@ -206,18 +211,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.images = images;
 		this.model = model;
 		this.filteredModel = this.model.filtered(this.filter = ci -> true);
-		this.sortedModel = this.filteredModel.sorted(this.sort = CardPane.COLOR_SORT.thenComparing(CardPane.NAME_SORT));
-		this.sortedModel.addListener(this);
+		this.sortedModel = this.filteredModel.sorted(new Name());
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
-		this.grouping = CardView.groupingMap.get(grouping);
 
 		this.groupIndexMap = new HashMap<>();
-		if (this.grouping != null) {
-			for (int i = 0; i < this.grouping.groups().length; ++i) {
-				this.groupIndexMap.put(this.grouping.groups()[i], i);
-			}
-		}
 
 		this.scrollX = this.scrollY = 0;
 
@@ -227,6 +225,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.dropModes = TransferMode.COPY_OR_MOVE;
 
 		this.doubleClick = ci -> {};
+
+		sort(sorts);
+		layout(engine);
+		group(grouping);
+
+		this.sortedModel.addListener(this);
 
 		setOnScroll(se -> {
 			scrollX += se.getDeltaX();
@@ -339,8 +343,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			lastDragY = -1;
 			panning = false;
 		});
-
-		// TODO: Mouse drag panning
 	}
 
 	private CardInstance cardAt(double x, double y) {
@@ -381,22 +383,28 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.filteredModel.setPredicate(filter);
 	}
 
-	public void sort(String sort) {
-		if (CardView.sortingMap.containsKey(sort)) {
-			this.sort = CardView.sortingMap.get(sort);
-			this.sortedModel.setComparator(this.sort);
+	public void sort(Sorting... sorts) {
+		if (sorts.length <= 0) {
+			return;
 		}
+
+		Comparator<CardInstance> sort = sorts[0];
+
+		for (int i = 1; i < sorts.length; ++i) {
+			sort = sort.thenComparing(sorts[i]);
+		}
+
+		this.sort = sort;
+		this.sortedModel.setComparator(this.sort);
 	}
 
-	public void group(String grouping) {
-		if (CardView.groupingMap.containsKey(grouping)) {
-			this.grouping = CardView.groupingMap.get(grouping);
-			groupIndexMap.clear();
-			for (int i = 0; i < this.grouping.groups().length; ++i) {
-				groupIndexMap.put(this.grouping.groups()[i], i);
-			}
-			scheduleRender();
+	public void group(Grouping grouping) {
+		this.grouping = grouping;
+		groupIndexMap.clear();
+		for (int i = 0; i < this.grouping.groups().length; ++i) {
+			groupIndexMap.put(this.grouping.groups()[i], i);
 		}
+		scheduleRender();
 	}
 
 	public void dragModes(TransferMode... dragModes) {
@@ -581,8 +589,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 						if (in != null) {
 							Image src = new Image(in, WIDTH*2.0, HEIGHT*2.0, true, true);
+/*
 							WritableImage dst = new WritableImage((int) src.getWidth(), (int) src.getHeight());
-
 							for (int y = 0; y < src.getHeight(); ++y) {
 								for (int x = 0; x < src.getWidth(); ++x) {
 									Color c = src.getPixelReader().getColor(x, y);
@@ -613,6 +621,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							}
 
 							CardView.imageCache.put(card, dst);
+							CardView.thumbnailCache.put(card, dst);
+*/
+
+							CardView.imageCache.put(card, src);
+
 							scheduleRender();
 						} else {
 							System.err.println("Unable to load image for " + card.set().code() + "/" + card.name());

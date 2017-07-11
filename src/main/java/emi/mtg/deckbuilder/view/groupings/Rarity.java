@@ -19,6 +19,11 @@ public class Rarity implements CardView.Grouping {
 	}
 
 	@Override
+	public String toString() {
+		return "Rarity";
+	}
+
+	@Override
 	public String[] groups() {
 		return GROUPS;
 	}
