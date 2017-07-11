@@ -26,14 +26,22 @@ public class DeckList implements Deck {
 		}
 	}
 
-	public final String name;
-	public final Map<Zone, List<CardInstance>> cards;
-	public final List<CardInstance> sideboard;
+	private String name;
+	private String author;
+	private String description;
+	private Map<Zone, List<CardInstance>> cards;
+	private List<CardInstance> sideboard;
 
 	private transient final CardInstanceListWrapper sideboardWrapper;
 
-	public DeckList(String name) {
+	public DeckList() {
+		this("<No Name>", "<No Author>", "<No Description>");
+	}
+
+	public DeckList(String name, String author, String description) {
 		this.name = name;
+		this.author = author;
+		this.description = description;
 		this.cards = new EnumMap<>(Zone.class);
 		this.sideboard = new ArrayList<>();
 		this.sideboardWrapper = new CardInstanceListWrapper(this.sideboard);
@@ -46,12 +54,12 @@ public class DeckList implements Deck {
 
 	@Override
 	public String author() {
-		return "";
+		return author;
 	}
 
 	@Override
 	public String description() {
-		return "";
+		return description;
 	}
 
 	@Override
