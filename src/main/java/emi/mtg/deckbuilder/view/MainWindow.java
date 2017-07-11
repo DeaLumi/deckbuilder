@@ -193,6 +193,8 @@ public class MainWindow extends Application {
 					for (Zone zone : Zone.values()) {
 						if (list.cards.containsKey(zone)) {
 							deckModel.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>())).setAll(list.cards.get(zone));
+						} else {
+							deckModel.get(zone).clear();
 						}
 					}
 
