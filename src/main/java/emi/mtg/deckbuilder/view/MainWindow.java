@@ -42,7 +42,7 @@ public class MainWindow extends Application {
 		try {
 			csTmp = new ScryfallCardSource();
 		} catch (IOException e) {
-			throw new Error("Couldn't create ScryfallCardSource for import/export.");
+			throw new Error("Couldn't create ScryfallCardSource.");
 		}
 		cs = csTmp;
 	}
@@ -101,7 +101,7 @@ public class MainWindow extends Application {
 
 	@Override
 	public void start(Stage stage) throws Exception {
-		ImageSource is = new ScryfallImageSource(); // new UnifiedImageSource(); // new XlhqImageSource(); // new RenderedImageSource();
+		ImageSource is = new UnifiedImageSource();
 
 		Gson gson = new GsonBuilder()
 				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))
