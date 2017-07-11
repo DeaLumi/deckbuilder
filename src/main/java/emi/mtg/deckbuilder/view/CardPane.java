@@ -92,11 +92,14 @@ public class CardPane extends BorderPane {
 						subPredicate = c -> Arrays.stream(CardFace.Kind.values()).map(c.card()::face).map(cf -> cf.type().toString().toLowerCase()).anyMatch(s -> s.contains(value.toLowerCase()));
 						break;
 					case "set":
-						subPredicate = c -> c.card().set().name().toLowerCase().contains(value.toLowerCase());
+					case "s":
+					case "edition":
+					case "e":
+						subPredicate = c -> c.card().set().name().toLowerCase().contains(value.toLowerCase()) || c.card().set().code().toLowerCase().equals(value.toLowerCase());
 						break;
 					case "setcode":
 					case "sc":
-						subPredicate = c -> c.card().set().code().equals(value.toUpperCase());
+						subPredicate = c -> c.card().set().code().toLowerCase().equals(value.toLowerCase());
 						break;
 					case "cmc":
 						int ivalue = Integer.parseInt(value);
