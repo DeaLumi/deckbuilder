@@ -15,10 +15,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
-import javafx.scene.input.DataFormat;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.TransferMode;
+import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
@@ -198,7 +195,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private double lastDragX, lastDragY;
 
 	private CardList[] cardLists;
-	private CardInstance draggingCard;
+	private CardInstance draggingCard, zoomedCard;
 	private TransferMode[] dragModes, dropModes;
 
 	private Consumer<CardInstance> doubleClick;
@@ -282,7 +279,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			switch (de.getAcceptedTransferMode()) {
 				case COPY:
-//					model.add(new CardInstance(ci.card(), ci.tags()));
 					model.add(ci); // TODO: Is this a problem...?
 					scheduleRender();
 					break;
@@ -323,6 +319,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				lastDragX = me.getX();
 				lastDragY = me.getY();
 				me.consume();
+			} else if (me.getButton() == MouseButton.SECONDARY) {
+				zoomedCard = cardAt(me.getX(), me.getY());
+				scheduleRender();
 			}
 		});
 
@@ -335,6 +334,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				lastDragX = me.getX();
 				lastDragY = me.getY();
 				me.consume();
+			} else if (me.getButton() == MouseButton.SECONDARY) {
+				zoomedCard = cardAt(me.getX(), me.getY());
+				scheduleRender();
 			}
 		});
 
@@ -342,6 +344,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			lastDragX = -1;
 			lastDragY = -1;
 			panning = false;
+
+			zoomedCard = null;
+			scheduleRender();
 		});
 	}
 
@@ -642,6 +647,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			gfx.fillRect(0, 0, getWidth(), getHeight());
 			for (Map.Entry<MVec2d, Image> img : renderMap.entrySet()) {
 				gfx.drawImage(img.getValue(), img.getKey().x, img.getKey().y, WIDTH, HEIGHT);
+			}
+
+			if (zoomedCard != null) {
+				Image img = imageCache.getOrDefault(zoomedCard.card(), CARD_BACK);
+				double h = getHeight() - PADDING - PADDING;
+				double w = img.getWidth() / img.getHeight() * h;
+				gfx.drawImage(img, getWidth() / 2 - w / 2, getHeight() / 2 - h / 2, w, h);
 			}
 		});
 	}
