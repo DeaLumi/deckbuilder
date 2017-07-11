@@ -20,44 +20,12 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CardPane extends BorderPane {
-	public final static Comparator<CardInstance> NAME_SORT = Comparator.comparing(c -> c.card().name());
-	public final static Comparator<CardInstance> COLOR_SORT = (c1, c2) -> {
-		if (c1.card().color().size() != c2.card().color().size()) {
-			int s1 = c1.card().color().size();
-			if (s1 == 0) {
-				s1 = emi.lib.mtg.characteristic.Color.values().length + 1;
-			}
-
-			int s2 = c2.card().color().size();
-			if (s2 == 0) {
-				s2 = emi.lib.mtg.characteristic.Color.values().length + 1;
-			}
-
-			return s1 - s2;
-		}
-
-		for (int i = emi.lib.mtg.characteristic.Color.values().length - 1; i >= 0; --i) {
-			emi.lib.mtg.characteristic.Color c = emi.lib.mtg.characteristic.Color.values()[i];
-			long n1 = -c1.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
-			long n2 = -c2.card().manaCost().symbols().stream().map(ManaSymbol::colors).filter(s -> s.contains(c)).count();
-
-			if (n1 != n2) {
-				return (int) (n2 - n1);
-			}
-		}
-
-		return 0;
-	};
-
 	private static final Pattern OMNIFILTER_PATTERN = Pattern.compile("(?:(?<characteristic>[^ :<>=]+)(?<operator>(?:[<>=:])))?(?<value>[^ \"]+|\"[^\"]*\")");
 	private static final String OMNIFILTER_PROMPT = "text:rules o:text cmc>X type:\"supertype cardtype\" t:subtype";
 
@@ -85,11 +53,11 @@ public class CardPane extends BorderPane {
 				switch (characteristic) {
 					case "o":
 					case "text":
-						subPredicate = c -> Arrays.stream(CardFace.Kind.values()).map(c.card()::face).map(CardFace::text).map(String::toLowerCase).anyMatch(s -> s.contains(value.toLowerCase()));
+						subPredicate = c -> Arrays.stream(CardFace.Kind.values()).map(c.card()::face).filter(Objects::nonNull).map(CardFace::text).map(String::toLowerCase).anyMatch(s -> s.contains(value.toLowerCase()));
 						break;
 					case "t":
 					case "type":
-						subPredicate = c -> Arrays.stream(CardFace.Kind.values()).map(c.card()::face).map(cf -> cf.type().toString().toLowerCase()).anyMatch(s -> s.contains(value.toLowerCase()));
+						subPredicate = c -> Arrays.stream(CardFace.Kind.values()).map(c.card()::face).filter(Objects::nonNull).map(cf -> cf.type().toString().toLowerCase()).anyMatch(s -> s.contains(value.toLowerCase()));
 						break;
 					case "set":
 					case "s":
@@ -114,11 +82,15 @@ public class CardPane extends BorderPane {
 								subPredicate = c -> c.card().manaCost().convertedCost() < ivalue;
 								break;
 							default:
-								throw new Error("Unrecognized operator " + m.group("operator"));
+								subPredicate = c -> true;
+								(new Throwable("Unrecognized operator " + m.group("operator"))).printStackTrace();
+								break;
 						}
 						break;
 					default:
-						throw new Error("Unrecognized characteristic " + m.group("characteristic"));
+						subPredicate = c -> true;
+						(new Throwable("Unrecognized characteristic " + m.group("characteristic"))).printStackTrace();
+						break;
 				}
 				if (negate) {
 					subPredicate = subPredicate.negate();
@@ -137,6 +109,7 @@ public class CardPane extends BorderPane {
 	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine) {
 		super();
 
+		// TODO: Somehow use these from CardView.
 		this.cardView = new CardView(images, model, initEngine, new ConvertedManaCost(), new ManaCost(), new Name());
 		this.setCenter(this.cardView);
 
