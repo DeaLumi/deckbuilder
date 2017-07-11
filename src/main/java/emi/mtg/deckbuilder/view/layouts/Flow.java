@@ -94,7 +94,7 @@ public class Flow implements CardView.LayoutEngine {
 
 		double fCol = point.x / (PADDING + WIDTH + PADDING);
 		int iCol = (int) Math.floor(fCol);
-		double xInCol = (fCol - iCol) * (PADDING + HEIGHT + PADDING);
+		double xInCol = (fCol - iCol) * (PADDING + WIDTH + PADDING);
 
 		if (xInCol < PADDING || xInCol > PADDING + WIDTH) {
 			return -1;
