@@ -370,7 +370,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return null;
 		}
 
-		MVec2d point = new MVec2d(x - scrollX.get(), y - scrollY.get());
+		MVec2d point = new MVec2d(x + scrollX.get(), y + scrollY.get());
 		int group = this.engine.groupAt(point);
 
 		if (group < 0) {
