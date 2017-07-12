@@ -377,18 +377,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return null;
 		}
 
-		// TODO: Optimize to "take Nth and count"? Only really reduces memory usage.
-		CardInstance[] cardsInGroup = this.sortedModel.stream()
-				.filter(ci -> grouping.groups()[group].equals(grouping.extract(ci)))
-				.toArray(CardInstance[]::new);
+		CardList cardsInGroup = cardLists[group];
 
-		int card = this.engine.cardAt(point, group, cardsInGroup.length);
+		int card = this.engine.cardAt(point, group, cardsInGroup.size());
 
 		if (card < 0) {
 			return null;
 		}
 
-		return cardsInGroup[card];
+		return cardsInGroup.get(card);
 	}
 
 	public void layout(String engine) {
