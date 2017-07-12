@@ -104,7 +104,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 		int iCol = (int) Math.floor(fCol);
 		double xInCol = (fCol - iCol) * pwp;
 
-		if (xInCol < p || xInCol > pwp - p) {
+		if (iCol >= stride || xInCol < p || xInCol > pwp - p) {
 			return -1;
 		}
 
