@@ -16,8 +16,10 @@ import javafx.collections.transformation.SortedList;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.image.WritableImage;
-import javafx.scene.input.*;
+import javafx.scene.input.DataFormat;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
@@ -189,11 +191,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private final Map<String, Integer> groupIndexMap;
 
-	private double scrollX, scrollY;
+	private DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
 
 	private boolean panning;
 	private double lastDragX, lastDragY;
 
+	private Bounds[] groupBounds;
 	private CardList[] cardLists;
 	private CardInstance draggingCard, zoomedCard;
 	private TransferMode[] dragModes, dropModes;
@@ -213,13 +216,18 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.sortedModel = this.filteredModel.sorted(new Name());
 
 		this.cardScaleProperty = new SimpleDoubleProperty(1.0);
-		this.cardScaleProperty.addListener(ce -> scheduleRender());
+		this.cardScaleProperty.addListener(ce -> layout());
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
 
 		this.groupIndexMap = new HashMap<>();
 
-		this.scrollX = this.scrollY = 0;
+		this.scrollMinX = new SimpleDoubleProperty(0.0);
+		this.scrollMinY = new SimpleDoubleProperty(0.0);
+		this.scrollX = new SimpleDoubleProperty(0.0);
+		this.scrollY = new SimpleDoubleProperty(0.0);
+		this.scrollMaxX = new SimpleDoubleProperty(100.0);
+		this.scrollMaxY = new SimpleDoubleProperty(100.0);
 
 		this.cardLists = null;
 		this.draggingCard = null;
@@ -232,13 +240,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		layout(engine);
 		group(grouping);
 
-		this.sortedModel.addListener(this);
+		scheduleRender();
 
-		setOnScroll(se -> {
-			scrollX += se.getDeltaX();
-			scrollY += se.getDeltaY();
-			scheduleRender();
-		});
+		this.scrollX.addListener(e -> scheduleRender());
+		this.scrollY.addListener(e -> scheduleRender());
+		this.sortedModel.addListener(this);
 
 		setOnDragDetected(de -> {
 			if (de.getButton() != MouseButton.PRIMARY) {
@@ -285,13 +291,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			switch (de.getAcceptedTransferMode()) {
 				case COPY:
 					model.add(ci); // TODO: Is this a problem...?
-					scheduleRender();
+					layout();
 					break;
 				case MOVE:
 					source.model.remove(ci);
 					model.add(ci);
-					source.scheduleRender();
-					scheduleRender();
+					source.layout();
+					layout();
 					break;
 				case LINK:
 					break;
@@ -313,9 +319,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 				if (ci != null) {
 					doubleClick.accept(ci);
-					scheduleRender();
+					layout();
 				}
 			}
+		});
+
+		setOnScroll(se -> {
+			scrollX.set(Math.max(scrollMinX.get(), Math.min(scrollX.get() - se.getDeltaX(), scrollMaxX.get())));
+			scrollY.set(Math.max(scrollMinY.get(), Math.min(scrollY.get() - se.getDeltaY(), scrollMaxY.get())));
 		});
 
 		setOnMousePressed(me -> {
@@ -332,9 +343,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		setOnMouseDragged(me -> {
 			if (panning) {
-				scrollX += me.getX() - lastDragX;
-				scrollY += me.getY() - lastDragY;
-				scheduleRender();
+				scrollX.set(Math.max(scrollMinX.get(), Math.min(scrollX.get() - (me.getX() - lastDragX), scrollMaxX.get())));
+				scrollY.set(Math.max(scrollMinY.get(), Math.min(scrollY.get() - (me.getY() - lastDragY), scrollMaxY.get())));
 
 				lastDragX = me.getX();
 				lastDragY = me.getY();
@@ -360,7 +370,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return null;
 		}
 
-		MVec2d point = new MVec2d(x - scrollX, y - scrollY);
+		MVec2d point = new MVec2d(x - scrollX.get(), y - scrollY.get());
 		int group = this.engine.groupAt(point);
 
 		if (group < 0) {
@@ -384,7 +394,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public void layout(String engine) {
 		if (CardView.engineMap.containsKey(engine)) {
 			this.engine = CardView.engineMap.get(engine).uncheckedInstance(this);
-			scheduleRender();
+			layout();
 		}
 	}
 
@@ -414,7 +424,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		for (int i = 0; i < this.grouping.groups().length; ++i) {
 			groupIndexMap.put(this.grouping.groups()[i], i);
 		}
-		scheduleRender();
+		layout();
 	}
 
 	public void dragModes(TransferMode... dragModes) {
@@ -431,6 +441,30 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public DoubleProperty cardScaleProperty() {
 		return cardScaleProperty;
+	}
+
+	public DoubleProperty scrollMinX() {
+		return scrollMinX;
+	}
+
+	public DoubleProperty scrollX() {
+		return scrollX;
+	}
+
+	public DoubleProperty scrollMaxX() {
+		return scrollMaxX;
+	}
+
+	public DoubleProperty scrollMinY() {
+		return scrollMinY;
+	}
+
+	public DoubleProperty scrollY() {
+		return scrollY;
+	}
+
+	public DoubleProperty scrollMaxY() {
+		return scrollMaxY;
 	}
 
 	public double cardWidth() {
@@ -484,12 +518,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public void resize(double width, double height) {
 		setWidth(width);
 		setHeight(height);
-		scheduleRender();
+		layout();
 	}
 
 	@Override
 	public void onChanged(Change<? extends CardInstance> c) {
-		scheduleRender();
+		layout();
 	}
 
 	public void scheduleRender() {
@@ -505,6 +539,65 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		th.setDaemon(true);
 		return th;
 	});
+
+	protected void layout() {
+		if (engine == null || grouping == null) {
+			return;
+		}
+
+		int[] groupSizes = new int[grouping.groups().length];
+		cardLists = new CardList[groupSizes.length];
+
+		// One complete pass through the list... TODO: use streams?
+		for (CardInstance ci : sortedModel) {
+			final Integer i = groupIndexMap.get(grouping.extract(ci));
+			if (i == null) {
+				System.err.println("Warning: Couldn't find group for " + ci.card().name());
+				continue;
+			}
+
+			if (cardLists[i] == null) {
+				cardLists[i] = new CardList();
+			}
+
+			cardLists[i].add(ci);
+			++groupSizes[i];
+		}
+
+		groupBounds = engine.layoutGroups(groupSizes);
+
+		MVec2d low = new MVec2d(), high = new MVec2d();
+
+		for (int i = 0; i < groupBounds.length; ++i) {
+			final Bounds bounds = groupBounds[i];
+
+			if (bounds.pos.x < low.x) {
+				low.x = bounds.pos.x;
+			}
+
+			if (bounds.pos.y < low.y) {
+				low.y = bounds.pos.y;
+			}
+
+			if (bounds.pos.x + bounds.dim.x > high.x) {
+				high.x = bounds.pos.x + bounds.dim.x;
+			}
+
+			if (bounds.pos.y + bounds.dim.y > high.y) {
+				high.y = bounds.pos.y + bounds.dim.y;
+			}
+		}
+
+		scrollMinX.set(low.x);
+		scrollMinY.set(low.y);
+		scrollMaxX.set(high.x - getWidth());
+		scrollMaxY.set(high.y - getHeight());
+
+		scrollX.set(Math.max(low.x, Math.min(scrollX.get(), high.x - getWidth())));
+		scrollY.set(Math.max(low.y, Math.min(scrollY.get(), high.y - getHeight())));
+
+		scheduleRender();
+	}
 
 	protected void render() {
 		if (engine == null || grouping == null) {
@@ -533,52 +626,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		int[] groupSizes = new int[grouping.groups().length];
-		CardList[] cardLists = new CardList[groupSizes.length];
-
-		// One complete pass through the list... TODO: use streams?
-		for (CardInstance ci : sortedModel) {
-			final Integer i = groupIndexMap.get(grouping.extract(ci));
-			if (i == null) {
-				System.err.println("Warning: Couldn't find group for " + ci.card().name());
-				continue;
-			}
-
-			if (cardLists[i] == null) {
-				cardLists[i] = new CardList();
-			}
-
-			cardLists[i].add(ci);
-			++groupSizes[i];
+		if (groupBounds == null || cardLists == null) {
+			return; // TODO: What do we do here? Call layout manually...?
 		}
-
-		Bounds[] groupBounds = engine.layoutGroups(groupSizes);
-
-		MVec2d low = new MVec2d(), high = new MVec2d();
-
-		for (int i = 0; i < groupBounds.length; ++i) {
-			final Bounds bounds = groupBounds[i];
-
-			if (bounds.pos.x < low.x) {
-				low.x = bounds.pos.x;
-			}
-
-			if (bounds.pos.y < low.y) {
-				low.y = bounds.pos.y;
-			}
-
-			if (bounds.pos.x + bounds.dim.x > high.x) {
-				high.x = bounds.pos.x + bounds.dim.x;
-			}
-
-			if (bounds.pos.y + bounds.dim.y > high.y) {
-				high.y = bounds.pos.y + bounds.dim.y;
-			}
-		}
-
-		// TODO: Create min/max scroll X/Y properties and draw scroll bars at edges.
-		scrollX = -Math.max(Math.min(high.x - getWidth(), -scrollX), low.x);
-		scrollY = -Math.max(Math.min(high.y - getHeight(), -scrollY), low.y);
 
 		SortedMap<MVec2d, Image> renderMap = new TreeMap<>();
 		MVec2d loc = new MVec2d();
@@ -589,15 +639,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			final Bounds bounds = groupBounds[i];
-			bounds.pos.plus(scrollX, scrollY);
+			final MVec2d gpos = new MVec2d(bounds.pos).plus(-scrollX.get(), -scrollY.get());
 
-			if (bounds.pos.x < -bounds.dim.x || bounds.pos.x > getWidth() || bounds.pos.y < -bounds.dim.y || bounds.pos.y > getHeight()) {
+			if (gpos.x < -bounds.dim.x || gpos.x > getWidth() || gpos.y < -bounds.dim.y || gpos.y > getHeight()) {
 				continue;
 			}
 
 			for (int j = 0; j < cardLists[i].size(); ++j) {
 				loc = engine.coordinatesOf(i, j, loc);
-				loc = loc.plus(scrollX, scrollY);
+				loc = loc.plus(-scrollX.get(), -scrollY.get());
 
 				if (loc.x < -cardWidth() || loc.x > getWidth() || loc.y < -cardHeight() || loc.y > getHeight()) {
 					continue;
