@@ -26,7 +26,7 @@ public class ColorIdentity implements Omnifilter.FaceFilter {
 
 	@Override
 	public boolean testFace(CardFace face) {
-		Set<Color> cardColors = face.color();
+		Set<Color> cardColors = face.colorIdentity();
 
 		switch (operator) {
 			case EQUALS:
