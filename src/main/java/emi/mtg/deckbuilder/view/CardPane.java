@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view;
 
 import com.sun.javafx.collections.ObservableListWrapper;
+import emi.lib.mtg.characteristic.CardType;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
@@ -10,6 +11,7 @@ import emi.mtg.deckbuilder.view.sortings.Name;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.DoubleProperty;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -102,19 +104,21 @@ public class CardPane extends BorderPane {
 		}
 	}
 
+	private final static Predicate<CardInstance> NONSTANDARD_CARDS = c -> c.card().faces().stream().allMatch(f -> CardType.CONSTRUCTED_TYPES.containsAll(f.type().cardTypes()));
+
+	private final FilteredList<CardInstance> filteredModel;
 	private final CardView cardView;
 
 	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine) {
 		super();
 
+		this.filteredModel = model.filtered(NONSTANDARD_CARDS);
 		// TODO: Somehow use these from CardView.
-		this.cardView = new CardView(images, model, initEngine, new ConvertedManaCost(), new ManaCost(), new Name());
+		this.cardView = new CardView(images, filteredModel, initEngine, new ConvertedManaCost(), new ManaCost(), new Name());
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		Button label = new Button(title);
 		label.setFont(Font.font(null, FontWeight.BOLD, -1));
-
-		ContextMenu deckMenu = new ContextMenu();
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
@@ -128,7 +132,6 @@ public class CardPane extends BorderPane {
 			item.setToggleGroup(groupingGroup);
 			groupingMenu.getItems().add(item);
 		}
-		deckMenu.getItems().add(groupingMenu);
 
 		Menu displayMenu = new Menu("Display");
 		ToggleGroup displayGroup = new ToggleGroup();
@@ -142,7 +145,6 @@ public class CardPane extends BorderPane {
 			item.setToggleGroup(displayGroup);
 			displayMenu.getItems().add(item);
 		}
-		deckMenu.getItems().add(displayMenu);
 
 		MenuItem sortButton = new MenuItem("Sort");
 		sortButton.setOnAction(ae -> {
@@ -153,14 +155,31 @@ public class CardPane extends BorderPane {
 						this.cardView.requestFocus();
 					});
 		});
-		deckMenu.getItems().add(sortButton);
 
 		CustomMenuItem cardScale = new CustomMenuItem();
 		Slider cardScaleSlider = new Slider(0.25, 1.5, 1.0);
 		this.cardView.cardScaleProperty().bind(cardScaleSlider.valueProperty());
 		cardScale.setContent(cardScaleSlider);
 		cardScale.setHideOnClick(false);
+
+		CheckMenuItem findOtherCards = new CheckMenuItem("Show Nontraditional Cards");
+		findOtherCards.setOnAction(ae -> {
+			if (findOtherCards.isSelected()) {
+				filteredModel.setPredicate(c -> true);
+			} else {
+				filteredModel.setPredicate(NONSTANDARD_CARDS);
+			}
+		});
+		findOtherCards.setSelected(false);
+
+		ContextMenu deckMenu = new ContextMenu();
+
+		deckMenu.getItems().add(groupingMenu);
+		deckMenu.getItems().add(displayMenu);
+		deckMenu.getItems().add(sortButton);
 		deckMenu.getItems().add(cardScale);
+		deckMenu.getItems().add(new SeparatorMenuItem());
+		deckMenu.getItems().add(findOtherCards);
 
 		label.setOnAction(ae -> {
 			deckMenu.show(label, Side.BOTTOM, 0, 0);
