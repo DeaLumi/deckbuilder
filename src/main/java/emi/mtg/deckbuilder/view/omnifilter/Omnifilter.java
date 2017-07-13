@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.omnifilter;
 
 import emi.lib.Service;
 import emi.lib.mtg.card.CardFace;
+import emi.lib.mtg.characteristic.CardType;
 import emi.mtg.deckbuilder.model.CardInstance;
 
 import java.util.*;
@@ -13,6 +14,7 @@ import java.util.stream.Stream;
 
 public class Omnifilter {
 	public enum Operator {
+		DIRECT (":"),
 		EQUALS ("="),
 		NOT_EQUALS ("!="),
 		LESS_THAN ("<"),
@@ -44,37 +46,35 @@ public class Omnifilter {
 		}
 	}
 
-	@Service({Boolean.class, Operator.class, String.class})
+	@Service({Operator.class, String.class})
 	@Service.Property.String(name="key")
 	@Service.Property.String(name="shorthand", required=false)
-	public interface SubfilterFactory extends Predicate<CardInstance> {
+	public interface Subfilter extends Predicate<CardInstance> {
 	}
 
-	public interface FaceFilterFactory extends SubfilterFactory {
-		boolean allFacesMustMatch();
+	public interface FaceFilter extends Subfilter {
+		default boolean allFacesMustMatch() {
+			return false;
+		}
 
 		boolean testFace(CardFace face);
 
 		@Override
 		default boolean test(CardInstance ci) {
-			Stream<CardFace> faces = Arrays.stream(CardFace.Kind.values())
-					.map(ci.card()::face)
-					.filter(Objects::nonNull);
-
 			if (this.allFacesMustMatch()) {
-				return faces.allMatch(this::testFace);
+				return ci.card().faces().stream().allMatch(this::testFace);
 			} else {
-				return faces.anyMatch(this::testFace);
+				return ci.card().faces().stream().anyMatch(this::testFace);
 			}
 		}
 	}
 
-	private static final Map<String, Service.Loader<SubfilterFactory>.Stub> SUBFILTER_FACTORIES = subfilterFactories();
+	private static final Map<String, Service.Loader<Subfilter>.Stub> SUBFILTER_FACTORIES = subfilterFactories();
 
-	private static Map<String, Service.Loader<SubfilterFactory>.Stub> subfilterFactories() {
-		Map<String, Service.Loader<SubfilterFactory>.Stub> map = new HashMap<>();
+	private static Map<String, Service.Loader<Subfilter>.Stub> subfilterFactories() {
+		Map<String, Service.Loader<Subfilter>.Stub> map = new HashMap<>();
 
-		for (Service.Loader<SubfilterFactory>.Stub stub : Service.Loader.load(SubfilterFactory.class)) {
+		for (Service.Loader<Subfilter>.Stub stub : Service.Loader.load(Subfilter.class)) {
 			if (stub.has("shorthand")) {
 				map.putIfAbsent(stub.string("shorthand"), stub);
 			}
@@ -84,7 +84,7 @@ public class Omnifilter {
 		return Collections.unmodifiableMap(map);
 	}
 
-	private static final Pattern PATTERN = Pattern.compile("(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=)(?<value>\"[^\"]*\"|[^\\s]*)");
+	private static final Pattern PATTERN = Pattern.compile("(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]*\"|[^\\s]*)");
 
 	public static Predicate<CardInstance> parse(String expression) {
 		Matcher m = PATTERN.matcher(expression);
@@ -92,23 +92,28 @@ public class Omnifilter {
 		Predicate<CardInstance> predicate = c -> true;
 
 		while (m.find()) {
-			boolean negate = !m.group("neg").isEmpty();
+			String tmp = m.group("value");
+			if (tmp.startsWith("\"") && tmp.endsWith("\"")) {
+				tmp = tmp.substring(1, tmp.length() - 1);
+			}
+			String value = tmp;
+
 			String key = m.group("key");
-			Operator op = Operator.forString(m.group("op"));
 
-			String value = m.group("value");
-			if (value.startsWith("\"") && value.endsWith("\"")) {
-				value = value.substring(1, value.length() - 1);
+			if (key != null) {
+				Operator op = Operator.forString(m.group("op"));
+
+				Service.Loader<Subfilter>.Stub stub = SUBFILTER_FACTORIES.get(key);
+
+				if (stub == null) {
+					// TODO: Report this somehow? Or just fail hard?
+					continue;
+				}
+
+				predicate = predicate.and(stub.uncheckedInstance(op, value));
+			} else {
+				predicate = predicate.and(ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())));
 			}
-
-			Service.Loader<SubfilterFactory>.Stub stub = SUBFILTER_FACTORIES.get(key);
-
-			if (stub == null) {
-				// TODO: Report this somehow? Or just fail hard?
-				continue;
-			}
-
-			predicate = predicate.and(stub.uncheckedInstance(negate, op, value));
 		}
 
 		return predicate;
