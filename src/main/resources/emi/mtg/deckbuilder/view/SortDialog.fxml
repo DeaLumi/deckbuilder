@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<fx:root type="DialogPane" xmlns:fx="http://javafx.com/fxml">
+    <content>
+        <BorderPane>
+            <padding>
+                <Insets topRightBottomLeft="8.0"/>
+            </padding>
+            <center>
+                <HBox alignment="CENTER" spacing="8.0">
+                    <VBox>
+                        <Label text="Available sorts:"/>
+                        <ListView fx:id="sourceList">
+                            <!-- Source list view -->
+                        </ListView>
+                    </VBox>
+                    <VBox alignment="CENTER" spacing="8.0">
+                        <!-- Left/Right buttons -->
+                        <Button text="Add &gt;" maxWidth="Infinity" onAction="#addSort"/>
+                        <Button text="&lt; Remove" maxWidth="Infinity" onAction="#removeSort"/>
+                    </VBox>
+                    <VBox>
+                        <Label text="Active sorts: (check to reverse)"/>
+                        <ListView fx:id="activeList">
+                            <!-- Active list view -->
+                        </ListView>
+                    </VBox>
+                    <VBox alignment="TOP_CENTER" spacing="8.0">
+                        <!-- Reorder buttons -->
+                        <Button text="Top" maxWidth="Infinity" onAction="#moveTop"/>
+                        <Button text="Up" maxWidth="Infinity" onAction="#moveUp"/>
+                        <Button text="Down" maxWidth="Infinity" onAction="#moveDown"/>
+                        <Button text="Bottom" maxWidth="Infinity" onAction="#moveBottom"/>
+                    </VBox>
+                </HBox>
+            </center>
+        </BorderPane>
+    </content>
+    <buttonTypes>
+        <ButtonType fx:constant="OK"/>
+        <ButtonType fx:constant="CANCEL"/>
+    </buttonTypes>
+</fx:root>

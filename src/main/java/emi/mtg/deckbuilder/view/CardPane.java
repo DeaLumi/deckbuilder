@@ -1,17 +1,12 @@
 package emi.mtg.deckbuilder.view;
 
-import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.mtg.characteristic.CardType;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
-import emi.mtg.deckbuilder.view.sortings.ManaCost;
-import emi.mtg.deckbuilder.view.sortings.Name;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.DoubleProperty;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -25,7 +20,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
-import java.util.*;
+import java.util.List;
 import java.util.function.Predicate;
 
 public class CardPane extends BorderPane {
@@ -109,12 +104,12 @@ public class CardPane extends BorderPane {
 	private Predicate<CardInstance> lastOmnifilter;
 	private final CardView cardView;
 
-	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine) {
+	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
 		super();
 
-		// TODO: Somehow use these from CardView.
 		this.lastOmnifilter = c -> true;
-		this.cardView = new CardView(images, model, initEngine, new ConvertedManaCost(), new ManaCost(), new Name());
+
+		this.cardView = new CardView(images, model, initEngine, CardView.groupings().get("CMC"), sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		Button label = new Button(title);
@@ -122,7 +117,7 @@ public class CardPane extends BorderPane {
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
-		for (CardView.Grouping grouping : CardView.groupings()) {
+		for (CardView.Grouping grouping : CardView.groupings().values()) {
 			RadioMenuItem item = new RadioMenuItem(grouping.toString());
 			item.setOnAction(ae -> {
 				this.cardView.group(grouping);
@@ -148,10 +143,10 @@ public class CardPane extends BorderPane {
 
 		MenuItem sortButton = new MenuItem("Sort");
 		sortButton.setOnAction(ae -> {
-			ReorderDialog<CardView.Sorting> dlg = new ReorderDialog<>("Sort", new ObservableListWrapper<>(new ArrayList<>(CardView.sortings())));
+			SortDialog dlg = new SortDialog(this.cardView.sort());
 			dlg.showAndWait()
 					.ifPresent(s -> {
-						this.cardView.sort(s.toArray(new CardView.Sorting[s.size()]));
+						this.cardView.sort(s);
 						this.cardView.requestFocus();
 					});
 		});
@@ -198,6 +193,14 @@ public class CardPane extends BorderPane {
 		HBox.setHgrow(label, Priority.NEVER);
 		HBox.setHgrow(filter, Priority.ALWAYS);
 		this.setTop(controlBar);
+	}
+
+	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String layoutEngine) {
+		this(title, images, model, layoutEngine, CardView.DEFAULT_SORTING);
+	}
+
+	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model) {
+		this(title, images, model, "Piles", CardView.DEFAULT_SORTING);
 	}
 
 	public CardView view() {

@@ -8,6 +8,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.sortings.Name;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -149,9 +150,26 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		// nothing to do...
 	}
 
+	public static class ActiveSorting {
+		public final Sorting sorting;
+		public SimpleBooleanProperty descending;
+
+		public ActiveSorting(Sorting sorting, boolean descending) {
+			this.sorting = sorting;
+			this.descending = new SimpleBooleanProperty(descending);
+		}
+
+		@Override
+		public String toString() {
+			return sorting.toString();
+		}
+	}
+
 	private static final Map<String, Service.Loader<LayoutEngine>.Stub> engineMap = new HashMap<>();
-	private static final List<Grouping> groupings;
-	private static final List<Sorting> sortings;
+	private static final Map<String, Grouping> groupings;
+	private static final Map<String, Sorting> sortings;
+
+	public static final List<ActiveSorting> DEFAULT_SORTING, DEFAULT_COLLECTION_SORTING;
 
 	static {
 		Service.Loader<LayoutEngine> loader = Service.Loader.load(LayoutEngine.class);
@@ -160,24 +178,33 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			engineMap.put(stub.string("name"), stub);
 		}
 
-		groupings = Collections.unmodifiableList(Service.Loader.load(Grouping.class).stream()
-				.map(s -> s.uncheckedInstance())
-				.collect(Collectors.toList()));
+		groupings = Collections.unmodifiableMap(Service.Loader.load(Grouping.class).stream()
+				.collect(Collectors.toMap(g -> g.string("name"), g -> g.uncheckedInstance())));
 
-		sortings = Collections.unmodifiableList(Service.Loader.load(Sorting.class).stream()
-				.map(s -> s.uncheckedInstance())
-				.collect(Collectors.toList()));
+		sortings = Collections.unmodifiableMap(Service.Loader.load(Sorting.class).stream()
+				.collect(Collectors.toMap(g -> g.string("name"), g -> g.uncheckedInstance())));
+
+		DEFAULT_SORTING = Collections.unmodifiableList(Arrays.asList(
+				new ActiveSorting(sortings.get("Mana Cost"), false),
+				new ActiveSorting(sortings.get("Name"), false)
+		));
+
+		DEFAULT_COLLECTION_SORTING = Collections.unmodifiableList(Arrays.asList(
+				new ActiveSorting(sortings.get("Rarity"), true),
+				new ActiveSorting(sortings.get("Mana Cost"), false),
+				new ActiveSorting(sortings.get("Name"), true)
+		));
 	}
 
 	public static Set<String> engineNames() {
 		return CardView.engineMap.keySet();
 	}
 
-	public static List<Grouping> groupings() {
+	public static Map<String, Grouping> groupings() {
 		return CardView.groupings;
 	}
 
-	public static List<Sorting> sortings() {
+	public static Map<String, Sorting> sortings() {
 		return CardView.sortings;
 	}
 
@@ -194,7 +221,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private LayoutEngine engine;
 	private Predicate<CardInstance> filter;
-	private Comparator<CardInstance> sort;
+	private List<ActiveSorting> sorting;
 	private Grouping grouping;
 
 	private final Map<String, Integer> groupIndexMap;
@@ -213,7 +240,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private DoubleProperty cardScaleProperty;
 
-	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine, Grouping grouping, Sorting... sorts) {
+	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
@@ -417,19 +444,23 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.filteredModel.setPredicate(this.filter);
 	}
 
-	public void sort(Sorting... sorts) {
-		if (sorts.length <= 0) {
+	public void sort(List<ActiveSorting> sorts) {
+		if (sorts.isEmpty()) {
 			return;
 		}
 
-		Comparator<CardInstance> sort = sorts[0];
+		this.sorting = sorts;
 
-		for (int i = 1; i < sorts.length; ++i) {
-			sort = sort.thenComparing(sorts[i]);
+		Comparator<CardInstance> sort = (c1, c2) -> 0;
+		for (ActiveSorting element : sorts) {
+			sort = sort.thenComparing(element.descending.get() ? element.sorting.reversed() : element.sorting);
 		}
 
-		this.sort = sort;
-		this.sortedModel.setComparator(this.sort);
+		this.sortedModel.setComparator(sort);
+	}
+
+	public List<ActiveSorting> sort() {
+		return this.sorting;
 	}
 
 	public void group(Grouping grouping) {
