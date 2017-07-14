@@ -73,7 +73,7 @@ public class TextFile implements DeckImportExport {
 					.findAny().orElse(null);
 
 			if (card == null) {
-				throw new IOException("Couldn't find card named " + card);
+				throw new IOException("Couldn't find card named " + cardName);
 			}
 
 			CardInstance ci = new CardInstance(card);
@@ -85,7 +85,7 @@ public class TextFile implements DeckImportExport {
 		return list;
 	}
 
-	private void writeList(List<CardInstance> list, Writer writer) throws IOException {
+	private static void writeList(List<CardInstance> list, Writer writer) throws IOException {
 		LinkedList<CardInstance> tmp = new LinkedList<>(list);
 		while (!tmp.isEmpty()) {
 			Card card = tmp.removeFirst().card();
