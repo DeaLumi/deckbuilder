@@ -392,6 +392,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		CardList cardsInGroup = cardLists[group];
 
+		if (cardsInGroup == null || cardsInGroup.isEmpty()) {
+			return null;
+		}
+
 		int card = this.engine.cardAt(point, cardsInGroup.size());
 
 		if (card < 0) {
@@ -744,7 +748,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			gfx.setTextAlign(TextAlignment.CENTER);
 			gfx.setTextBaseline(VPos.CENTER);
 			for (int i = 0; i < labelBounds.length; ++i) {
-				if (grouping.groups()[i] == null || cardLists[i] == null || cardLists[i].size() == 0) {
+				if (grouping.groups()[i] == null || cardLists[i] == null || cardLists[i].isEmpty()) {
 					continue;
 				}
 
