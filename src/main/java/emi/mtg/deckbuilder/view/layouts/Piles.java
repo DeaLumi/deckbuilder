@@ -3,8 +3,6 @@ package emi.mtg.deckbuilder.view.layouts;
 import emi.lib.Service;
 import emi.mtg.deckbuilder.view.CardView;
 
-import static emi.mtg.deckbuilder.view.CardView.*;
-
 @Service.Provider(CardView.LayoutEngine.class)
 @Service.Property.String(name="name", value="Piles")
 public class Piles implements CardView.LayoutEngine {
@@ -23,9 +21,7 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public CardView.Bounds[] layoutGroups(int[] groupSizes) {
-		CardView.Bounds[] bounds = new CardView.Bounds[groupSizes.length];
-
+	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds) {
 		if (xs == null || xs.length != groupSizes.length) {
 			xs = new double[groupSizes.length];
 		}
@@ -36,16 +32,13 @@ public class Piles implements CardView.LayoutEngine {
 
 		double x = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
-			bounds[i] = new Bounds();
-			bounds[i].pos.x = xs[i] = x;
-			bounds[i].pos.y = 0.0;
-			bounds[i].dim.x = p + (groupSizes[i] > 0 ? w : 0) + p;
-			bounds[i].dim.y = p + (h * OVERLAP_FACTOR) * (groupSizes[i] - 1) + h + p;
+			groupBounds[i].pos.x = xs[i] = x;
+			groupBounds[i].pos.y = 0.0;
+			groupBounds[i].dim.x = p + (groupSizes[i] > 0 ? w : 0) + p;
+			groupBounds[i].dim.y = p + (h * OVERLAP_FACTOR) * (groupSizes[i] - 1) + h + p;
 
-			x += bounds[i].dim.x;
+			x += groupBounds[i].dim.x;
 		}
-
-		return bounds;
 	}
 
 	@Override

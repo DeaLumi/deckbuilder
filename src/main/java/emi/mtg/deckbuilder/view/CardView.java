@@ -119,7 +119,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	@Service(CardView.class)
 	@Service.Property.String(name="name")
 	public interface LayoutEngine {
-		Bounds[] layoutGroups(int[] groupSizes);
+		void layoutGroups(int[] groupSizes, Bounds[] groupBounds);
 
 		MVec2d coordinatesOf(int group, int card, MVec2d buffer);
 		int groupAt(MVec2d point);
@@ -421,6 +421,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		for (int i = 0; i < this.grouping.groups().length; ++i) {
 			groupIndexMap.put(this.grouping.groups()[i], i);
 		}
+
+		this.groupBounds = new Bounds[grouping.groups().length];
+		for (int i = 0; i < this.groupBounds.length; ++i) {
+			this.groupBounds[i] = new Bounds();
+		}
+
 		layout();
 	}
 
@@ -561,7 +567,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			++groupSizes[i];
 		}
 
-		groupBounds = engine.layoutGroups(groupSizes);
+		engine.layoutGroups(groupSizes, groupBounds);
 
 		MVec2d low = new MVec2d(), high = new MVec2d();
 

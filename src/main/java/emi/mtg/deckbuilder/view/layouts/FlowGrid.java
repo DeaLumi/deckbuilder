@@ -20,9 +20,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public CardView.Bounds[] layoutGroups(int[] groupSizes) {
-		CardView.Bounds[] bounds = new CardView.Bounds[groupSizes.length];
-
+	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds) {
 		if (ys == null || ys.length != groupSizes.length) {
 			ys = new double[groupSizes.length];
 		}
@@ -35,16 +33,13 @@ public class FlowGrid implements CardView.LayoutEngine {
 
 		double y = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
-			bounds[i] = new CardView.Bounds();
-			bounds[i].pos.x = 0;
-			bounds[i].pos.y = ys[i] = y;
-			bounds[i].dim.x = parent.getWidth();
+			groupBounds[i].pos.x = 0;
+			groupBounds[i].pos.y = ys[i] = y;
+			groupBounds[i].dim.x = parent.getWidth();
 
-			bounds[i].dim.y = Math.ceil((double) groupSizes[i] / (double) stride) * php;
-			y += bounds[i].dim.y;
+			groupBounds[i].dim.y = Math.ceil((double) groupSizes[i] / (double) stride) * php;
+			y += groupBounds[i].dim.y;
 		}
-
-		return bounds;
 	}
 
 	@Override
