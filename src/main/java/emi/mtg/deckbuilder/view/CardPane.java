@@ -127,6 +127,11 @@ public class CardPane extends BorderPane {
 			item.setToggleGroup(groupingGroup);
 			groupingMenu.getItems().add(item);
 		}
+		groupingMenu.getItems().add(new SeparatorMenuItem());
+
+		CheckMenuItem reverseGroupsItem = new CheckMenuItem("Reverse Groups");
+		reverseGroupsItem.selectedProperty().bindBidirectional(this.cardView.reverseGroups());
+		groupingMenu.getItems().add(reverseGroupsItem);
 
 		Menu displayMenu = new Menu("Display");
 		ToggleGroup displayGroup = new ToggleGroup();

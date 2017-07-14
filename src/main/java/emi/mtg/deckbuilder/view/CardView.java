@@ -7,6 +7,7 @@ import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.sortings.Name;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -224,6 +225,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private List<ActiveSorting> sorting;
 	private Grouping grouping;
 
+	private final BooleanProperty reverseGroups;
 	private final Map<String, Integer> groupIndexMap;
 
 	private DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
@@ -255,6 +257,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
 
+		this.reverseGroups = new SimpleBooleanProperty(false);
+		this.reverseGroups.addListener(ce -> layout());
 		this.groupIndexMap = new HashMap<>();
 
 		this.scrollMinX = new SimpleDoubleProperty(0.0);
@@ -492,6 +496,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.doubleClick = doubleClick;
 	}
 
+	public BooleanProperty reverseGroups() {
+		return reverseGroups;
+	}
+
 	public DoubleProperty cardScaleProperty() {
 		return cardScaleProperty;
 	}
@@ -603,10 +611,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		// One complete pass through the list... TODO: use streams?
 		for (CardInstance ci : sortedModel) {
-			final Integer i = groupIndexMap.get(grouping.extract(ci));
+			Integer i = groupIndexMap.get(grouping.extract(ci));
 			if (i == null) {
 				System.err.println("Warning: Couldn't find group for " + ci.card().name());
 				continue;
+			}
+
+			if (reverseGroups.get()) {
+				i = groupSizes.length - 1 - i;
 			}
 
 			if (cardLists[i] == null) {
@@ -779,12 +791,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			gfx.setTextAlign(TextAlignment.CENTER);
 			gfx.setTextBaseline(VPos.CENTER);
 			for (int i = 0; i < labelBounds.length; ++i) {
-				if (grouping.groups()[i] == null || cardLists[i] == null || cardLists[i].isEmpty()) {
+				if (cardLists[i] == null || cardLists[i].isEmpty()) {
 					continue;
 				}
 
+				String s = grouping.groups()[reverseGroups.get() ? grouping.groups().length - 1 - i : i];
+
 				gfx.setFont(Font.font(labelBounds[i].dim.y));
-				gfx.fillText(String.format("%s (%d)", grouping.groups()[i], cardLists[i].size()),
+				gfx.fillText(String.format("%s (%d)", s, cardLists[i].size()),
 						labelBounds[i].pos.x + labelBounds[i].dim.x / 2.0 - scrollX.get(),
 						labelBounds[i].pos.y + labelBounds[i].dim.y / 2.0 - scrollY.get(),
 						labelBounds[i].dim.x);
