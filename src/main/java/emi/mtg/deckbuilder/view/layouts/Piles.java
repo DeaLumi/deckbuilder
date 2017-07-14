@@ -22,17 +22,13 @@ public class Piles implements CardView.LayoutEngine {
 
 	@Override
 	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds) {
-		if (xs == null || xs.length != groupSizes.length) {
-			xs = new double[groupSizes.length];
-		}
-
 		double p = parent.cardPadding();
 		double w = parent.cardWidth();
 		double h = parent.cardHeight();
 
 		double x = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
-			groupBounds[i].pos.x = xs[i] = x;
+			groupBounds[i].pos.x = x;
 			groupBounds[i].pos.y = 0.0;
 			groupBounds[i].dim.x = p + (groupSizes[i] > 0 ? w : 0) + p;
 			groupBounds[i].dim.y = p + (h * OVERLAP_FACTOR) * (groupSizes[i] - 1) + h + p;
@@ -42,11 +38,7 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public CardView.MVec2d coordinatesOf(int group, int card, CardView.MVec2d buffer) {
-		if (this.xs == null) {
-			throw new IllegalStateException("Haven't layoutGroups yet!");
-		}
-
+	public CardView.MVec2d coordinatesOf(int card, CardView.MVec2d buffer) {
 		if (buffer == null) {
 			buffer = new CardView.MVec2d();
 		}
@@ -54,38 +46,19 @@ public class Piles implements CardView.LayoutEngine {
 		double p = parent.cardPadding();
 		double h = parent.cardHeight();
 
-		buffer.x = xs[group] + p;
+		buffer.x = p;
 		buffer.y = p + (h * OVERLAP_FACTOR) * card;
 
 		return buffer;
 	}
 
 	@Override
-	public int groupAt(CardView.MVec2d point) {
-		if (this.xs == null) {
-			throw new IllegalStateException("Haven't layoutGroups yet!");
-		}
-
-		for (int i = 0; i < xs.length; ++i) {
-			if (xs[i] > point.x) {
-				return i - 1;
-			}
-		}
-
-		return xs.length - 1;
-	}
-
-	@Override
-	public int cardAt(CardView.MVec2d point, int group, int groupSize) {
-		if (this.xs == null) {
-			throw new IllegalStateException("Haven't layoutGroups yet!");
-		}
-
+	public int cardAt(CardView.MVec2d point, int groupSize) {
 		double p = parent.cardPadding();
 		double w = parent.cardWidth();
 		double h = parent.cardHeight();
 
-		double x = point.x - xs[group];
+		double x = point.x;
 		if (x < p || x > p + w) {
 			return -1;
 		}

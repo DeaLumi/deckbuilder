@@ -114,6 +114,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			this.pos = new MVec2d();
 			this.dim = new MVec2d();
 		}
+
+		public boolean contains(MVec2d point) {
+			return point.x >= pos.x && point.y >= pos.y && point.x <= pos.x + dim.x && point.y <= pos.y + dim.y;
+		}
 	}
 
 	@Service(CardView.class)
@@ -121,9 +125,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public interface LayoutEngine {
 		void layoutGroups(int[] groupSizes, Bounds[] groupBounds);
 
-		MVec2d coordinatesOf(int group, int card, MVec2d buffer);
-		int groupAt(MVec2d point);
-		int cardAt(MVec2d point, int group, int groupSize);
+		MVec2d coordinatesOf(int card, MVec2d buffer);
+		int cardAt(MVec2d point, int groupSize);
 	}
 
 	@Service
@@ -371,15 +374,20 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 
 		MVec2d point = new MVec2d(x + scrollX.get(), y + scrollY.get());
-		int group = this.engine.groupAt(point);
 
-		if (group < 0) {
-			return null;
+		int group = 0;
+		for (; group <= groupBounds.length; ++group) {
+			if (group == groupBounds.length) {
+				return null;
+			} else if (groupBounds[group].contains(point)) {
+				point.plus(groupBounds[group].pos);
+				break;
+			}
 		}
 
 		CardList cardsInGroup = cardLists[group];
 
-		int card = this.engine.cardAt(point, group, cardsInGroup.size());
+		int card = this.engine.cardAt(point, cardsInGroup.size());
 
 		if (card < 0) {
 			return null;
@@ -649,8 +657,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			for (int j = 0; j < cardLists[i].size(); ++j) {
-				loc = engine.coordinatesOf(i, j, loc);
-				loc = loc.plus(-scrollX.get(), -scrollY.get());
+				loc = engine.coordinatesOf(j, loc);
+				loc = loc.plus(groupBounds[i].pos).plus(-scrollX.get(), -scrollY.get());
 
 				if (loc.x < -cardWidth() || loc.x > getWidth() || loc.y < -cardHeight() || loc.y > getHeight()) {
 					continue;
