@@ -366,7 +366,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private CardInstance cardAt(double x, double y) {
-		if (sortedModel.size() == 0) {
+		if (this.engine == null || sortedModel.size() == 0) {
 			return null;
 		}
 
