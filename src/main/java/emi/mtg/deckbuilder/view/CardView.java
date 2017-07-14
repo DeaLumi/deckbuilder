@@ -397,7 +397,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public void filter(Predicate<CardInstance> filter) {
 		this.filter = filter;
-		this.filteredModel.setPredicate(filter);
+		this.filteredModel.setPredicate(this.filter);
 	}
 
 	public void sort(Sorting... sorts) {
