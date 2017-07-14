@@ -106,15 +106,15 @@ public class CardPane extends BorderPane {
 
 	private final static Predicate<CardInstance> NONSTANDARD_CARDS = c -> c.card().faces().stream().allMatch(f -> CardType.CONSTRUCTED_TYPES.containsAll(f.type().cardTypes()));
 
-	private final FilteredList<CardInstance> filteredModel;
+	private Predicate<CardInstance> lastOmnifilter;
 	private final CardView cardView;
 
 	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine) {
 		super();
 
-		this.filteredModel = model.filtered(NONSTANDARD_CARDS);
 		// TODO: Somehow use these from CardView.
-		this.cardView = new CardView(images, filteredModel, initEngine, new ConvertedManaCost(), new ManaCost(), new Name());
+		this.lastOmnifilter = c -> true;
+		this.cardView = new CardView(images, model, initEngine, new ConvertedManaCost(), new ManaCost(), new Name());
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		Button label = new Button(title);
@@ -164,11 +164,8 @@ public class CardPane extends BorderPane {
 
 		CheckMenuItem findOtherCards = new CheckMenuItem("Show Nontraditional Cards");
 		findOtherCards.setOnAction(ae -> {
-			if (findOtherCards.isSelected()) {
-				filteredModel.setPredicate(c -> true);
-			} else {
-				filteredModel.setPredicate(NONSTANDARD_CARDS);
-			}
+			this.cardView.filter(findOtherCards.isSelected() ? this.lastOmnifilter : this.lastOmnifilter.and(NONSTANDARD_CARDS));
+			this.cardView.requestFocus();
 		});
 		findOtherCards.setSelected(false);
 
@@ -189,7 +186,7 @@ public class CardPane extends BorderPane {
 		filter.setPromptText("Omnifilter...");
 		filter.setPrefWidth(250.0);
 		filter.setOnAction(ae -> {
-			this.cardView.filter(Omnifilter.parse(filter.getText()));
+			this.cardView.filter(this.lastOmnifilter = Omnifilter.parse(filter.getText()));
 			this.cardView.requestFocus();
 		});
 
