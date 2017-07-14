@@ -13,6 +13,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
@@ -79,6 +80,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return this;
 		}
 
+		public MVec2d copy() {
+			return new MVec2d(this.x, this.y);
+		}
+
 		@Override
 		public int compareTo(MVec2d o) {
 			double dy = this.y - o.y;
@@ -123,7 +128,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	@Service(CardView.class)
 	@Service.Property.String(name="name")
 	public interface LayoutEngine {
-		void layoutGroups(int[] groupSizes, Bounds[] groupBounds);
+		void layoutGroups(int[] groupSizes, Bounds[] groupBounds, Bounds[] labelBounds);
 
 		MVec2d coordinatesOf(int card, MVec2d buffer);
 		int cardAt(MVec2d point, int groupSize);
@@ -199,7 +204,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private boolean panning;
 	private double lastDragX, lastDragY;
 
-	private Bounds[] groupBounds;
+	private Bounds[] groupBounds, labelBounds;
 	private CardList[] cardLists;
 	private CardInstance draggingCard, zoomedCard;
 	private TransferMode[] dragModes, dropModes;
@@ -380,7 +385,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			if (group == groupBounds.length) {
 				return null;
 			} else if (groupBounds[group].contains(point)) {
-				point.plus(groupBounds[group].pos);
+				point.plus(groupBounds[group].pos.copy().negate());
 				break;
 			}
 		}
@@ -431,8 +436,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 
 		this.groupBounds = new Bounds[grouping.groups().length];
+		this.labelBounds = new Bounds[grouping.groups().length];
 		for (int i = 0; i < this.groupBounds.length; ++i) {
 			this.groupBounds[i] = new Bounds();
+			this.labelBounds[i] = new Bounds();
 		}
 
 		layout();
@@ -575,7 +582,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			++groupSizes[i];
 		}
 
-		engine.layoutGroups(groupSizes, groupBounds);
+		engine.layoutGroups(groupSizes, groupBounds, labelBounds);
 
 		MVec2d low = new MVec2d(), high = new MVec2d();
 
@@ -725,10 +732,27 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		Platform.runLater(() -> {
 			GraphicsContext gfx = getGraphicsContext2D();
+
 			gfx.setFill(Color.WHITE);
 			gfx.fillRect(0, 0, getWidth(), getHeight());
+
 			for (Map.Entry<MVec2d, Image> img : renderMap.entrySet()) {
 				gfx.drawImage(img.getValue(), img.getKey().x, img.getKey().y, cardWidth(), cardHeight());
+			}
+
+			gfx.setFill(Color.BLACK);
+			gfx.setTextAlign(TextAlignment.CENTER);
+			gfx.setTextBaseline(VPos.CENTER);
+			for (int i = 0; i < labelBounds.length; ++i) {
+				if (grouping.groups()[i] == null || cardLists[i] == null || cardLists[i].size() == 0) {
+					continue;
+				}
+
+				gfx.setFont(Font.font(labelBounds[i].dim.y));
+				gfx.fillText(String.format("%s (%d)", grouping.groups()[i], cardLists[i].size()),
+						labelBounds[i].pos.x + labelBounds[i].dim.x / 2.0 - scrollX.get(),
+						labelBounds[i].pos.y + labelBounds[i].dim.y / 2.0 - scrollY.get(),
+						labelBounds[i].dim.x);
 			}
 
 			if (zoomedCard != null) {

@@ -9,7 +9,6 @@ public class Piles implements CardView.LayoutEngine {
 	private final static double OVERLAP_FACTOR = 0.125;
 
 	private final CardView parent;
-	private double[] xs;
 
 	public Piles(CardView parent) {
 		this.parent = parent;
@@ -21,16 +20,23 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds) {
+	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds, CardView.Bounds[] labelBounds) {
 		double p = parent.cardPadding();
 		double w = parent.cardWidth();
 		double h = parent.cardHeight();
 
 		double x = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
+			double groupWidth = p + (groupSizes[i] > 0 ? w : 0) + p;
+
+			labelBounds[i].pos.x = x;
+			labelBounds[i].pos.y = 0.0;
+			labelBounds[i].dim.x = groupWidth;
+			labelBounds[i].dim.y = 18.0;
+
 			groupBounds[i].pos.x = x;
-			groupBounds[i].pos.y = 0.0;
-			groupBounds[i].dim.x = p + (groupSizes[i] > 0 ? w : 0) + p;
+			groupBounds[i].pos.y = 18.0;
+			groupBounds[i].dim.x = groupWidth;
 			groupBounds[i].dim.y = p + (h * OVERLAP_FACTOR) * (groupSizes[i] - 1) + h + p;
 
 			x += groupBounds[i].dim.x;

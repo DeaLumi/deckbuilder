@@ -24,7 +24,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds) {
+	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds, CardView.Bounds[] labelBounds) {
 		double p = parent.cardPadding();
 		double php = p + parent.cardHeight() + p;
 
@@ -32,6 +32,12 @@ public class FlowGrid implements CardView.LayoutEngine {
 
 		double y = 0;
 		for (int i = 0; i < groupSizes.length; ++i) {
+			labelBounds[i].pos.x = 0;
+			labelBounds[i].pos.y = y;
+			labelBounds[i].dim.x = parent.getWidth();
+			labelBounds[i].dim.y = 18.0;
+			y += labelBounds[i].dim.y;
+
 			groupBounds[i].pos.x = 0;
 			groupBounds[i].pos.y = y;
 			groupBounds[i].dim.x = parent.getWidth();
