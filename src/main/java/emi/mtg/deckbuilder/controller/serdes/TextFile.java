@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.controller.serdes;
 
+import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.CardSource;
@@ -8,6 +9,7 @@ import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import javafx.collections.ObservableList;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -78,7 +80,7 @@ public class TextFile implements DeckImportExport {
 
 			CardInstance ci = new CardInstance(card);
 			for (int i = 0; i < count; ++i) {
-				(sideboarding ? list.sideboard : list.cards.computeIfAbsent(zone, z -> new ArrayList<>())).add(ci);
+				(sideboarding ? list.sideboard : list.cards.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>()))).add(ci);
 			}
 		}
 
@@ -107,7 +109,7 @@ public class TextFile implements DeckImportExport {
 	public void exportDeck(DeckList deck, File to) throws IOException {
 		FileWriter writer = new FileWriter(to);
 
-		for (Map.Entry<Zone, List<CardInstance>> entry : deck.cards.entrySet()) {
+		for (Map.Entry<Zone, ObservableList<CardInstance>> entry : deck.cards.entrySet()) {
 			if (entry.getValue() == null || entry.getValue().isEmpty()) {
 				continue;
 			}

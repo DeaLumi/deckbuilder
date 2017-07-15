@@ -1,13 +1,18 @@
 package emi.mtg.deckbuilder.model;
 
+import com.sun.javafx.collections.ObservableListWrapper;
+import com.sun.javafx.collections.ObservableMapWrapper;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.game.Deck;
+import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import javafx.collections.MapChangeListener;
+import javafx.collections.ObservableList;
+import javafx.collections.ObservableMap;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-public class DeckList implements Deck {
+public class DeckList implements Deck, MapChangeListener<Zone, ObservableList<CardInstance>> {
 	private static class CardInstanceListWrapper extends AbstractList<Card> {
 		private List<CardInstance> backing;
 
@@ -27,24 +32,45 @@ public class DeckList implements Deck {
 	}
 
 	public String name;
+	public Format format;
 	public String author;
 	public String description;
-	public Map<Zone, List<CardInstance>> cards;
-	public List<CardInstance> sideboard;
+	public ObservableMap<Zone, ObservableList<CardInstance>> cards;
+	public ObservableList<CardInstance> sideboard;
 
+	private transient final Map<Zone, CardInstanceListWrapper> cardsWrapper;
 	private transient final CardInstanceListWrapper sideboardWrapper;
 
 	public DeckList() {
-		this("<No Name>", "<No Author>", "<No Description>", new EnumMap<>(Zone.class), new ArrayList<>());
+		this("<No Name>", "<No Author>", null, "<No Description>", new ObservableMapWrapper<>(new EnumMap<>(Zone.class)), new ObservableListWrapper<>(new ArrayList<>()));
 	}
 
-	public DeckList(String name, String author, String description, Map<Zone, List<CardInstance>> cards, List<CardInstance> sideboard) {
+	public DeckList(String name, String author, Format format, String description, ObservableMap<Zone, ObservableList<CardInstance>> cards, ObservableList<CardInstance> sideboard) {
 		this.name = name;
 		this.author = author;
+		this.format = format;
 		this.description = description;
 		this.cards = cards;
 		this.sideboard = sideboard;
 		this.sideboardWrapper = new CardInstanceListWrapper(this.sideboard);
+		this.cardsWrapper = new HashMap<>();
+
+		for (Zone zone : Zone.values()) {
+			this.cardsWrapper.put(zone, new CardInstanceListWrapper(cards.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>()))));
+		}
+
+		cards.addListener(this);
+	}
+
+	@Override
+	public void onChanged(Change<? extends Zone, ? extends ObservableList<CardInstance>> change) {
+		if (change.wasRemoved()) {
+			this.cardsWrapper.remove(change.getKey());
+		}
+
+		if (change.wasAdded()) {
+			this.cardsWrapper.put(change.getKey(), new CardInstanceListWrapper(change.getValueAdded()));
+		}
 	}
 
 	@Override
@@ -58,36 +84,18 @@ public class DeckList implements Deck {
 	}
 
 	@Override
+	public Format format() {
+		return format;
+	}
+
+	@Override
 	public String description() {
 		return description;
 	}
 
 	@Override
-	public Map<Zone, List<? extends Card>> cards() {
-		return new AbstractMap<Zone, List<? extends Card>>() {
-			@Override
-			public Set<Entry<Zone, List<? extends Card>>> entrySet() {
-				return cards.entrySet().stream()
-						.map(e -> new Map.Entry<Zone, List<? extends Card>>() {
-							CardInstanceListWrapper wrapped = new CardInstanceListWrapper(e.getValue());
-
-							@Override
-							public Zone getKey() {
-								return e.getKey();
-							}
-
-							@Override
-							public List<? extends Card> getValue() {
-								return wrapped;
-							}
-
-							@Override
-							public List<? extends Card> setValue(List<? extends Card> value) {
-								throw new UnsupportedOperationException();
-							}
-						}).collect(Collectors.toSet());
-			}
-		};
+	public Map<Zone, ? extends List<? extends Card>> cards() {
+		return this.cardsWrapper;
 	}
 
 	@Override
