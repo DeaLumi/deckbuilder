@@ -216,13 +216,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private final ImageSource images;
 
-	private final ObservableList<CardInstance> model;
-	private final FilteredList<CardInstance> filteredModel;
-	private final SortedList<CardInstance> sortedModel;
+	private ObservableList<CardInstance> model;
+	private FilteredList<CardInstance> filteredModel;
+	private SortedList<CardInstance> sortedModel;
 
 	private LayoutEngine engine;
+	private Comparator<CardInstance> sort;
 	private Predicate<CardInstance> filter;
-	private List<ActiveSorting> sorting;
+	private List<ActiveSorting> sortingElements;
 	private Grouping grouping;
 
 	private final BooleanProperty reverseGroups;
@@ -436,6 +437,18 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return cardsInGroup.get(card);
 	}
 
+	public void model(ObservableList<CardInstance> model) {
+		if (model == null) {
+			return;
+		}
+
+		this.model = model;
+		this.filteredModel = this.model.filtered(this.filter);
+		this.sortedModel = this.filteredModel.sorted(this.sort);
+
+		layout();
+	}
+
 	public void layout(String engine) {
 		if (CardView.engineMap.containsKey(engine)) {
 			this.engine = CardView.engineMap.get(engine).uncheckedInstance(this);
@@ -453,18 +466,19 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		this.sorting = sorts;
+		this.sortingElements = sorts;
 
 		Comparator<CardInstance> sort = (c1, c2) -> 0;
 		for (ActiveSorting element : sorts) {
 			sort = sort.thenComparing(element.descending.get() ? element.sorting.reversed() : element.sorting);
 		}
 
-		this.sortedModel.setComparator(sort);
+		this.sort = sort;
+		this.sortedModel.setComparator(this.sort);
 	}
 
 	public List<ActiveSorting> sort() {
-		return this.sorting;
+		return this.sortingElements;
 	}
 
 	public void group(Grouping grouping) {
