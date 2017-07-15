@@ -1,33 +1,33 @@
 package emi.mtg.deckbuilder.view;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
-import emi.lib.mtg.characteristic.CardRarity;
 import emi.lib.mtg.data.CardSource;
 import emi.lib.mtg.data.ImageSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.lib.mtg.scryfall.ScryfallCardSource;
-import emi.lib.mtg.scryfall.ScryfallImageSource;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import javafx.application.Application;
+import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.ObservableList;
-import javafx.geometry.Orientation;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Menu;
+import javafx.scene.control.SplitPane;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class MainWindow extends Application {
@@ -58,40 +58,55 @@ public class MainWindow extends Application {
 		List<CardInstance> cards = new ArrayList<>();
 		cs.sets().stream()
 				.flatMap(s -> s.cards().stream())
-//				.filter(c -> "Storm Crow".equals(c.name()))
-//				.filter(c -> "AVR".equals(c.set().code()) || "ALL".equals(c.set().code()))
-//				.filter(c -> c.manaCost() != null && c.manaCost().convertedCost() <= 4)
-//				.filter(c -> CardRarity.Rare.equals(c.rarity()) || CardRarity.MythicRare.equals(c.rarity()))
-//				.filter(c -> CardRarity.MythicRare.equals(c.rarity()))
-//				.filter(c -> c.color().size() > 1)
 				.map(CardInstance::new)
 				.forEach(cards::add);
 		return new ObservableListWrapper<>(cards);
 	}
 
-	private ObservableList<CardInstance> deckModel(CardSource cs) {
-		List<CardInstance> cards = new ArrayList<>();
-		cs.sets().stream()
-				.flatMap(s -> s.cards().stream())
-//				.filter(c -> "Storm Crow".equals(c.name()))
-				.filter(c -> "AVR".equals(c.set().code()))
-//				.filter(c -> c.manaCost() != null && c.manaCost().convertedCost() <= 4)
-//				.filter(c -> CardRarity.Rare.equals(c.rarity()) || CardRarity.MythicRare.equals(c.rarity()))
-				.filter(c -> CardRarity.Common.equals(c.rarity()) || CardRarity.Uncommon.equals(c.rarity()))
-//				.filter(c -> CardRarity.MythicRare.equals(c.rarity()))
-//				.filter(c -> c.color().size() > 1)
-				.map(CardInstance::new)
-				.forEach(cards::add);
-		return new ObservableListWrapper<>(cards);
+	private Stage stage;
+
+	@Override
+	public void start(Stage stage) throws Exception {
+		this.stage = stage;
+
+		stage.setTitle("MTG Deckbuilder - Main Window");
+
+		stage.setScene(new Scene(root, 1024, 1024));
+		stage.setMaximized(true);
+		stage.show();
 	}
 
-	private Format format;
-	private Map<Zone, CardPane> deckPanes;
-	private CardPane sideboard;
+	@FXML
+	private BorderPane root;
+
+	@FXML
+	private Menu newDeckMenu;
+
+	@FXML
+	private Menu importDeckMenu;
+
+	@FXML
+	private Menu exportDeckMenu;
+
+	@FXML
+	private SplitPane collectionSplitter;
+
+	@FXML
 	private SplitPane zoneSplitter;
 
+	public MainWindow() {
+		this.model = new DeckList();
+
+		this.deckPanes = new EnumMap<>(Zone.class);
+	}
+
+	private DeckList model;
+	private final Map<Zone, CardPane> deckPanes;
+	private CardPane sideboard;
+
+	private FileChooser mainFileChooser, exportFileChooser;
+
 	private void setFormat(Format format) {
-		this.format = format;
 		zoneSplitter.getItems().clear();
 		for (Zone zone : format.deckZones()) {
 			zoneSplitter.getItems().add(deckPanes.get(zone));
@@ -99,138 +114,59 @@ public class MainWindow extends Application {
 		zoneSplitter.getItems().add(sideboard);
 	}
 
-	@Override
-	public void start(Stage stage) throws Exception {
-		ImageSource is = new UnifiedImageSource();
+	private void newDeck() {
+		this.model = new DeckList();
 
-		Gson gson = new GsonBuilder()
-				.registerTypeHierarchyAdapter(Card.class, CardInstance.createCardAdapter(cs))
-				.setPrettyPrinting()
-				.create();
-
-		stage.setTitle("MTG Deckbuilder - Main Window");
-
-		// Menu bar
-
-		MenuBar menu = new MenuBar();
-
-		Menu newDeck = new Menu("Set Format");
-		for (Map.Entry<String, Format> format : formats.entrySet()) {
-			MenuItem newDeckOfFormat = new MenuItem(format.getKey());
-			newDeckOfFormat.setOnAction(ae -> setFormat(format.getValue()));
-			newDeck.getItems().add(newDeckOfFormat);
-		}
-
-		Map<Zone, ObservableList<CardInstance>> deckModel = new EnumMap<>(Zone.class);
-		ObservableList<CardInstance> sideboardModel = new ObservableListWrapper<>(new ArrayList<>());
-
-		MenuItem validateDeck = new MenuItem("Validate Deck");
-		validateDeck.setOnAction(ae -> {
-			DeckList tmp = new DeckList();
-
-			for (Zone zone : Zone.values()) {
-				tmp.cards.put(zone, deckModel.get(zone));
-			}
-
-			Set<String> messages = this.format.validate(tmp);
-			String joined = messages.isEmpty() ? "Deck is valid." : messages.stream().collect(Collectors.joining("\n"));
-
-			new Alert(Alert.AlertType.INFORMATION, joined).show();
-		});
-
-		MenuItem loadDeck = new MenuItem("Load deck...");
-		MenuItem saveDeck = new MenuItem("Save deck...");
-		Menu file = new Menu("File");
-		file.getItems().addAll(newDeck, loadDeck, saveDeck, validateDeck);
-		menu.getMenus().add(file);
-
-		// Deck editing view
-		ObservableList<CardInstance> collectionModel = collectionModel(cs);
-
-		CardPane collectionView = new CardPane("Collection", is, collectionModel, "Flow Grid");
-		collectionView.view().dragModes(TransferMode.COPY);
-		collectionView.view().dropModes();
-		collectionView.view().doubleClick(deckModel.computeIfAbsent(Zone.Library, z -> new ObservableListWrapper<>(new ArrayList<>()))::add);
-
-		deckPanes = new EnumMap<>(Zone.class);
 		for (Zone zone : Zone.values()) {
-			ObservableList<CardInstance> zoneCards = deckModel.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>()));
-			CardPane zoneEdit = new CardPane(zone.name(), is, zoneCards, "Piles");
-			zoneEdit.view().doubleClick(zoneCards::remove);
-			zoneEdit.view().dragModes(TransferMode.MOVE);
-			zoneEdit.view().dropModes(TransferMode.COPY_OR_MOVE);
-			deckPanes.put(zone, zoneEdit);
+			deckPanes.get(zone).view().model(this.model.cards.get(zone));
+		}
+		sideboard.view().model(this.model.sideboard);
+	}
+
+	@Override
+	public void init() throws Exception {
+		super.init();
+
+		BorderPane root = new BorderPane();
+
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("MainWindow.fxml"));
+		loader.setController(this);
+		loader.load();
+
+		ImageSource images = new UnifiedImageSource();
+		CardSource cards = cs;
+
+		CardPane collection = new CardPane("Collection", images, new ReadOnlyListWrapper<>(collectionModel(cards)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
+		collection.view().dragModes(TransferMode.COPY);
+		collection.view().dropModes();
+		collection.view().doubleClick(model.cards.get(Zone.Library)::add);
+
+		collectionSplitter.getItems().add(0, collection);
+
+		for (Zone zone : Zone.values()) {
+			CardPane deckZone = new CardPane(zone.name(), images, model.cards.get(zone), "Piles", CardView.DEFAULT_SORTING);
+			deckZone.view().dragModes(TransferMode.MOVE);
+			deckZone.view().dropModes(TransferMode.COPY_OR_MOVE);
+			deckZone.view().doubleClick(model.cards.get(zone)::remove);
+			deckPanes.put(zone, deckZone);
 		}
 
-		zoneSplitter = new SplitPane();
-		zoneSplitter.setOrientation(Orientation.HORIZONTAL);
-		sideboard = new CardPane("Sideboard", is, sideboardModel, "Piles");
-		sideboard.view().doubleClick(sideboardModel::remove);
-		sideboard.view().dragModes(TransferMode.MOVE);
-		sideboard.view().dropModes(TransferMode.COPY_OR_MOVE);
-		setFormat(formats.values().iterator().next());
+		this.sideboard = new CardPane("Sideboard", images, model.sideboard, "Piles", CardView.DEFAULT_SORTING);
 
-		SplitPane splitter = new SplitPane();
-		splitter.getItems().addAll(collectionView, zoneSplitter);
-		splitter.setOrientation(Orientation.VERTICAL);
+		setFormat(formats.get("Standard"));
 
-		// Assembly
-		BorderPane root = new BorderPane();
-		root.setTop(menu);
-		root.setCenter(splitter);
+		this.mainFileChooser = new FileChooser();
+		this.mainFileChooser.getExtensionFilters().setAll(
+				new FileChooser.ExtensionFilter("JSON (*.json)", "*.json"),
+				new FileChooser.ExtensionFilter("All Files (*.*)", "*.*")
+		);
 
-		FileChooser chooser = new FileChooser();
-		chooser.getExtensionFilters().setAll(importExports.keySet());
-		loadDeck.setOnAction(ae -> {
-			File f = chooser.showOpenDialog(stage);
+		this.exportFileChooser = new FileChooser();
+		this.exportFileChooser.getExtensionFilters().setAll(importExports.keySet());
+	}
 
-			DeckImportExport die = importExports.get(chooser.getSelectedExtensionFilter());
-
-			if (f != null) {
-				try {
-					DeckList list = die.importDeck(f);
-
-					for (Zone zone : Zone.values()) {
-						if (list.cards.containsKey(zone)) {
-							deckModel.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>())).setAll(list.cards.get(zone));
-						} else {
-							deckModel.get(zone).clear();
-						}
-					}
-
-					sideboardModel.setAll(list.sideboard);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		});
-
-		saveDeck.setOnAction(ae -> {
-			File f = chooser.showSaveDialog(stage);
-
-			DeckImportExport die = importExports.get(chooser.getSelectedExtensionFilter());
-
-			if (f != null) {
-				try {
-					DeckList deckList = new DeckList();
-
-					for (Zone zone : Zone.values()) {
-						if (deckModel.containsKey(zone) && !deckModel.get(zone).isEmpty()) {
-							deckList.cards.computeIfAbsent(zone, z -> new ArrayList<>()).addAll(deckModel.get(zone));
-						}
-					}
-
-					deckList.sideboard.addAll(sideboardModel);
-
-					die.exportDeck(deckList, f);
-				} catch (IOException ioe) {
-					ioe.printStackTrace();
-				}
-			}
-		});
-
-		stage.setScene(new Scene(root, 1024, 1024));
-		stage.setMaximized(true);
-		stage.show();
+	@FXML
+	protected void actionQuit() {
+		stage.close();
 	}
 }

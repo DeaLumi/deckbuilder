@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane fx:id="root" xmlns:fx="http://javafx.com/fxml">
+    <top>
+        <MenuBar>
+            <menus>
+                <Menu text="File">
+                    <MenuItem text="Settings..."/> <!-- TODO: Action -->
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Quit" onAction="#actionQuit"/>
+                </Menu>
+                <Menu text="Deck">
+                    <Menu text="New" fx:id="newDeckMenu">
+                        <!-- TODO: Children -->
+                    </Menu>
+                    <MenuItem text="Load..."/> <!-- TODO: Action -->
+                    <MenuItem text="Save.."/> <!-- TODO: Action -->
+                    <SeparatorMenuItem/>
+                    <Menu text="Import..." fx:id="importDeckMenu">
+                        <!-- TODO: Children -->
+                    </Menu>
+                    <Menu text="Export" fx:id="exportDeckMenu">
+                        <!-- TODO: Children -->
+                    </Menu>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Info..."/> <!-- TODO: Action -->
+                </Menu>
+                <Menu text="Menu">
+                    <MenuItem text="Filter Syntax"/> <!-- TODO: Action -->
+                    <MenuItem text="About"/> <!-- TODO: Action -->
+                </Menu>
+            </menus>
+        </MenuBar>
+    </top>
+    <center>
+        <SplitPane orientation="VERTICAL" fx:id="collectionSplitter">
+            <SplitPane fx:id="zoneSplitter"/>
+        </SplitPane>
+    </center>
+</BorderPane>

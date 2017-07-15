@@ -1,11 +1,11 @@
 package emi.mtg.deckbuilder.view;
 
+import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.sortings.Name;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -249,9 +249,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setFocusTraversable(true);
 
 		this.images = images;
-		this.model = model;
-		this.filteredModel = this.model.filtered(this.filter = ci -> true);
-		this.sortedModel = this.filteredModel.sorted(new Name());
+
+		this.filter = ci -> true;
+		this.sort = (c1, c2) -> 0;
 
 		this.cardScaleProperty = new SimpleDoubleProperty(1.0);
 		this.cardScaleProperty.addListener(ce -> layout());
@@ -276,6 +276,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.doubleClick = ci -> {};
 
+		model(model);
 		sort(sorts);
 		layout(engine);
 		group(grouping);
@@ -284,7 +285,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.scrollX.addListener(e -> scheduleRender());
 		this.scrollY.addListener(e -> scheduleRender());
-		this.sortedModel.addListener(this);
 
 		setOnDragDetected(de -> {
 			if (de.getButton() != MouseButton.PRIMARY) {
@@ -439,12 +439,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public void model(ObservableList<CardInstance> model) {
 		if (model == null) {
-			return;
+			model = new ObservableListWrapper<>(new ArrayList<>());
 		}
 
 		this.model = model;
 		this.filteredModel = this.model.filtered(this.filter);
 		this.sortedModel = this.filteredModel.sorted(this.sort);
+		this.sortedModel.addListener(this);
 
 		layout();
 	}
@@ -457,13 +458,17 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public void filter(Predicate<CardInstance> filter) {
+		if (filter == null) {
+			filter = c -> true;
+		}
+
 		this.filter = filter;
 		this.filteredModel.setPredicate(this.filter);
 	}
 
 	public void sort(List<ActiveSorting> sorts) {
-		if (sorts.isEmpty()) {
-			return;
+		if (sorts == null) {
+			sorts = Collections.emptyList();
 		}
 
 		this.sortingElements = sorts;
@@ -482,6 +487,31 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public void group(Grouping grouping) {
+		if (grouping == null) {
+			// TODO: Extract this to an actual grouping? "None"?
+			grouping = new Grouping() {
+				@Override
+				public String[] groups() {
+					return new String[] { "All Cards" };
+				}
+
+				@Override
+				public String extract(CardInstance ci) {
+					return "All Cards";
+				}
+
+				@Override
+				public void add(CardInstance ci, String which) {
+					throw new UnsupportedOperationException();
+				}
+
+				@Override
+				public void remove(CardInstance ci, String which) {
+					throw new UnsupportedOperationException();
+				}
+			};
+		}
+
 		this.grouping = grouping;
 		groupIndexMap.clear();
 		for (int i = 0; i < this.grouping.groups().length; ++i) {
