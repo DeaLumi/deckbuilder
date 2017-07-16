@@ -144,6 +144,9 @@ public class MainWindow extends Application {
 		}
 
 		this.sideboard = new CardPane("Sideboard", images, model.sideboard, "Piles", CardView.DEFAULT_SORTING);
+		this.sideboard.view().dragModes(TransferMode.MOVE);
+		this.sideboard.view().dropModes(TransferMode.COPY_OR_MOVE);
+		this.sideboard.view().doubleClick(model.sideboard::remove);
 
 		setFormat(formats.get("Standard"));
 	}
