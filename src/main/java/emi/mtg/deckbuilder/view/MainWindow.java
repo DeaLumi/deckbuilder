@@ -308,10 +308,8 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void showFilterSyntax() {
-		new Alert(Alert.AlertType.INFORMATION,
-				"Omnifilter Syntax\n"
-				+ "\n"
-				+ "General:\n"
+		Alert alert = new Alert(Alert.AlertType.INFORMATION,
+				"General:\n"
 				+ "\u2022 Separate search terms with a space.\n"
 				+ "\u2022 Search terms that don't start with a key and operator search card names.\n"
 				+ "\n"
@@ -340,18 +338,26 @@ public class MainWindow extends Application {
 				+ "\u2022 Logic \u2014 And, or, not, and parenthetical grouping.\n"
 				+ "\u2022 Keys \u2014 Set, mana, power, toughness, loyalty, etc.",
 				ButtonType.OK
-		).showAndWait();
+		);
+
+		alert.setTitle("Syntax Help");
+		alert.setHeaderText("Omnifilter Syntax");
+
+		alert.showAndWait();
 	}
 
 	@FXML
 	protected void showAboutDialog() {
-		new Alert(Alert.AlertType.NONE,
-				"Deck Builder v0.0.0\n" +
-				"\n" +
+		Alert alert = new Alert(Alert.AlertType.NONE,
 				"Developer: Emi (@DeaLumi)\n" +
 				"Data & Images: Scryfall (@Scryfall)\n" +
 				"\n" +
 				"Source code will be available at some point probably.\n" +
-				"Feel free to DM me with feedback/issues on Twitter!", ButtonType.OK).showAndWait();
+				"Feel free to DM me with feedback/issues on Twitter!", ButtonType.OK);
+
+		alert.setTitle("About Deckbuilder");
+		alert.setHeaderText("Deck Builder v0.0.0");
+
+		alert.showAndWait();
 	}
 }
