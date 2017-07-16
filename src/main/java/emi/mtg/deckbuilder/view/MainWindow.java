@@ -22,6 +22,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -104,7 +105,12 @@ public class MainWindow extends Application {
 	private final Map<Zone, CardPane> deckPanes;
 	private CardPane sideboard;
 
-	private FileChooser mainFileChooser, exportFileChooser;
+	private FileChooser fileChooser;
+	private DeckImportExport reexportSerdes;
+	private File reexportFile;
+
+	@FXML
+	private MenuItem reexportMenuItem;
 
 	private void setFormat(Format format) {
 		zoneSplitter.getItems().clear();
@@ -114,16 +120,25 @@ public class MainWindow extends Application {
 		zoneSplitter.getItems().add(sideboard);
 	}
 
-	private void newDeck(Format format) {
-		setFormat(format);
-
-		this.model = new DeckList();
-		this.model.format = format;
+	private void setDeck(DeckList deck) {
+		this.model = deck;
 
 		for (Zone zone : Zone.values()) {
 			deckPanes.get(zone).view().model(this.model.cards.get(zone));
 		}
 		sideboard.view().model(this.model.sideboard);
+	}
+
+	private void newDeck(Format format) {
+		setFormat(format);
+
+		DeckList newDeck = new DeckList();
+		newDeck.format = format;
+		setDeck(newDeck);
+
+		reexportFile = null;
+		reexportSerdes = null;
+		reexportMenuItem.setDisable(true);
 	}
 
 	@Override
@@ -156,20 +171,109 @@ public class MainWindow extends Application {
 
 		setFormat(formats.get("Standard"));
 
-		this.mainFileChooser = new FileChooser();
-		this.mainFileChooser.getExtensionFilters().setAll(
-				new FileChooser.ExtensionFilter("JSON (*.json)", "*.json"),
-				new FileChooser.ExtensionFilter("All Files (*.*)", "*.*")
-		);
+		this.fileChooser = new FileChooser();
+		this.fileChooser.getExtensionFilters().setAll(importExports.keySet());
 
-		this.exportFileChooser = new FileChooser();
-		this.exportFileChooser.getExtensionFilters().setAll(importExports.keySet());
+		for (Map.Entry<FileChooser.ExtensionFilter, DeckImportExport> dies : importExports.entrySet()) {
+			MenuItem importItem = new MenuItem(dies.getKey().getDescription());
+			importItem.setOnAction(ae -> {
+				fileChooser.setSelectedExtensionFilter(dies.getKey());
+				importDeck();
+			});
+
+			this.importDeckMenu.getItems().add(importItem);
+
+			MenuItem exportItem = new MenuItem(dies.getKey().getDescription());
+			exportItem.setOnAction(ae -> {
+				fileChooser.setSelectedExtensionFilter(dies.getKey());
+				exportDeck();
+			});
+
+			this.exportDeckMenu.getItems().add(exportItem);
+		}
+
+		this.reexportMenuItem.setDisable(true);
 
 		for (Format format : formats.values()) {
 			MenuItem item = new MenuItem(format.name());
 			item.setOnAction(ae -> newDeck(format));
 			this.newDeckMenu.getItems().add(item);
 		}
+	}
+
+	private boolean warnAboutSerdes(DeckImportExport die) {
+		StringBuilder builder = new StringBuilder();
+
+		builder.append("The file format you selected doesn't support the following features:\n");
+
+		for (DeckImportExport.Features feature : die.unsupportedFeatures()) {
+			builder.append(" \u2022 ").append(feature.toString()).append('\n');
+		}
+
+		builder.append('\n').append("Is this okay?");
+
+		return new Alert(Alert.AlertType.WARNING, builder.toString(), ButtonType.YES, ButtonType.NO)
+				.showAndWait()
+				.orElse(null) == ButtonType.YES;
+	}
+
+	protected void importDeck() {
+		File f = this.fileChooser.showOpenDialog(this.stage);
+		DeckImportExport die = importExports.get(this.fileChooser.getSelectedExtensionFilter());
+
+		reexportFile = f;
+		reexportSerdes = die;
+		reexportMenuItem.setDisable(false);
+
+		importDeck(f, die);
+	}
+
+	protected void importDeck(File from, DeckImportExport serdes) {
+		if (!serdes.unsupportedFeatures().isEmpty()) {
+			if (!warnAboutSerdes(serdes)) {
+				return;
+			}
+		}
+
+		try {
+			setDeck(serdes.importDeck(from));
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+	}
+
+	protected void exportDeck() {
+		File f = this.fileChooser.showSaveDialog(this.stage);
+		DeckImportExport die = importExports.get(this.fileChooser.getSelectedExtensionFilter());
+
+		reexportFile = f;
+		reexportSerdes = die;
+		reexportMenuItem.setDisable(false);
+
+		exportDeck(f, die);
+	}
+
+	protected void exportDeck(File to, DeckImportExport serdes) {
+		if (!serdes.unsupportedFeatures().isEmpty()) {
+			if (!warnAboutSerdes(serdes)) {
+				return;
+			}
+		}
+
+		try {
+			serdes.exportDeck(this.model, to);
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+	}
+
+	@FXML
+	protected void reexportDeck() {
+		if (reexportSerdes == null || reexportFile == null) {
+			return;
+		}
+
+		exportDeck(reexportFile, reexportSerdes);
 	}
 
 	@FXML

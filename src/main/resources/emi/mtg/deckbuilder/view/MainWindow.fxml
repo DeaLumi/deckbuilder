@@ -6,6 +6,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
+<?import javafx.scene.input.KeyCodeCombination?>
 <BorderPane fx:id="root" xmlns:fx="http://javafx.com/fxml">
     <top>
         <MenuBar>
@@ -13,19 +14,21 @@
                 <Menu text="Application">
                     <MenuItem text="Settings..."/> <!-- TODO: Action -->
                     <SeparatorMenuItem/>
-                    <MenuItem text="Quit" onAction="#actionQuit"/>
+                    <MenuItem text="Quit" onAction="#actionQuit">
+                        <accelerator>
+                            <KeyCodeCombination code="Q" alt="UP" control="UP" shift="UP" meta="DOWN" shortcut="ANY"/>
+                        </accelerator>
+                    </MenuItem>
                 </Menu>
                 <Menu text="Deck">
                     <Menu text="New" fx:id="newDeckMenu"/> <!-- Children are populated by controller. -->
-                    <MenuItem text="Load..."/> <!-- TODO: Action -->
-                    <MenuItem text="Save.."/> <!-- TODO: Action -->
-                    <SeparatorMenuItem/>
-                    <Menu text="Import..." fx:id="importDeckMenu">
-                        <!-- TODO: Children -->
-                    </Menu>
-                    <Menu text="Export" fx:id="exportDeckMenu">
-                        <!-- TODO: Children -->
-                    </Menu>
+                    <Menu text="Import..." fx:id="importDeckMenu"/> <!-- Children are populated by controller. -->
+                    <Menu text="Export" fx:id="exportDeckMenu"/> <!-- Children are populated by controller. -->
+                    <MenuItem text="Re-Export" fx:id="reexportMenuItem" onAction="#reexportDeck">
+                        <accelerator>
+                            <KeyCodeCombination code="S" alt="UP" control="UP" shift="UP" meta="DOWN" shortcut="ANY"/>
+                        </accelerator>
+                    </MenuItem>
                     <SeparatorMenuItem/>
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
                 </Menu>
