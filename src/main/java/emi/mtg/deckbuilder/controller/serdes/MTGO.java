@@ -5,6 +5,7 @@ import com.sun.javafx.collections.ObservableMapWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.CardSource;
+import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
 public class MTGO implements DeckImportExport {
 	private final CardSource cs;
 
-	public MTGO(CardSource cs) {
+	public MTGO(CardSource cs, Map<String, Format> formats) {
 		this.cs = cs;
 	}
 

@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.CardSource;
+import emi.lib.mtg.game.Format;
+import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -13,7 +15,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
 @Service.Provider(DeckImportExport.class)
@@ -22,12 +26,16 @@ import java.util.Set;
 public class Json implements DeckImportExport {
 	private final CardSource cs;
 	private final Gson gson;
+	private final Map<String, Format> formats;
 
-	public Json(CardSource cs) {
+	public Json(CardSource cs, Map<String, Format> formats) {
 		this.cs = cs;
+
+		this.formats = formats;
 
 		this.gson = new GsonBuilder()
 				.registerTypeAdapter(Card.class, CardInstance.createCardAdapter(cs))
+				.registerTypeAdapter(Format.class, DeckList.createFormatAdapter(formats))
 				.setPrettyPrinting()
 				.create();
 	}

@@ -4,6 +4,7 @@ import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.CardSource;
+import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
@@ -26,7 +27,7 @@ public class TextFile implements DeckImportExport {
 
 	private final CardSource cs;
 
-	public TextFile(CardSource cs) {
+	public TextFile(CardSource cs, Map<String, Format> formats) {
 		this.cs = cs;
 	}
 

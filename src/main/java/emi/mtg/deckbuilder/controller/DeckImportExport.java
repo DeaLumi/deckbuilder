@@ -6,9 +6,10 @@ import emi.mtg.deckbuilder.model.DeckList;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
-@Service(CardSource.class)
+@Service({CardSource.class, Map.class})
 @Service.Property.String(name="name")
 @Service.Property.String(name="extension")
 public interface DeckImportExport {

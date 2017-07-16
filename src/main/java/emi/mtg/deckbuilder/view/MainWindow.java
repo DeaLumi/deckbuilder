@@ -52,7 +52,7 @@ public class MainWindow extends Application {
 
 	private static final Map<FileChooser.ExtensionFilter, DeckImportExport> importExports = Service.Loader.load(DeckImportExport.class).stream()
 			.collect(Collectors.toMap(dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
-					dies -> dies.uncheckedInstance(cs)));
+					dies -> dies.uncheckedInstance(cs, formats)));
 
 	private ObservableList<CardInstance> collectionModel(CardSource cs) {
 		List<CardInstance> cards = new ArrayList<>();
@@ -293,8 +293,9 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showDeckInfoDialog() {
 		try {
-			new DeckInfoDialog(formats.values(), this.model)
-					.showAndWait();
+			if(new DeckInfoDialog(formats.values(), this.model).showAndWait().orElse(false)) {
+				setFormat(this.model.format);
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

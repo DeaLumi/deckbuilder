@@ -1,5 +1,9 @@
 package emi.mtg.deckbuilder.model;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import com.sun.javafx.collections.ObservableListWrapper;
 import com.sun.javafx.collections.ObservableMapWrapper;
 import emi.lib.mtg.card.Card;
@@ -10,6 +14,7 @@ import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 
+import java.io.IOException;
 import java.util.*;
 
 public class DeckList implements Deck {
@@ -29,6 +34,29 @@ public class DeckList implements Deck {
 		public int size() {
 			return backing.size();
 		}
+	}
+
+	public static TypeAdapter<Format> createFormatAdapter(Map<String, Format> formats) {
+		return new TypeAdapter<Format>() {
+			@Override
+			public void write(JsonWriter out, Format value) throws IOException {
+				if (value == null) {
+					out.nullValue();
+				} else {
+					out.value(formats.entrySet().stream().filter(e -> e.getValue().equals(value)).map(Map.Entry::getKey).findAny().orElse(null));
+				}
+			}
+
+			@Override
+			public Format read(JsonReader in) throws IOException {
+				switch (in.peek()) {
+					case STRING:
+						return formats.get(in.nextString());
+					default:
+						return null;
+				}
+			}
+		};
 	}
 
 	public String name;
