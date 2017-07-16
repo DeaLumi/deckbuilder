@@ -13,6 +13,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.EnumSet;
+import java.util.Set;
 
 @Service.Provider(DeckImportExport.class)
 @Service.Property.String(name="name", value="JSON")
@@ -48,5 +50,10 @@ public class Json implements DeckImportExport {
 		gson.toJson(deck, DeckList.class, writer);
 
 		writer.close();
+	}
+
+	@Override
+	public Set<Features> unsupportedFeatures() {
+		return EnumSet.noneOf(Features.class);
 	}
 }

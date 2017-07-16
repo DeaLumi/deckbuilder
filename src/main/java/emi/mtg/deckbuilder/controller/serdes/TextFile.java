@@ -4,7 +4,6 @@ import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.card.Card;
 import emi.lib.mtg.data.CardSource;
-import emi.lib.mtg.data.mtgjson.MtgJsonCardSource;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
@@ -129,23 +128,8 @@ public class TextFile implements DeckImportExport {
 		writer.close();
 	}
 
-	public static void main(String[] args) throws IOException {
-		CardSource cs = new MtgJsonCardSource();
-		TextFile tf = new TextFile(cs);
-
-		DeckList deck = tf.importDeck(new File("decklist.txt"));
-
-		for (Zone z : Zone.values()) {
-			System.out.println("Zone: " + z.name());
-
-			if (!deck.cards.containsKey(z)) {
-				System.out.println(" <none>");
-				continue;
-			}
-
-			for (CardInstance ci : deck.cards.get(z)) {
-				System.out.println(" " + ci.card().name());
-			}
-		}
+	@Override
+	public Set<Features> unsupportedFeatures() {
+		return EnumSet.allOf(Features.class);
 	}
 }

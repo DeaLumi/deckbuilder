@@ -103,4 +103,9 @@ public class MTGO implements DeckImportExport {
 
 		writer.close();
 	}
+
+	@Override
+	public Set<Features> unsupportedFeatures() {
+		return EnumSet.allOf(Features.class);
+	}
 }
