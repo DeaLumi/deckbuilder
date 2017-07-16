@@ -299,6 +299,43 @@ public class MainWindow extends Application {
 	}
 
 	@FXML
+	protected void showFilterSyntax() {
+		new Alert(Alert.AlertType.INFORMATION,
+				"Omnifilter Syntax\n"
+				+ "\n"
+				+ "General:\n"
+				+ "\u2022 Separate search terms with a space.\n"
+				+ "\u2022 Search terms that don't start with a key and operator search card names.\n"
+				+ "\n"
+				+ "Operators:\n"
+				+ "\u2022 ':' \u2014 Meaning varies.\n"
+				+ "\u2022 '=' \u2014 Must match the value exactly.\n"
+				+ "\u2022 '!=' \u2014 Must not exactly match the value.\n"
+				+ "\u2022 '>=' \u2014 Must contain the value.\n"
+				+ "\u2022 '>' \u2014 Must contain the value and more.\n"
+				+ "\u2022 '<=' \u2014 Value must completely contain the characteristic.\n"
+				+ "\u2022 '<' \u2014 Value must contain the characteristic and more.\n"
+				+ "\n"
+				+ "Search keys:\n"
+				+ "\u2022 'type' or 't' \u2014 Supertype/type/subtype. (Use ':' or '>='.)\n"
+				+ "\u2022 'text' or 'o' \u2014 Rules text. (Use ':' or '>='.)\n"
+				+ "\u2022 'identity' or 'ci' \u2014 Color identity. (':' means '<='.)\n"
+				+ "\u2022 'color' or 'c' \u2014 Color. (':' means '<=')\n"
+				+ "\u2022 'cmc' \u2014 Converted mana cost. (':' means '==').\n"
+				+ "\n"
+				+ "Examples:\n"
+				+ "\u2022 'color=rug t:legendary' \u2014 Finds all RUG commanders.\n"
+				+ "\u2022 't:sorcery cmc>=8' \u2014 Finds good cards for Spellweaver Helix.\n"
+				+ "\u2022 'o:when o:\"enters the battlefield\" t:creature' \u2014 Finds creatures with ETB effects.\n"
+				+ "\n"
+				+ "Upcoming features:\n"
+				+ "\u2022 Logic \u2014 And, or, not, and parenthetical grouping.\n"
+				+ "\u2022 Keys \u2014 Set, mana, power, toughness, loyalty, etc.",
+				ButtonType.OK
+		).showAndWait();
+	}
+
+	@FXML
 	protected void showAboutDialog() {
 		new Alert(Alert.AlertType.NONE,
 				"Deck Builder v0.0.0\n" +

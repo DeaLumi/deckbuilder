@@ -33,7 +33,7 @@
                     </MenuItem>
                 </Menu>
                 <Menu text="Help">
-                    <MenuItem text="Filter Syntax"/> <!-- TODO: Action -->
+                    <MenuItem text="Filter Syntax" onAction="#showFilterSyntax"/>
                     <MenuItem text="About" onAction="#showAboutDialog"/>
                 </Menu>
             </menus>
