@@ -16,9 +16,7 @@
                     <MenuItem text="Quit" onAction="#actionQuit"/>
                 </Menu>
                 <Menu text="Deck">
-                    <Menu text="New" fx:id="newDeckMenu">
-                        <!-- TODO: Children -->
-                    </Menu>
+                    <Menu text="New" fx:id="newDeckMenu"/> <!-- Children are populated by controller. -->
                     <MenuItem text="Load..."/> <!-- TODO: Action -->
                     <MenuItem text="Save.."/> <!-- TODO: Action -->
                     <SeparatorMenuItem/>

@@ -16,10 +16,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Menu;
-import javafx.scene.control.SplitPane;
+import javafx.scene.control.*;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
@@ -102,6 +99,7 @@ public class MainWindow extends Application {
 		this.deckPanes = new EnumMap<>(Zone.class);
 	}
 
+	private Format format;
 	private DeckList model;
 	private final Map<Zone, CardPane> deckPanes;
 	private CardPane sideboard;
@@ -116,8 +114,15 @@ public class MainWindow extends Application {
 		zoneSplitter.getItems().add(sideboard);
 	}
 
-	private void newDeck() {
+	private void newDeck(Format format) {
+		setFormat(format);
+
 		this.model = new DeckList();
+
+		this.model.name = "<No Name>";
+		this.model.author = System.getProperty("user.name", "<No Author>");
+		this.model.description = "<No Description>";
+		this.model.format = format;
 
 		for (Zone zone : Zone.values()) {
 			deckPanes.get(zone).view().model(this.model.cards.get(zone));
@@ -128,8 +133,6 @@ public class MainWindow extends Application {
 	@Override
 	public void init() throws Exception {
 		super.init();
-
-		BorderPane root = new BorderPane();
 
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("MainWindow.fxml"));
 		loader.setController(this);
@@ -165,6 +168,12 @@ public class MainWindow extends Application {
 
 		this.exportFileChooser = new FileChooser();
 		this.exportFileChooser.getExtensionFilters().setAll(importExports.keySet());
+
+		for (Format format : formats.values()) {
+			MenuItem item = new MenuItem(format.name());
+			item.setOnAction(ae -> newDeck(format));
+			this.newDeckMenu.getItems().add(item);
+		}
 	}
 
 	@FXML
