@@ -63,6 +63,42 @@ public class MainWindow extends Application {
 		return new ObservableListWrapper<>(cards);
 	}
 
+	@FXML
+	private BorderPane root;
+
+	@FXML
+	private SplitPane collectionSplitter;
+
+	@FXML
+	private SplitPane zoneSplitter;
+
+	@FXML
+	private Menu newDeckMenu;
+
+	@FXML
+	private Menu importDeckMenu;
+
+	@FXML
+	private Menu exportDeckMenu;
+
+	@FXML
+	private MenuItem reexportMenuItem;
+
+	private DeckList model;
+	private final Map<Zone, CardPane> deckPanes;
+	private CardPane sideboard;
+
+	private FileChooser fileChooser;
+	private DeckImportExport reexportSerdes;
+	private File reexportFile;
+
+	public MainWindow() {
+		this.model = new DeckList();
+		this.model.format = formats.get("Standard");
+
+		this.deckPanes = new EnumMap<>(Zone.class);
+	}
+
 	private Stage stage;
 
 	@Override
@@ -76,41 +112,72 @@ public class MainWindow extends Application {
 		stage.show();
 	}
 
-	@FXML
-	private BorderPane root;
+	@Override
+	public void init() throws Exception {
+		super.init();
 
-	@FXML
-	private Menu newDeckMenu;
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("MainWindow.fxml"));
+		loader.setController(this);
+		loader.load();
 
-	@FXML
-	private Menu importDeckMenu;
-
-	@FXML
-	private Menu exportDeckMenu;
-
-	@FXML
-	private SplitPane collectionSplitter;
-
-	@FXML
-	private SplitPane zoneSplitter;
-
-	public MainWindow() {
-		this.model = new DeckList();
-		this.model.format = formats.get("Standard");
-
-		this.deckPanes = new EnumMap<>(Zone.class);
+		setupUI();
+		setupImportExport();
 	}
 
-	private DeckList model;
-	private final Map<Zone, CardPane> deckPanes;
-	private CardPane sideboard;
+	private void setupUI() {
+		ImageSource images = new UnifiedImageSource();
+		CardSource cards = cs;
 
-	private FileChooser fileChooser;
-	private DeckImportExport reexportSerdes;
-	private File reexportFile;
+		CardPane collection = new CardPane("Collection", images, new ReadOnlyListWrapper<>(collectionModel(cards)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
+		collection.view().dragModes(TransferMode.COPY);
+		collection.view().dropModes();
+		collection.view().doubleClick(model.cards.get(Zone.Library)::add);
 
-	@FXML
-	private MenuItem reexportMenuItem;
+		collectionSplitter.getItems().add(0, collection);
+
+		for (Zone zone : Zone.values()) {
+			CardPane deckZone = new CardPane(zone.name(), images, model.cards.get(zone), "Piles", CardView.DEFAULT_SORTING);
+			deckZone.view().dragModes(TransferMode.MOVE);
+			deckZone.view().dropModes(TransferMode.COPY_OR_MOVE);
+			deckZone.view().doubleClick(model.cards.get(zone)::remove);
+			deckPanes.put(zone, deckZone);
+		}
+
+		this.sideboard = new CardPane("Sideboard", images, model.sideboard, "Piles", CardView.DEFAULT_SORTING);
+
+		setFormat(formats.get("Standard"));
+	}
+
+	private void setupImportExport() {
+		this.fileChooser = new FileChooser();
+		this.fileChooser.getExtensionFilters().setAll(importExports.keySet());
+
+		for (Format format : formats.values()) {
+			MenuItem item = new MenuItem(format.name());
+			item.setOnAction(ae -> newDeck(format));
+			this.newDeckMenu.getItems().add(item);
+		}
+
+		for (Map.Entry<FileChooser.ExtensionFilter, DeckImportExport> dies : importExports.entrySet()) {
+			MenuItem importItem = new MenuItem(dies.getKey().getDescription());
+			importItem.setOnAction(ae -> {
+				fileChooser.setSelectedExtensionFilter(dies.getKey());
+				importDeck();
+			});
+
+			this.importDeckMenu.getItems().add(importItem);
+
+			MenuItem exportItem = new MenuItem(dies.getKey().getDescription());
+			exportItem.setOnAction(ae -> {
+				fileChooser.setSelectedExtensionFilter(dies.getKey());
+				exportDeck();
+			});
+
+			this.exportDeckMenu.getItems().add(exportItem);
+		}
+
+		this.reexportMenuItem.setDisable(true);
+	}
 
 	private void setFormat(Format format) {
 		zoneSplitter.getItems().clear();
@@ -139,66 +206,6 @@ public class MainWindow extends Application {
 		reexportFile = null;
 		reexportSerdes = null;
 		reexportMenuItem.setDisable(true);
-	}
-
-	@Override
-	public void init() throws Exception {
-		super.init();
-
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("MainWindow.fxml"));
-		loader.setController(this);
-		loader.load();
-
-		ImageSource images = new UnifiedImageSource();
-		CardSource cards = cs;
-
-		CardPane collection = new CardPane("Collection", images, new ReadOnlyListWrapper<>(collectionModel(cards)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
-		collection.view().dragModes(TransferMode.COPY);
-		collection.view().dropModes();
-		collection.view().doubleClick(model.cards.get(Zone.Library)::add);
-
-		collectionSplitter.getItems().add(0, collection);
-
-		for (Zone zone : Zone.values()) {
-			CardPane deckZone = new CardPane(zone.name(), images, model.cards.get(zone), "Piles", CardView.DEFAULT_SORTING);
-			deckZone.view().dragModes(TransferMode.MOVE);
-			deckZone.view().dropModes(TransferMode.COPY_OR_MOVE);
-			deckZone.view().doubleClick(model.cards.get(zone)::remove);
-			deckPanes.put(zone, deckZone);
-		}
-
-		this.sideboard = new CardPane("Sideboard", images, model.sideboard, "Piles", CardView.DEFAULT_SORTING);
-
-		setFormat(formats.get("Standard"));
-
-		this.fileChooser = new FileChooser();
-		this.fileChooser.getExtensionFilters().setAll(importExports.keySet());
-
-		for (Map.Entry<FileChooser.ExtensionFilter, DeckImportExport> dies : importExports.entrySet()) {
-			MenuItem importItem = new MenuItem(dies.getKey().getDescription());
-			importItem.setOnAction(ae -> {
-				fileChooser.setSelectedExtensionFilter(dies.getKey());
-				importDeck();
-			});
-
-			this.importDeckMenu.getItems().add(importItem);
-
-			MenuItem exportItem = new MenuItem(dies.getKey().getDescription());
-			exportItem.setOnAction(ae -> {
-				fileChooser.setSelectedExtensionFilter(dies.getKey());
-				exportDeck();
-			});
-
-			this.exportDeckMenu.getItems().add(exportItem);
-		}
-
-		this.reexportMenuItem.setDisable(true);
-
-		for (Format format : formats.values()) {
-			MenuItem item = new MenuItem(format.name());
-			item.setOnAction(ae -> newDeck(format));
-			this.newDeckMenu.getItems().add(item);
-		}
 	}
 
 	private boolean warnAboutSerdes(DeckImportExport die) {
