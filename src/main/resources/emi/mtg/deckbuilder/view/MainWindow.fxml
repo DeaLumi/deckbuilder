@@ -24,8 +24,9 @@
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
                 </Menu>
                 <Menu text="Application">
-                    <MenuItem text="Settings..."/> <!-- TODO: Action -->
-                    <SeparatorMenuItem/>
+                    <!-- TODO: Action -->
+                    <!--<MenuItem text="Settings..."/>
+                    <SeparatorMenuItem/>-->
                     <MenuItem text="Quit" onAction="#actionQuit">
                         <accelerator>
                             <KeyCodeCombination code="Q" alt="UP" control="UP" shift="UP" meta="DOWN" shortcut="ANY"/>
