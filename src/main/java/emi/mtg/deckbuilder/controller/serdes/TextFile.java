@@ -108,7 +108,7 @@ public class TextFile implements DeckImportExport {
 	public void exportDeck(DeckList deck, File to) throws IOException {
 		FileWriter writer = new FileWriter(to);
 
-		for (Map.Entry<Zone, ObservableList<CardInstance>> entry : deck.cards.entrySet()) {
+		for (Map.Entry<Zone, List<CardInstance>> entry : deck.cards.entrySet()) {
 			if (entry.getValue() == null || entry.getValue().isEmpty()) {
 				continue;
 			}

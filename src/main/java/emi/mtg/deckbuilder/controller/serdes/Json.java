@@ -40,6 +40,11 @@ public class Json implements DeckImportExport {
 
 		reader.close();
 
+		// In case the JSON was exported with null values.
+		for (Zone zone : Zone.values()) {
+			out.cards.computeIfAbsent(zone, z -> new ArrayList<>());
+		}
+
 		return out;
 	}
 

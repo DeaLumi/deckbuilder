@@ -136,14 +136,14 @@ public class MainWindow extends Application {
 		this.collectionSplitter.getItems().add(0, collection);
 
 		for (Zone zone : Zone.values()) {
-			CardPane deckZone = new CardPane(zone.name(), images, model.cards.get(zone), "Piles", CardView.DEFAULT_SORTING);
+			CardPane deckZone = new CardPane(zone.name(), images, new ObservableListWrapper<>(model.cards.get(zone)), "Piles", CardView.DEFAULT_SORTING);
 			deckZone.view().dragModes(TransferMode.MOVE);
 			deckZone.view().dropModes(TransferMode.COPY_OR_MOVE);
 			deckZone.view().doubleClick(ci -> this.model.cards.get(zone).remove(ci));
 			deckPanes.put(zone, deckZone);
 		}
 
-		this.sideboard = new CardPane("Sideboard", images, model.sideboard, "Piles", CardView.DEFAULT_SORTING);
+		this.sideboard = new CardPane("Sideboard", images, new ObservableListWrapper<>(model.sideboard), "Piles", CardView.DEFAULT_SORTING);
 		this.sideboard.view().dragModes(TransferMode.MOVE);
 		this.sideboard.view().dropModes(TransferMode.COPY_OR_MOVE);
 		this.sideboard.view().doubleClick(ci -> this.model.sideboard.remove(ci));
@@ -194,9 +194,13 @@ public class MainWindow extends Application {
 		this.model = deck;
 
 		for (Zone zone : Zone.values()) {
-			deckPanes.get(zone).view().model(this.model.cards.get(zone));
+			deckPanes.get(zone).view().model(new ObservableListWrapper<>(this.model.cards.get(zone)));
 		}
-		sideboard.view().model(this.model.sideboard);
+		sideboard.view().model(new ObservableListWrapper<>(this.model.sideboard));
+
+		if (deck.format != null) {
+			setFormat(deck.format);
+		}
 	}
 
 	private void newDeck(Format format) {

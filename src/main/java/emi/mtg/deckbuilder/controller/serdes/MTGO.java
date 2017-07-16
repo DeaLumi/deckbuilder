@@ -36,8 +36,8 @@ public class MTGO implements DeckImportExport {
 	public DeckList importDeck(File from) throws IOException {
 		Scanner scanner = new Scanner(from);
 
-		ObservableList<CardInstance> library = new ObservableListWrapper<>(new ArrayList<>()),
-				sideboard = new ObservableListWrapper<>(new ArrayList<>());
+		List<CardInstance> library = new ArrayList<>(),
+				sideboard = new ArrayList<>();
 
 		while(scanner.hasNextLine()) {
 			String line = scanner.nextLine();
@@ -67,7 +67,7 @@ public class MTGO implements DeckImportExport {
 			}
 		}
 
-		ObservableMap<Zone, ObservableList<CardInstance>> cards = new ObservableMapWrapper<>(new HashMap<>(Collections.singletonMap(Zone.Library, library)));
+		Map<Zone, List<CardInstance>> cards = new HashMap<>(Collections.singletonMap(Zone.Library, library));
 		return new DeckList(from.getName(), "<No Author>", null, "<No Description>", cards, sideboard);
 	}
 

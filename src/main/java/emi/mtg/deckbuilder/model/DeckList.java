@@ -12,7 +12,7 @@ import javafx.collections.ObservableMap;
 
 import java.util.*;
 
-public class DeckList implements Deck, MapChangeListener<Zone, ObservableList<CardInstance>> {
+public class DeckList implements Deck {
 	private static class CardInstanceListWrapper extends AbstractList<Card> {
 		private List<CardInstance> backing;
 
@@ -35,17 +35,17 @@ public class DeckList implements Deck, MapChangeListener<Zone, ObservableList<Ca
 	public Format format;
 	public String author;
 	public String description;
-	public ObservableMap<Zone, ObservableList<CardInstance>> cards;
-	public ObservableList<CardInstance> sideboard;
+	public Map<Zone, List<CardInstance>> cards;
+	public List<CardInstance> sideboard;
 
 	private transient final Map<Zone, CardInstanceListWrapper> cardsWrapper;
 	private transient final CardInstanceListWrapper sideboardWrapper;
 
 	public DeckList() {
-		this("", "", null, "", new ObservableMapWrapper<>(new EnumMap<>(Zone.class)), new ObservableListWrapper<>(new ArrayList<>()));
+		this("", "", null, "", new EnumMap<>(Zone.class), new ArrayList<>());
 	}
 
-	public DeckList(String name, String author, Format format, String description, ObservableMap<Zone, ObservableList<CardInstance>> cards, ObservableList<CardInstance> sideboard) {
+	public DeckList(String name, String author, Format format, String description, Map<Zone, List<CardInstance>> cards, List<CardInstance> sideboard) {
 		this.name = name;
 		this.author = author;
 		this.format = format;
@@ -53,23 +53,11 @@ public class DeckList implements Deck, MapChangeListener<Zone, ObservableList<Ca
 		this.cards = cards;
 		this.sideboard = sideboard;
 		this.sideboardWrapper = new CardInstanceListWrapper(this.sideboard);
+
 		this.cardsWrapper = new HashMap<>();
-
 		for (Zone zone : Zone.values()) {
-			this.cardsWrapper.put(zone, new CardInstanceListWrapper(cards.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>()))));
-		}
-
-		cards.addListener(this);
-	}
-
-	@Override
-	public void onChanged(Change<? extends Zone, ? extends ObservableList<CardInstance>> change) {
-		if (change.wasRemoved()) {
-			this.cardsWrapper.remove(change.getKey());
-		}
-
-		if (change.wasAdded()) {
-			this.cardsWrapper.put(change.getKey(), new CardInstanceListWrapper(change.getValueAdded()));
+			this.cards.computeIfAbsent(zone, z -> new ArrayList<>());
+			this.cardsWrapper.put(zone, new CardInstanceListWrapper(this.cards.get(zone)));
 		}
 	}
 
