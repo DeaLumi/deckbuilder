@@ -16,6 +16,8 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Menu;
 import javafx.scene.control.SplitPane;
 import javafx.scene.input.TransferMode;
@@ -168,5 +170,17 @@ public class MainWindow extends Application {
 	@FXML
 	protected void actionQuit() {
 		stage.close();
+	}
+
+	@FXML
+	protected void showAboutDialog() {
+		new Alert(Alert.AlertType.NONE,
+				"Deck Builder v0.0.0\n" +
+				"\n" +
+				"Developer: Emi (@DeaLumi)\n" +
+				"Data & Images: Scryfall (@Scryfall)\n" +
+				"\n" +
+				"Source code will be available at some point probably.\n" +
+				"Feel free to DM me with feedback/issues on Twitter!", ButtonType.OK).showAndWait();
 	}
 }
