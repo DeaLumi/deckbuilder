@@ -42,7 +42,7 @@ public class DeckList implements Deck, MapChangeListener<Zone, ObservableList<Ca
 	private transient final CardInstanceListWrapper sideboardWrapper;
 
 	public DeckList() {
-		this("<No Name>", "<No Author>", null, "<No Description>", new ObservableMapWrapper<>(new EnumMap<>(Zone.class)), new ObservableListWrapper<>(new ArrayList<>()));
+		this("", "", null, "", new ObservableMapWrapper<>(new EnumMap<>(Zone.class)), new ObservableListWrapper<>(new ArrayList<>()));
 	}
 
 	public DeckList(String name, String author, Format format, String description, ObservableMap<Zone, ObservableList<CardInstance>> cards, ObservableList<CardInstance> sideboard) {

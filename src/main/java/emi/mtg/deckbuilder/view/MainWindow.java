@@ -95,11 +95,11 @@ public class MainWindow extends Application {
 
 	public MainWindow() {
 		this.model = new DeckList();
+		this.model.format = formats.get("Standard");
 
 		this.deckPanes = new EnumMap<>(Zone.class);
 	}
 
-	private Format format;
 	private DeckList model;
 	private final Map<Zone, CardPane> deckPanes;
 	private CardPane sideboard;
@@ -118,10 +118,6 @@ public class MainWindow extends Application {
 		setFormat(format);
 
 		this.model = new DeckList();
-
-		this.model.name = "<No Name>";
-		this.model.author = System.getProperty("user.name", "<No Author>");
-		this.model.description = "<No Description>";
 		this.model.format = format;
 
 		for (Zone zone : Zone.values()) {
@@ -173,6 +169,16 @@ public class MainWindow extends Application {
 			MenuItem item = new MenuItem(format.name());
 			item.setOnAction(ae -> newDeck(format));
 			this.newDeckMenu.getItems().add(item);
+		}
+	}
+
+	@FXML
+	protected void showDeckInfoDialog() {
+		try {
+			new DeckInfoDialog(formats.values(), this.model)
+					.showAndWait();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 

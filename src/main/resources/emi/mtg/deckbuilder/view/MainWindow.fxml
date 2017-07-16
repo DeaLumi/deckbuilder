@@ -10,7 +10,7 @@
     <top>
         <MenuBar>
             <menus>
-                <Menu text="File">
+                <Menu text="Application">
                     <MenuItem text="Settings..."/> <!-- TODO: Action -->
                     <SeparatorMenuItem/>
                     <MenuItem text="Quit" onAction="#actionQuit"/>
@@ -27,7 +27,7 @@
                         <!-- TODO: Children -->
                     </Menu>
                     <SeparatorMenuItem/>
-                    <MenuItem text="Info..."/> <!-- TODO: Action -->
+                    <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
                 </Menu>
                 <Menu text="Menu">
                     <MenuItem text="Filter Syntax"/> <!-- TODO: Action -->
