@@ -330,12 +330,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			switch (de.getAcceptedTransferMode()) {
 				case COPY:
-					model.add(ci); // TODO: Is this a problem...?
+					this.model.add(ci); // TODO: Is this a problem...?
 					layout();
 					break;
 				case MOVE:
 					source.model.remove(ci);
-					model.add(ci);
+					this.model.add(ci);
 					source.layout();
 					layout();
 					break;
@@ -358,7 +358,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				CardInstance ci = cardAt(me.getX(), me.getY());
 
 				if (ci != null) {
-					doubleClick.accept(ci);
+					this.doubleClick.accept(ci);
 					layout();
 				}
 			}

@@ -131,22 +131,22 @@ public class MainWindow extends Application {
 		CardPane collection = new CardPane("Collection", images, new ReadOnlyListWrapper<>(collectionModel(cards)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().dragModes(TransferMode.COPY);
 		collection.view().dropModes();
-		collection.view().doubleClick(model.cards.get(Zone.Library)::add);
+		collection.view().doubleClick(ci -> this.model.cards.get(Zone.Library).add(ci));
 
-		collectionSplitter.getItems().add(0, collection);
+		this.collectionSplitter.getItems().add(0, collection);
 
 		for (Zone zone : Zone.values()) {
 			CardPane deckZone = new CardPane(zone.name(), images, model.cards.get(zone), "Piles", CardView.DEFAULT_SORTING);
 			deckZone.view().dragModes(TransferMode.MOVE);
 			deckZone.view().dropModes(TransferMode.COPY_OR_MOVE);
-			deckZone.view().doubleClick(model.cards.get(zone)::remove);
+			deckZone.view().doubleClick(ci -> this.model.cards.get(zone).remove(ci));
 			deckPanes.put(zone, deckZone);
 		}
 
 		this.sideboard = new CardPane("Sideboard", images, model.sideboard, "Piles", CardView.DEFAULT_SORTING);
 		this.sideboard.view().dragModes(TransferMode.MOVE);
 		this.sideboard.view().dropModes(TransferMode.COPY_OR_MOVE);
-		this.sideboard.view().doubleClick(model.sideboard::remove);
+		this.sideboard.view().doubleClick(ci -> this.model.sideboard.remove(ci));
 
 		setFormat(formats.get("Standard"));
 	}
