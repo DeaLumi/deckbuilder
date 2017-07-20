@@ -450,6 +450,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		layout();
 	}
 
+	public ObservableList<CardInstance> model() {
+		return this.model;
+	}
+
 	public void layout(String engine) {
 		if (CardView.engineMap.containsKey(engine)) {
 			this.engine = CardView.engineMap.get(engine).uncheckedInstance(this);
