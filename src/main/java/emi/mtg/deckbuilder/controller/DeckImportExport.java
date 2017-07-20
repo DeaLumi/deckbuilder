@@ -17,8 +17,9 @@ public interface DeckImportExport {
 		DeckName ("Deck Name"),
 		Author ("Author"),
 		Description ("Description"),
-		Format ("Intended Format"),
-		CardArt ("Unique Card Art");
+		Format ("Intended deck format"),
+		CardArt ("Specific card printings"),
+		OtherZones ("Zones (beyond library & sideboard)");
 
 		private final String description;
 
