@@ -4,6 +4,7 @@ import emi.lib.Service;
 import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.characteristic.Color;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
+import emi.mtg.deckbuilder.view.omnifilter.Util;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,22 +35,22 @@ public class Colors implements Omnifilter.FaceFilter {
 
 	@Override
 	public boolean testFace(CardFace face) {
-		Set<Color> cardColors = face.color();
+		Util.SetComparison ciComp = Util.compareSets(face.color(), this.colors);
 
 		switch (operator) {
 			case EQUALS:
-				return cardColors.equals(colors);
+				return ciComp == Util.SetComparison.EQUALS;
 			case NOT_EQUALS:
-				return !cardColors.equals(colors);
+				return ciComp != Util.SetComparison.EQUALS;
 			case DIRECT:
 			case LESS_OR_EQUALS:
-				return colors.containsAll(cardColors);
+				return ciComp == Util.SetComparison.EQUALS || ciComp == Util.SetComparison.LESS_THAN;
 			case GREATER_OR_EQUALS:
-				return cardColors.containsAll(colors);
+				return ciComp == Util.SetComparison.EQUALS || ciComp == Util.SetComparison.GREATER_THAN;
 			case LESS_THAN:
-				return colors.containsAll(cardColors) && cardColors.size() < colors.size();
+				return ciComp == Util.SetComparison.LESS_THAN;
 			case GREATER_THAN:
-				return cardColors.containsAll(colors) && cardColors.size() > colors.size();
+				return ciComp == Util.SetComparison.GREATER_THAN;
 			default:
 				assert false;
 				return false;
