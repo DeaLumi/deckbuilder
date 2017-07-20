@@ -28,6 +28,7 @@ public class CardSet implements Omnifilter.Subfilter {
 			case GREATER_THAN:
 			case LESS_OR_EQUALS:
 			case GREATER_OR_EQUALS:
+				// TODO: Maybe throw in constructor...
 				return true;
 			default:
 				assert false;

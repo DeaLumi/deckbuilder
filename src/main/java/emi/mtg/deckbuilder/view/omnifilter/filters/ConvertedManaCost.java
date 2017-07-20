@@ -23,6 +23,8 @@ public class ConvertedManaCost implements Omnifilter.FaceFilter {
 			case DIRECT:
 			case EQUALS:
 				return cmc == value;
+			case NOT_EQUALS:
+				return cmc != value;
 			case LESS_OR_EQUALS:
 				return cmc <= value;
 			case LESS_THAN:

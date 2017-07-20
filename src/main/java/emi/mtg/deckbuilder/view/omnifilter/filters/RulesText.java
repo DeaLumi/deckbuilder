@@ -20,8 +20,15 @@ public class RulesText implements Omnifilter.FaceFilter {
 	public boolean testFace(CardFace face) {
 		switch (operator) {
 			case DIRECT:
-			case GREATER_THAN:
+			case GREATER_OR_EQUALS:
 				return face.text().toLowerCase().contains(value.toLowerCase());
+			case LESS_OR_EQUALS:
+			case NOT_EQUALS:
+			case LESS_THAN:
+			case EQUALS:
+			case GREATER_THAN:
+				// TODO: Maybe throw in constructor...
+				return true;
 			default:
 				return false;
 		}
