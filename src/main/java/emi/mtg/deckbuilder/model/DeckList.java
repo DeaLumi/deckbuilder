@@ -66,8 +66,8 @@ public class DeckList implements Deck {
 	public Map<Zone, List<CardInstance>> cards;
 	public List<CardInstance> sideboard;
 
-	private transient final Map<Zone, CardInstanceListWrapper> cardsWrapper;
-	private transient final CardInstanceListWrapper sideboardWrapper;
+	private transient Map<Zone, CardInstanceListWrapper> cardsWrapper;
+	private transient CardInstanceListWrapper sideboardWrapper;
 
 	public DeckList() {
 		this("", "", null, "", new EnumMap<>(Zone.class), new ArrayList<>());
@@ -80,12 +80,23 @@ public class DeckList implements Deck {
 		this.description = description;
 		this.cards = cards;
 		this.sideboard = sideboard;
-		this.sideboardWrapper = new CardInstanceListWrapper(this.sideboard);
 
-		this.cardsWrapper = new HashMap<>();
 		for (Zone zone : Zone.values()) {
 			this.cards.computeIfAbsent(zone, z -> new ArrayList<>());
-			this.cardsWrapper.put(zone, new CardInstanceListWrapper(this.cards.get(zone)));
+		}
+	}
+
+	private void init() {
+		// We generate wrappers on demand, not for performance, but to avoid annoyances with GSON.
+		if (this.sideboardWrapper == null) {
+			this.sideboardWrapper = new CardInstanceListWrapper(this.sideboard);
+		}
+
+		if (this.cardsWrapper == null) {
+			this.cardsWrapper = new HashMap<>();
+			for (Zone zone : Zone.values()) {
+				this.cardsWrapper.put(zone, new CardInstanceListWrapper(this.cards.get(zone)));
+			}
 		}
 	}
 
@@ -111,11 +122,13 @@ public class DeckList implements Deck {
 
 	@Override
 	public Map<Zone, ? extends List<? extends Card>> cards() {
+		init();
 		return this.cardsWrapper;
 	}
 
 	@Override
 	public List<? extends Card> sideboard() {
+		init();
 		return this.sideboardWrapper;
 	}
 }
