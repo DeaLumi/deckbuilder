@@ -183,11 +183,23 @@ public class MainWindow extends Application {
 	}
 
 	private void setFormat(Format format) {
-		zoneSplitter.getItems().clear();
-		for (Zone zone : format.deckZones()) {
-			zoneSplitter.getItems().add(deckPanes.get(zone));
+		int i = 0;
+		for (Zone zone : Zone.values()) {
+			if (zoneSplitter.getItems().contains(deckPanes.get(zone))) {
+				if (!format.deckZones().contains(zone)) {
+					zoneSplitter.getItems().remove(deckPanes.get(zone));
+				} else {
+					++i;
+				}
+			} else 	if (format.deckZones().contains(zone)) {
+				zoneSplitter.getItems().add(i, deckPanes.get(zone)); // need to add at the appropriate index
+				++i;
+			}
 		}
-		zoneSplitter.getItems().add(sideboard);
+
+		if (!zoneSplitter.getItems().contains(sideboard)) {
+			zoneSplitter.getItems().add(zoneSplitter.getItems().size(), sideboard);
+		}
 	}
 
 	private void setDeck(DeckList deck) {
@@ -235,6 +247,10 @@ public class MainWindow extends Application {
 		File f = this.fileChooser.showOpenDialog(this.stage);
 		DeckImportExport die = importExports.get(this.fileChooser.getSelectedExtensionFilter());
 
+		if (f == null) {
+			return;
+		}
+
 		reexportFile = f;
 		reexportSerdes = die;
 		reexportMenuItem.setDisable(false);
@@ -259,6 +275,10 @@ public class MainWindow extends Application {
 	protected void exportDeck() {
 		File f = this.fileChooser.showSaveDialog(this.stage);
 		DeckImportExport die = importExports.get(this.fileChooser.getSelectedExtensionFilter());
+
+		if (f == null) {
+			return;
+		}
 
 		reexportFile = f;
 		reexportSerdes = die;
