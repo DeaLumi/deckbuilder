@@ -23,6 +23,8 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 	private TextArea descriptionField;
 
 	public DeckInfoDialog(Collection<? extends Format> formats, DeckList deck) throws IOException {
+		setTitle("Deck Info");
+
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("DeckInfoDialog.fxml"));
 		loader.setController(this);
 		loader.setRoot(getDialogPane());

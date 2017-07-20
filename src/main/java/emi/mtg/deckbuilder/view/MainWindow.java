@@ -192,7 +192,7 @@ public class MainWindow extends Application {
 					++i;
 				}
 			} else 	if (format.deckZones().contains(zone)) {
-				zoneSplitter.getItems().add(i, deckPanes.get(zone)); // need to add at the appropriate index
+				zoneSplitter.getItems().add(i, deckPanes.get(zone));
 				++i;
 			}
 		}
