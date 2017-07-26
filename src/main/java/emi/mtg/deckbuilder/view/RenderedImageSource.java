@@ -160,7 +160,7 @@ public class RenderedImageSource implements ImageSource {
 			}
 
 			{
-				Label flavor = new Label(face.flavor());
+				Label flavor = new Label("<Flavor text is broken, sorry!>" /*face.flavor()*/);
 				flavor.setWrapText(true);
 				flavor.setFont(FLAVOR_FONT);
 				getChildren().add(flavor);
@@ -279,7 +279,7 @@ public class RenderedImageSource implements ImageSource {
 			return new FileInputStream(f);
 		}
 
-		CardRenderLayout layout = new CardRenderLayout(face);
+		CardRenderLayout layout = new CardRenderLayout(printing, face);
 
 		Task<Void> imageRenderTask = new Task<Void>() {
 			@Override

@@ -302,7 +302,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			Dragboard db = this.startDragAndDrop(dragModes);
-			db.setDragView(thumbnailCache.getOrDefault(draggingCard.card(), CARD_BACK_THUMB));
+			db.setDragView(thumbnailCache.getOrDefault(draggingCard.printing(), CARD_BACK_THUMB));
 			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, draggingCard.card().name()));
 
 			de.consume();
@@ -858,7 +858,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			if (zoomedCard != null) {
-				Image img = imageCache.getOrDefault(zoomedCard.card(), CARD_BACK);
+				Image img = imageCache.getOrDefault(zoomedCard.printing(), CARD_BACK);
 				double h = getHeight() - 2*cardPadding();
 				double w = img.getWidth() / img.getHeight() * h;
 				gfx.drawImage(img, getWidth() / 2 - w / 2, getHeight() / 2 - h / 2, w, h);

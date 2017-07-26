@@ -9,7 +9,7 @@ import emi.mtg.deckbuilder.view.CardView;
 public class Rarity implements CardView.Sorting {
 	@Override
 	public int compare(CardInstance o1, CardInstance o2) {
-		return o1.card().rarity().ordinal() - o2.card().rarity().ordinal();
+		return o1.printing().rarity().ordinal() - o2.printing().rarity().ordinal();
 	}
 
 	@Override

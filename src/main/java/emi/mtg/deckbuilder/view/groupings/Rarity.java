@@ -30,7 +30,7 @@ public class Rarity implements CardView.Grouping {
 
 	@Override
 	public String extract(CardInstance ci) {
-		return ci.card().rarity().toString();
+		return ci.printing().rarity().toString();
 	}
 
 	@Override

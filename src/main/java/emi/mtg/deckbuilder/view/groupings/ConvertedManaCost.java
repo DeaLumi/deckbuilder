@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.Service;
+import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardType;
 import emi.lib.mtg.characteristic.ManaCost;
 import emi.mtg.deckbuilder.model.CardInstance;
@@ -23,7 +24,7 @@ public class ConvertedManaCost implements CardView.Grouping {
 
 	@Override
 	public String extract(CardInstance ci) {
-		if (ci.card().front() != null && ci.card().front().type().cardTypes().contains(CardType.Land)) {
+		if (ci.card().face(Card.Face.Kind.Front) != null && ci.card().face(Card.Face.Kind.Front).type().cardTypes().contains(CardType.Land)) {
 			return "Land";
 		}
 
