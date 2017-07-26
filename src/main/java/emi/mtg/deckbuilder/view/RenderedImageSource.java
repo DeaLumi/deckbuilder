@@ -1,8 +1,8 @@
 package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.CardFace;
-import emi.lib.mtg.data.ImageSource;
+import emi.lib.mtg.Card;
+import emi.lib.mtg.ImageSource;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
@@ -88,7 +88,7 @@ public class RenderedImageSource implements ImageSource {
 
 		private Map<Characteristic, Node> nodes = new EnumMap<>(Characteristic.class);
 
-		public CardRenderLayout(CardFace face) {
+		public CardRenderLayout(Card.Printing printing, Card.Face face) {
 			setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 20.0), new BorderWidths(WIDTH / 30.0))));
 
 			Color bgColor;
@@ -145,14 +145,14 @@ public class RenderedImageSource implements ImageSource {
 			}
 
 			{
-				Label set = new Label(String.format("%s-%s", face.card().set().code(), face.card().rarity().name().substring(0, 1)));
+				Label set = new Label(String.format("%s-%s", printing.set().code(), printing.rarity().name().substring(0, 1)));
 				set.setFont(NAME_FONT);
 				getChildren().add(set);
 				nodes.put(Characteristic.SetCode, set);
 			}
 
 			{
-				Label rules = new Label(face.text());
+				Label rules = new Label(face.rules());
 				rules.setWrapText(true);
 				rules.setFont(TEXT_FONT);
 				getChildren().add(rules);
@@ -272,8 +272,8 @@ public class RenderedImageSource implements ImageSource {
 	}
 
 	@Override
-	public InputStream open(CardFace face) throws IOException {
-		File f = new File(new File(PARENT_DIR, String.format("s%s", face.card().set().code())), String.format("%s%d.png", face.name(), face.card().variation()));
+	public InputStream open(Card.Printing printing, Card.Face face) throws IOException {
+		File f = new File(new File(PARENT_DIR, String.format("s%s", printing.set().code())), String.format("%s%d.png", face.name(), printing.variation()));
 
 		if (f.exists()) {
 			return new FileInputStream(f);
@@ -308,5 +308,10 @@ public class RenderedImageSource implements ImageSource {
 		}
 
 		return new FileInputStream(f);
+	}
+
+	@Override
+	public InputStream open(Card.Printing printing) throws IOException {
+		return null;
 	}
 }

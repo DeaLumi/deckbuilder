@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.CardFace;
+import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
 @Service.Provider(Omnifilter.Subfilter.class)
@@ -17,11 +17,11 @@ public class RulesText implements Omnifilter.FaceFilter {
 	}
 
 	@Override
-	public boolean testFace(CardFace face) {
+	public boolean testFace(Card.Face face) {
 		switch (operator) {
 			case DIRECT:
 			case GREATER_OR_EQUALS:
-				return face.text().toLowerCase().contains(value.toLowerCase());
+				return face.rules().toLowerCase().contains(value.toLowerCase());
 			case LESS_OR_EQUALS:
 			case NOT_EQUALS:
 			case LESS_THAN:

@@ -21,9 +21,9 @@ public class CardSet implements Omnifilter.Subfilter {
 		switch (operator) {
 			case DIRECT:
 			case EQUALS:
-				return ci.card().set().name().toLowerCase().equals(value) || ci.card().set().code().toLowerCase().equals(value);
+				return ci.printing().set().name().toLowerCase().equals(value) || ci.printing().set().code().toLowerCase().equals(value);
 			case NOT_EQUALS:
-				return !ci.card().set().name().toLowerCase().equals(value) && !ci.card().set().code().toLowerCase().equals(value);
+				return !ci.printing().set().name().toLowerCase().equals(value) && !ci.printing().set().code().toLowerCase().equals(value);
 			case LESS_THAN:
 			case GREATER_THAN:
 			case LESS_OR_EQUALS:

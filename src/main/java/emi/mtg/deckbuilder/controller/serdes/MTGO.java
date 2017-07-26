@@ -1,17 +1,13 @@
 package emi.mtg.deckbuilder.controller.serdes;
 
-import com.sun.javafx.collections.ObservableListWrapper;
-import com.sun.javafx.collections.ObservableMapWrapper;
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
-import emi.lib.mtg.data.CardSource;
+import emi.lib.mtg.Card;
+import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
-import javafx.collections.ObservableList;
-import javafx.collections.ObservableMap;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -25,9 +21,9 @@ import java.util.regex.Pattern;
 @Service.Property.String(name="name", value="MTGO")
 @Service.Property.String(name="extension", value="dec")
 public class MTGO implements DeckImportExport {
-	private final CardSource cs;
+	private final DataSource cs;
 
-	public MTGO(CardSource cs, Map<String, Format> formats) {
+	public MTGO(DataSource cs, Map<String, Format> formats) {
 		this.cs = cs;
 	}
 
@@ -53,16 +49,14 @@ public class MTGO implements DeckImportExport {
 				throw new IOException("Malformed line " + line);
 			}
 
-			Card card = cs.sets().stream()
-					.flatMap(s -> s.cards().stream())
-					.filter(c -> m.group("name").equals(c.name()))
-					.findAny().orElse(null);
+			Card card = cs.card(m.group("name"));
 
 			if (card == null) {
 				throw new IOException("Couldn't find card named " + m.group("name"));
 			}
 
-			CardInstance ci = new CardInstance(card);
+			// TODO: Just take the first printing for now...
+			CardInstance ci = new CardInstance(card.printings().iterator().next());
 			for (int i = 0; i < Integer.parseInt(m.group("num")); ++i) {
 				(m.group("sb") == null ? library : sideboard).add(ci);
 			}
@@ -72,21 +66,21 @@ public class MTGO implements DeckImportExport {
 		return new DeckList(from.getName(), "<No Author>", null, "<No Description>", cards, sideboard);
 	}
 
-	private static void writeList(List<? extends Card> list, String prefix, Writer writer) throws IOException {
-		LinkedList<? extends Card> tmp = new LinkedList<>(list);
+	private static void writeList(List<? extends Card.Printing> list, String prefix, Writer writer) throws IOException {
+		LinkedList<? extends Card.Printing> tmp = new LinkedList<>(list);
 		while (!tmp.isEmpty()) {
-			Card card = tmp.removeFirst();
+			Card.Printing printing = tmp.removeFirst();
 
 			int count = 1;
-			Iterator<? extends Card> iter = tmp.iterator();
+			Iterator<? extends Card.Printing> iter = tmp.iterator();
 			while (iter.hasNext()) {
-				if (iter.next().name().equals(card.name())) {
+				if (iter.next().card().name().equals(printing.card().name())) {
 					++count;
 					iter.remove();
 				}
 			}
 
-			writer.append(prefix).append(Integer.toString(count)).append(' ').append(card.name()).append('\n');
+			writer.append(prefix).append(Integer.toString(count)).append(' ').append(printing.card().name()).append('\n');
 		}
 	}
 
@@ -94,7 +88,7 @@ public class MTGO implements DeckImportExport {
 	public void exportDeck(DeckList deck, File to) throws IOException {
 		FileWriter writer = new FileWriter(to);
 
-		for (Map.Entry<Zone, ? extends List<? extends Card>> zone : deck.cards().entrySet()) {
+		for (Map.Entry<Zone, ? extends List<? extends Card.Printing>> zone : deck.cards().entrySet()) {
 			writeList(zone.getValue(), zone.getKey() == Zone.Library ? "" : "SB:  ", writer);
 		}
 

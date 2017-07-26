@@ -2,14 +2,13 @@ package emi.mtg.deckbuilder.controller.serdes;
 
 import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
-import emi.lib.mtg.data.CardSource;
+import emi.lib.mtg.Card;
+import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
-import javafx.collections.ObservableList;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -25,9 +24,9 @@ import java.util.regex.Pattern;
 public class TextFile implements DeckImportExport {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
 
-	private final CardSource cs;
+	private final DataSource cs;
 
-	public TextFile(CardSource cs, Map<String, Format> formats) {
+	public TextFile(DataSource cs, Map<String, Format> formats) {
 		this.cs = cs;
 	}
 
@@ -69,16 +68,14 @@ public class TextFile implements DeckImportExport {
 			int count = Integer.parseInt(m.group("preCount") != null ? m.group("preCount") : m.group("postCount"));
 			String cardName = m.group("preCardName") != null ? m.group("preCardName") : m.group("postCardName");
 
-			Card card = cs.sets().stream()
-					.flatMap(s -> s.cards().stream())
-					.filter(c -> cardName.equals(c.name()))
-					.findAny().orElse(null);
+			Card card = cs.card(cardName);
 
 			if (card == null) {
 				throw new IOException("Couldn't find card named " + cardName);
 			}
 
-			CardInstance ci = new CardInstance(card);
+			// TODO: Just take the first printing for now...
+			CardInstance ci = new CardInstance(card.printings().iterator().next());
 			for (int i = 0; i < count; ++i) {
 				(sideboarding ? list.sideboard : list.cards.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>()))).add(ci);
 			}

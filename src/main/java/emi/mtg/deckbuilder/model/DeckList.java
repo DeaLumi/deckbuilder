@@ -1,24 +1,18 @@
 package emi.mtg.deckbuilder.model;
 
 import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import com.sun.javafx.collections.ObservableListWrapper;
-import com.sun.javafx.collections.ObservableMapWrapper;
-import emi.lib.mtg.card.Card;
+import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Deck;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
-import javafx.collections.MapChangeListener;
-import javafx.collections.ObservableList;
-import javafx.collections.ObservableMap;
 
 import java.io.IOException;
 import java.util.*;
 
 public class DeckList implements Deck {
-	private static class CardInstanceListWrapper extends AbstractList<Card> {
+	private static class CardInstanceListWrapper extends AbstractList<Card.Printing> {
 		private List<CardInstance> backing;
 
 		public CardInstanceListWrapper(List<CardInstance> backing) {
@@ -26,8 +20,8 @@ public class DeckList implements Deck {
 		}
 
 		@Override
-		public Card get(int index) {
-			return backing.get(index).card();
+		public Card.Printing get(int index) {
+			return backing.get(index).printing();
 		}
 
 		@Override
@@ -121,13 +115,13 @@ public class DeckList implements Deck {
 	}
 
 	@Override
-	public Map<Zone, ? extends List<? extends Card>> cards() {
+	public Map<Zone, ? extends List<? extends Card.Printing>> cards() {
 		init();
 		return this.cardsWrapper;
 	}
 
 	@Override
-	public List<? extends Card> sideboard() {
+	public List<? extends Card.Printing> sideboard() {
 		init();
 		return this.sideboardWrapper;
 	}

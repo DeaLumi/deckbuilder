@@ -3,8 +3,8 @@ package emi.mtg.deckbuilder.controller.serdes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
-import emi.lib.mtg.data.CardSource;
+import emi.lib.mtg.Card;
+import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
@@ -24,17 +24,17 @@ import java.util.Set;
 @Service.Property.String(name="name", value="JSON")
 @Service.Property.String(name="extension", value="json")
 public class Json implements DeckImportExport {
-	private final CardSource cs;
+	private final DataSource cs;
 	private final Gson gson;
 	private final Map<String, Format> formats;
 
-	public Json(CardSource cs, Map<String, Format> formats) {
+	public Json(DataSource cs, Map<String, Format> formats) {
 		this.cs = cs;
 
 		this.formats = formats;
 
 		this.gson = new GsonBuilder()
-				.registerTypeAdapter(Card.class, CardInstance.createCardAdapter(cs))
+				.registerTypeAdapter(Card.Printing.class, CardInstance.createCardAdapter(cs))
 				.registerTypeAdapter(Format.class, DeckList.createFormatAdapter(formats))
 				.setPrettyPrinting()
 				.create();

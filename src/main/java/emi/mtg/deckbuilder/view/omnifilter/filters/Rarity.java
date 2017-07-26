@@ -6,7 +6,6 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 @Service.Provider(Omnifilter.Subfilter.class)
 @Service.Property.String(name="key", value="rarity")
@@ -29,17 +28,17 @@ public class Rarity implements Omnifilter.Subfilter {
 		switch (this.operator) {
 			case DIRECT:
 			case EQUALS:
-				return cardInstance.card().rarity() == this.value;
+				return cardInstance.printing().rarity() == this.value;
 			case NOT_EQUALS:
-				return cardInstance.card().rarity() != this.value;
+				return cardInstance.printing().rarity() != this.value;
 			case GREATER_OR_EQUALS:
-				return cardInstance.card().rarity().ordinal() >= this.value.ordinal();
+				return cardInstance.printing().rarity().ordinal() >= this.value.ordinal();
 			case GREATER_THAN:
-				return cardInstance.card().rarity().ordinal() > this.value.ordinal();
+				return cardInstance.printing().rarity().ordinal() > this.value.ordinal();
 			case LESS_OR_EQUALS:
-				return cardInstance.card().rarity().ordinal() <= this.value.ordinal();
+				return cardInstance.printing().rarity().ordinal() <= this.value.ordinal();
 			case LESS_THAN:
-				return cardInstance.card().rarity().ordinal() < this.value.ordinal();
+				return cardInstance.printing().rarity().ordinal() < this.value.ordinal();
 			default:
 				assert false;
 				return false;

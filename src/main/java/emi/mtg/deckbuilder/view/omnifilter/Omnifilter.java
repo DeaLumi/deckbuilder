@@ -1,8 +1,7 @@
 package emi.mtg.deckbuilder.view.omnifilter;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.CardFace;
-import emi.lib.mtg.characteristic.CardType;
+import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;
 
 import java.util.*;
@@ -10,7 +9,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Omnifilter {
 	public enum Operator {
@@ -57,7 +55,7 @@ public class Omnifilter {
 			return false;
 		}
 
-		boolean testFace(CardFace face);
+		boolean testFace(Card.Face face);
 
 		@Override
 		default boolean test(CardInstance ci) {

@@ -1,14 +1,11 @@
 package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.CardFace;
 import emi.lib.mtg.characteristic.Color;
+import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.omnifilter.Util;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Set;
 
 import static emi.mtg.deckbuilder.view.omnifilter.filters.Colors.colorsIn;
@@ -16,7 +13,7 @@ import static emi.mtg.deckbuilder.view.omnifilter.filters.Colors.colorsIn;
 @Service.Provider(Omnifilter.Subfilter.class)
 @Service.Property.String(name="key", value="identity")
 @Service.Property.String(name="shorthand", value="ci")
-public class ColorIdentity implements Omnifilter.FaceFilter {
+public class ColorIdentity implements Omnifilter.Subfilter {
 	private final Omnifilter.Operator operator;
 	private final Set<Color> colors;
 
@@ -26,8 +23,8 @@ public class ColorIdentity implements Omnifilter.FaceFilter {
 	}
 
 	@Override
-	public boolean testFace(CardFace face) {
-		Util.SetComparison ciComp = Util.compareSets(face.colorIdentity(), this.colors);
+	public boolean test(CardInstance ci) {
+		Util.SetComparison ciComp = Util.compareSets(ci.card().colorIdentity(), this.colors);
 
 		switch (operator) {
 			case EQUALS:

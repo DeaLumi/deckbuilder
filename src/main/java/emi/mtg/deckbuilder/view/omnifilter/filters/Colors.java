@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.CardFace;
+import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.Color;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.omnifilter.Util;
@@ -34,7 +34,7 @@ public class Colors implements Omnifilter.FaceFilter {
 	}
 
 	@Override
-	public boolean testFace(CardFace face) {
+	public boolean testFace(Card.Face face) {
 		Util.SetComparison ciComp = Util.compareSets(face.color(), this.colors);
 
 		switch (operator) {

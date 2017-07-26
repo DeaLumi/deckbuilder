@@ -2,11 +2,11 @@ package emi.mtg.deckbuilder.view;
 
 import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
-import emi.lib.mtg.data.CardSource;
-import emi.lib.mtg.data.ImageSource;
+import emi.lib.mtg.DataSource;
+import emi.lib.mtg.ImageSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
-import emi.lib.mtg.scryfall.ScryfallCardSource;
+import emi.lib.mtg.scryfall.ScryfallDataSource;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -35,16 +35,16 @@ public class MainWindow extends Application {
 		launch(args);
 	}
 
-	private static final CardSource cs;
+	private static final DataSource data;
 
 	static {
-		CardSource csTmp;
+		DataSource dataTmp;
 		try {
-			csTmp = new ScryfallCardSource();
+			dataTmp = new ScryfallDataSource();
 		} catch (IOException e) {
 			throw new Error("Couldn't create ScryfallCardSource.");
 		}
-		cs = csTmp;
+		data = dataTmp;
 	}
 
 	private static final Map<String, Format> formats = Service.Loader.load(Format.class).stream()
@@ -52,12 +52,11 @@ public class MainWindow extends Application {
 
 	private static final Map<FileChooser.ExtensionFilter, DeckImportExport> importExports = Service.Loader.load(DeckImportExport.class).stream()
 			.collect(Collectors.toMap(dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
-					dies -> dies.uncheckedInstance(cs, formats)));
+					dies -> dies.uncheckedInstance(data, formats)));
 
-	private ObservableList<CardInstance> collectionModel(CardSource cs) {
+	private ObservableList<CardInstance> collectionModel(DataSource cs) {
 		List<CardInstance> cards = new ArrayList<>();
-		cs.sets().stream()
-				.flatMap(s -> s.cards().stream())
+		cs.printings().stream()
 				.map(CardInstance::new)
 				.forEach(cards::add);
 		return new ObservableListWrapper<>(cards);
@@ -126,7 +125,7 @@ public class MainWindow extends Application {
 
 	private void setupUI() {
 		ImageSource images = new UnifiedImageSource();
-		CardSource cards = cs;
+		DataSource cards = data;
 
 		CardPane collection = new CardPane("Collection", images, new ReadOnlyListWrapper<>(collectionModel(cards)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().dragModes(TransferMode.COPY);

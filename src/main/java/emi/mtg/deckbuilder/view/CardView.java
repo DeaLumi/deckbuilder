@@ -2,9 +2,8 @@ package emi.mtg.deckbuilder.view;
 
 import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
-import emi.lib.mtg.card.Card;
-import emi.lib.mtg.card.CardFace;
-import emi.lib.mtg.data.ImageSource;
+import emi.lib.mtg.Card;
+import emi.lib.mtg.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -27,6 +26,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -209,8 +209,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return CardView.sortings;
 	}
 
-	private static final Map<Card, Image> imageCache = new HashMap<>();
-	private static final Map<Card, Image> thumbnailCache = new HashMap<>();
+	private static final Map<Card.Printing, Image> imageCache = new HashMap<>();
+	private static final Map<Card.Printing, Image> thumbnailCache = new HashMap<>();
 	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 
@@ -766,15 +766,20 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					continue;
 				}
 
-				final Card card = cardLists[i].get(j).card();
-				if (CardView.imageCache.containsKey(card)) {
-					renderMap.put(new MVec2d(loc), CardView.imageCache.get(card));
+				final Card.Printing printing = cardLists[i].get(j).printing();
+				if (CardView.imageCache.containsKey(printing)) {
+					renderMap.put(new MVec2d(loc), CardView.imageCache.get(printing));
 				} else {
 					renderMap.put(new MVec2d(loc), CARD_BACK);
-					CardView.imageCache.put(card, CARD_BACK);
+					CardView.imageCache.put(printing, CARD_BACK);
 
 					IMAGE_LOAD_POOL.submit(() -> {
-						InputStream in = this.images.openSafely(card.front() == null ? card.face(CardFace.Kind.Left) : card.front());
+						InputStream in = null;
+						try {
+							in = this.images.open(printing);
+						} catch (IOException e) {
+							in = null;
+						}
 
 						if (in != null) {
 							Image src = new Image(in, CARD_WIDTH*2.0, CARD_HEIGHT*2.0, true, true);
@@ -809,16 +814,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 								}
 							}
 
-							CardView.imageCache.put(card, dst);
-							CardView.thumbnailCache.put(card, dst);
+							CardView.imageCache.put(printing, dst);
+							CardView.thumbnailCache.put(printing, dst);
 */
 
-							CardView.imageCache.put(card, src);
+							CardView.imageCache.put(printing, src);
 
 							scheduleRender();
 						} else {
-							System.err.println("Unable to load image for " + card.set().code() + "/" + card.name());
-							CardView.imageCache.put(card, CARD_BACK);
+							System.err.println("Unable to load image for " + printing.set().code() + "/" + printing.card().name());
+							CardView.imageCache.put(printing, CARD_BACK);
 						}
 					});
 				}

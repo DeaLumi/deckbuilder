@@ -3,42 +3,46 @@ package emi.mtg.deckbuilder.model;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import emi.lib.mtg.card.Card;
-import emi.lib.mtg.data.CardSource;
+import emi.lib.mtg.Card;
+import emi.lib.mtg.DataSource;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
 public class CardInstance implements Serializable {
-	public static TypeAdapter<Card> createCardAdapter(CardSource cards) {
-		return new TypeAdapter<Card>() {
+	public static TypeAdapter<Card.Printing> createCardAdapter(DataSource data) {
+		return new TypeAdapter<Card.Printing>() {
 			@Override
-			public void write(JsonWriter out, Card value) throws IOException {
+			public void write(JsonWriter out, Card.Printing value) throws IOException {
 				out.value(value.id().toString());
 			}
 
 			@Override
-			public Card read(JsonReader in) throws IOException {
-				return cards.get(UUID.fromString(in.nextString()));
+			public Card.Printing read(JsonReader in) throws IOException {
+				return data.printing(UUID.fromString(in.nextString()));
 			}
 		};
 	}
 
-	private Card card;
+	private Card.Printing printing;
 	private Set<String> tags;
 
-	public CardInstance(Card card, Collection<String> tags) {
-		this.card = card;
+	public CardInstance(Card.Printing printing, Collection<String> tags) {
+		this.printing = printing;
 		this.tags = new HashSet<>(tags);
 	}
 
-	public CardInstance(Card card, String... tags) {
-		this(card, Arrays.asList(tags));
+	public CardInstance(Card.Printing printing, String... tags) {
+		this(printing, Arrays.asList(tags));
 	}
 
 	public Card card() {
-		return card;
+		return printing.card();
+	}
+
+	public Card.Printing printing() {
+		return printing;
 	}
 
 	public Set<String> tags() {

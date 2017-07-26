@@ -1,12 +1,12 @@
 package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.CardFace;
+import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
 @Service.Provider(Omnifilter.Subfilter.class)
 @Service.Property.String(name="key", value="cmc")
-public class ConvertedManaCost implements Omnifilter.FaceFilter {
+public class ConvertedManaCost implements Omnifilter.Subfilter {
 	private final Omnifilter.Operator operator;
 	private final double value;
 
@@ -16,8 +16,8 @@ public class ConvertedManaCost implements Omnifilter.FaceFilter {
 	}
 
 	@Override
-	public boolean testFace(CardFace face) {
-		double cmc = face.manaCost().convertedCost();
+	public boolean test(CardInstance ci) {
+		double cmc = ci.card().manaCost().convertedCost();
 
 		switch (operator) {
 			case DIRECT:

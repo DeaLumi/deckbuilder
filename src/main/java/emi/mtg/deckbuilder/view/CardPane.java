@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view;
 
+import emi.lib.mtg.ImageSource;
 import emi.lib.mtg.characteristic.CardType;
-import emi.lib.mtg.data.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.beans.binding.DoubleBinding;

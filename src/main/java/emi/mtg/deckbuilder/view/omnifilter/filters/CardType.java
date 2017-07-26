@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
-import emi.lib.mtg.card.CardFace;
+import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardTypeLine;
 import emi.lib.mtg.characteristic.Supertype;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
@@ -57,7 +57,7 @@ public class CardType implements Omnifilter.FaceFilter {
 	}
 
 	@Override
-	public boolean testFace(CardFace face) {
+	public boolean testFace(Card.Face face) {
 		CardTypeLine tl = face.type();
 		Util.SetComparison sts = this.supertypes.isEmpty() ? Util.SetComparison.GREATER_THAN : Util.compareSets(tl.supertypes(), this.supertypes);
 		Util.SetComparison cts = this.cardTypes.isEmpty() ? Util.SetComparison.GREATER_THAN : Util.compareSets(tl.cardTypes(), this.cardTypes);
