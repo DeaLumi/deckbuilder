@@ -19,6 +19,8 @@ import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.image.PixelReader;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -38,6 +40,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private static final double CARD_WIDTH = 220.0;
 	private static final double CARD_HEIGHT = 308.0;
 	private static final double CARD_PADDING = CARD_WIDTH / 40.0;
+	private static final double ROUND_RADIUS = CARD_WIDTH / 12.0;
 
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
@@ -852,7 +855,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					CardView.imageCache.put(printing, CARD_BACK);
 
 					IMAGE_LOAD_POOL.submit(() -> {
-						InputStream in = null;
+						InputStream in;
 						try {
 							in = this.images.open(printing);
 						} catch (IOException e) {
@@ -861,42 +864,44 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 						if (in != null) {
 							Image src = new Image(in, CARD_WIDTH*2.0, CARD_HEIGHT*2.0, true, true);
-/*
-							WritableImage dst = new WritableImage((int) src.getWidth(), (int) src.getHeight());
-							for (int y = 0; y < src.getHeight(); ++y) {
-								for (int x = 0; x < src.getWidth(); ++x) {
-									Color c = src.getPixelReader().getColor(x, y);
 
-									// possibly modify color if near corner
-									double ux = -1, uy = -1;
-									if (x <= ROUND_RADIUS) {
-										ux = x;
-									} else if (x >= dst.getWidth() - ROUND_RADIUS) {
-										ux = dst.getWidth() - x;
+							PixelReader reader = src.getPixelReader();
+
+							if (reader.getColor(0, 0).getOpacity() == 0.0) {
+								CardView.imageCache.put(printing, src);
+							} else {
+								WritableImage dst = new WritableImage((int) src.getWidth(), (int) src.getHeight());
+								for (int y = 0; y < src.getHeight(); ++y) {
+									for (int x = 0; x < src.getWidth(); ++x) {
+										Color c = reader.getColor(x, y);
+
+										// possibly modify color if near corner
+										double ux = -1, uy = -1;
+										if (x <= ROUND_RADIUS) {
+											ux = x;
+										} else if (x >= dst.getWidth() - ROUND_RADIUS) {
+											ux = dst.getWidth() - x;
+										}
+
+										if (y <= ROUND_RADIUS) {
+											uy = y;
+										} else if (y >= dst.getHeight() - ROUND_RADIUS) {
+											uy = dst.getHeight() - y;
+										}
+
+										if (ux >= 0 && uy >= 0) {
+											double dx = ux - ROUND_RADIUS, dy = uy - ROUND_RADIUS;
+											double d = Math.sqrt(dx * dx + dy * dy);
+											double dd = Math.max(ROUND_RADIUS - 0.5, Math.min(d, ROUND_RADIUS + 0.5));
+											c = c.interpolate(Color.TRANSPARENT, dd - ROUND_RADIUS + 0.5);
+										}
+
+										dst.getPixelWriter().setColor(x, y, c);
 									}
-
-									if (y <= ROUND_RADIUS) {
-										uy = y;
-									} else if (y >= dst.getHeight() - ROUND_RADIUS) {
-										uy = dst.getHeight() - y;
-									}
-
-									if (ux >= 0 && uy >= 0) {
-										double dx = ux - ROUND_RADIUS, dy = uy - ROUND_RADIUS;
-										double d = Math.sqrt(dx*dx + dy*dy);
-										double dd = Math.max(ROUND_RADIUS - 0.5, Math.min(d, ROUND_RADIUS + 0.5));
-										c = c.interpolate(Color.TRANSPARENT, dd - ROUND_RADIUS + 0.5);
-									}
-
-									dst.getPixelWriter().setColor(x, y, c);
 								}
+
+								CardView.imageCache.put(printing, dst);
 							}
-
-							CardView.imageCache.put(printing, dst);
-							CardView.thumbnailCache.put(printing, dst);
-*/
-
-							CardView.imageCache.put(printing, src);
 
 							scheduleRender();
 						} else {
