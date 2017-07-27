@@ -21,27 +21,10 @@ public class UnifiedImageSource implements ImageSource {
 	}
 
 	@Override
-	public InputStream open(Card.Printing printing, Card.Face face) throws IOException {
+	public InputStream open(Card.Printing.Face face) throws IOException {
 		for (ImageSource source : sources) {
 			try {
-				InputStream input = source.open(printing, face);
-
-				if (input != null) {
-					return input;
-				}
-			} catch (IOException exc) {
-				// do nothing
-			}
-		}
-
-		return null;
-	}
-
-	@Override
-	public InputStream open(Card.Printing printing) throws IOException {
-		for (ImageSource source : sources) {
-			try {
-				InputStream input = source.open(printing);
+				InputStream input = source.open(face);
 
 				if (input != null) {
 					return input;
