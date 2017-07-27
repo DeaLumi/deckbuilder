@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public class CardPane extends BorderPane {
-
 	private static class CardViewScrollPane extends StackPane {
 		private static class VisibleAmountBinding extends DoubleBinding {
 			private DoubleProperty height, min, max;

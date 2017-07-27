@@ -14,14 +14,12 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.input.DataFormat;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.TransferMode;
+import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
@@ -238,6 +236,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private CardList[] cardLists;
 	private CardInstance draggingCard, zoomedCard;
 	private TransferMode[] dragModes, dropModes;
+	private CardZoomPreview zoomPreview;
 
 	private Consumer<CardInstance> doubleClick;
 
@@ -376,8 +375,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				lastDragY = me.getY();
 				me.consume();
 			} else if (me.getButton() == MouseButton.SECONDARY) {
-				zoomedCard = cardAt(me.getX(), me.getY());
-				scheduleRender();
+				showPreview(me);
 			}
 		});
 
@@ -390,8 +388,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				lastDragY = me.getY();
 				me.consume();
 			} else if (me.getButton() == MouseButton.SECONDARY) {
-				zoomedCard = cardAt(me.getX(), me.getY());
-				scheduleRender();
+				showPreview(me);
 			}
 		});
 
@@ -400,9 +397,80 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			lastDragY = -1;
 			panning = false;
 
+			if (zoomPreview != null) {
+				zoomPreview.close();
+				zoomPreview = null;
+			}
+
 			zoomedCard = null;
 			scheduleRender();
 		});
+	}
+
+	private void showPreview(MouseEvent me) {
+		CardInstance ci;
+		if (me.getPickResult().getIntersectedNode() != this) {
+			ci = null;
+		} else {
+			ci = cardAt(me.getX(), me.getY());
+		}
+
+		if (zoomedCard == ci) {
+			return;
+		}
+
+		zoomedCard = ci;
+
+		if (zoomPreview != null) {
+			zoomPreview.close();
+		}
+
+		if (zoomedCard != null) {
+			MVec2d zoomLoc = cardCoordinatesOf(me.getX(), me.getY());
+			if (zoomLoc == null) {
+				zoomLoc = new MVec2d(me.getX(), me.getY());
+			}
+			zoomLoc.plus(me.getScreenX() - me.getX(), me.getScreenY() - me.getY());
+
+			Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
+
+			zoomPreview = new CardZoomPreview(start, imageCache.get(zoomedCard.printing()));
+		}
+	}
+
+	private MVec2d cardCoordinatesOf(double x, double y) {
+		if (this.engine == null || sortedModel.size() == 0) {
+			return null;
+		}
+
+		MVec2d point = new MVec2d(x + scrollX.get(), y + scrollY.get());
+
+		int group = 0;
+		for (; group <= groupBounds.length; ++group) {
+			if (group == groupBounds.length) {
+				return null;
+			} else if (groupBounds[group].contains(point)) {
+				point.plus(groupBounds[group].pos.copy().negate());
+				break;
+			}
+		}
+
+		CardList cardsInGroup = cardLists[group];
+
+		if (cardsInGroup == null || cardsInGroup.isEmpty()) {
+			return null;
+		}
+
+		int card = this.engine.cardAt(point, cardsInGroup.size());
+
+		if (card < 0) {
+			return null;
+		}
+
+		this.engine.coordinatesOf(card, point);
+		point.plus(groupBounds[group].pos);
+		point.plus(-scrollX.get(), -scrollY.get());
+		return point;
 	}
 
 	private CardInstance cardAt(double x, double y) {
@@ -855,13 +923,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						labelBounds[i].pos.x + labelBounds[i].dim.x / 2.0 - scrollX.get(),
 						labelBounds[i].pos.y + labelBounds[i].dim.y / 2.0 - scrollY.get(),
 						labelBounds[i].dim.x);
-			}
-
-			if (zoomedCard != null) {
-				Image img = imageCache.getOrDefault(zoomedCard.printing(), CARD_BACK);
-				double h = getHeight() - 2*cardPadding();
-				double w = img.getWidth() / img.getHeight() * h;
-				gfx.drawImage(img, getWidth() / 2 - w / 2, getHeight() / 2 - h / 2, w, h);
 			}
 		});
 	}
