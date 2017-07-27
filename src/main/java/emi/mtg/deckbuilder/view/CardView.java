@@ -506,16 +506,19 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public void model(ObservableList<CardInstance> model) {
-		if (model == null) {
-			model = new ObservableListWrapper<>(new ArrayList<>());
-		}
+		ForkJoinPool.commonPool().submit(() -> {
+			ObservableList<CardInstance> m = model;
+			if (m == null) {
+				m = new ObservableListWrapper<>(new ArrayList<>());
+			}
 
-		this.model = model;
-		this.filteredModel = this.model.filtered(this.filter);
-		this.sortedModel = this.filteredModel.sorted(this.sort);
-		this.sortedModel.addListener(this);
+			this.model = m;
+			this.filteredModel = this.model.filtered(this.filter);
+			this.sortedModel = this.filteredModel.sorted(this.sort);
+			this.sortedModel.addListener(this);
 
-		layout();
+			layout();
+		});
 	}
 
 	public ObservableList<CardInstance> model() {
@@ -530,28 +533,34 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public void filter(Predicate<CardInstance> filter) {
-		if (filter == null) {
-			filter = c -> true;
-		}
+		ForkJoinPool.commonPool().submit(() -> {
+			Predicate<CardInstance> f = filter;
+			if (f == null) {
+				f = c -> true;
+			}
 
-		this.filter = filter;
-		this.filteredModel.setPredicate(this.filter);
+			this.filter = f;
+			this.filteredModel.setPredicate(this.filter);
+		});
 	}
 
 	public void sort(List<ActiveSorting> sorts) {
-		if (sorts == null) {
-			sorts = Collections.emptyList();
-		}
+		ForkJoinPool.commonPool().submit(() -> {
+			List<ActiveSorting> s = sorts;
+			if (s == null) {
+				s = Collections.emptyList();
+			}
 
-		this.sortingElements = sorts;
+			this.sortingElements = s;
 
-		Comparator<CardInstance> sort = (c1, c2) -> 0;
-		for (ActiveSorting element : sorts) {
-			sort = sort.thenComparing(element.descending.get() ? element.sorting.reversed() : element.sorting);
-		}
+			Comparator<CardInstance> sort = (c1, c2) -> 0;
+			for (ActiveSorting element : s) {
+				sort = sort.thenComparing(element.descending.get() ? element.sorting.reversed() : element.sorting);
+			}
 
-		this.sort = sort;
-		this.sortedModel.setComparator(this.sort);
+			this.sort = sort;
+			this.sortedModel.setComparator(this.sort);
+		});
 	}
 
 	public List<ActiveSorting> sort() {
@@ -717,8 +726,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return th;
 	});
 
-	protected void layout() {
-		if (engine == null || grouping == null) {
+	protected synchronized void layout() {
+		if (engine == null || grouping == null || model == null || filteredModel == null || sortedModel == null
+				|| groupBounds == null || labelBounds == null) {
 			return;
 		}
 
@@ -780,7 +790,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		scheduleRender();
 	}
 
-	protected void render() {
+	protected synchronized void render() {
 		if (engine == null || grouping == null) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
