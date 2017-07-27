@@ -353,7 +353,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnMousePressed(me -> this.requestFocus());
 
 		setOnMouseClicked(me -> {
-			if (me.getClickCount() % 2 == 0) {
+			if (me.getButton() == MouseButton.PRIMARY && me.getClickCount() % 2 == 0) {
 				CardInstance ci = cardAt(me.getX(), me.getY());
 
 				if (ci != null) {
