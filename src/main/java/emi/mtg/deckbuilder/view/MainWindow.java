@@ -104,7 +104,7 @@ public class MainWindow extends Application {
 	public void start(Stage stage) throws Exception {
 		this.stage = stage;
 
-		stage.setTitle("MTG Deckbuilder - Main Window");
+		stage.setTitle("Deck Builder v0.0.0");
 
 		stage.setScene(new Scene(root, 1024, 1024));
 		stage.setMaximized(true);
@@ -371,10 +371,11 @@ public class MainWindow extends Application {
 				"Developer: Emi (@DeaLumi)\n" +
 				"Data & Images: Scryfall (@Scryfall)\n" +
 				"\n" +
-				"Source code will be available at some point probably.\n" +
-				"Feel free to DM me with feedback/issues on Twitter!", ButtonType.OK);
+				"Source code will be available at some point probably. Feel free to DM me with feedback/issues on Twitter!\n" +
+				"\n" +
+				"Special thanks to MagnetMan, for generously indulging my madness time and time again.\n", ButtonType.OK);
 
-		alert.setTitle("About Deckbuilder");
+		alert.setTitle("About Deck Builder");
 		alert.setHeaderText("Deck Builder v0.0.0");
 
 		alert.showAndWait();
