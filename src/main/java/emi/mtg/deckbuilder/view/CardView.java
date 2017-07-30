@@ -16,11 +16,10 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.image.Image;
-import javafx.scene.image.PixelReader;
-import javafx.scene.image.WritableImage;
+import javafx.scene.image.*;
 import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -40,7 +39,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private static final double CARD_WIDTH = 220.0;
 	private static final double CARD_HEIGHT = 308.0;
 	private static final double CARD_PADDING = CARD_WIDTH / 40.0;
-	private static final double ROUND_RADIUS = CARD_WIDTH / 12.0;
+	private static final double ROUND_RADIUS = CARD_WIDTH / 8.0;
 
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
@@ -848,11 +847,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				}
 
 				final Card.Printing printing = cardLists[i].get(j).printing();
-				if (CardView.imageCache.containsKey(printing)) {
-					renderMap.put(new MVec2d(loc), CardView.imageCache.get(printing));
+				if (CardView.thumbnailCache.containsKey(printing)) {
+					renderMap.put(new MVec2d(loc), CardView.thumbnailCache.get(printing));
 				} else {
 					renderMap.put(new MVec2d(loc), CARD_BACK);
 					CardView.imageCache.put(printing, CARD_BACK);
+					CardView.thumbnailCache.put(printing, CARD_BACK);
 
 					IMAGE_LOAD_POOL.submit(() -> {
 						InputStream in;
@@ -863,12 +863,23 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						}
 
 						if (in != null) {
-							Image src = new Image(in, CARD_WIDTH*2.0, CARD_HEIGHT*2.0, true, true);
+							Image src = new Image(in/*, CARD_WIDTH*3.0, CARD_HEIGHT*3.0, true, true*/);
 
 							PixelReader reader = src.getPixelReader();
 
-							if (reader.getColor(0, 0).getOpacity() == 0.0) {
+							if (reader.getColor(0, 0).getOpacity() <= 0.05) {
 								CardView.imageCache.put(printing, src);
+
+								Platform.runLater(() -> {
+									ImageView thumb = new ImageView(src);
+									thumb.setSmooth(false);
+									thumb.setPreserveRatio(true);
+									thumb.setFitWidth(CARD_WIDTH);
+									thumb.setFitHeight(CARD_HEIGHT);
+
+									CardView.thumbnailCache.put(printing, thumb.snapshot(null, null));
+									scheduleRender();
+								});
 							} else {
 								WritableImage dst = new WritableImage((int) src.getWidth(), (int) src.getHeight());
 								for (int y = 0; y < src.getHeight(); ++y) {
@@ -901,12 +912,24 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 								}
 
 								CardView.imageCache.put(printing, dst);
+
+								Platform.runLater(() -> {
+									ImageView thumb = new ImageView(dst);
+									thumb.setSmooth(false);
+									thumb.setPreserveRatio(true);
+									thumb.setFitWidth(CARD_WIDTH);
+									thumb.setFitHeight(CARD_HEIGHT);
+
+									CardView.thumbnailCache.put(printing, dst);
+									scheduleRender();
+								});
 							}
 
 							scheduleRender();
 						} else {
 							System.err.println("Unable to load image for " + printing.set().code() + "/" + printing.card().name());
 							CardView.imageCache.put(printing, CARD_BACK);
+							CardView.thumbnailCache.put(printing, CARD_BACK);
 						}
 					});
 				}
