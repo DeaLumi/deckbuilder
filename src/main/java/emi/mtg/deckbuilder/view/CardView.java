@@ -213,7 +213,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 
-	private final UnifiedImageSource images;
+	private final Images images;
 
 	private ObservableList<CardInstance> model;
 	private FilteredList<CardInstance> filteredModel;
@@ -243,7 +243,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private DoubleProperty cardScaleProperty;
 
-	public CardView(UnifiedImageSource images, ObservableList<CardInstance> model, String engine, Grouping grouping, List<ActiveSorting> sorts) {
+	public CardView(Images images, ObservableList<CardInstance> model, String engine, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);

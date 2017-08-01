@@ -3,7 +3,6 @@ package emi.mtg.deckbuilder.view;
 import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.DataSource;
-import emi.lib.mtg.ImageSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.lib.mtg.scryfall.ScryfallDataSource;
@@ -124,7 +123,7 @@ public class MainWindow extends Application {
 	}
 
 	private void setupUI() {
-		UnifiedImageSource images = new UnifiedImageSource();
+		Images images = new Images();
 		DataSource cards = data;
 
 		CardPane collection = new CardPane("Collection", images, new ReadOnlyListWrapper<>(collectionModel(cards)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);

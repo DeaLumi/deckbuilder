@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class UnifiedImageSource {
+public class Images {
 	private static final List<ImageSource> sources;
 	private static final long MAX_LOADED_IMAGES = Runtime.getRuntime().maxMemory() / (2 * 1024 * 1024);
 
@@ -20,13 +20,13 @@ public class UnifiedImageSource {
 				.map(Service.Loader.Stub::uncheckedInstance)
 				.collect(Collectors.toList());
 
-		System.out.println("UnifiedImageSource will attempt to store at most " + MAX_LOADED_IMAGES + " images.");
+		System.out.println("Images will attempt to store at most " + MAX_LOADED_IMAGES + " images.");
 	}
 
 	private final Map<Card.Printing.Face, Image> imageCache;
 	private final Queue<Card.Printing.Face> evictionQueue;
 
-	public UnifiedImageSource() {
+	public Images() {
 		imageCache = new HashMap<>();
 		evictionQueue = new LinkedList<>();
 	}
