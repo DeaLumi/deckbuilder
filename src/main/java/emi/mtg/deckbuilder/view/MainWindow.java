@@ -124,7 +124,7 @@ public class MainWindow extends Application {
 	}
 
 	private void setupUI() {
-		ImageSource images = new UnifiedImageSource();
+		UnifiedImageSource images = new UnifiedImageSource();
 		DataSource cards = data;
 
 		CardPane collection = new CardPane("Collection", images, new ReadOnlyListWrapper<>(collectionModel(cards)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);

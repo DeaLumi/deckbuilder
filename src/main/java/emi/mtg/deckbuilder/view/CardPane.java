@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view;
 
-import emi.lib.mtg.ImageSource;
 import emi.lib.mtg.characteristic.CardType;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
@@ -103,7 +102,7 @@ public class CardPane extends BorderPane {
 	private Predicate<CardInstance> lastOmnifilter;
 	private final CardView cardView;
 
-	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, UnifiedImageSource images, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
 		super();
 
 		this.lastOmnifilter = c -> true;
@@ -200,11 +199,11 @@ public class CardPane extends BorderPane {
 		this.setTop(controlBar);
 	}
 
-	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model, String layoutEngine) {
+	public CardPane(String title, UnifiedImageSource images, ObservableList<CardInstance> model, String layoutEngine) {
 		this(title, images, model, layoutEngine, CardView.DEFAULT_SORTING);
 	}
 
-	public CardPane(String title, ImageSource images, ObservableList<CardInstance> model) {
+	public CardPane(String title, UnifiedImageSource images, ObservableList<CardInstance> model) {
 		this(title, images, model, "Piles", CardView.DEFAULT_SORTING);
 	}
 

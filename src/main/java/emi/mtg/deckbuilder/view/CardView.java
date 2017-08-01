@@ -3,7 +3,6 @@ package emi.mtg.deckbuilder.view;
 import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.Card;
-import emi.lib.mtg.ImageSource;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -16,17 +15,17 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
-import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.image.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -214,7 +213,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 
-	private final ImageSource images;
+	private final UnifiedImageSource images;
 
 	private ObservableList<CardInstance> model;
 	private FilteredList<CardInstance> filteredModel;
@@ -244,7 +243,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private DoubleProperty cardScaleProperty;
 
-	public CardView(ImageSource images, ObservableList<CardInstance> model, String engine, Grouping grouping, List<ActiveSorting> sorts) {
+	public CardView(UnifiedImageSource images, ObservableList<CardInstance> model, String engine, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
@@ -855,16 +854,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					CardView.thumbnailCache.put(printing, CARD_BACK);
 
 					IMAGE_LOAD_POOL.submit(() -> {
-						InputStream in;
-						try {
-							in = this.images.open(printing);
-						} catch (IOException e) {
-							in = null;
-						}
+						Image src = this.images.get(printing);
 
-						if (in != null) {
-							Image src = new Image(in/*, CARD_WIDTH*3.0, CARD_HEIGHT*3.0, true, true*/);
-
+						if (src != null) {
 							PixelReader reader = src.getPixelReader();
 
 							if (reader.getColor(0, 0).getOpacity() <= 0.05) {
