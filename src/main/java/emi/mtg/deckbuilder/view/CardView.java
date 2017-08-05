@@ -27,8 +27,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -208,7 +206,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return CardView.sortings;
 	}
 
-	private static final Map<Card.Printing, Image> imageCache = new HashMap<>();
 	private static final Map<Card.Printing, Image> thumbnailCache = new HashMap<>();
 	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
@@ -435,7 +432,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
 
-			zoomPreview = new CardZoomPreview(start, imageCache.get(zoomedCard.printing()));
+			zoomPreview = new CardZoomPreview(start, images.get(zoomedCard.printing()));
 		}
 	}
 
@@ -721,12 +718,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	}
 
-	private static final ExecutorService IMAGE_LOAD_POOL = Executors.newCachedThreadPool(r -> {
-		Thread th = Executors.defaultThreadFactory().newThread(r);
-		th.setDaemon(true);
-		return th;
-	});
-
 	protected synchronized void layout() {
 		if (engine == null || grouping == null || model == null || filteredModel == null || sortedModel == null
 				|| groupBounds == null || labelBounds == null) {
@@ -805,7 +796,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		if (sortedModel.isEmpty()) {
+		if (sortedModel == null || sortedModel.isEmpty()) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
 				gfx.setFill(Color.WHITE);
@@ -850,18 +841,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					renderMap.put(new MVec2d(loc), CardView.thumbnailCache.get(printing));
 				} else {
 					renderMap.put(new MVec2d(loc), CARD_BACK);
-					CardView.imageCache.put(printing, CARD_BACK);
 					CardView.thumbnailCache.put(printing, CARD_BACK);
 
-					IMAGE_LOAD_POOL.submit(() -> {
+					Images.IMAGE_LOAD_POOL.submit(() -> {
 						Image src = this.images.get(printing);
 
 						if (src != null) {
 							PixelReader reader = src.getPixelReader();
 
 							if (reader.getColor(0, 0).getOpacity() <= 0.05) {
-								CardView.imageCache.put(printing, src);
-
 								Platform.runLater(() -> {
 									ImageView thumb = new ImageView(src);
 									thumb.setSmooth(false);
@@ -903,8 +891,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 									}
 								}
 
-								CardView.imageCache.put(printing, dst);
-
 								Platform.runLater(() -> {
 									ImageView thumb = new ImageView(dst);
 									thumb.setSmooth(false);
@@ -920,7 +906,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							scheduleRender();
 						} else {
 							System.err.println("Unable to load image for " + printing.set().code() + "/" + printing.card().name());
-							CardView.imageCache.put(printing, CARD_BACK);
 							CardView.thumbnailCache.put(printing, CARD_BACK);
 						}
 					});

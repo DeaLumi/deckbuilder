@@ -3,16 +3,30 @@ package emi.mtg.deckbuilder.view;
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.ImageSource;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
+import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class Images {
 	private static final List<ImageSource> sources;
-	private static final long MAX_LOADED_IMAGES = Runtime.getRuntime().maxMemory() / (2 * 1024 * 1024);
+	private static final long MAX_LOADED_IMAGES = Runtime.getRuntime().maxMemory() / (100 * 2 * 1024 * 1024);
+	private static final long MAX_LOADED_THUMBNAILS = MAX_LOADED_IMAGES;
+
+	static final ExecutorService IMAGE_LOAD_POOL = Executors.newCachedThreadPool(r -> {
+		Thread th = Executors.defaultThreadFactory().newThread(r);
+		th.setDaemon(true);
+		return th;
+	});
 
 	static {
 		sources = Service.Loader.load(ImageSource.class).stream()
@@ -24,34 +38,41 @@ public class Images {
 	}
 
 	private final Map<Card.Printing.Face, Image> imageCache;
-	private final Queue<Card.Printing.Face> evictionQueue;
+	private final Map<Card.Printing.Face, Image> thumbnailCache;
+	private final Queue<Card.Printing.Face> imageEvictionQueue;
+	private final Queue<Card.Printing.Face> thumbnailEvictionQueue;
 
 	public Images() {
 		imageCache = new HashMap<>();
-		evictionQueue = new LinkedList<>();
+		imageEvictionQueue = new LinkedList<>();
+
+		thumbnailCache = new HashMap<>();
+		thumbnailEvictionQueue = new LinkedList<>();
 	}
 
 	public Image get(Card.Printing.Face face) {
-		return imageCache.computeIfAbsent(face, f -> {
-			if (imageCache.size() >= MAX_LOADED_IMAGES) {
-				imageCache.remove(evictionQueue.remove());
-			}
+		synchronized(imageCache) {
+			if (!imageCache.containsKey(face)) {
+				for (ImageSource source : sources) {
+					try {
+						InputStream input = source.open(face);
 
-			for (ImageSource source : sources) {
-				try {
-					InputStream input = source.open(face);
+						if (input != null) {
+							if (imageCache.size() >= MAX_LOADED_IMAGES) {
+								imageCache.remove(imageEvictionQueue.remove());
+							}
 
-					if (input != null) {
-						evictionQueue.add(face);
-						return new Image(input);
+							imageEvictionQueue.add(face);
+							imageCache.put(face, new Image(input));
+						}
+					} catch (IOException exc) {
+						// do nothing
 					}
-				} catch (IOException exc) {
-					// do nothing
 				}
 			}
+		}
 
-			return null;
-		});
+		return imageCache.get(face);
 	}
 
 	public Image get(Card.Printing printing) {
@@ -64,5 +85,29 @@ public class Images {
 		} else {
 			throw new Error(String.format("Whoa whoa whoa -- this card printing has no faces? (%s/%s)", printing.id().toString(), printing.card().fullName()));
 		}
+	}
+
+	public Image getThumbnail(Card.Printing.Face face) {
+		synchronized(thumbnailCache) {
+			if (!thumbnailCache.containsKey(face)) {
+				Image image = get(face);
+
+				if (image != null) {
+					if (thumbnailCache.size() >= MAX_LOADED_THUMBNAILS) {
+						thumbnailCache.remove(thumbnailEvictionQueue.remove());
+					}
+
+					thumbnailEvictionQueue.add(face);
+
+					PipedOutputStream output = new PipedOutputStream();
+					PipedInputStream input = new PipedInputStream(output);
+
+					ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", output);
+					thumbnailCache.put(face, ImageIO.read(input));
+				}
+			}
+		}
+
+		return thumbnailCache.get(face);
 	}
 }
