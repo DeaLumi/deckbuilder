@@ -18,25 +18,20 @@ import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.image.PixelReader;
-import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class CardView extends Canvas implements ListChangeListener<CardInstance> {
-	private static final double CARD_WIDTH = 220.0;
-	private static final double CARD_HEIGHT = 308.0;
-	private static final double CARD_PADDING = CARD_WIDTH / 40.0;
-	private static final double ROUND_RADIUS = CARD_WIDTH / 8.0;
 
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
@@ -206,10 +201,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return CardView.sortings;
 	}
 
-	private static final Map<Card.Printing, Image> thumbnailCache = new HashMap<>();
-	private static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
-	private static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
-
 	private final Images images;
 
 	private ObservableList<CardInstance> model;
@@ -299,7 +290,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			Dragboard db = this.startDragAndDrop(dragModes);
-			db.setDragView(thumbnailCache.getOrDefault(draggingCard.printing(), CARD_BACK_THUMB));
+			db.setDragView(this.images.getThumbnail(draggingCard.printing()).getNow(Images.CARD_BACK));
 			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, draggingCard.card().name()));
 
 			de.consume();
@@ -432,7 +423,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
 
-			zoomPreview = new CardZoomPreview(start, images.get(zoomedCard.printing()));
+			zoomPreview = new CardZoomPreview(start, images.get(zoomedCard.printing()).getNow(Images.CARD_BACK));
 		}
 	}
 
@@ -652,15 +643,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public double cardWidth() {
-		return CARD_WIDTH * cardScaleProperty.doubleValue();
+		return Images.CARD_WIDTH * cardScaleProperty.doubleValue();
 	}
 
 	public double cardHeight() {
-		return CARD_HEIGHT * cardScaleProperty.doubleValue();
+		return Images.CARD_HEIGHT * cardScaleProperty.doubleValue();
 	}
 
 	public double cardPadding() {
-		return CARD_PADDING;
+		return Images.CARD_PADDING;
 	}
 
 	@Override
@@ -837,6 +828,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				}
 
 				final Card.Printing printing = cardLists[i].get(j).printing();
+
+				CompletableFuture<Image> futureImage = this.images.getThumbnail(printing);
+
+				if (futureImage.isDone()) {
+					renderMap.put(new MVec2d(loc), futureImage.getNow(Images.CARD_BACK));
+				} else {
+					futureImage.thenRun(this::scheduleRender);
+				}
+/*
 				if (CardView.thumbnailCache.containsKey(printing)) {
 					renderMap.put(new MVec2d(loc), CardView.thumbnailCache.get(printing));
 				} else {
@@ -910,6 +910,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						}
 					});
 				}
+*/
 			}
 		}
 

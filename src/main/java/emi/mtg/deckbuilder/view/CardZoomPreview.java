@@ -17,7 +17,7 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 public class CardZoomPreview {
-	private final double DURATION = 50;
+	private final double DURATION = 100;
 
 	private final Stage stage;
 
@@ -30,7 +30,7 @@ public class CardZoomPreview {
 				iw,
 				ih);
 
-		ObservableList<Screen> screens = Screen.getScreensForRectangle(endUnbound);
+		ObservableList<Screen> screens = Screen.getScreensForRectangle(start);
 
 		double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE,
 				maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
