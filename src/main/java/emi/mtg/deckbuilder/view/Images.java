@@ -8,10 +8,7 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
 import javax.imageio.ImageIO;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -110,25 +107,71 @@ public class Images {
 		}
 	}
 
+	private static File THUMB_PARENT = new File("thumbnails");
+
+	static {
+		if (!THUMB_PARENT.isDirectory() && !THUMB_PARENT.mkdirs()) {
+			throw new Error("Couldn't create parent directory thumbnails/");
+		}
+	}
+
 	public CompletableFuture<Image> getThumbnail(Card.Printing.Face face) {
 		synchronized(thumbnailCache) {
 			if (!thumbnailCache.containsKey(face)) {
-				thumbnailCache.put(face, CARD_BACK_THUMB); // Stop this from effing up...
-				return get(face).thenApply(image -> {
-					if (image == null) {
-						return CARD_BACK_THUMB;
-					}
+				File thumbFile = new File(new File(THUMB_PARENT, String.format("s%s", face.printing().set().code())), String.format("%s.png", face.face().name()));
 
-					if (thumbnailCache.size() >= MAX_LOADED_THUMBNAILS) {
-						thumbnailCache.remove(thumbnailEvictionQueue.remove());
-					}
+				if (thumbFile.isFile()) {
+					CompletableFuture<Image> ret = new CompletableFuture<>();
 
-					thumbnailEvictionQueue.add(face);
+					IMAGE_LOAD_POOL.submit(() -> {
+						try {
+							if (thumbnailCache.size() >= MAX_LOADED_THUMBNAILS) {
+								thumbnailCache.remove(thumbnailEvictionQueue.remove());
+							}
 
-					Image scaled = MtgImageUtils.scaled(image, CARD_WIDTH, CARD_HEIGHT, true);
-					thumbnailCache.put(face, scaled);
-					return scaled;
-				});
+							thumbnailEvictionQueue.add(face);
+
+							Image thumbnail = new Image(new FileInputStream(thumbFile));
+							thumbnailCache.put(face, thumbnail);
+							ret.complete(thumbnail);
+						} catch (FileNotFoundException e) {
+							// do nothing
+						}
+
+						ret.complete(CARD_BACK_THUMB);
+					});
+
+					return ret;
+				} else {
+					thumbnailCache.put(face, CARD_BACK_THUMB); // Stop this from effing up...
+
+					return get(face).thenApply(image -> {
+						if (image == null) {
+							return CARD_BACK_THUMB;
+						}
+
+						if (thumbnailCache.size() >= MAX_LOADED_THUMBNAILS) {
+							thumbnailCache.remove(thumbnailEvictionQueue.remove());
+						}
+
+						thumbnailEvictionQueue.add(face);
+
+						Image scaled = MtgImageUtils.scaled(image, CARD_WIDTH, CARD_HEIGHT, true);
+						thumbnailCache.put(face, scaled);
+
+						try {
+							if (!thumbFile.getParentFile().isDirectory() && !thumbFile.getParentFile().mkdirs()) {
+								throw new IOException("Couldn't create parent directory for set " + face.printing().set().code());
+							}
+
+							ImageIO.write(SwingFXUtils.fromFXImage(scaled, null), "png", thumbFile);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+
+						return scaled;
+					});
+				}
 			}
 		}
 
