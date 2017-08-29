@@ -1,18 +1,17 @@
 package emi.mtg.deckbuilder.view;
 
-import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.view.groupings.None;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
@@ -204,6 +203,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private ObservableList<CardInstance> model;
 	private FilteredList<CardInstance> filteredModel;
+	private SortedList<CardInstance>[] groupedModel;
 
 	private LayoutEngine engine;
 	private Comparator<CardInstance> sort;
@@ -211,7 +211,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private List<ActiveSorting> sortingElements;
 	private Grouping grouping;
 
-	private final BooleanProperty reverseGroups;
 	private final Map<String, Integer> groupIndexMap;
 
 	private DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
@@ -220,7 +219,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private double lastDragX, lastDragY;
 
 	private Bounds[] groupBounds, labelBounds;
-	private CardList[] cardLists;
 	private CardInstance draggingCard, zoomedCard;
 	private TransferMode[] dragModes, dropModes;
 	private CardZoomPreview zoomPreview;
@@ -237,15 +235,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.images = images;
 
 		this.filter = ci -> true;
-		this.sort = (c1, c2) -> 0;
+		this.sort = convertSorts(sorts);
+		this.grouping = grouping;
 
 		this.cardScaleProperty = new SimpleDoubleProperty(1.0);
 		this.cardScaleProperty.addListener(ce -> layout());
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
 
-		this.reverseGroups = new SimpleBooleanProperty(false);
-		this.reverseGroups.addListener(ce -> layout());
 		this.groupIndexMap = new HashMap<>();
 
 		this.scrollMinX = new SimpleDoubleProperty(0.0);
@@ -255,19 +252,18 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.scrollMaxX = new SimpleDoubleProperty(100.0);
 		this.scrollMaxY = new SimpleDoubleProperty(100.0);
 
-		this.cardLists = null;
+		this.groupedModel = null;
 		this.draggingCard = null;
 		this.dragModes = TransferMode.COPY_OR_MOVE;
 		this.dropModes = TransferMode.COPY_OR_MOVE;
 
 		this.doubleClick = ci -> {};
 
-		model(model);
-		sort(sorts);
-		layout(engine);
-		group(grouping);
+		this.model = model;
+		this.filteredModel = this.model.filtered(this.filter);
 
-		scheduleRender();
+		group(grouping);
+		layout(engine);
 
 		this.scrollX.addListener(e -> scheduleRender());
 		this.scrollY.addListener(e -> scheduleRender());
@@ -442,7 +438,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 		}
 
-		CardList cardsInGroup = cardLists[group];
+		List<CardInstance> cardsInGroup = groupedModel[group];
 
 		if (cardsInGroup == null || cardsInGroup.isEmpty()) {
 			return null;
@@ -477,7 +473,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 		}
 
-		CardList cardsInGroup = cardLists[group];
+		List<CardInstance> cardsInGroup = groupedModel[group];
 
 		if (cardsInGroup == null || cardsInGroup.isEmpty()) {
 			return null;
@@ -492,30 +488,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return cardsInGroup.get(card);
 	}
 
-	private synchronized void resort() {
-		FXCollections.sort(this.model, this.sort);
-
-		layout();
-	}
-
-	public void model(ObservableList<CardInstance> model) {
-		ForkJoinPool.commonPool().submit(() -> {
-			ObservableList<CardInstance> m = model;
-			if (m == null) {
-				m = new ObservableListWrapper<>(new ArrayList<>());
-			}
-
-			this.model = m;
-			this.filteredModel = this.model.filtered(this.filter);
-			resort();
-			this.filteredModel.addListener(this);
-		});
-	}
-
-	public ObservableList<CardInstance> model() {
-		return this.model;
-	}
-
 	public void layout(String engine) {
 		if (CardView.engineMap.containsKey(engine)) {
 			this.engine = CardView.engineMap.get(engine).uncheckedInstance(this);
@@ -523,81 +495,103 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	public void filter(Predicate<CardInstance> filter) {
-		ForkJoinPool.commonPool().submit(() -> {
-			Predicate<CardInstance> f = filter;
-			if (f == null) {
-				f = c -> true;
-			}
+	private void model(ObservableList<CardInstance> model, boolean sync) {
+		if (!sync) {
+			ForkJoinPool.commonPool().submit(() -> model(model, true));
+		} else {
+			this.model.setAll(model);
+		}
+	}
 
-			this.filter = f;
+	public void model(ObservableList<CardInstance> model) {
+		model(model, false);
+	}
+
+	public ObservableList<CardInstance> model() {
+		return this.model;
+	}
+
+	private void filter(Predicate<CardInstance> filter, boolean sync) {
+		if (!sync) {
+			ForkJoinPool.commonPool().submit(() -> filter(filter, true));
+		} else {
+			this.filter = filter;
 			this.filteredModel.setPredicate(this.filter);
-		});
+		}
 	}
 
-	public void sort(List<ActiveSorting> sorts) {
-		ForkJoinPool.commonPool().submit(() -> {
-			List<ActiveSorting> s = sorts;
-			if (s == null) {
-				s = Collections.emptyList();
-			}
-
-			this.sortingElements = s;
-
-			Comparator<CardInstance> sort = (c1, c2) -> 0;
-			for (ActiveSorting element : s) {
-				sort = sort.thenComparing(element.descending.get() ? element.sorting.reversed() : element.sorting);
-			}
-
-			this.sort = sort;
-			resort();
-		});
-	}
-
-	public List<ActiveSorting> sort() {
-		return this.sortingElements;
+	public void filter(Predicate<CardInstance> filter) {
+		filter(filter, false);
 	}
 
 	public void group(Grouping grouping) {
 		if (grouping == null) {
-			// TODO: Extract this to an actual grouping? "None"?
-			grouping = new Grouping() {
-				@Override
-				public String[] groups() {
-					return new String[] { "All Cards" };
-				}
-
-				@Override
-				public String extract(CardInstance ci) {
-					return "All Cards";
-				}
-
-				@Override
-				public void add(CardInstance ci, String which) {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public void remove(CardInstance ci, String which) {
-					throw new UnsupportedOperationException();
-				}
-			};
+			grouping = new None();
 		}
 
 		this.grouping = grouping;
-		groupIndexMap.clear();
-		for (int i = 0; i < this.grouping.groups().length; ++i) {
-			groupIndexMap.put(this.grouping.groups()[i], i);
-		}
 
+		this.groupIndexMap.clear();
 		this.groupBounds = new Bounds[grouping.groups().length];
 		this.labelBounds = new Bounds[grouping.groups().length];
-		for (int i = 0; i < this.groupBounds.length; ++i) {
+
+		// Piss off, Java.
+		this.groupedModel = new SortedList[grouping.groups().length];
+
+		for (int i = 0; i < this.grouping.groups().length; ++i) {
+			this.groupIndexMap.put(this.grouping.groups()[i], i);
+
 			this.groupBounds[i] = new Bounds();
 			this.labelBounds[i] = new Bounds();
+
+			final String g = this.grouping.groups()[i];
+			this.groupedModel[i] = this.filteredModel.filtered(ci -> this.grouping.extract(ci).equals(g)).sorted(this.sort);
+			this.groupedModel[i].addListener(this);
 		}
 
 		layout();
+	}
+
+	private Comparator<CardInstance> convertSorts(List<ActiveSorting> sorts) {
+		List<ActiveSorting> s = sorts;
+		if (s == null) {
+			s = Collections.emptyList();
+		}
+
+		Comparator<CardInstance> sort = (c1, c2) -> 0;
+		for (ActiveSorting element : s) {
+			sort = sort.thenComparing(element.descending.get() ? element.sorting.reversed() : element.sorting);
+		}
+
+		return sort;
+	}
+
+	private void sort(List<ActiveSorting> sorts, boolean sync) {
+		if (!sync) {
+			final List<ActiveSorting> finalized = sorts;
+			ForkJoinPool.commonPool().submit(() -> sort(finalized, true));
+		} else {
+			if (sorts == null) {
+				sorts = Collections.emptyList();
+			}
+
+			this.sortingElements = sorts;
+			this.sort = convertSorts(sorts);
+
+			for (int i = 0; i < groupedModel.length; ++i) {
+				this.groupedModel[i].setComparator(this.sort);
+			}
+
+			scheduleRender();
+		}
+	}
+
+	public void sort(List<ActiveSorting> sorts) {
+		sort(sorts, false);
+	}
+
+	public List<ActiveSorting> sort() {
+		return this.sortingElements;
 	}
 
 	public void dragModes(TransferMode... dragModes) {
@@ -610,10 +604,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public void doubleClick(Consumer<CardInstance> doubleClick) {
 		this.doubleClick = doubleClick;
-	}
-
-	public BooleanProperty reverseGroups() {
-		return reverseGroups;
 	}
 
 	public DoubleProperty cardScaleProperty() {
@@ -717,28 +707,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		int[] groupSizes = new int[grouping.groups().length];
-		cardLists = new CardList[groupSizes.length];
-
-		// One complete pass through the list... TODO: use streams?
-		for (CardInstance ci : filteredModel) {
-			Integer i = groupIndexMap.get(grouping.extract(ci));
-			if (i == null) {
-				System.err.println("Warning: Couldn't find group for " + ci.card().name());
-				continue;
-			}
-
-			if (reverseGroups.get()) {
-				i = groupSizes.length - 1 - i;
-			}
-
-			if (cardLists[i] == null) {
-				cardLists[i] = new CardList();
-			}
-
-			cardLists[i].add(ci);
-			++groupSizes[i];
-		}
+		int[] groupSizes = Arrays.stream(groupedModel).mapToInt(List::size).toArray();
 
 		engine.layoutGroups(groupSizes, groupBounds, labelBounds);
 
@@ -802,15 +771,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		if (groupBounds == null || cardLists == null) {
+		if (groupBounds == null || groupedModel == null) {
 			return; // TODO: What do we do here? Call layout manually...?
 		}
 
 		SortedMap<MVec2d, Image> renderMap = new TreeMap<>();
 		MVec2d loc = new MVec2d();
 
-		for (int i = 0; i < cardLists.length; ++i) {
-			if (cardLists[i] == null) {
+		for (int i = 0; i < groupedModel.length; ++i) {
+			if (groupedModel[i] == null) {
 				continue;
 			}
 
@@ -821,7 +790,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				continue;
 			}
 
-			for (int j = 0; j < cardLists[i].size(); ++j) {
+			for (int j = 0; j < groupedModel[i].size(); ++j) {
 				loc = engine.coordinatesOf(j, loc);
 				loc = loc.plus(groupBounds[i].pos).plus(-scrollX.get(), -scrollY.get());
 
@@ -829,7 +798,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					continue;
 				}
 
-				final Card.Printing printing = cardLists[i].get(j).printing();
+				final Card.Printing printing = groupedModel[i].get(j).printing();
 
 				CompletableFuture<Image> futureImage = this.images.getThumbnail(printing);
 
@@ -838,81 +807,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				} else {
 					futureImage.thenRun(this::scheduleRender);
 				}
-/*
-				if (CardView.thumbnailCache.containsKey(printing)) {
-					renderMap.put(new MVec2d(loc), CardView.thumbnailCache.get(printing));
-				} else {
-					renderMap.put(new MVec2d(loc), CARD_BACK);
-					CardView.thumbnailCache.put(printing, CARD_BACK);
-
-					Images.IMAGE_LOAD_POOL.submit(() -> {
-						Image src = this.images.get(printing);
-
-						if (src != null) {
-							PixelReader reader = src.getPixelReader();
-
-							if (reader.getColor(0, 0).getOpacity() <= 0.05) {
-								Platform.runLater(() -> {
-									ImageView thumb = new ImageView(src);
-									thumb.setSmooth(false);
-									thumb.setPreserveRatio(true);
-									thumb.setFitWidth(CARD_WIDTH);
-									thumb.setFitHeight(CARD_HEIGHT);
-
-									CardView.thumbnailCache.put(printing, thumb.snapshot(null, null));
-									scheduleRender();
-								});
-							} else {
-								WritableImage dst = new WritableImage((int) src.getWidth(), (int) src.getHeight());
-								for (int y = 0; y < src.getHeight(); ++y) {
-									for (int x = 0; x < src.getWidth(); ++x) {
-										Color c = reader.getColor(x, y);
-
-										// possibly modify color if near corner
-										double ux = -1, uy = -1;
-										if (x <= ROUND_RADIUS) {
-											ux = x;
-										} else if (x >= dst.getWidth() - ROUND_RADIUS) {
-											ux = dst.getWidth() - x;
-										}
-
-										if (y <= ROUND_RADIUS) {
-											uy = y;
-										} else if (y >= dst.getHeight() - ROUND_RADIUS) {
-											uy = dst.getHeight() - y;
-										}
-
-										if (ux >= 0 && uy >= 0) {
-											double dx = ux - ROUND_RADIUS, dy = uy - ROUND_RADIUS;
-											double d = Math.sqrt(dx * dx + dy * dy);
-											double dd = Math.max(ROUND_RADIUS - 0.5, Math.min(d, ROUND_RADIUS + 0.5));
-											c = c.interpolate(Color.TRANSPARENT, dd - ROUND_RADIUS + 0.5);
-										}
-
-										dst.getPixelWriter().setColor(x, y, c);
-									}
-								}
-
-								Platform.runLater(() -> {
-									ImageView thumb = new ImageView(dst);
-									thumb.setSmooth(false);
-									thumb.setPreserveRatio(true);
-									thumb.setFitWidth(CARD_WIDTH);
-									thumb.setFitHeight(CARD_HEIGHT);
-
-									CardView.thumbnailCache.put(printing, dst);
-									scheduleRender();
-								});
-							}
-
-							scheduleRender();
-						} else {
-							System.err.println("Unable to load image for " + printing.set().code() + "/" + printing.card().name());
-							CardView.thumbnailCache.put(printing, CARD_BACK);
-						}
-					});
-				}
-*/
 			}
 		}
 
@@ -930,14 +824,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			gfx.setTextAlign(TextAlignment.CENTER);
 			gfx.setTextBaseline(VPos.CENTER);
 			for (int i = 0; i < labelBounds.length; ++i) {
-				if (cardLists[i] == null || cardLists[i].isEmpty()) {
+				if (groupedModel[i] == null || groupedModel[i].isEmpty()) {
 					continue;
 				}
 
-				String s = grouping.groups()[reverseGroups.get() ? grouping.groups().length - 1 - i : i];
+				String s = grouping.groups()[i];
 
 				gfx.setFont(Font.font(labelBounds[i].dim.y));
-				gfx.fillText(String.format("%s (%d)", s, cardLists[i].size()),
+				gfx.fillText(String.format("%s (%d)", s, groupedModel[i].size()),
 						labelBounds[i].pos.x + labelBounds[i].dim.x / 2.0 - scrollX.get(),
 						labelBounds[i].pos.y + labelBounds[i].dim.y / 2.0 - scrollY.get(),
 						labelBounds[i].dim.x);

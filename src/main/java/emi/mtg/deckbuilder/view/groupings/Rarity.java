@@ -6,6 +6,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.CardView;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="Rarity")
@@ -14,6 +15,7 @@ public class Rarity implements CardView.Grouping {
 
 	static {
 		GROUPS = Arrays.stream(CardRarity.values())
+				.sorted(Comparator.comparingInt(CardRarity::ordinal).reversed())
 				.map(CardRarity::toString)
 				.toArray(String[]::new);
 	}
