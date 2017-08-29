@@ -9,10 +9,10 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
@@ -25,7 +25,6 @@ import javafx.scene.text.TextAlignment;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -205,7 +204,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private ObservableList<CardInstance> model;
 	private FilteredList<CardInstance> filteredModel;
-	private SortedList<CardInstance> sortedModel;
 
 	private LayoutEngine engine;
 	private Comparator<CardInstance> sort;
@@ -428,7 +426,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private MVec2d cardCoordinatesOf(double x, double y) {
-		if (this.engine == null || sortedModel.size() == 0) {
+		if (this.engine == null || filteredModel.size() == 0) {
 			return null;
 		}
 
@@ -463,7 +461,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private CardInstance cardAt(double x, double y) {
-		if (this.engine == null || sortedModel.size() == 0) {
+		if (this.engine == null || filteredModel.size() == 0) {
 			return null;
 		}
 
@@ -494,6 +492,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return cardsInGroup.get(card);
 	}
 
+	private synchronized void resort() {
+		FXCollections.sort(this.model, this.sort);
+
+		layout();
+	}
+
 	public void model(ObservableList<CardInstance> model) {
 		ForkJoinPool.commonPool().submit(() -> {
 			ObservableList<CardInstance> m = model;
@@ -503,10 +507,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			this.model = m;
 			this.filteredModel = this.model.filtered(this.filter);
-			this.sortedModel = this.filteredModel.sorted(this.sort);
-			this.sortedModel.addListener(this);
-
-			layout();
+			resort();
+			this.filteredModel.addListener(this);
 		});
 	}
 
@@ -548,7 +550,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			this.sort = sort;
-			this.sortedModel.setComparator(this.sort);
+			resort();
 		});
 	}
 
@@ -710,7 +712,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	protected synchronized void layout() {
-		if (engine == null || grouping == null || model == null || filteredModel == null || sortedModel == null
+		if (engine == null || grouping == null || model == null || filteredModel == null
 				|| groupBounds == null || labelBounds == null) {
 			return;
 		}
@@ -719,7 +721,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		cardLists = new CardList[groupSizes.length];
 
 		// One complete pass through the list... TODO: use streams?
-		for (CardInstance ci : sortedModel) {
+		for (CardInstance ci : filteredModel) {
 			Integer i = groupIndexMap.get(grouping.extract(ci));
 			if (i == null) {
 				System.err.println("Warning: Couldn't find group for " + ci.card().name());
@@ -787,7 +789,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		if (sortedModel == null || sortedModel.isEmpty()) {
+		if (filteredModel == null || filteredModel.isEmpty()) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
 				gfx.setFill(Color.WHITE);
