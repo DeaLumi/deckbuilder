@@ -17,54 +17,61 @@ public class Tags {
 			.setPrettyPrinting()
 			.create();
 
-	private Map<Card, Set<String>> tagsMap;
+	private NavigableMap<String, Set<Card>> cardsMap;
 
 	public Tags() {
-		this.tagsMap = new HashMap<>();
+		this.cardsMap = new TreeMap<>();
 	}
 
 	public SortedSet<String> tags() {
-		return tagsMap.values().stream()
-				.collect(TreeSet::new, Set::addAll, Set::addAll);
+		return cardsMap.navigableKeySet();
 	}
 
 	public Set<String> tags(Card card) {
-		return tagsMap.getOrDefault(card, Collections.emptySet());
+		return cardsMap.entrySet().stream()
+				.filter(e -> e.getValue().contains(card))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toSet());
 	}
 
 	public Set<Card> cards(String tag) {
-		return tagsMap.entrySet().stream()
-				.filter(e -> e.getValue().contains(tag))
-				.map(Map.Entry::getKey)
-				.collect(Collectors.toSet());
+		return cardsMap.get(tag);
+	}
+
+	public void add(Card card, String tag) {
+		cardsMap.computeIfAbsent(tag, t -> new HashSet<>()).add(card);
+	}
+
+	public void remove(Card card, String tag) {
+		if (cardsMap.containsKey(tag)) {
+			cardsMap.get(tag).remove(card);
+		}
 	}
 
 	public void load(DataSource data, File from) throws IOException {
 		FileInputStream fis = new FileInputStream(from);
 		JsonReader reader = gson.newJsonReader(new InputStreamReader(fis));
 
-		this.tagsMap.clear();
+		this.cardsMap.clear();
 
 		reader.beginObject();
 		while (reader.peek() == JsonToken.NAME) {
-			String cardName = reader.nextName();
-			Card card = data.card(cardName);
+			String tag = reader.nextName();
 
-			if (card == null) {
-				System.err.println("Warning: Tags file " + from.getAbsolutePath() + " refers to unknown card " + cardName + " -- are we in the right universe?");
-				System.err.flush();
-				continue;
-			}
-
-			Set<String> tags = this.tagsMap.computeIfAbsent(card, c -> new HashSet<>());
-
-			System.out.print("Tagging " + card.fullName() + " with ");
+			Set<Card> cards = this.cardsMap.computeIfAbsent(tag, c -> new HashSet<>());
 
 			reader.beginArray();
 			while (reader.peek() == JsonToken.STRING) {
-				String n = reader.nextString();
-				tags.add(n);
-				System.out.print(n + ", ");
+				String cardName = reader.nextString();
+				Card card = data.card(cardName);
+
+				if (card == null) {
+					System.err.println("Warning: Tags file " + from.getAbsolutePath() + " refers to unknown card " + cardName + " -- are we in the right universe?");
+					System.err.flush();
+					continue;
+				}
+
+				cards.add(card);
 			}
 			reader.endArray();
 
@@ -80,12 +87,12 @@ public class Tags {
 		JsonWriter writer = new Gson().newJsonWriter(new OutputStreamWriter(fis));
 
 		writer.beginObject();
-		for (Map.Entry<Card, Set<String>> tagsEntry : tagsMap.entrySet()) {
-			writer.name(tagsEntry.getKey().name());
+		for (Map.Entry<String, Set<Card>> tagsEntry : cardsMap.entrySet()) {
+			writer.name(tagsEntry.getKey());
 
 			writer.beginArray();
-			for (String tag : tagsEntry.getValue()) {
-				writer.value(tag);
+			for (Card tag : tagsEntry.getValue()) {
+				writer.value(tag.name());
 			}
 			writer.endArray();
 		}
