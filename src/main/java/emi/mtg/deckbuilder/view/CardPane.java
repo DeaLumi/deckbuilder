@@ -181,7 +181,7 @@ public class CardPane extends BorderPane {
 		filter.setPromptText("Omnifilter...");
 		filter.setPrefWidth(250.0);
 		filter.setOnAction(ae -> {
-			this.lastOmnifilter = Omnifilter.parse(filter.getText());
+			this.lastOmnifilter = Omnifilter.parse(context, filter.getText());
 			this.cardView.filter(findOtherCards.isSelected() ? this.lastOmnifilter : this.lastOmnifilter.and(NONSTANDARD_CARDS));
 			this.cardView.requestFocus();
 		});

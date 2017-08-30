@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
@@ -10,7 +11,7 @@ public class ConvertedManaCost implements Omnifilter.Subfilter {
 	private final Omnifilter.Operator operator;
 	private final double value;
 
-	public ConvertedManaCost(Omnifilter.Operator operator, String value) {
+	public ConvertedManaCost(Context context, Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 		this.value = Double.parseDouble(value);
 	}

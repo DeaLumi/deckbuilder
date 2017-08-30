@@ -4,6 +4,7 @@ import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardTypeLine;
 import emi.lib.mtg.characteristic.Supertype;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.omnifilter.Util;
 
@@ -18,7 +19,7 @@ public class CardType implements Omnifilter.FaceFilter {
 	private final Set<emi.lib.mtg.characteristic.CardType> cardTypes;
 	private final Set<String> subtypes;
 
-	public CardType(Omnifilter.Operator operator, String value) {
+	public CardType(Context context, Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 
 		String[] parts = value.toLowerCase().split("[ ]+");

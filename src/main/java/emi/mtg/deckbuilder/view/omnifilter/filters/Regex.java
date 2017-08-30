@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
 import java.util.regex.Pattern;
@@ -13,7 +14,7 @@ import java.util.regex.PatternSyntaxException;
 public class Regex implements Omnifilter.FaceFilter {
 	private Pattern pattern = null;
 
-	public Regex(Omnifilter.Operator operator, String value) {
+	public Regex(Context context, Omnifilter.Operator operator, String value) {
 		try {
 			if (operator == Omnifilter.Operator.DIRECT) {
 				this.pattern = Pattern.compile(value);

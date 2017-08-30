@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.omnifilter;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 
 import java.util.*;
@@ -44,7 +45,7 @@ public class Omnifilter {
 		}
 	}
 
-	@Service({Operator.class, String.class})
+	@Service({Context.class, Operator.class, String.class})
 	@Service.Property.String(name="key")
 	@Service.Property.String(name="shorthand", required=false)
 	public interface Subfilter extends Predicate<CardInstance> {
@@ -84,7 +85,7 @@ public class Omnifilter {
 
 	private static final Pattern PATTERN = Pattern.compile("(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]*\"|[^\\s]*)");
 
-	public static Predicate<CardInstance> parse(String expression) {
+	public static Predicate<CardInstance> parse(Context context, String expression) {
 		Matcher m = PATTERN.matcher(expression);
 
 		Predicate<CardInstance> predicate = c -> true;
@@ -108,7 +109,7 @@ public class Omnifilter {
 					continue;
 				}
 
-				predicate = predicate.and(stub.uncheckedInstance(op, value));
+				predicate = predicate.and(stub.uncheckedInstance(context, op, value));
 			} else {
 				predicate = predicate.and(ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())));
 			}

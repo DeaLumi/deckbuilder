@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
 import emi.lib.mtg.characteristic.Color;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.omnifilter.Util;
@@ -17,7 +18,7 @@ public class ColorIdentity implements Omnifilter.Subfilter {
 	private final Omnifilter.Operator operator;
 	private final Set<Color> colors;
 
-	public ColorIdentity(Omnifilter.Operator operator, String value) {
+	public ColorIdentity(Context context, Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 		this.colors = colorsIn(value);
 	}

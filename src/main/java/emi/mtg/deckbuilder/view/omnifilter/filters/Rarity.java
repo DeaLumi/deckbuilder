@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
 import emi.lib.mtg.characteristic.CardRarity;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
@@ -14,7 +15,7 @@ public class Rarity implements Omnifilter.Subfilter {
 	private final Omnifilter.Operator operator;
 	private final CardRarity value;
 
-	public Rarity(Omnifilter.Operator operator, String value) {
+	public Rarity(Context context, Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 
 		this.value = Arrays.stream(CardRarity.values())
