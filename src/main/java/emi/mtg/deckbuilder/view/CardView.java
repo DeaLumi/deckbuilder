@@ -239,8 +239,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private boolean panning;
 	private double lastDragX, lastDragY;
 
-	private CardInstance draggingCard, zoomedCard;
+	private Group hoverGroup;
+	private CardInstance hoverCard;
+
+	private Group dragGroup;
+	private CardInstance dragCard;
 	private TransferMode[] dragModes, dropModes;
+
+	private CardInstance zoomedCard;
 	private CardZoomPreview zoomPreview;
 
 	private Consumer<CardInstance> doubleClick;
@@ -272,21 +278,82 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.scrollMaxX = new SimpleDoubleProperty(100.0);
 		this.scrollMaxY = new SimpleDoubleProperty(100.0);
 
-		this.groupedModel = null;
-		this.draggingCard = null;
 		this.dragModes = TransferMode.COPY_OR_MOVE;
 		this.dropModes = TransferMode.COPY_OR_MOVE;
+
+		this.hoverCard = this.dragCard = null;
+		this.hoverGroup = this.dragGroup = null;
 
 		this.doubleClick = ci -> {};
 
 		this.model = model;
 		this.filteredModel = this.model.filtered(this.filter);
-
 		group(grouping);
+
 		layout(engine);
 
 		this.scrollX.addListener(e -> scheduleRender());
 		this.scrollY.addListener(e -> scheduleRender());
+
+		setOnMouseMoved(me -> {
+			if (groupedModel == null) {
+				return;
+			}
+
+			boolean rerender = false;
+
+			MVec2d rel = new MVec2d(me.getX() + scrollX.get(), me.getY() + scrollY.get());
+
+			Group newHoverGroup = null;
+
+			for (Group g : groupedModel) {
+				if (g.groupBounds.contains(rel)) {
+					newHoverGroup = g;
+					break;
+				}
+			}
+
+			if (newHoverGroup != hoverGroup) {
+				rerender = true;
+			}
+
+			hoverGroup = newHoverGroup;
+
+			if (newHoverGroup == null) {
+				if (rerender) {
+					scheduleRender();
+				}
+
+				return;
+			}
+
+			rel.plus(hoverGroup.groupBounds.pos.copy().negate());
+			int newHoverIdx = this.engine.cardAt(rel, hoverGroup.model.size());
+			CardInstance newHoverCard = newHoverIdx >= 0 ? hoverGroup.model.get(newHoverIdx) : null;
+
+			if (newHoverCard != hoverCard) {
+				rerender = true;
+			}
+
+			hoverCard = newHoverCard;
+
+			if (rerender) {
+				scheduleRender();
+			}
+
+			me.consume();
+		});
+
+		setOnMouseExited(me -> {
+			if (hoverGroup != null) {
+				hoverGroup = null;
+				hoverCard = null;
+
+				scheduleRender();
+			}
+
+			me.consume();
+		});
 
 		setOnDragDetected(de -> {
 			if (de.getButton() != MouseButton.PRIMARY) {
@@ -297,21 +364,21 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				return;
 			}
 
-			this.draggingCard = cardAt(de.getX(), de.getY());
+			this.dragCard = hoverCard; // TODO: Redo this!
 
-			if (this.draggingCard == null) {
+			if (this.dragCard == null) {
 				return;
 			}
 
 			Dragboard db = this.startDragAndDrop(dragModes);
-			db.setDragView(this.context.images.getThumbnail(draggingCard.printing()).getNow(Images.CARD_BACK));
-			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, draggingCard.card().name()));
+			db.setDragView(this.context.images.getThumbnail(dragCard.printing()).getNow(Images.CARD_BACK));
+			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, dragCard.card().name()));
 
 			de.consume();
 		});
 
 		setOnDragOver(de -> {
-			if (de.getGestureSource() instanceof CardView && ((CardView) de.getGestureSource()).draggingCard != null) {
+			if (de.getGestureSource() instanceof CardView && ((CardView) de.getGestureSource()).dragCard != null) {
 				de.acceptTransferModes(dropModes);
 				de.consume();
 			}
@@ -328,7 +395,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				return; // TODO: Group switching within same CardView.
 			}
 
-			CardInstance ci = source.draggingCard;
+			CardInstance ci = source.dragCard;
 
 			switch (de.getAcceptedTransferMode()) {
 				case COPY:
@@ -348,7 +415,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					break;
 			}
 
-			source.draggingCard = null;
+			source.dragCard = null;
 
 			// TODO: Group switching.
 		});
@@ -817,15 +884,17 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			gfx.setFill(Color.WHITE);
 			gfx.fillRect(0, 0, getWidth(), getHeight());
 
-			for (Map.Entry<MVec2d, Image> img : renderMap.entrySet()) {
-				gfx.drawImage(img.getValue(), img.getKey().x, img.getKey().y, cardWidth(), cardHeight());
+			if (hoverGroup != null) {
+				gfx.setFill(Color.color(0.9, 0.9, 0.9));
+				gfx.fillRect(hoverGroup.groupBounds.pos.x - scrollX.get(), hoverGroup.groupBounds.pos.y - scrollY.get(),
+						hoverGroup.groupBounds.dim.x, hoverGroup.groupBounds.dim.y);
 			}
 
 			gfx.setFill(Color.BLACK);
 			gfx.setTextAlign(TextAlignment.CENTER);
 			gfx.setTextBaseline(VPos.CENTER);
 			for (int i = 0; i < groupedModel.length; ++i) {
-				if (groupedModel[i] == null || groupedModel[i].model.isEmpty()) {
+				if (groupedModel[i] == null) {
 					continue;
 				}
 
@@ -836,6 +905,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						groupedModel[i].labelBounds.pos.x + groupedModel[i].labelBounds.dim.x / 2.0 - scrollX.get(),
 						groupedModel[i].labelBounds.pos.y + groupedModel[i].labelBounds.dim.y / 2.0 - scrollY.get(),
 						groupedModel[i].labelBounds.dim.x);
+			}
+
+			for (Map.Entry<MVec2d, Image> img : renderMap.entrySet()) {
+				gfx.drawImage(img.getValue(), img.getKey().x, img.getKey().y, cardWidth(), cardHeight());
 			}
 		});
 	}
