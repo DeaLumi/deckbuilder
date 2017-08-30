@@ -6,13 +6,18 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.CardView;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="Card Type")
-public class CardTypeGroup implements CardView.Grouping {
+public class CardTypeGroup extends CharacteristicGrouping implements CardView.Grouping {
 	private CardType[] PRIORITIES = { CardType.Creature, CardType.Artifact };
+
+	public CardTypeGroup(List<CardInstance> model) {
+		super(model);
+	}
 
 	@Override
 	public String toString() {
@@ -20,7 +25,7 @@ public class CardTypeGroup implements CardView.Grouping {
 	}
 
 	@Override
-	public String[] groups() {
+	public String[] groupValues() {
 		return Arrays.stream(CardType.values()).map(CardType::name).toArray(String[]::new);
 	}
 
@@ -39,15 +44,5 @@ public class CardTypeGroup implements CardView.Grouping {
 		assert type.size() == 0 : "Disambiguate: " + type.stream().map(CardType::name).collect(Collectors.joining(", "));
 
 		return type.iterator().next().name();
-	}
-
-	@Override
-	public void add(CardInstance ci, String which) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void remove(CardInstance ci, String which) {
-		throw new UnsupportedOperationException();
 	}
 }

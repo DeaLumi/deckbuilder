@@ -1,28 +1,49 @@
 package emi.mtg.deckbuilder.view.groupings;
 
+import emi.lib.Service;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.CardView;
 
+import java.util.List;
+
+@Service.Provider(CardView.Grouping.class)
+@Service.Property.String(name="name", value="None")
 public class None implements CardView.Grouping {
-	private static String[] GROUPS = new String[] { "All Cards" };
+	private static Group[] GROUPS = new Group[] {
+		new Group() {
+			@Override
+			public void add(CardInstance ci) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void remove(CardInstance ci) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean contains(CardInstance ci) {
+				return true;
+			}
+
+			@Override
+			public String toString() {
+				return "All Cards";
+			}
+		}
+	};
+
+	public None(List<CardInstance> model) {
+		/* do nothing */
+	}
 
 	@Override
-	public String[] groups() {
+	public Group[] groups() {
 		return GROUPS;
 	}
 
 	@Override
-	public String extract(CardInstance ci) {
-		return "All Cards";
-	}
-
-	@Override
-	public void add(CardInstance ci, String which) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void remove(CardInstance ci, String which) {
-		throw new UnsupportedOperationException();
+	public boolean supportsModification() {
+		return false;
 	}
 }

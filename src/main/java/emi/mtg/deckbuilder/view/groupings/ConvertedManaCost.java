@@ -7,10 +7,16 @@ import emi.lib.mtg.characteristic.ManaCost;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.CardView;
 
+import java.util.List;
+
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="CMC")
-public class ConvertedManaCost implements CardView.Grouping {
+public class ConvertedManaCost extends CharacteristicGrouping implements CardView.Grouping {
 	private static final String[] GROUPS = { "Land", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "1000000", "X" };
+
+	public ConvertedManaCost(List<CardInstance> model) {
+		super(model);
+	}
 
 	@Override
 	public String toString() {
@@ -18,7 +24,7 @@ public class ConvertedManaCost implements CardView.Grouping {
 	}
 
 	@Override
-	public String[] groups() {
+	public String[] groupValues() {
 		return GROUPS;
 	}
 
@@ -30,15 +36,5 @@ public class ConvertedManaCost implements CardView.Grouping {
 
 		ManaCost mc = ci.card().manaCost();
 		return mc.varies() ? "X" : Integer.toString((int) mc.convertedCost());
-	}
-
-	@Override
-	public void add(CardInstance ci, String which) {
-		// do nothing
-	}
-
-	@Override
-	public void remove(CardInstance ci, String which) {
-		// do nothing
 	}
 }

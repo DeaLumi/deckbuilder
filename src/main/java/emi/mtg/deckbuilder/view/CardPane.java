@@ -107,7 +107,7 @@ public class CardPane extends BorderPane {
 
 		this.lastOmnifilter = c -> true;
 
-		this.cardView = new CardView(images, model, initEngine, CardView.groupings().get("CMC"), sortings);
+		this.cardView = new CardView(images, model, initEngine, "CMC", sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		Button label = new Button(title);
@@ -115,13 +115,13 @@ public class CardPane extends BorderPane {
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
-		for (CardView.Grouping grouping : CardView.groupings().values()) {
-			RadioMenuItem item = new RadioMenuItem(grouping.toString());
+		for (String grouping : CardView.groupings()) {
+			RadioMenuItem item = new RadioMenuItem(grouping);
 			item.setOnAction(ae -> {
 				this.cardView.group(grouping);
 				this.cardView.requestFocus();
 			});
-			item.setSelected("CMC".equals(grouping.toString()));
+			item.setSelected("CMC".equals(grouping));
 			item.setToggleGroup(groupingGroup);
 			groupingMenu.getItems().add(item);
 		}
