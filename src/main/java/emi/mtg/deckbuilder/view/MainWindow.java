@@ -5,7 +5,7 @@ import emi.lib.Service;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
-import emi.lib.mtg.scryfall.ScryfallDataSource;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -34,16 +34,22 @@ public class MainWindow extends Application {
 		launch(args);
 	}
 
-	private static final DataSource data;
+	private static final Context context;
 
 	static {
-		DataSource dataTmp;
+		Context ctxTmp;
 		try {
-			dataTmp = new ScryfallDataSource();
+			ctxTmp = new Context();
 		} catch (IOException e) {
 			throw new Error("Couldn't create ScryfallCardSource.");
 		}
-		data = dataTmp;
+		context = ctxTmp;
+
+		try {
+			context.tags.load(context.data, new File("tags.json"));
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
 	}
 
 	private static final Map<String, Format> formats = Service.Loader.load(Format.class).stream()
@@ -51,7 +57,7 @@ public class MainWindow extends Application {
 
 	private static final Map<FileChooser.ExtensionFilter, DeckImportExport> importExports = Service.Loader.load(DeckImportExport.class).stream()
 			.collect(Collectors.toMap(dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
-					dies -> dies.uncheckedInstance(data, formats)));
+					dies -> dies.uncheckedInstance(context.data, formats)));
 
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
 		List<CardInstance> cards = new ArrayList<>();
@@ -123,10 +129,7 @@ public class MainWindow extends Application {
 	}
 
 	private void setupUI() {
-		Images images = new Images();
-		DataSource cards = data;
-
-		CardPane collection = new CardPane("Collection", images, new ReadOnlyListWrapper<>(collectionModel(cards)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
+		CardPane collection = new CardPane("Collection", context, new ReadOnlyListWrapper<>(collectionModel(context.data)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().dragModes(TransferMode.COPY);
 		collection.view().dropModes();
 		collection.view().doubleClick(ci -> this.deckPanes.get(Zone.Library).view().model().add(ci));
@@ -134,14 +137,14 @@ public class MainWindow extends Application {
 		this.collectionSplitter.getItems().add(0, collection);
 
 		for (Zone zone : Zone.values()) {
-			CardPane deckZone = new CardPane(zone.name(), images, new ObservableListWrapper<>(model.cards.get(zone)), "Piles", CardView.DEFAULT_SORTING);
+			CardPane deckZone = new CardPane(zone.name(), context, new ObservableListWrapper<>(model.cards.get(zone)), "Piles", CardView.DEFAULT_SORTING);
 			deckZone.view().dragModes(TransferMode.MOVE);
 			deckZone.view().dropModes(TransferMode.COPY_OR_MOVE);
 			deckZone.view().doubleClick(ci -> deckZone.view().model().remove(ci));
 			deckPanes.put(zone, deckZone);
 		}
 
-		this.sideboard = new CardPane("Sideboard", images, new ObservableListWrapper<>(model.sideboard), "Piles", CardView.DEFAULT_SORTING);
+		this.sideboard = new CardPane("Sideboard", context, new ObservableListWrapper<>(model.sideboard), "Piles", CardView.DEFAULT_SORTING);
 		this.sideboard.view().dragModes(TransferMode.MOVE);
 		this.sideboard.view().dropModes(TransferMode.COPY_OR_MOVE);
 		this.sideboard.view().doubleClick(ci -> this.sideboard.view().model().remove(ci));

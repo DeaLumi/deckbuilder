@@ -26,15 +26,9 @@ public class CardInstance implements Serializable {
 	}
 
 	private Card.Printing printing;
-	private Set<String> tags;
 
-	public CardInstance(Card.Printing printing, Collection<String> tags) {
+	public CardInstance(Card.Printing printing) {
 		this.printing = printing;
-		this.tags = new HashSet<>(tags);
-	}
-
-	public CardInstance(Card.Printing printing, String... tags) {
-		this(printing, Arrays.asList(tags));
 	}
 
 	public Card card() {
@@ -43,9 +37,5 @@ public class CardInstance implements Serializable {
 
 	public Card.Printing printing() {
 		return printing;
-	}
-
-	public Set<String> tags() {
-		return tags;
 	}
 }

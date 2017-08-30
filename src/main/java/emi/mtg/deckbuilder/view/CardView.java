@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
@@ -125,7 +126,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		int cardAt(MVec2d point, int groupSize);
 	}
 
-	@Service(ObservableList.class)
+	@Service(Context.class)
 	@Service.Property.String(name="name")
 	public interface Grouping {
 		interface Group {
@@ -219,7 +220,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	private final Images images;
+	private final Context context;
 
 	private ObservableList<CardInstance> model;
 	private FilteredList<CardInstance> filteredModel;
@@ -246,14 +247,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private DoubleProperty cardScaleProperty;
 
-	public CardView(Images images, ObservableList<CardInstance> model, String engine, String grouping, List<ActiveSorting> sorts) {
+	public CardView(Context context, ObservableList<CardInstance> model, String engine, String grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
 
-		this.images = images;
+		this.context = context;
 
 		this.filter = ci -> true;
+		this.sortingElements = sorts;
 		this.sort = convertSorts(sorts);
 
 		this.cardScaleProperty = new SimpleDoubleProperty(1.0);
@@ -302,7 +304,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			Dragboard db = this.startDragAndDrop(dragModes);
-			db.setDragView(this.images.getThumbnail(draggingCard.printing()).getNow(Images.CARD_BACK));
+			db.setDragView(this.context.images.getThumbnail(draggingCard.printing()).getNow(Images.CARD_BACK));
 			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, draggingCard.card().name()));
 
 			de.consume();
@@ -435,7 +437,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
 
-			zoomPreview = new CardZoomPreview(start, images.get(zoomedCard.printing()).getNow(Images.CARD_BACK));
+			zoomPreview = new CardZoomPreview(start, context.images.get(zoomedCard.printing()).getNow(Images.CARD_BACK));
 		}
 	}
 
@@ -538,7 +540,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public void group(String grouping) {
 		if (CardView.groupingsMap.containsKey(grouping)) {
-			this.grouping = CardView.groupingsMap.get(grouping).uncheckedInstance(this.filteredModel);
+			this.grouping = CardView.groupingsMap.get(grouping).uncheckedInstance(this.context);
 
 			this.groupedModel = new Group[this.grouping.groups().length];
 			for (int i = 0; i < this.grouping.groups().length; ++i) {
@@ -799,7 +801,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 				final Card.Printing printing = groupedModel[i].model.get(j).printing();
 
-				CompletableFuture<Image> futureImage = this.images.getThumbnail(printing);
+				CompletableFuture<Image> futureImage = this.context.images.getThumbnail(printing);
 
 				if (futureImage.isDone()) {
 					renderMap.put(new MVec2d(loc), futureImage.getNow(Images.CARD_BACK));

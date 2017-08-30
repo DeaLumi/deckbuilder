@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view;
 
 import emi.lib.mtg.characteristic.CardType;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.beans.binding.DoubleBinding;
@@ -102,12 +103,12 @@ public class CardPane extends BorderPane {
 	private Predicate<CardInstance> lastOmnifilter;
 	private final CardView cardView;
 
-	public CardPane(String title, Images images, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, Context context, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
 		super();
 
 		this.lastOmnifilter = c -> true;
 
-		this.cardView = new CardView(images, model, initEngine, "CMC", sortings);
+		this.cardView = new CardView(context, model, initEngine, "CMC", sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		Button label = new Button(title);
@@ -195,12 +196,12 @@ public class CardPane extends BorderPane {
 		this.setTop(controlBar);
 	}
 
-	public CardPane(String title, Images images, ObservableList<CardInstance> model, String layoutEngine) {
-		this(title, images, model, layoutEngine, CardView.DEFAULT_SORTING);
+	public CardPane(String title, Context context, ObservableList<CardInstance> model, String layoutEngine) {
+		this(title, context, model, layoutEngine, CardView.DEFAULT_SORTING);
 	}
 
-	public CardPane(String title, Images images, ObservableList<CardInstance> model) {
-		this(title, images, model, "Piles", CardView.DEFAULT_SORTING);
+	public CardPane(String title, Context context, ObservableList<CardInstance> model) {
+		this(title, context, model, "Piles", CardView.DEFAULT_SORTING);
 	}
 
 	public CardView view() {

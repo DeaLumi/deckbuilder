@@ -1,9 +1,8 @@
 package emi.mtg.deckbuilder.view.groupings;
 
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.CardView;
-
-import java.util.List;
 
 public abstract class CharacteristicGrouping implements CardView.Grouping {
 	protected class CharacteristicGroup implements CardView.Grouping.Group {
@@ -34,7 +33,7 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 		}
 	}
 
-	public CharacteristicGrouping(List<CardInstance> model) {
+	public CharacteristicGrouping(Context context) {
 		/* do nothing */
 	}
 

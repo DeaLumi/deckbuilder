@@ -2,12 +2,12 @@ package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.Service;
 import emi.lib.mtg.characteristic.CardRarity;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.CardView;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="Rarity")
@@ -21,8 +21,8 @@ public class Rarity extends CharacteristicGrouping implements CardView.Grouping 
 				.toArray(String[]::new);
 	}
 
-	public Rarity(List<CardInstance> model) {
-		super(model);
+	public Rarity(Context context) {
+		super(context);
 	}
 
 	@Override
