@@ -9,6 +9,7 @@ import javafx.scene.image.Image;
 
 import javax.imageio.ImageIO;
 import java.io.*;
+import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -25,8 +26,6 @@ public class Images {
 	static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 
 	private static final List<ImageSource> sources;
-	private static final long MAX_LOADED_IMAGES = Runtime.getRuntime().maxMemory() / (50 * 2 * 1024 * 1024);
-	private static final long MAX_LOADED_THUMBNAILS = MAX_LOADED_IMAGES;
 
 	private static final ExecutorService IMAGE_LOAD_POOL = Executors.newCachedThreadPool(r -> {
 		Thread th = Executors.defaultThreadFactory().newThread(r);
@@ -40,27 +39,20 @@ public class Images {
 				.sorted(Comparator.comparing(s -> -s.number("priority")))
 				.map(Service.Loader.Stub::uncheckedInstance)
 				.collect(Collectors.toList());
-
-		System.out.println("Images will attempt to store at most " + MAX_LOADED_IMAGES + " images.");
 	}
 
-	private final Map<Card.Printing.Face, Image> imageCache;
-	private final Map<Card.Printing.Face, Image> thumbnailCache;
-	private final Queue<Card.Printing.Face> imageEvictionQueue;
-	private final Queue<Card.Printing.Face> thumbnailEvictionQueue;
+	private final Map<Card.Printing.Face, SoftReference<Image>> imageCache;
+	private final Map<Card.Printing.Face, SoftReference<Image>> thumbnailCache;
 
 	public Images() {
 		imageCache = new HashMap<>();
-		imageEvictionQueue = new LinkedList<>();
-
 		thumbnailCache = new HashMap<>();
-		thumbnailEvictionQueue = new LinkedList<>();
 	}
 
 	public CompletableFuture<Image> get(Card.Printing.Face face) {
 		synchronized(imageCache) {
-			if (!imageCache.containsKey(face)) {
-				imageCache.put(face, CARD_BACK);
+			if (!imageCache.containsKey(face) || imageCache.get(face).get() == null) {
+				imageCache.put(face, new SoftReference<>(CARD_BACK));
 
 				CompletableFuture<Image> ret = new CompletableFuture<>();
 
@@ -70,13 +62,8 @@ public class Images {
 							InputStream input = source.open(face);
 
 							if (input != null) {
-								if (imageCache.size() >= MAX_LOADED_IMAGES) {
-									imageCache.remove(imageEvictionQueue.remove());
-								}
-
 								Image image = MtgImageUtils.clearCorners(new Image(input));
-								imageEvictionQueue.add(face);
-								imageCache.put(face, image);
+								imageCache.put(face, new SoftReference<>(image));
 								ret.complete(image);
 								break;
 							}
@@ -92,7 +79,7 @@ public class Images {
 			}
 		}
 
-		return CompletableFuture.completedFuture(imageCache.get(face));
+		return CompletableFuture.completedFuture(imageCache.get(face).get());
 	}
 
 	public CompletableFuture<Image> get(Card.Printing printing) {
@@ -117,22 +104,18 @@ public class Images {
 
 	public CompletableFuture<Image> getThumbnail(Card.Printing.Face face) {
 		synchronized(thumbnailCache) {
-			if (!thumbnailCache.containsKey(face)) {
+			if (!thumbnailCache.containsKey(face) || thumbnailCache.get(face).get() == null) {
 				File thumbFile = new File(new File(THUMB_PARENT, String.format("s%s", face.printing().set().code())), String.format("%s.png", face.face().name()));
+
+				thumbnailCache.put(face, new SoftReference<>(CARD_BACK_THUMB)); // Stop this from effing up...
 
 				if (thumbFile.isFile()) {
 					CompletableFuture<Image> ret = new CompletableFuture<>();
 
 					IMAGE_LOAD_POOL.submit(() -> {
 						try {
-							if (thumbnailCache.size() >= MAX_LOADED_THUMBNAILS) {
-								thumbnailCache.remove(thumbnailEvictionQueue.remove());
-							}
-
-							thumbnailEvictionQueue.add(face);
-
 							Image thumbnail = new Image(new FileInputStream(thumbFile));
-							thumbnailCache.put(face, thumbnail);
+							thumbnailCache.put(face, new SoftReference<>(thumbnail));
 							ret.complete(thumbnail);
 						} catch (FileNotFoundException e) {
 							// do nothing
@@ -143,21 +126,13 @@ public class Images {
 
 					return ret;
 				} else {
-					thumbnailCache.put(face, CARD_BACK_THUMB); // Stop this from effing up...
-
 					return get(face).thenApply(image -> {
 						if (image == null) {
 							return CARD_BACK_THUMB;
 						}
 
-						if (thumbnailCache.size() >= MAX_LOADED_THUMBNAILS) {
-							thumbnailCache.remove(thumbnailEvictionQueue.remove());
-						}
-
-						thumbnailEvictionQueue.add(face);
-
 						Image scaled = MtgImageUtils.scaled(image, CARD_WIDTH, CARD_HEIGHT, true);
-						thumbnailCache.put(face, scaled);
+						thumbnailCache.put(face, new SoftReference<>(scaled));
 
 						try {
 							if (!thumbFile.getParentFile().isDirectory() && !thumbFile.getParentFile().mkdirs()) {
@@ -175,7 +150,7 @@ public class Images {
 			}
 		}
 
-		return CompletableFuture.completedFuture(thumbnailCache.get(face));
+		return CompletableFuture.completedFuture(thumbnailCache.get(face).get());
 	}
 
 	public CompletableFuture<Image> getThumbnail(Card.Printing printing) {
