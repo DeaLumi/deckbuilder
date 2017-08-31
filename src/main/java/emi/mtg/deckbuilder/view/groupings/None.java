@@ -1,10 +1,9 @@
 package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.Service;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.CardView;
-
-import java.util.List;
 
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="None")
@@ -33,7 +32,7 @@ public class None implements CardView.Grouping {
 		}
 	};
 
-	public None(List<CardInstance> model) {
+	public None(Context context) {
 		/* do nothing */
 	}
 
