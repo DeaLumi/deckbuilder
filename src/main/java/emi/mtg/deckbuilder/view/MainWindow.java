@@ -382,4 +382,22 @@ public class MainWindow extends Application {
 
 		alert.showAndWait();
 	}
+
+	@FXML
+	protected void showTagManagementDialog() {
+		try {
+			new TagManagementDialog(context.tags).showAndWait();
+		} catch (IOException ioe) {
+			ioe.printStackTrace(); // TODO: Handle gracefully.
+		}
+	}
+
+	@FXML
+	protected void saveTags() {
+		try {
+			context.tags.save(new File("tags.json")); // TODO: Move this to controller?
+		} catch (IOException ioe) {
+			ioe.printStackTrace(); // TODO: Handle gracefully
+		}
+	}
 }
