@@ -41,12 +41,12 @@ public class MainWindow extends Application {
 		try {
 			ctxTmp = new Context();
 		} catch (IOException e) {
-			throw new Error("Couldn't create ScryfallCardSource.");
+			throw new Error("Couldn't create Context.", e);
 		}
 		context = ctxTmp;
 
 		try {
-			context.tags.load(context.data, new File("tags.json"));
+			context.tags.load(new File("tags.json")); // TODO: Move this to controller...?
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 		}

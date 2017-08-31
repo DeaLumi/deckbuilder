@@ -6,7 +6,6 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import emi.lib.mtg.Card;
-import emi.lib.mtg.DataSource;
 
 import java.io.*;
 import java.util.*;
@@ -17,9 +16,11 @@ public class Tags {
 			.setPrettyPrinting()
 			.create();
 
-	private NavigableMap<String, Set<Card>> cardsMap;
+	private final Context context;
+	private final NavigableMap<String, Set<Card>> cardsMap;
 
-	public Tags() {
+	public Tags(Context context) {
+		this.context = context;
 		this.cardsMap = new TreeMap<>();
 	}
 
@@ -42,13 +43,17 @@ public class Tags {
 		cardsMap.computeIfAbsent(tag, t -> new HashSet<>()).add(card);
 	}
 
+	public void add(String tag) {
+		cardsMap.putIfAbsent(tag, new HashSet<>());
+	}
+
 	public void remove(Card card, String tag) {
 		if (cardsMap.containsKey(tag)) {
 			cardsMap.get(tag).remove(card);
 		}
 	}
 
-	public void load(DataSource data, File from) throws IOException {
+	public void load(File from) throws IOException {
 		FileInputStream fis = new FileInputStream(from);
 		JsonReader reader = gson.newJsonReader(new InputStreamReader(fis));
 
@@ -63,7 +68,7 @@ public class Tags {
 			reader.beginArray();
 			while (reader.peek() == JsonToken.STRING) {
 				String cardName = reader.nextString();
-				Card card = data.card(cardName);
+				Card card = context.data.card(cardName);
 
 				if (card == null) {
 					System.err.println("Warning: Tags file " + from.getAbsolutePath() + " refers to unknown card " + cardName + " -- are we in the right universe?");
@@ -84,7 +89,7 @@ public class Tags {
 
 	public void save(File to) throws IOException {
 		FileOutputStream fis = new FileOutputStream(to);
-		JsonWriter writer = new Gson().newJsonWriter(new OutputStreamWriter(fis));
+		JsonWriter writer = gson.newJsonWriter(new OutputStreamWriter(fis));
 
 		writer.beginObject();
 		for (Map.Entry<String, Set<Card>> tagsEntry : cardsMap.entrySet()) {

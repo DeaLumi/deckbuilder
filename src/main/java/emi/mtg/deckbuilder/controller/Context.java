@@ -19,7 +19,7 @@ public class Context {
 	public Context() throws IOException {
 		this.data = new ScryfallDataSource();
 		this.images = new Images();
-		this.tags = new Tags();
+		this.tags = new Tags(this);
 		this.format = null;
 	}
 }
