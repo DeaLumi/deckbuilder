@@ -35,7 +35,7 @@ public class Tags {
 	}
 
 	public Set<Card> cards(String tag) {
-		return cardsMap.get(tag);
+		return cardsMap.computeIfAbsent(tag, t -> new HashSet<>());
 	}
 
 	public void add(Card card, String tag) {
