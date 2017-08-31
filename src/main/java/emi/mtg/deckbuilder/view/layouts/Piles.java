@@ -25,6 +25,8 @@ public class Piles implements CardView.LayoutEngine {
 		double w = parent.cardWidth();
 		double h = parent.cardHeight();
 
+		double pwp = p + w + p;
+
 		double x = 0;
 		for (int i = 0; i < groups.length; ++i) {
 			if (!showEmpty && groups[i].model.isEmpty()) {
@@ -36,16 +38,14 @@ public class Piles implements CardView.LayoutEngine {
 				continue;
 			}
 
-			double groupWidth = p + w + p;
-
 			groups[i].labelBounds.pos.x = x;
 			groups[i].labelBounds.pos.y = 0.0;
-			groups[i].labelBounds.dim.x = groupWidth;
+			groups[i].labelBounds.dim.x = pwp;
 			groups[i].labelBounds.dim.y = 18.0;
 
 			groups[i].groupBounds.pos.x = x;
 			groups[i].groupBounds.pos.y = 18.0;
-			groups[i].groupBounds.dim.x = groupWidth;
+			groups[i].groupBounds.dim.x = pwp;
 			groups[i].groupBounds.dim.y = p + (h * OVERLAP_FACTOR) * (groups[i].model.size() - 1) + h + p;
 
 			x += groups[i].groupBounds.dim.x;
