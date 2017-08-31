@@ -5,6 +5,7 @@ import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -120,7 +121,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	@Service(CardView.class)
 	@Service.Property.String(name="name")
 	public interface LayoutEngine {
-		void layoutGroups(int[] groupSizes, Bounds[] groupBounds, Bounds[] labelBounds);
+		void layoutGroups(Group[] groups, boolean includeEmpty);
 
 		MVec2d coordinatesOf(int card, MVec2d buffer);
 		int cardAt(MVec2d point, int groupSize);
@@ -205,7 +206,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return CardView.sortings;
 	}
 
-	private class Group {
+	public class Group {
 		public final Bounds groupBounds, labelBounds;
 		public final Grouping.Group group;
 		public SortedList<CardInstance> model;
@@ -232,8 +233,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private List<ActiveSorting> sortingElements;
 	private Grouping grouping;
 
-	private final Map<String, Integer> groupIndexMap;
-
 	private DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
 
 	private boolean panning;
@@ -252,6 +251,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private Consumer<CardInstance> doubleClick;
 
 	private DoubleProperty cardScaleProperty;
+	private BooleanProperty showEmptyGroupsProperty;
 
 	public CardView(Context context, ObservableList<CardInstance> model, String engine, String grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
@@ -267,9 +267,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.cardScaleProperty = new SimpleDoubleProperty(1.0);
 		this.cardScaleProperty.addListener(ce -> layout());
 
-		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
+		this.showEmptyGroupsProperty = new SimpleBooleanProperty(false);
+		this.showEmptyGroupsProperty.addListener(ce -> layout());
 
-		this.groupIndexMap = new HashMap<>();
+		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
 
 		this.scrollMinX = new SimpleDoubleProperty(0.0);
 		this.scrollMinY = new SimpleDoubleProperty(0.0);
@@ -358,8 +359,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					}
 
 					hoverGroup.group.add(dragCard);
-					model.remove(dragCard);
-					model.add(dragCard);
+
+					for (int i = 0; i < model.size(); ++i) {
+						if (model.get(i).card() == dragCard.card()) {
+							model.set(i, model.get(i)); // update this...
+						}
+					}
 				}
 
 				dragGroup = null;
@@ -462,7 +467,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		Group newHoverGroup = null;
 
 		for (Group g : groupedModel) {
-			if (g.groupBounds.contains(rel)) {
+			if (g.groupBounds.contains(rel) || g.labelBounds.contains(rel)) {
 				newHoverGroup = g;
 				break;
 			}
@@ -696,6 +701,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return cardScaleProperty;
 	}
 
+	public BooleanProperty showEmptyGroupsProperty() {
+		return showEmptyGroupsProperty;
+	}
+
 	public DoubleProperty scrollMinX() {
 		return scrollMinX;
 	}
@@ -783,26 +792,17 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		ForkJoinPool.commonPool().submit(this::render);
 	}
 
-	class CardList extends ArrayList<CardInstance> {
-
-	}
-
 	protected synchronized void layout() {
 		if (engine == null || grouping == null || model == null || groupedModel == null) {
 			return;
 		}
 
-		// TODO: Shim
-		int[] groupSizes = Arrays.stream(groupedModel).mapToInt(g -> g.model.size()).toArray();
-		Bounds[] groupBounds = Arrays.stream(groupedModel).map(g -> g.groupBounds).toArray(Bounds[]::new);
-		Bounds[] labelBounds = Arrays.stream(groupedModel).map(g -> g.labelBounds).toArray(Bounds[]::new);
-
-		engine.layoutGroups(groupSizes, groupBounds, labelBounds);
+		engine.layoutGroups(groupedModel, showEmptyGroupsProperty.get());
 
 		MVec2d low = new MVec2d(), high = new MVec2d();
 
-		for (int i = 0; i < groupBounds.length; ++i) {
-			final Bounds bounds = groupBounds[i];
+		for (int i = 0; i < groupedModel.length; ++i) {
+			final Bounds bounds = groupedModel[i].groupBounds;
 
 			if (bounds.pos.x < low.x) {
 				low.x = bounds.pos.x;
@@ -914,7 +914,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			gfx.setTextAlign(TextAlignment.CENTER);
 			gfx.setTextBaseline(VPos.CENTER);
 			for (int i = 0; i < groupedModel.length; ++i) {
-				if (groupedModel[i] == null) {
+				if (groupedModel[i] == null || (!showEmptyGroupsProperty.get() && groupedModel[i].model.isEmpty())) {
 					continue;
 				}
 

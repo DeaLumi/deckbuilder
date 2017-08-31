@@ -20,26 +20,35 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds, CardView.Bounds[] labelBounds) {
+	public void layoutGroups(CardView.Group[] groups, boolean showEmpty) {
 		double p = parent.cardPadding();
 		double w = parent.cardWidth();
 		double h = parent.cardHeight();
 
 		double x = 0;
-		for (int i = 0; i < groupSizes.length; ++i) {
-			double groupWidth = p + (groupSizes[i] > 0 ? w : 0) + p;
+		for (int i = 0; i < groups.length; ++i) {
+			if (!showEmpty && groups[i].model.isEmpty()) {
+				groups[i].labelBounds.pos.x = groups[i].labelBounds.pos.y = 0;
+				groups[i].labelBounds.dim.x = groups[i].labelBounds.dim.y = 0;
+				groups[i].groupBounds.pos.x = groups[i].groupBounds.pos.y = 0;
+				groups[i].groupBounds.dim.x = groups[i].groupBounds.dim.y = 0;
 
-			labelBounds[i].pos.x = x;
-			labelBounds[i].pos.y = 0.0;
-			labelBounds[i].dim.x = groupWidth;
-			labelBounds[i].dim.y = 18.0;
+				continue;
+			}
 
-			groupBounds[i].pos.x = x;
-			groupBounds[i].pos.y = 18.0;
-			groupBounds[i].dim.x = groupWidth;
-			groupBounds[i].dim.y = p + (h * OVERLAP_FACTOR) * (groupSizes[i] - 1) + h + p;
+			double groupWidth = p + w + p;
 
-			x += groupBounds[i].dim.x;
+			groups[i].labelBounds.pos.x = x;
+			groups[i].labelBounds.pos.y = 0.0;
+			groups[i].labelBounds.dim.x = groupWidth;
+			groups[i].labelBounds.dim.y = 18.0;
+
+			groups[i].groupBounds.pos.x = x;
+			groups[i].groupBounds.pos.y = 18.0;
+			groups[i].groupBounds.dim.x = groupWidth;
+			groups[i].groupBounds.dim.y = p + (h * OVERLAP_FACTOR) * (groups[i].model.size() - 1) + h + p;
+
+			x += groups[i].groupBounds.dim.x;
 		}
 	}
 

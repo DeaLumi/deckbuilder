@@ -128,6 +128,10 @@ public class CardPane extends BorderPane {
 		}
 		groupingMenu.getItems().add(new SeparatorMenuItem());
 
+		CheckMenuItem showEmptyGroups = new CheckMenuItem("Show Empty Groups");
+		showEmptyGroups.selectedProperty().bindBidirectional(this.cardView.showEmptyGroupsProperty());
+		groupingMenu.getItems().add(showEmptyGroups);
+
 		Menu displayMenu = new Menu("Display");
 		ToggleGroup displayGroup = new ToggleGroup();
 		for (String display : CardView.engineNames()) {

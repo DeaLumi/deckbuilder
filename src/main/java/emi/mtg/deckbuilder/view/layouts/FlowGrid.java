@@ -24,26 +24,34 @@ public class FlowGrid implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public void layoutGroups(int[] groupSizes, CardView.Bounds[] groupBounds, CardView.Bounds[] labelBounds) {
+	public void layoutGroups(CardView.Group[] groups, boolean showEmpty) {
 		double p = parent.cardPadding();
 		double php = p + parent.cardHeight() + p;
 
 		int stride = stride();
 
 		double y = 0;
-		for (int i = 0; i < groupSizes.length; ++i) {
-			labelBounds[i].pos.x = 0;
-			labelBounds[i].pos.y = y;
-			labelBounds[i].dim.x = parent.getWidth();
-			labelBounds[i].dim.y = 18.0;
-			y += labelBounds[i].dim.y;
+		for (int i = 0; i < groups.length; ++i) {
+			if (!showEmpty && groups[i].model.isEmpty()) {
+				groups[i].labelBounds.pos.x = groups[i].labelBounds.pos.y = 0;
+				groups[i].labelBounds.dim.x = groups[i].labelBounds.dim.y = 0;
+				groups[i].groupBounds.pos.x = groups[i].groupBounds.pos.y = 0;
+				groups[i].groupBounds.dim.x = groups[i].groupBounds.dim.y = 0;
 
-			groupBounds[i].pos.x = 0;
-			groupBounds[i].pos.y = y;
-			groupBounds[i].dim.x = parent.getWidth();
+				continue;
+			}
 
-			groupBounds[i].dim.y = Math.ceil((double) groupSizes[i] / (double) stride) * php;
-			y += groupBounds[i].dim.y;
+			groups[i].labelBounds.pos.x = 0;
+			groups[i].labelBounds.pos.y = y;
+			groups[i].labelBounds.dim.x = parent.getWidth();
+			groups[i].labelBounds.dim.y = 18.0;
+			y += groups[i].labelBounds.dim.y;
+
+			groups[i].groupBounds.pos.x = 0;
+			groups[i].groupBounds.pos.y = y;
+			groups[i].groupBounds.dim.x = parent.getWidth();
+			groups[i].groupBounds.dim.y = Math.ceil((double) groups[i].model.size() / (double) stride) * php;
+			y += groups[i].groupBounds.dim.y;
 		}
 	}
 
