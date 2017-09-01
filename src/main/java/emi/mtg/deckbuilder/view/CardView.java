@@ -635,6 +635,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return this.model;
 	}
 
+	public FilteredList<CardInstance> filteredModel() { return this.filteredModel; }
+
 	private void filter(Predicate<CardInstance> filter, boolean sync) {
 		if (!sync) {
 			ForkJoinPool.commonPool().submit(() -> filter(filter, true));

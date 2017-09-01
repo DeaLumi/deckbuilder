@@ -4,8 +4,10 @@ import emi.lib.mtg.characteristic.CardType;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
+import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.DoubleProperty;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -21,6 +23,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 public class CardPane extends BorderPane {
@@ -190,13 +193,37 @@ public class CardPane extends BorderPane {
 			this.cardView.requestFocus();
 		});
 
+		Label deckStats = new Label("? Land / ? Creature / ? Other");
+
+		ListChangeListener<CardInstance> updateDeckStats = lci -> {
+			AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
+
+			cardView.filteredModel().stream()
+					.flatMap(ci -> ci.card().faces().stream())
+					.forEach(f -> {
+						if (f.type().cardTypes().contains(CardType.Creature)) {
+							creature.incrementAndGet();
+						} else if (f.type().cardTypes().contains(CardType.Land)) {
+							land.incrementAndGet();
+						} else {
+							other.incrementAndGet();
+						}
+					});
+
+			Platform.runLater(() -> deckStats.setText(String.format("%d Land / %d Creature / %d Other", land.get(), creature.get(), other.get())));
+		};
+		updateDeckStats.onChanged(null);
+		model.addListener(updateDeckStats);
+
 		HBox controlBar = new HBox(8.0);
 		controlBar.setPadding(new Insets(8.0));
 		controlBar.setAlignment(Pos.BASELINE_LEFT);
 		controlBar.getChildren().add(label);
 		controlBar.getChildren().add(filter);
+		controlBar.getChildren().add(deckStats);
 		HBox.setHgrow(label, Priority.NEVER);
-		HBox.setHgrow(filter, Priority.ALWAYS);
+		HBox.setHgrow(filter, Priority.SOMETIMES);
+		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
 	}
 
