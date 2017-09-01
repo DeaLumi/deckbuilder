@@ -23,10 +23,7 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MainWindow extends Application {
@@ -52,12 +49,9 @@ public class MainWindow extends Application {
 		}
 	}
 
-	private static final Map<String, Format> formats = Service.Loader.load(Format.class).stream()
-			.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
-
 	private static final Map<FileChooser.ExtensionFilter, DeckImportExport> importExports = Service.Loader.load(DeckImportExport.class).stream()
 			.collect(Collectors.toMap(dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
-					dies -> dies.uncheckedInstance(context.data, formats)));
+					dies -> dies.uncheckedInstance(context.data, Context.FORMATS)));
 
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
 		List<CardInstance> cards = new ArrayList<>();
@@ -88,7 +82,7 @@ public class MainWindow extends Application {
 	@FXML
 	private MenuItem reexportMenuItem;
 
-	private DeckList model;
+	private CardPane collection;
 	private final Map<Zone, CardPane> deckPanes;
 	private CardPane sideboard;
 
@@ -97,9 +91,6 @@ public class MainWindow extends Application {
 	private File reexportFile;
 
 	public MainWindow() {
-		this.model = new DeckList();
-		this.model.format = formats.get("Standard");
-
 		this.deckPanes = new EnumMap<>(Zone.class);
 	}
 
@@ -129,34 +120,35 @@ public class MainWindow extends Application {
 	}
 
 	private void setupUI() {
-		CardPane collection = new CardPane("Collection", context, new ReadOnlyListWrapper<>(collectionModel(context.data)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
+		collection = new CardPane("Collection", context, new ReadOnlyListWrapper<>(collectionModel(context.data)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().dragModes(TransferMode.COPY);
 		collection.view().dropModes();
-		collection.view().doubleClick(ci -> this.deckPanes.get(Zone.Library).view().model().add(ci));
+		collection.view().doubleClick(ci -> this.deckPanes.get(Zone.Library).model().add(new CardInstance(ci.printing())));
+		collection.showIllegalCards.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
 
 		for (Zone zone : Zone.values()) {
-			CardPane deckZone = new CardPane(zone.name(), context, new ObservableListWrapper<>(model.cards.get(zone)), "Piles", CardView.DEFAULT_SORTING);
+			CardPane deckZone = new CardPane(zone.name(), context, new ObservableListWrapper<>(context.deck.cards.get(zone)), "Piles", CardView.DEFAULT_SORTING);
 			deckZone.view().dragModes(TransferMode.MOVE);
 			deckZone.view().dropModes(TransferMode.COPY_OR_MOVE);
-			deckZone.view().doubleClick(ci -> deckZone.view().model().remove(ci));
+			deckZone.view().doubleClick(ci -> deckZone.model().remove(ci));
 			deckPanes.put(zone, deckZone);
 		}
 
-		this.sideboard = new CardPane("Sideboard", context, new ObservableListWrapper<>(model.sideboard), "Piles", CardView.DEFAULT_SORTING);
+		this.sideboard = new CardPane("Sideboard", context, new ObservableListWrapper<>(context.deck.sideboard), "Piles", CardView.DEFAULT_SORTING);
 		this.sideboard.view().dragModes(TransferMode.MOVE);
 		this.sideboard.view().dropModes(TransferMode.COPY_OR_MOVE);
-		this.sideboard.view().doubleClick(ci -> this.sideboard.view().model().remove(ci));
+		this.sideboard.view().doubleClick(ci -> this.sideboard.model().remove(ci));
 
-		setFormat(formats.get("Standard"));
+		setFormat(Context.FORMATS.get("Standard"));
 	}
 
 	private void setupImportExport() {
 		this.fileChooser = new FileChooser();
 		this.fileChooser.getExtensionFilters().setAll(importExports.keySet());
 
-		for (Format format : formats.values()) {
+		for (Format format : Context.FORMATS.values()) {
 			MenuItem item = new MenuItem(format.name());
 			item.setOnAction(ae -> newDeck(format));
 			this.newDeckMenu.getItems().add(item);
@@ -184,32 +176,39 @@ public class MainWindow extends Application {
 	}
 
 	private void setFormat(Format format) {
+		context.deck.format = format;
+
+		collection.updateFilter();
+
 		int i = 0;
 		for (Zone zone : Zone.values()) {
 			if (zoneSplitter.getItems().contains(deckPanes.get(zone))) {
 				if (!format.deckZones().contains(zone)) {
 					zoneSplitter.getItems().remove(deckPanes.get(zone));
 				} else {
+					deckPanes.get(zone).updateFilter();
 					++i;
 				}
-			} else 	if (format.deckZones().contains(zone)) {
+			} else if (format.deckZones().contains(zone)) {
 				zoneSplitter.getItems().add(i, deckPanes.get(zone));
+				deckPanes.get(zone).updateFilter();
 				++i;
 			}
 		}
 
 		if (!zoneSplitter.getItems().contains(sideboard)) {
 			zoneSplitter.getItems().add(zoneSplitter.getItems().size(), sideboard);
+			sideboard.updateFilter();
 		}
 	}
 
 	private void setDeck(DeckList deck) {
-		this.model = deck;
+		context.deck = deck;
 
 		for (Zone zone : Zone.values()) {
-			deckPanes.get(zone).view().model(new ObservableListWrapper<>(this.model.cards.get(zone)));
+			deckPanes.get(zone).view().model(new ObservableListWrapper<>(context.deck.cards.get(zone)));
 		}
-		sideboard.view().model(new ObservableListWrapper<>(this.model.sideboard));
+		sideboard.view().model(new ObservableListWrapper<>(context.deck.sideboard));
 
 		if (deck.format != null) {
 			setFormat(deck.format);
@@ -297,7 +296,7 @@ public class MainWindow extends Application {
 		}
 
 		try {
-			serdes.exportDeck(this.model, to);
+			serdes.exportDeck(context.deck, to);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 		}
@@ -315,11 +314,11 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showDeckInfoDialog() {
 		try {
-			DeckInfoDialog did = new DeckInfoDialog(formats.values(), this.model);
+			DeckInfoDialog did = new DeckInfoDialog(Context.FORMATS.values(), context.deck);
 			did.initOwner(this.stage);
 
 			if(did.showAndWait().orElse(false)) {
-				setFormat(this.model.format);
+				setFormat(context.deck.format);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -407,5 +406,23 @@ public class MainWindow extends Application {
 		} catch (IOException ioe) {
 			ioe.printStackTrace(); // TODO: Handle gracefully
 		}
+	}
+
+	@FXML
+	protected void validateDeck() {
+		Set<String> warnings = context.deck.format.validate(context.deck);
+
+		Alert alert;
+		if (warnings.isEmpty()) {
+			alert = new Alert(Alert.AlertType.INFORMATION, "Deck is valid.", ButtonType.OK);
+		} else {
+			alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
+			alert.setHeaderText("Deck has errors:");
+			alert.setContentText(warnings.stream().map(s -> "\u2022 " + s).collect(Collectors.joining("\n")));
+		}
+		alert.setTitle("Deck Validation");
+		alert.initOwner(this.stage);
+
+		alert.showAndWait();
 	}
 }

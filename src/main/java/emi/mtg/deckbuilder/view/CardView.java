@@ -265,6 +265,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.filter = ci -> true;
 		this.sortingElements = sorts;
 		this.sort = convertSorts(sorts);
+		this.grouping = groupingsMap.get(grouping).uncheckedInstance(context);
 
 		this.cardScaleProperty = new SimpleDoubleProperty(1.0);
 		this.cardScaleProperty.addListener(ce -> layout());
@@ -289,9 +290,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.doubleClick = ci -> {};
 
-		this.model = model;
-		this.filteredModel = this.model.filtered(this.filter);
-		group(grouping);
+		model(model, true);
 
 		layout(engine);
 
@@ -372,37 +371,38 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			CardInstance card = source.dragCard;
 
 			if (source != this) {
-				this.model.add(card);
-			}
+				this.model.add(new CardInstance(card.printing()));
+			} else {
+				if (this.grouping.supportsModification()) {
+					this.hoverGroup.group.add(card);
 
-			if (this.grouping.supportsModification()) {
-				this.hoverGroup.group.add(card);
-
-				for (int i = 0; i < this.model.size(); ++i) {
-					if (this.model.get(i).card() == card.card()) {
-						this.model.set(i, this.model.get(i));
+					for (int i = 0; i < this.model.size(); ++i) {
+						if (this.model.get(i).card() == card.card()) {
+							this.model.set(i, this.model.get(i));
+						}
 					}
 				}
 			}
 
 			layout();
 
+			de.acceptTransferModes(de.getAcceptedTransferMode());
 			de.setDropCompleted(true);
 			de.consume();
 		});
 
 		setOnDragDone(de -> {
 			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-				if (de.getGestureTarget() != null && de.getGestureTarget() != this) {
+				if (de.getGestureTarget() != this) {
 					this.model.remove(this.dragCard);
-				}
+				} else {
+					if (this.grouping.supportsModification()) {
+						this.dragGroup.group.remove(this.dragCard);
 
-				if (this.grouping.supportsModification()) {
-					this.dragGroup.group.remove(this.dragCard);
-
-					for (int i = 0; i < this.model.size(); ++i) {
-						if (this.model.get(i).card() == this.dragCard.card()) {
-							this.model.set(i, this.model.get(i));
+						for (int i = 0; i < this.model.size(); ++i) {
+							if (this.model.get(i).card() == this.dragCard.card()) {
+								this.model.set(i, this.model.get(i));
+							}
 						}
 					}
 				}
@@ -485,7 +485,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		Group newHoverGroup = null;
 
 		for (Group g : groupedModel) {
-			if (g.groupBounds.contains(rel) || g.labelBounds.contains(rel)) {
+			if (g == null) {
+				continue;
+			}
+
+			if (g.groupBounds != null && g.groupBounds.contains(rel) || g.labelBounds != null && g.labelBounds.contains(rel)) {
 				newHoverGroup = g;
 				break;
 			}
@@ -619,11 +623,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	private void model(ObservableList<CardInstance> model, boolean sync) {
+	// TODO: A lot of this shouldn't be changeable. Change to builder model?
+	// TODO: Clean all this bullshit up and use futures?
+
+	public synchronized void model(ObservableList<CardInstance> model, boolean sync) {
 		if (!sync) {
 			ForkJoinPool.commonPool().submit(() -> model(model, true));
 		} else {
-			this.model.setAll(model);
+			this.model = model;
+			this.filter(this.filter, true);
 		}
 	}
 
@@ -637,12 +645,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public FilteredList<CardInstance> filteredModel() { return this.filteredModel; }
 
-	private void filter(Predicate<CardInstance> filter, boolean sync) {
+	private synchronized void filter(Predicate<CardInstance> filter, boolean sync) {
 		if (!sync) {
 			ForkJoinPool.commonPool().submit(() -> filter(filter, true));
 		} else {
 			this.filter = filter;
-			this.filteredModel.setPredicate(this.filter);
+			this.filteredModel = this.model.filtered(this.filter);
+			this.group(this.grouping, true);
 		}
 	}
 
@@ -650,17 +659,25 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		filter(filter, false);
 	}
 
-	public void group(String grouping) {
-		if (CardView.groupingsMap.containsKey(grouping)) {
-			this.grouping = CardView.groupingsMap.get(grouping).uncheckedInstance(this.context);
+	private synchronized void group(Grouping grouping, boolean sync) {
+		if (!sync) {
+			ForkJoinPool.commonPool().submit(() -> group(grouping, true));
+		} else {
+			this.grouping = grouping;
 
 			this.groupedModel = new Group[this.grouping.groups().length];
 			for (int i = 0; i < this.grouping.groups().length; ++i) {
 				this.groupedModel[i] = new Group(this.grouping.groups()[i], this.filteredModel, this.sort);
 			}
-		}
 
-		layout();
+			layout();
+		}
+	}
+
+	public void group(String grouping) {
+		if (CardView.groupingsMap.containsKey(grouping)) {
+			group(CardView.groupingsMap.get(grouping).uncheckedInstance(this.context), false);
+		}
 	}
 
 	private Comparator<CardInstance> convertSorts(List<ActiveSorting> sorts) {
@@ -677,23 +694,25 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return sort;
 	}
 
-	private void sort(List<ActiveSorting> sorts, boolean sync) {
+	private synchronized void sort(List<ActiveSorting> sorts, boolean sync) {
 		if (!sync) {
 			final List<ActiveSorting> finalized = sorts;
 			ForkJoinPool.commonPool().submit(() -> sort(finalized, true));
 		} else {
-			if (sorts == null) {
-				sorts = Collections.emptyList();
+			synchronized(this) {
+				if (sorts == null) {
+					sorts = Collections.emptyList();
+				}
+
+				this.sortingElements = sorts;
+				this.sort = convertSorts(sorts);
+
+				for (Group g : groupedModel) {
+					g.model.setComparator(this.sort);
+				}
+
+				scheduleRender();
 			}
-
-			this.sortingElements = sorts;
-			this.sort = convertSorts(sorts);
-
-			for (Group g : groupedModel) {
-				g.model.setComparator(this.sort);
-			}
-
-			scheduleRender();
 		}
 	}
 
@@ -852,6 +871,31 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		scheduleRender();
 	}
 
+	private enum CardState {
+		Hover,
+		Flagged
+	}
+
+	class RenderStruct {
+		public final Image img;
+		public final EnumSet<CardState> state;
+
+		public RenderStruct(Image img) {
+			this.img = img;
+			this.state = EnumSet.noneOf(CardState.class);
+		}
+
+		public RenderStruct(Image img, EnumSet<CardState> states) {
+			this.img = img;
+			this.state = states;
+		}
+
+		public RenderStruct(Image img, CardState state, CardState... states) {
+			this.img = img;
+			this.state = EnumSet.of(state, states);
+		}
+	}
+
 	protected synchronized void render() {
 		if (engine == null || grouping == null) {
 			Platform.runLater(() -> {
@@ -883,7 +927,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return; // TODO: What do we do here? Call layout manually...?
 		}
 
-		SortedMap<MVec2d, Image> renderMap = new TreeMap<>();
+		SortedMap<MVec2d, RenderStruct> renderMap = new TreeMap<>();
 		MVec2d loc = new MVec2d();
 
 		for (int i = 0; i < groupedModel.length; ++i) {
@@ -906,12 +950,23 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					continue;
 				}
 
-				final Card.Printing printing = groupedModel[i].model.get(j).printing();
+				final CardInstance ci = groupedModel[i].model.get(j);
+				final Card.Printing printing = ci.printing();
 
 				CompletableFuture<Image> futureImage = this.context.images.getThumbnail(printing);
 
 				if (futureImage.isDone()) {
-					renderMap.put(new MVec2d(loc), futureImage.getNow(Images.CARD_BACK));
+					EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
+
+					if (hoverCard == ci) {
+						states.add(CardState.Hover);
+					}
+
+					if (context.deck != null && context.deck.format != null && !context.deck.format.cardIsLegal(ci.card())) {
+						states.add(CardState.Flagged);
+					}
+
+					renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.CARD_BACK), states));
 				} else {
 					futureImage.thenRun(this::scheduleRender);
 				}
@@ -947,8 +1002,23 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						groupedModel[i].labelBounds.dim.x);
 			}
 
-			for (Map.Entry<MVec2d, Image> img : renderMap.entrySet()) {
-				gfx.drawImage(img.getValue(), img.getKey().x, img.getKey().y, cardWidth(), cardHeight());
+			final double w = cardWidth();
+			final double h = cardHeight();
+			final double p = cardPadding();
+
+			for (Map.Entry<MVec2d, RenderStruct> str : renderMap.entrySet()) {
+				if (str.getValue().state.contains(CardState.Hover)) {
+					gfx.setFill(Color.color(0.7, 0.7, 0.7));
+					gfx.fillRoundRect(str.getKey().x - p, str.getKey().y - p, p + w + p, p + h + p, w / 8.0, w / 8.0);
+				}
+
+				gfx.drawImage(str.getValue().img, str.getKey().x, str.getKey().y, cardWidth(), cardHeight());
+
+				if (str.getValue().state.contains(CardState.Flagged)) {
+					gfx.setStroke(Color.RED);
+					gfx.setLineWidth(4.0);
+					gfx.strokeRoundRect(str.getKey().x, str.getKey().y, w, h, w / 12.0, w / 12.0);
+				}
 			}
 		});
 	}

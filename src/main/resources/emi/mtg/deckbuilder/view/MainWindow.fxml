@@ -21,6 +21,7 @@
                         </accelerator>
                     </MenuItem>
                     <SeparatorMenuItem/>
+                    <MenuItem text="Validate" onAction="#validateDeck"/>
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
                 </Menu>
                 <Menu text="Application">

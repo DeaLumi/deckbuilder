@@ -1,14 +1,18 @@
 package emi.mtg.deckbuilder.view;
 
+import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardType;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.collections.ListChangeListener;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -101,15 +105,15 @@ public class CardPane extends BorderPane {
 		}
 	}
 
-	private final static Predicate<CardInstance> NONSTANDARD_CARDS = c -> c.card().faces().stream().allMatch(f -> CardType.CONSTRUCTED_TYPES.containsAll(f.type().cardTypes()));
+	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().allMatch(f -> CardType.CONSTRUCTED_TYPES.containsAll(f.type().cardTypes()));
 
-	private Predicate<CardInstance> lastOmnifilter;
+	private final EventHandler<ActionEvent> updateFilter;
 	private final CardView cardView;
+
+	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
 
 	public CardPane(String title, Context context, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
 		super();
-
-		this.lastOmnifilter = c -> true;
 
 		this.cardView = new CardView(context, model, initEngine, "CMC", sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
@@ -165,11 +169,10 @@ public class CardPane extends BorderPane {
 		cardScale.setHideOnClick(false);
 
 		CheckMenuItem findOtherCards = new CheckMenuItem("Show Nontraditional Cards");
-		findOtherCards.setOnAction(ae -> {
-			this.cardView.filter(findOtherCards.isSelected() ? this.lastOmnifilter : this.lastOmnifilter.and(NONSTANDARD_CARDS));
-			this.cardView.requestFocus();
-		});
 		findOtherCards.setSelected(false);
+
+		CheckMenuItem showIllegalCards = new CheckMenuItem("Show Illegal Cards");
+		showIllegalCards.selectedProperty().bindBidirectional(this.showIllegalCards);
 
 		ContextMenu deckMenu = new ContextMenu();
 
@@ -178,29 +181,55 @@ public class CardPane extends BorderPane {
 		deckMenu.getItems().add(sortButton);
 		deckMenu.getItems().add(cardScale);
 		deckMenu.getItems().add(new SeparatorMenuItem());
+		deckMenu.getItems().add(showIllegalCards);
 		deckMenu.getItems().add(findOtherCards);
 
 		label.setOnAction(ae -> {
-			deckMenu.show(label, Side.BOTTOM, 0, 0);
+			if (deckMenu.isShowing()) {
+				deckMenu.hide();
+			} else {
+				deckMenu.show(label, Side.BOTTOM, 0, 0);
+			}
 		});
 
-		TextField filter = new TextField();
+		final TextField filter = new TextField();
 		filter.setPromptText("Omnifilter...");
 		filter.setPrefWidth(250.0);
-		filter.setOnAction(ae -> {
-			this.lastOmnifilter = Omnifilter.parse(context, filter.getText());
-			this.cardView.filter(findOtherCards.isSelected() ? this.lastOmnifilter : this.lastOmnifilter.and(NONSTANDARD_CARDS));
+
+		this.updateFilter = ae -> {
+			Predicate<CardInstance> compositeFilter = Omnifilter.parse(context, filter.getText());
+
+			if (!findOtherCards.isSelected()) {
+				compositeFilter = compositeFilter.and(STANDARD_CARDS);
+			}
+
+			if (!showIllegalCards.isSelected()) {
+				compositeFilter = compositeFilter.and(c -> context.deck.format.cardIsLegal(c.card()));
+			}
+
+			this.cardView.filter(compositeFilter);
 			this.cardView.requestFocus();
-		});
+		};
+
+		findOtherCards.setOnAction(updateFilter);
+		showIllegalCards.setOnAction(updateFilter);
+		filter.setOnAction(updateFilter);
 
 		Label deckStats = new Label("? Land / ? Creature / ? Other");
 
-		ListChangeListener<CardInstance> updateDeckStats = lci -> {
-			AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
+		// TODO: EW. EW. EW. EW. EW.
+		Thread statRefreshThread = new Thread(() -> {
+			while (!Thread.interrupted()) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException ie) {
+					break;
+				}
 
-			cardView.filteredModel().stream()
-					.flatMap(ci -> ci.card().faces().stream())
-					.forEach(f -> {
+				AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
+
+				for (CardInstance ci : cardView.filteredModel()) {
+					for (Card.Face f : ci.card().faces()) {
 						if (f.type().cardTypes().contains(CardType.Creature)) {
 							creature.incrementAndGet();
 						} else if (f.type().cardTypes().contains(CardType.Land)) {
@@ -208,12 +237,14 @@ public class CardPane extends BorderPane {
 						} else {
 							other.incrementAndGet();
 						}
-					});
+					}
+				}
 
-			Platform.runLater(() -> deckStats.setText(String.format("%d Land / %d Creature / %d Other", land.get(), creature.get(), other.get())));
-		};
-		updateDeckStats.onChanged(null);
-		model.addListener(updateDeckStats);
+				Platform.runLater(() -> deckStats.setText(String.format("%d Land / %d Creature / %d Other", land.get(), creature.get(), other.get())));
+			}
+		}, "Stat Refresh Thread");
+		statRefreshThread.setDaemon(true);
+		statRefreshThread.start();
 
 		HBox controlBar = new HBox(8.0);
 		controlBar.setPadding(new Insets(8.0));
@@ -225,6 +256,12 @@ public class CardPane extends BorderPane {
 		HBox.setHgrow(filter, Priority.SOMETIMES);
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
+
+		updateFilter();
+	}
+
+	public void updateFilter() {
+		this.updateFilter.handle(null);
 	}
 
 	public CardPane(String title, Context context, ObservableList<CardInstance> model, String layoutEngine) {
@@ -233,6 +270,10 @@ public class CardPane extends BorderPane {
 
 	public CardPane(String title, Context context, ObservableList<CardInstance> model) {
 		this(title, context, model, "Piles", CardView.DEFAULT_SORTING);
+	}
+
+	public ObservableList<CardInstance> model() {
+		return this.cardView.model();
 	}
 
 	public CardView view() {
