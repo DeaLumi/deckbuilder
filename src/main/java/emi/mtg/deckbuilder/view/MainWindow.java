@@ -239,9 +239,10 @@ public class MainWindow extends Application {
 
 		builder.append('\n').append("Is this okay?");
 
-		return new Alert(Alert.AlertType.WARNING, builder.toString(), ButtonType.YES, ButtonType.NO)
-				.showAndWait()
-				.orElse(null) == ButtonType.YES;
+		Alert alert = new Alert(Alert.AlertType.WARNING, builder.toString(), ButtonType.YES, ButtonType.NO);
+		alert.initOwner(this.stage);
+
+		return alert.showAndWait().orElse(null) == ButtonType.YES;
 	}
 
 	protected void importDeck() {
@@ -314,7 +315,10 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showDeckInfoDialog() {
 		try {
-			if(new DeckInfoDialog(formats.values(), this.model).showAndWait().orElse(false)) {
+			DeckInfoDialog did = new DeckInfoDialog(formats.values(), this.model);
+			did.initOwner(this.stage);
+
+			if(did.showAndWait().orElse(false)) {
 				setFormat(this.model.format);
 			}
 		} catch (IOException e) {
@@ -363,6 +367,7 @@ public class MainWindow extends Application {
 
 		alert.setTitle("Syntax Help");
 		alert.setHeaderText("Omnifilter Syntax");
+		alert.initOwner(this.stage);
 
 		alert.showAndWait();
 	}
@@ -379,6 +384,7 @@ public class MainWindow extends Application {
 
 		alert.setTitle("About Deck Builder");
 		alert.setHeaderText("Deck Builder v0.0.0");
+		alert.initOwner(this.stage);
 
 		alert.showAndWait();
 	}
@@ -386,7 +392,9 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showTagManagementDialog() {
 		try {
-			new TagManagementDialog(context.tags).showAndWait();
+			TagManagementDialog dlg = new TagManagementDialog(context.tags);
+			dlg.initOwner(this.stage);
+			dlg.showAndWait();
 		} catch (IOException ioe) {
 			ioe.printStackTrace(); // TODO: Handle gracefully.
 		}
