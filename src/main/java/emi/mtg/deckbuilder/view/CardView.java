@@ -25,6 +25,7 @@ import javafx.scene.text.TextAlignment;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -244,6 +245,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private Group dragGroup;
 	private CardInstance dragCard;
 	private TransferMode[] dragModes, dropModes;
+	private boolean forceMove;
 
 	private CardInstance zoomedCard;
 	private CardZoomPreview zoomPreview;
@@ -314,24 +316,27 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		});
 
 		setOnDragDetected(de -> {
-			if (de.getButton() != MouseButton.PRIMARY) {
-				return;
-			}
+			mouseMoved(de.getX(), de.getY());
 
-			if (this.engine == null) {
-				return;
-			}
-
-			this.dragGroup = hoverGroup;
-			this.dragCard = hoverCard; // TODO: Redo this!
+			this.dragCard = this.hoverCard;
+			this.dragGroup = this.hoverGroup;
 
 			if (this.dragCard == null) {
+				de.consume();
 				return;
 			}
 
-			Dragboard db = this.startDragAndDrop(dragModes);
-			db.setDragView(this.context.images.getThumbnail(dragCard.printing()).getNow(Images.CARD_BACK));
-			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, dragCard.card().name()));
+			// TODO: This is a workaround: JDK-8148025
+			this.forceMove = !de.isShiftDown();
+
+			Dragboard db = this.startDragAndDrop(TransferMode.COPY_OR_MOVE);
+			try {
+				context.images.getThumbnail(this.dragCard.printing()).thenAccept(db::setDragView).get();
+			} catch (ExecutionException | InterruptedException e) {
+				e.printStackTrace();
+				db.setDragView(Images.CARD_BACK_THUMB);
+			}
+			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, this.dragCard.card().name()));
 
 			de.consume();
 		});
@@ -339,63 +344,76 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnDragOver(de -> {
 			mouseMoved(de.getX(), de.getY());
 
-			if (de.getGestureSource() instanceof CardView && ((CardView) de.getGestureSource()).dragCard != null) {
-				de.acceptTransferModes(dropModes);
+			if (de.getGestureSource() == this) {
+				if (this.hoverGroup != this.dragGroup) {
+					de.acceptTransferModes(this.forceMove ? new TransferMode[] { TransferMode.MOVE } : TransferMode.COPY_OR_MOVE);
+				} else {
+					de.acceptTransferModes(); // TODO: If we ever allow rearranging groups.
+				}
+
 				de.consume();
-			}
+			} else if (de.getGestureSource() instanceof CardView) {
+				// Manually calculate set intersection, since we didn't enforce dragModes in DragDetected.
+				EnumSet<TransferMode> dropModes = EnumSet.allOf(TransferMode.class);
+				dropModes.retainAll(Arrays.asList(this.dropModes));
+				dropModes.retainAll(Arrays.asList(((CardView) de.getGestureSource()).dragModes));
+				de.acceptTransferModes(dropModes.toArray(new TransferMode[dropModes.size()]));
+
+				de.consume();
+			} // TODO: Accept transfer from other programs/areas?
 		});
 
 		setOnDragDropped(de -> {
 			if (!(de.getGestureSource() instanceof CardView)) {
-				return; // TODO: Accept drag/drop from other programs...?
+				return; // TODO: Accept transfer from other programs/areas?
 			}
 
 			CardView source = (CardView) de.getGestureSource();
+			CardInstance card = source.dragCard;
 
-			if (source == this) {
-				if (this.grouping.supportsModification() && dragGroup != hoverGroup && hoverGroup != null) {
-					if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-						dragGroup.group.remove(dragCard);
+			if (source != this) {
+				this.model.add(card);
+			}
+
+			if (this.grouping.supportsModification()) {
+				this.hoverGroup.group.add(card);
+
+				for (int i = 0; i < this.model.size(); ++i) {
+					if (this.model.get(i).card() == card.card()) {
+						this.model.set(i, this.model.get(i));
 					}
+				}
+			}
 
-					hoverGroup.group.add(dragCard);
+			layout();
 
-					for (int i = 0; i < model.size(); ++i) {
-						if (model.get(i).card() == dragCard.card()) {
-							model.set(i, model.get(i)); // update this...
+			de.setDropCompleted(true);
+			de.consume();
+		});
+
+		setOnDragDone(de -> {
+			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
+				if (de.getGestureTarget() != null && de.getGestureTarget() != this) {
+					this.model.remove(this.dragCard);
+				}
+
+				if (this.grouping.supportsModification()) {
+					this.dragGroup.group.remove(this.dragCard);
+
+					for (int i = 0; i < this.model.size(); ++i) {
+						if (this.model.get(i).card() == this.dragCard.card()) {
+							this.model.set(i, this.model.get(i));
 						}
 					}
 				}
 
-				dragGroup = null;
-				dragCard = null;
-
 				layout();
-
-				return;
 			}
 
-			switch (de.getAcceptedTransferMode()) {
-				case COPY:
-					this.model.add(source.dragCard); // TODO: Is this a problem...?
-					layout();
-					break;
-				case MOVE:
-					source.model.remove(source.dragCard);
-					this.model.add(source.dragCard);
-					source.layout();
-					layout();
-					break;
-				case LINK:
-					break;
-				default:
-					assert false;
-					break;
-			}
+			this.dragCard = null;
+			this.dragGroup = null;
 
-			source.dragCard = null;
-
-			// TODO: Group switching.
+			de.consume();
 		});
 
 		setOnMousePressed(me -> this.requestFocus());
