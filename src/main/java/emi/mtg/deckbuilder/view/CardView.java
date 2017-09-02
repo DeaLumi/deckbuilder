@@ -245,7 +245,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private Group dragGroup;
 	private CardInstance dragCard;
 	private TransferMode[] dragModes, dropModes;
-	private boolean forceMove;
+	private boolean forceMove, forceCopy;
 
 	private CardInstance zoomedCard;
 	private CardZoomPreview zoomPreview;
@@ -317,6 +317,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnDragDetected(de -> {
 			mouseMoved(de.getX(), de.getY());
 
+			if (de.getButton() != MouseButton.PRIMARY) {
+				return;
+			}
+
 			this.dragCard = this.hoverCard;
 			this.dragGroup = this.hoverGroup;
 
@@ -327,6 +331,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			// TODO: This is a workaround: JDK-8148025
 			this.forceMove = !de.isShiftDown();
+			this.forceCopy = de.isControlDown();
 
 			Dragboard db = this.startDragAndDrop(TransferMode.COPY_OR_MOVE);
 			try {
@@ -345,18 +350,30 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			if (de.getGestureSource() == this) {
 				if (this.hoverGroup != this.dragGroup) {
-					de.acceptTransferModes(this.forceMove ? new TransferMode[] { TransferMode.MOVE } : TransferMode.COPY_OR_MOVE);
+					if (this.forceCopy) {
+						de.acceptTransferModes(TransferMode.COPY);
+					} else if (this.forceMove) {
+						de.acceptTransferModes(TransferMode.MOVE);
+					} else {
+						de.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+					}
 				} else {
-					de.acceptTransferModes(); // TODO: If we ever allow rearranging groups.
+					de.acceptTransferModes(); // TODO: If we ever allow rearranging gCanopy Vistaroups.
 				}
 
 				de.consume();
 			} else if (de.getGestureSource() instanceof CardView) {
-				// Manually calculate set intersection, since we didn't enforce dragModes in DragDetected.
-				EnumSet<TransferMode> dropModes = EnumSet.allOf(TransferMode.class);
-				dropModes.retainAll(Arrays.asList(this.dropModes));
-				dropModes.retainAll(Arrays.asList(((CardView) de.getGestureSource()).dragModes));
-				de.acceptTransferModes(dropModes.toArray(new TransferMode[dropModes.size()]));
+				if (this.forceCopy) {
+					de.acceptTransferModes(TransferMode.COPY);
+				} else if (this.forceMove) {
+					de.acceptTransferModes(TransferMode.MOVE);
+				} else {
+					// Manually calculate set intersection, since we didn't enforce dragModes in DragDetected.
+					EnumSet<TransferMode> dropModes = EnumSet.allOf(TransferMode.class);
+					dropModes.retainAll(Arrays.asList(this.dropModes));
+					dropModes.retainAll(Arrays.asList(((CardView) de.getGestureSource()).dragModes));
+					de.acceptTransferModes(dropModes.toArray(new TransferMode[dropModes.size()]));
+				}
 
 				de.consume();
 			} // TODO: Accept transfer from other programs/areas?
