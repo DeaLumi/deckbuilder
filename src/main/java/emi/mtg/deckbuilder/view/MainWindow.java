@@ -270,6 +270,11 @@ public class MainWindow extends Application {
 			setDeck(serdes.importDeck(from));
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
+
+			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
+			alert.setHeaderText("An error occurred while importing:");
+			alert.initOwner(this.stage);
+			alert.showAndWait();
 		}
 	}
 
@@ -299,6 +304,11 @@ public class MainWindow extends Application {
 			serdes.exportDeck(context.deck, to);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
+
+			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
+			alert.setHeaderText("An error occurred while exporting:");
+			alert.initOwner(this.stage);
+			alert.showAndWait();
 		}
 	}
 
