@@ -105,7 +105,7 @@ public class Images {
 	public CompletableFuture<Image> getThumbnail(Card.Printing.Face face) {
 		synchronized(thumbnailCache) {
 			if (!thumbnailCache.containsKey(face) || thumbnailCache.get(face).get() == null) {
-				File thumbFile = new File(new File(THUMB_PARENT, String.format("s%s", face.printing().set().code())), String.format("%s.png", face.face().name()));
+				File thumbFile = new File(new File(THUMB_PARENT, String.format("s%s", face.printing().set().code())), String.format("%s%d.png", face.face().name(), face.printing().variation()));
 
 				thumbnailCache.put(face, new SoftReference<>(CARD_BACK_THUMB)); // Stop this from effing up...
 
