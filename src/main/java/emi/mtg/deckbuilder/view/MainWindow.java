@@ -7,6 +7,7 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
+import emi.mtg.deckbuilder.controller.serdes.Json;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import javafx.application.Application;
@@ -23,6 +24,7 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -92,6 +94,47 @@ public class MainWindow extends Application {
 
 	public MainWindow() {
 		this.deckPanes = new EnumMap<>(Zone.class);
+
+		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
+			boolean deckSaved = true;
+
+			try {
+				importExports.values().stream().filter(s -> s instanceof Json).findAny()
+						.orElseGet(() -> new Json(context.data, Context.FORMATS))
+						.exportDeck(context.deck, new File("emergency-dump.json"));
+			} catch (IOException ioe) {
+				deckSaved = false;
+			}
+
+			e.printStackTrace();
+			e.printStackTrace(new PrintWriter(System.out));
+
+			Alert alert = new Alert(Alert.AlertType.ERROR);
+			alert.initOwner(stage);
+
+			alert.setTitle("Uncaught Exception");
+			alert.setHeaderText("An internal error has occurred.");
+
+			alert.setContentText(
+					"Something went wrong!\n" +
+							"\n" +
+							"I have no idea if the application will be able to keep running.\n" +
+							(deckSaved ?
+									"Your deck has been emergency-saved to 'emergency-dump.json' in the deckbuilder directory.\n" :
+									"Something went even more wrong while we tried to save your deck. Sorry. D:\n"
+							) +
+							"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
+							"If you're the nerdy type, tech details follow:\n" +
+							"\n" +
+							"Thread: " + x.getName() + " / " + x.getId() + "\n" +
+							"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
+							"\n" +
+							"Full stack trace written to standard out and standard error (usually err.txt)."
+			);
+
+			alert.showAndWait();
+		});
+
 	}
 
 	private Stage stage;
@@ -269,8 +312,6 @@ public class MainWindow extends Application {
 		try {
 			setDeck(serdes.importDeck(from));
 		} catch (IOException ioe) {
-			ioe.printStackTrace();
-
 			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
 			alert.setHeaderText("An error occurred while importing:");
 			alert.initOwner(this.stage);
@@ -303,8 +344,6 @@ public class MainWindow extends Application {
 		try {
 			serdes.exportDeck(context.deck, to);
 		} catch (IOException ioe) {
-			ioe.printStackTrace();
-
 			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
 			alert.setHeaderText("An error occurred while exporting:");
 			alert.initOwner(this.stage);
