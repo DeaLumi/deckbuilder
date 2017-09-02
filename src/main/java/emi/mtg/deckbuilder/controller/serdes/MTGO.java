@@ -5,10 +5,22 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.swing.text.html.parser.Parser;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,7 +31,7 @@ import java.util.regex.Pattern;
 
 @Service.Provider(DeckImportExport.class)
 @Service.Property.String(name="name", value="MTGO")
-@Service.Property.String(name="extension", value="dec")
+@Service.Property.String(name="extension", value="dek")
 public class MTGO implements DeckImportExport {
 	private final DataSource cs;
 
@@ -27,80 +39,145 @@ public class MTGO implements DeckImportExport {
 		this.cs = cs;
 	}
 
-	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<sb>SB:\\s*)?(?<num>\\d+) (?<name>.+)$");
-
 	@Override
 	public DeckList importDeck(File from) throws IOException {
-		Scanner scanner = new Scanner(from);
+		Document xml;
 
 		List<CardInstance> library = new ArrayList<>(),
 				sideboard = new ArrayList<>();
 
-		while(scanner.hasNextLine()) {
-			String line = scanner.nextLine();
+		try {
+			xml = DocumentBuilderFactory.newInstance()
+					.newDocumentBuilder()
+					.parse(from);
+		} catch (ParserConfigurationException | SAXException e) {
+			throw new IOException(e);
+		}
 
-			if (line.trim().isEmpty()) {
-				continue;
+		Map<Integer, Card.Printing> printingsCache = new HashMap<>();
+		Set<String> missingCards = new HashSet<>();
+
+		NodeList cardss = xml.getDocumentElement().getElementsByTagName("Cards");
+		for (int i = 0; i < cardss.getLength(); ++i) {
+			Node element = cardss.item(i);
+			Integer catId = Integer.parseInt(element.getAttributes().getNamedItem("CatID").getNodeValue());
+			Integer qty = Integer.parseInt(element.getAttributes().getNamedItem("Quantity").getNodeValue());
+			Boolean sb = Boolean.parseBoolean(element.getAttributes().getNamedItem("Sideboard").getNodeValue());
+			String name = element.getAttributes().getNamedItem("Name").getNodeValue();
+
+			Card.Printing printing = printingsCache.computeIfAbsent(catId, id -> {
+				for (Card.Printing pr : cs.printings()) {
+					if (catId.equals(pr.mtgoCatalogId())) {
+						return pr;
+					} else {
+						printingsCache.put(pr.mtgoCatalogId(), pr);
+					}
+				}
+
+				return null;
+			});
+
+			if (printing == null) {
+				Card card = cs.card(name);
+
+				if (card == null) {
+					throw new IOException("Couldn't find card " + name + " / " + catId);
+				}
+
+				printing = card.printings().iterator().next();
+				System.err.println("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name, using first printing.");
+				missingCards.add(name);
 			}
 
-			Matcher m = LINE_PATTERN.matcher(line);
-
-			if (!m.find()) {
-				throw new IOException("Malformed line " + line);
-			}
-
-			Card card = cs.card(m.group("name"));
-
-			if (card == null) {
-				throw new IOException("Couldn't find card named " + m.group("name"));
-			}
-
-			// TODO: Just take the first printing for now...
-			CardInstance ci = new CardInstance(card.printings().iterator().next());
-			for (int i = 0; i < Integer.parseInt(m.group("num")); ++i) {
-				(m.group("sb") == null ? library : sideboard).add(ci);
+			for (int n = 0; n < qty; ++n) {
+				(sb ? sideboard : library).add(new CardInstance(printing));
 			}
 		}
 
 		Map<Zone, List<CardInstance>> cards = new HashMap<>(Collections.singletonMap(Zone.Library, library));
-		return new DeckList(from.getName(), "<No Author>", null, "<No Description>", cards, sideboard);
-	}
-
-	private static void writeList(List<? extends Card.Printing> list, String prefix, Writer writer) throws IOException {
-		LinkedList<? extends Card.Printing> tmp = new LinkedList<>(list);
-		while (!tmp.isEmpty()) {
-			Card.Printing printing = tmp.removeFirst();
-
-			int count = 1;
-			Iterator<? extends Card.Printing> iter = tmp.iterator();
-			while (iter.hasNext()) {
-				if (iter.next().card().name().equals(printing.card().name())) {
-					++count;
-					iter.remove();
-				}
-			}
-
-			writer.append(prefix).append(Integer.toString(count)).append(' ').append(printing.card().name()).append('\n');
-		}
+		return new DeckList(from.getName().substring(0, from.getName().lastIndexOf('.')),
+				"<No Author>", Context.FORMATS.get("Standard"), "<No Description>", cards, sideboard);
 	}
 
 	@Override
 	public void exportDeck(DeckList deck, File to) throws IOException {
-		FileWriter writer = new FileWriter(to);
-
-		for (Map.Entry<Zone, ? extends List<? extends Card.Printing>> zone : deck.cards().entrySet()) {
-			writeList(zone.getValue(), zone.getKey() == Zone.Library ? "" : "SB:  ", writer);
+		Document xml;
+		try {
+			xml = DocumentBuilderFactory.newInstance()
+					.newDocumentBuilder()
+					.newDocument();
+		} catch (ParserConfigurationException e) {
+			throw new IOException(e);
 		}
 
-		if (deck.sideboard() != null) {
-			writeList(deck.sideboard(), "SB:  ", writer);
+		Element deckEl = xml.createElement("Deck");
+		deckEl.setAttribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
+		deckEl.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+		deckEl.appendChild(xml.createTextNode("\n  "));
+		xml.appendChild(deckEl);
+
+		Element netDeckIdEl = xml.createElement("NetDeckID");
+		netDeckIdEl.setTextContent("0");
+		deckEl.appendChild(netDeckIdEl);
+		deckEl.appendChild(xml.createTextNode("\n  "));
+
+		Element preconDeckIdEl = xml.createElement("PreconstructedDeckID");
+		preconDeckIdEl.setTextContent("0");
+		deckEl.appendChild(preconDeckIdEl);
+
+		Map<Card.Printing, Integer> multiset = new LinkedHashMap<>();
+		for (Card.Printing pr : deck.cards().get(Zone.Library)) {
+			multiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
 		}
 
-		writer.close();
+		for (Map.Entry<Card.Printing, Integer> e : multiset.entrySet()) {
+			if (e.getKey().mtgoCatalogId() == null) {
+				throw new IOException(String.format("The card \"%s\" from set \"%s\" isn't available on MTGO.\nPlease select a different version.", e.getKey().card().name(), e.getKey().set().name()));
+			}
+
+			deckEl.appendChild(xml.createTextNode("\n  "));
+
+			Element cardEl = xml.createElement("Cards");
+			cardEl.setAttribute("CatID", Integer.toString(e.getKey().mtgoCatalogId()));
+			cardEl.setAttribute("Quantity", Integer.toString(e.getValue()));
+			cardEl.setAttribute("Sideboard", "false");
+			cardEl.setAttribute("Name", e.getKey().card().name());
+			deckEl.appendChild(cardEl);
+		}
+
+		Map<Card.Printing, Integer> sbMultiset = new LinkedHashMap<>();
+		for (Card.Printing pr : deck.sideboard()) {
+			sbMultiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
+		}
+
+		for (Map.Entry<Card.Printing, Integer> e : sbMultiset.entrySet()) {
+			if (e.getKey().mtgoCatalogId() == null) {
+				throw new IOException(String.format("The card \"%s\" from set \"%s\" isn't available on MTGO.\nPlease select a different version.", e.getKey().card().name(), e.getKey().set().name()));
+			}
+
+			deckEl.appendChild(xml.createTextNode("\n  "));
+
+			Element cardEl = xml.createElement("Cards");
+			cardEl.setAttribute("CatID", Integer.toString(e.getKey().mtgoCatalogId()));
+			cardEl.setAttribute("Quantity", Integer.toString(e.getValue()));
+			cardEl.setAttribute("Sideboard", "true");
+			cardEl.setAttribute("Name", e.getKey().card().name());
+			deckEl.appendChild(cardEl);
+		}
+
+		deckEl.appendChild(xml.createTextNode("\n"));
+
+		try {
+			TransformerFactory factory = TransformerFactory.newInstance();
+			Transformer xform = factory.newTransformer();
+			xform.transform(new DOMSource(xml), new StreamResult(to));
+		} catch (TransformerException e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override
 	public Set<Features> unsupportedFeatures() {
-		return EnumSet.allOf(Features.class);
+		return EnumSet.complementOf(EnumSet.of(Features.CardArt));
 	}
 }
