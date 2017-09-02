@@ -6,6 +6,7 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -36,6 +37,7 @@ public class TextFile implements DeckImportExport {
 
 		DeckList list = new DeckList();
 		list.name = from.getName();
+		list.format = Context.FORMATS.get("Standard");
 
 		Zone zone = Zone.Library;
 		boolean sideboarding = false;
@@ -56,7 +58,7 @@ public class TextFile implements DeckImportExport {
 				}
 
 				try {
-					zone = Zone.valueOf(line.trim());
+					zone = Zone.valueOf(line.trim().substring(0, line.trim().length() - 1));
 					continue;
 				} catch (IllegalArgumentException iae) {
 					// do nothing
@@ -112,7 +114,7 @@ public class TextFile implements DeckImportExport {
 			}
 
 			if (entry.getKey() != Zone.Library) {
-				writer.append('\n').append(entry.getKey().name()).append('\n');
+				writer.append('\n').append(entry.getKey().name()).append(':').append('\n');
 			}
 
 			writeList(entry.getValue(), writer);
