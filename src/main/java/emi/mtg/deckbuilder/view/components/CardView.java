@@ -1,9 +1,10 @@
-package emi.mtg.deckbuilder.view;
+package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.view.Images;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;

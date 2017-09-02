@@ -1,6 +1,7 @@
-package emi.mtg.deckbuilder.view;
+package emi.mtg.deckbuilder.view.dialogs;
 
 import com.sun.javafx.collections.ObservableListWrapper;
+import emi.mtg.deckbuilder.view.components.CardView;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonBar;

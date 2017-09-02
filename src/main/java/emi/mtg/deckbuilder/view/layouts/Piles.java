@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view.layouts;
 
 import emi.lib.Service;
-import emi.mtg.deckbuilder.view.CardView;
+import emi.mtg.deckbuilder.view.components.CardView;
 
 @Service.Provider(CardView.LayoutEngine.class)
 @Service.Property.String(name="name", value="Piles")

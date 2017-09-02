@@ -2,7 +2,7 @@ package emi.mtg.deckbuilder.view.sortings;
 
 import emi.lib.Service;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.CardView;
+import emi.mtg.deckbuilder.view.components.CardView;
 
 @Service.Provider(CardView.Sorting.class)
 @Service.Property.String(name="name", value="Name")

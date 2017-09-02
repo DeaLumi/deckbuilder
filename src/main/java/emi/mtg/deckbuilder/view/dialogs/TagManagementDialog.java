@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.view;
+package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.mtg.deckbuilder.controller.Tags;
 import javafx.collections.FXCollections;

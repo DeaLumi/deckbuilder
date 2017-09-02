@@ -17,13 +17,13 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class Images {
-	static final double CARD_WIDTH = 220.0;
-	static final double CARD_HEIGHT = 308.0;
-	static final double CARD_PADDING = CARD_WIDTH / 40.0;
+	public static final double CARD_WIDTH = 220.0;
+	public static final double CARD_HEIGHT = 308.0;
+	public static final double CARD_PADDING = CARD_WIDTH / 40.0;
 	private static final double ROUND_RADIUS = CARD_WIDTH / 8.0;
 
-	static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
-	static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
+	public static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
+	public static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 
 	private static final List<ImageSource> sources;
 

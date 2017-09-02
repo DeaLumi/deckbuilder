@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.view;
+package emi.mtg.deckbuilder.view.components;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;

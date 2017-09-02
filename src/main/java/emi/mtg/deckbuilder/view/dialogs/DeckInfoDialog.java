@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.view;
+package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.model.DeckList;

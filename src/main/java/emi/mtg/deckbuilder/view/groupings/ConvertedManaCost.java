@@ -6,7 +6,7 @@ import emi.lib.mtg.characteristic.CardType;
 import emi.lib.mtg.characteristic.ManaCost;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.CardView;
+import emi.mtg.deckbuilder.view.components.CardView;
 
 @Service.Provider(CardView.Grouping.class)
 @Service.Property.String(name="name", value="CMC")

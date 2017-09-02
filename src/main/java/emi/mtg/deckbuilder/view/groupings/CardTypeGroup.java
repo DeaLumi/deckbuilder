@@ -4,7 +4,7 @@ import emi.lib.Service;
 import emi.lib.mtg.characteristic.CardType;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.CardView;
+import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.util.Arrays;
 import java.util.Set;
