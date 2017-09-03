@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.chart.StackedBarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<fx:root type="Dialog"
+         xmlns="http://javafx.com/javafx"
+         xmlns:fx="http://javafx.com/fxml">
+    <title>Deck Statistics</title>
+    <dialogPane>
+        <DialogPane>
+            <content>
+                <HBox alignment="CENTER">
+                    <VBox alignment="CENTER">
+                        <StackedBarChart fx:id="cmcChart" legendVisible="false" title="Mana Curve" style="-fx-font-size: 1.5em;">
+                            <xAxis>
+                                <CategoryAxis />
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis />
+                            </yAxis>
+                        </StackedBarChart>
+                        <Label fx:id="averageCmc" style="-fx-font-size: 1.5em;"/>
+                    </VBox>
+                    <PieChart fx:id="manaSymbolPieChart" legendVisible="false" title="Symbol Colors" style="-fx-font-size: 1.5em;" />
+                </HBox>
+            </content>
+            <buttonTypes>
+                <ButtonType fx:constant="CLOSE"/>
+            </buttonTypes>
+        </DialogPane>
+    </dialogPane>
+</fx:root>
