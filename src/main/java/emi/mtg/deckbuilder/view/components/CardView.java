@@ -520,6 +520,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		hoverGroup = newHoverGroup;
 
 		if (newHoverGroup == null) {
+			hoverCard = null;
 			if (rerender) {
 				scheduleRender();
 			}
