@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.view.components;
 
+import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.controller.Context;
@@ -14,15 +15,19 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.collections.transformation.TransformationList;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.image.Image;
 import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Stage;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +38,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class CardView extends Canvas implements ListChangeListener<CardInstance> {
-
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
 
@@ -437,12 +441,36 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnMousePressed(me -> this.requestFocus());
 
 		setOnMouseClicked(me -> {
-			if (me.getButton() == MouseButton.PRIMARY && me.getClickCount() % 2 == 0) {
-				CardInstance ci = cardAt(me.getX(), me.getY());
+			if (me.getButton() == MouseButton.PRIMARY) {
+				if (me.isAltDown()) {
+					if (hoverCard.card().printings().size() == 1) {
+						return;
+					}
 
-				if (ci != null) {
-					this.doubleClick.accept(ci);
-					layout();
+					Dialog<Void> dlg = new Dialog<>();
+
+					ObservableList<CardInstance> tmpModel = new ObservableListWrapper<>(hoverCard.card().printings().stream()
+							.map(CardInstance::new)
+							.collect(Collectors.toList()));
+					CardPane prPane = new CardPane("Variations", context, tmpModel, "Flow Grid");
+
+					final CardInstance modifyingCard = hoverCard;
+					prPane.view().doubleClick(ci -> {
+						modifyingCard.printing(ci.printing());
+						dlg.close();
+						scheduleRender();
+					});
+
+					dlg.getDialogPane().setContent(prPane);
+					dlg.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+					dlg.show();
+				} else if (me.getClickCount() % 2 == 0) {
+					CardInstance ci = cardAt(me.getX(), me.getY());
+
+					if (ci != null) {
+						this.doubleClick.accept(ci);
+						layout();
+					}
 				}
 			}
 		});
@@ -453,12 +481,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		});
 
 		setOnMousePressed(me -> {
-			if (me.getButton() == MouseButton.MIDDLE || (me.getButton() == MouseButton.PRIMARY && cardAt(me.getX(), me.getY()) == null)) {
+			if (!me.isAltDown() && me.getButton() == MouseButton.PRIMARY && hoverCard == null) {
 				panning = true;
 				lastDragX = me.getX();
 				lastDragY = me.getY();
 				me.consume();
-			} else if (me.getButton() == MouseButton.SECONDARY) {
+			} else if (me.getButton() == MouseButton.MIDDLE) {
 				showPreview(me);
 			}
 		});
@@ -471,22 +499,24 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				lastDragX = me.getX();
 				lastDragY = me.getY();
 				me.consume();
-			} else if (me.getButton() == MouseButton.SECONDARY) {
+			} else if (me.getButton() == MouseButton.MIDDLE) {
 				showPreview(me);
 			}
 		});
 
 		setOnMouseReleased(me -> {
-			lastDragX = -1;
-			lastDragY = -1;
-			panning = false;
+			if (panning) {
+				lastDragX = -1;
+				lastDragY = -1;
+				panning = false;
+			}
 
 			if (zoomPreview != null) {
 				zoomPreview.close();
 				zoomPreview = null;
+				zoomedCard = null;
 			}
 
-			zoomedCard = null;
 			scheduleRender();
 		});
 	}
@@ -543,7 +573,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	private void showPreview(MouseEvent me) {
+	private synchronized void showPreview(MouseEvent me) {
 		CardInstance ci;
 		if (me.getPickResult().getIntersectedNode() != this) {
 			ci = null;

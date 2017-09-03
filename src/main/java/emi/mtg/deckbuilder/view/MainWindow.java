@@ -17,6 +17,7 @@ import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
 import javafx.beans.property.ReadOnlyListWrapper;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -61,11 +62,9 @@ public class MainWindow extends Application {
 					dies -> dies.uncheckedInstance(context.data, Context.FORMATS)));
 
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
-		List<CardInstance> cards = new ArrayList<>();
-		cs.printings().stream()
-				.map(CardInstance::new)
-				.forEach(cards::add);
-		return new ObservableListWrapper<>(cards);
+		return new ObservableListWrapper<>(cs.cards().stream()
+				.map(c -> new CardInstance(c.printings().iterator().next()))
+				.collect(Collectors.toList()));
 	}
 
 	@FXML
