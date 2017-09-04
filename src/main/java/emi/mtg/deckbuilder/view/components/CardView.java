@@ -279,6 +279,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		));
 	}
 
+	private static DataFormat DRAG_FORMAT = new DataFormat("application/x-deckbuilder-printing-uuid");
+
 	public static Set<String> engineNames() {
 		return CardView.engineMap.keySet();
 	}
@@ -429,7 +431,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				e.printStackTrace();
 				db.setDragView(Images.CARD_BACK_THUMB);
 			}
-			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, this.dragCard.card().name()));
+
+			Map<DataFormat, Object> content = new HashMap<>();
+			content.put(DataFormat.PLAIN_TEXT, this.dragCard.card().name());
+			content.put(DRAG_FORMAT, this.dragCard.printing().id());
+			db.setContent(content);
 
 			de.consume();
 		});
@@ -447,22 +453,22 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						de.acceptTransferModes(TransferMode.COPY_OR_MOVE);
 					}
 				} else {
-					de.acceptTransferModes(); // TODO: If we ever allow rearranging gCanopy Vistaroups.
+					de.acceptTransferModes(); // TODO: If we ever allow rearranging groups.
 				}
 
 				de.consume();
 			} else if (de.getGestureSource() instanceof CardView) {
+				// Manually calculate set intersection, since we didn't enforce dragModes in DragDetected.
+				EnumSet<TransferMode> dropModes = EnumSet.allOf(TransferMode.class);
+				dropModes.retainAll(Arrays.asList(this.dropModes));
 				if (this.forceCopy) {
-					de.acceptTransferModes(TransferMode.COPY);
+					dropModes.retainAll(Collections.singleton(TransferMode.COPY));
 				} else if (this.forceMove) {
-					de.acceptTransferModes(TransferMode.MOVE);
+					dropModes.retainAll(Collections.singleton(TransferMode.MOVE));
 				} else {
-					// Manually calculate set intersection, since we didn't enforce dragModes in DragDetected.
-					EnumSet<TransferMode> dropModes = EnumSet.allOf(TransferMode.class);
-					dropModes.retainAll(Arrays.asList(this.dropModes));
 					dropModes.retainAll(Arrays.asList(((CardView) de.getGestureSource()).dragModes));
-					de.acceptTransferModes(dropModes.toArray(new TransferMode[dropModes.size()]));
 				}
+				de.acceptTransferModes(dropModes.toArray(new TransferMode[dropModes.size()]));
 
 				de.consume();
 			} // TODO: Accept transfer from other programs/areas?
