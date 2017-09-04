@@ -115,6 +115,12 @@ public class Images {
 					IMAGE_LOAD_POOL.submit(() -> {
 						try {
 							Image thumbnail = new Image(new FileInputStream(thumbFile));
+
+							if (thumbnail.isError()) {
+								thumbFile.delete(); // TODO: Regenerate thumbnail now.
+								thumbnail = CARD_BACK_THUMB;
+							}
+
 							thumbnailCache.put(face, new SoftReference<>(thumbnail));
 							ret.complete(thumbnail);
 						} catch (FileNotFoundException e) {
