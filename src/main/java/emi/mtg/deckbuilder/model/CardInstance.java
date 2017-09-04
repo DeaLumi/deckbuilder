@@ -38,8 +38,4 @@ public class CardInstance implements Serializable {
 	public Card.Printing printing() {
 		return printing;
 	}
-
-	public void printing(Card.Printing printing) {
-		this.printing = printing;
-	}
 }

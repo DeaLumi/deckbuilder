@@ -175,6 +175,9 @@ public class CardPane extends BorderPane {
 		CheckMenuItem showIllegalCards = new CheckMenuItem("Show Illegal Cards");
 		showIllegalCards.selectedProperty().bindBidirectional(this.showIllegalCards);
 
+		CheckMenuItem showVersionsSeparately = new CheckMenuItem("Show Versions Separately");
+		showVersionsSeparately.selectedProperty().bindBidirectional(this.cardView.showVersionsSeparatelyProperty());
+
 		ContextMenu deckMenu = new ContextMenu();
 
 		deckMenu.getItems().add(groupingMenu);
@@ -184,6 +187,7 @@ public class CardPane extends BorderPane {
 		deckMenu.getItems().add(new SeparatorMenuItem());
 		deckMenu.getItems().add(showIllegalCards);
 		deckMenu.getItems().add(findOtherCards);
+		deckMenu.getItems().add(showVersionsSeparately);
 
 		label.setOnAction(ae -> {
 			if (deckMenu.isShowing()) {

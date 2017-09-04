@@ -62,8 +62,8 @@ public class MainWindow extends Application {
 					dies -> dies.uncheckedInstance(context.data, Context.FORMATS)));
 
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
-		return new ObservableListWrapper<>(cs.cards().stream()
-				.map(c -> new CardInstance(c.printings().iterator().next()))
+		return new ObservableListWrapper<>(cs.printings().stream()
+				.map(CardInstance::new)
 				.collect(Collectors.toList()));
 	}
 

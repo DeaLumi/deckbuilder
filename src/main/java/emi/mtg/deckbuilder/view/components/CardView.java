@@ -27,6 +27,7 @@ import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.util.*;
@@ -38,6 +39,84 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class CardView extends Canvas implements ListChangeListener<CardInstance> {
+	public static class UniqueList extends TransformationList<CardInstance, CardInstance> {
+		private int[] sourceIndices;
+
+		/**
+		 * Creates a new Transformation list wrapped around the source list.
+		 *
+		 * @param source the wrapped list
+		 */
+		protected UniqueList(ObservableList<? extends CardInstance> source) {
+			super(source);
+
+			sourceChanged(null);
+		}
+
+		// TODO: Actually implement a change handler.
+		@Override
+		protected synchronized void sourceChanged(Change<? extends CardInstance> c) {
+			HashSet<Card> set = new HashSet<>();
+			ArrayList<Integer> indexList = new ArrayList<>();
+
+			int i = 0;
+			for (Iterator<? extends CardInstance> iter = this.getSource().iterator(); iter.hasNext(); ) {
+				if (set.add(iter.next().card())) {
+					indexList.add(i);
+				}
+
+				++i;
+			}
+
+			this.sourceIndices = indexList.stream().mapToInt(Integer::intValue).toArray();
+		}
+
+		@Override
+		public int getSourceIndex(int index) {
+			return sourceIndices[index];
+		}
+
+		@Override
+		public CardInstance get(int index) {
+			return this.getSource().get(sourceIndices[index]);
+		}
+
+		@Override
+		public int size() {
+			return sourceIndices.length;
+		}
+
+		public void select(CardInstance ci) {
+			int slotIndex = -1, newSourceIndex = -1;
+			for (int local = 0, remote = 0; remote < this.getSource().size(); ++remote) {
+				if (sourceIndices[local] == remote) {
+					if (this.getSource().get(sourceIndices[local]).card() == ci.card()) {
+						slotIndex = local;
+					} else {
+						++local;
+					}
+				}
+
+				if (this.getSource().get(remote).printing() == ci.printing()) {
+					newSourceIndex = remote;
+				}
+
+				if (slotIndex >= 0 && newSourceIndex >= 0) {
+					break;
+				}
+			}
+
+			if (slotIndex < 0 || newSourceIndex < 0) {
+				throw new NoSuchElementException();
+			}
+
+			beginChange();
+			nextSet(slotIndex, this.get(slotIndex));
+			sourceIndices[slotIndex] = newSourceIndex;
+			endChange();
+		}
+	}
+
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
 
@@ -231,6 +310,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private ObservableList<CardInstance> model;
 	private FilteredList<CardInstance> filteredModel;
+	private UniqueList uniqueModel;
 	private Group[] groupedModel;
 
 	private LayoutEngine engine;
@@ -259,6 +339,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private DoubleProperty cardScaleProperty;
 	private BooleanProperty showEmptyGroupsProperty;
+	private BooleanProperty showVersionsSeparately;
 
 	public CardView(Context context, ObservableList<CardInstance> model, String engine, String grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
@@ -277,6 +358,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.showEmptyGroupsProperty = new SimpleBooleanProperty(false);
 		this.showEmptyGroupsProperty.addListener(ce -> layout());
+
+		this.showVersionsSeparately = new SimpleBooleanProperty(true);
+		this.showVersionsSeparately.addListener(ce -> this.makeUnique(true));
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
 
@@ -443,7 +527,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnMouseClicked(me -> {
 			if (me.getButton() == MouseButton.PRIMARY) {
 				if (me.isAltDown()) {
-					if (hoverCard.card().printings().size() == 1) {
+					if (showVersionsSeparately.get() || hoverCard.card().printings().size() == 1) {
 						return;
 					}
 
@@ -454,15 +538,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							.collect(Collectors.toList()));
 					CardPane prPane = new CardPane("Variations", context, tmpModel, "Flow Grid");
 
-					final CardInstance modifyingCard = hoverCard;
 					prPane.view().doubleClick(ci -> {
-						modifyingCard.printing(ci.printing());
 						dlg.close();
-						scheduleRender();
+						uniqueModel.select(ci);
 					});
 
 					dlg.getDialogPane().setContent(prPane);
 					dlg.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+					dlg.initModality(Modality.WINDOW_MODAL);
+					dlg.initOwner(this.getScene().getWindow());
 					dlg.show();
 				} else if (me.getClickCount() % 2 == 0) {
 					CardInstance ci = cardAt(me.getX(), me.getY());
@@ -704,12 +788,27 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		} else {
 			this.filter = filter;
 			this.filteredModel = this.model.filtered(this.filter);
-			this.group(this.grouping, true);
+
+			this.makeUnique(true);
 		}
 	}
 
 	public void filter(Predicate<CardInstance> filter) {
 		filter(filter, false);
+	}
+
+	private synchronized void makeUnique(boolean sync) {
+		if (!sync) {
+			ForkJoinPool.commonPool().submit(() -> makeUnique(false));
+		} else {
+			if (showVersionsSeparately.get()) {
+				this.uniqueModel = null;
+			} else {
+				this.uniqueModel = new UniqueList(this.filteredModel);
+			}
+
+			this.group(this.grouping, true);
+		}
 	}
 
 	private synchronized void group(Grouping grouping, boolean sync) {
@@ -720,7 +819,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			this.groupedModel = new Group[this.grouping.groups().length];
 			for (int i = 0; i < this.grouping.groups().length; ++i) {
-				this.groupedModel[i] = new Group(this.grouping.groups()[i], this.filteredModel, this.sort);
+				this.groupedModel[i] = new Group(this.grouping.groups()[i], this.uniqueModel == null ? this.filteredModel : this.uniqueModel, this.sort);
 			}
 
 			layout();
@@ -796,6 +895,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public BooleanProperty showEmptyGroupsProperty() {
 		return showEmptyGroupsProperty;
 	}
+
+	public BooleanProperty showVersionsSeparatelyProperty() { return showVersionsSeparately; }
 
 	public DoubleProperty scrollMinX() {
 		return scrollMinX;
