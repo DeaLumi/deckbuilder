@@ -25,12 +25,14 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -113,6 +115,9 @@ public class MainWindow extends Application {
 			e.printStackTrace();
 			e.printStackTrace(new PrintWriter(System.out));
 
+			StringWriter stackTrace = new StringWriter();
+			e.printStackTrace(new PrintWriter(stackTrace));
+
 			Alert alert = new Alert(Alert.AlertType.ERROR);
 			alert.initOwner(stage);
 
@@ -128,13 +133,15 @@ public class MainWindow extends Application {
 									"Something went even more wrong while we tried to save your deck. Sorry. D:\n"
 							) +
 							"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
-							"If you're the nerdy type, tech details follow:\n" +
+							"If you're the nerdy type, tech details follow.\n" +
 							"\n" +
 							"Thread: " + x.getName() + " / " + x.getId() + "\n" +
 							"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
 							"\n" +
 							"Full stack trace written to standard out and standard error (usually err.txt)."
 			);
+
+			alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
 
 			alert.showAndWait();
 		});
