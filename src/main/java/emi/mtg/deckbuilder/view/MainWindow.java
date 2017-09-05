@@ -17,13 +17,11 @@ import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
 import javafx.beans.property.ReadOnlyListWrapper;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.input.TransferMode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
@@ -33,7 +31,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MainWindow extends Application {
@@ -175,8 +175,7 @@ public class MainWindow extends Application {
 
 	private void setupUI() {
 		collection = new CardPane("Collection", context, new ReadOnlyListWrapper<>(collectionModel(context.data)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
-		collection.view().dragModes(TransferMode.COPY);
-		collection.view().dropModes();
+		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> this.deckPanes.get(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.showIllegalCards.set(false);
 
@@ -184,15 +183,11 @@ public class MainWindow extends Application {
 
 		for (Zone zone : Zone.values()) {
 			CardPane deckZone = new CardPane(zone.name(), context, new ObservableListWrapper<>(context.deck.cards.get(zone)), "Piles", CardView.DEFAULT_SORTING);
-			deckZone.view().dragModes(TransferMode.MOVE);
-			deckZone.view().dropModes(TransferMode.COPY_OR_MOVE);
 			deckZone.view().doubleClick(ci -> deckZone.model().remove(ci));
 			deckPanes.put(zone, deckZone);
 		}
 
 		this.sideboard = new CardPane("Sideboard", context, new ObservableListWrapper<>(context.deck.sideboard), "Piles", CardView.DEFAULT_SORTING);
-		this.sideboard.view().dragModes(TransferMode.MOVE);
-		this.sideboard.view().dropModes(TransferMode.COPY_OR_MOVE);
 		this.sideboard.view().doubleClick(ci -> this.sideboard.model().remove(ci));
 
 		setFormat(Context.FORMATS.get("Standard"));

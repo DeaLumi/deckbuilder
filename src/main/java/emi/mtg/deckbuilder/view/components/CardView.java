@@ -331,8 +331,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private Group dragGroup;
 	private CardInstance dragCard;
-	private TransferMode[] dragModes, dropModes;
-	private boolean forceMove, forceCopy;
 
 	private CardInstance zoomedCard;
 	private CardZoomPreview zoomPreview;
@@ -342,6 +340,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private DoubleProperty cardScaleProperty;
 	private BooleanProperty showEmptyGroupsProperty;
 	private BooleanProperty showVersionsSeparately;
+	private BooleanProperty immutableModel;
+
+	private static boolean dragModified = false;
+	private static CardView dragSource = null, dragTarget = null;
 
 	public CardView(Context context, ObservableList<CardInstance> model, String engine, String grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
@@ -373,8 +375,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.scrollMaxX = new SimpleDoubleProperty(100.0);
 		this.scrollMaxY = new SimpleDoubleProperty(100.0);
 
-		this.dragModes = TransferMode.COPY_OR_MOVE;
-		this.dropModes = TransferMode.COPY_OR_MOVE;
+		this.immutableModel = new SimpleBooleanProperty(false);
 
 		this.hoverCard = this.dragCard = null;
 		this.hoverGroup = this.dragGroup = null;
@@ -421,10 +422,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			// TODO: This is a workaround: JDK-8148025
-			this.forceMove = !de.isShiftDown();
-			this.forceCopy = de.isControlDown();
+			CardView.dragModified = de.isControlDown();
+			CardView.dragSource = this;
 
-			Dragboard db = this.startDragAndDrop(TransferMode.COPY_OR_MOVE);
+			Dragboard db = this.startDragAndDrop(TransferMode.ANY);
 			try {
 				context.images.getThumbnail(this.dragCard.printing()).thenAccept(db::setDragView).get();
 			} catch (ExecutionException | InterruptedException e) {
@@ -443,71 +444,61 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnDragOver(de -> {
 			mouseMoved(de.getX(), de.getY());
 
-			if (de.getGestureSource() == this) {
+			if (dragSource == this) {
 				if (this.hoverGroup != this.dragGroup) {
-					if (this.forceCopy) {
-						de.acceptTransferModes(TransferMode.COPY);
-					} else if (this.forceMove) {
-						de.acceptTransferModes(TransferMode.MOVE);
+					if (dragModified) {
+						de.acceptTransferModes(TransferMode.LINK);
 					} else {
-						de.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+						de.acceptTransferModes(TransferMode.MOVE);
 					}
 				} else {
 					de.acceptTransferModes(); // TODO: If we ever allow rearranging groups.
 				}
 
 				de.consume();
-			} else if (de.getGestureSource() instanceof CardView) {
+			} else if (dragSource != null) {
 				// Manually calculate set intersection, since we didn't enforce dragModes in DragDetected.
-				EnumSet<TransferMode> dropModes = EnumSet.allOf(TransferMode.class);
-				dropModes.retainAll(Arrays.asList(this.dropModes));
-				if (this.forceCopy) {
-					dropModes.retainAll(Collections.singleton(TransferMode.COPY));
-				} else if (this.forceMove) {
-					dropModes.retainAll(Collections.singleton(TransferMode.MOVE));
+				if (dragModified) {
+					de.acceptTransferModes(TransferMode.COPY);
 				} else {
-					dropModes.retainAll(Arrays.asList(((CardView) de.getGestureSource()).dragModes));
+					de.acceptTransferModes(TransferMode.MOVE);
 				}
-				de.acceptTransferModes(dropModes.toArray(new TransferMode[dropModes.size()]));
 
 				de.consume();
-			} // TODO: Accept transfer from other programs/areas?
+			} else {
+				// TODO: Accept transfer from other programs/areas?
+			}
 		});
 
 		setOnDragDropped(de -> {
-			if (!(de.getGestureSource() instanceof CardView)) {
-				return; // TODO: Accept transfer from other programs/areas?
-			}
-
-			CardView source = (CardView) de.getGestureSource();
-			CardInstance card = source.dragCard;
-
-			if (source != this) {
-				this.model.add(new CardInstance(card.printing()));
-			} else {
+			if (dragSource == this) {
 				if (this.grouping.supportsModification()) {
-					this.hoverGroup.group.add(card);
+					this.hoverGroup.group.add(this.dragCard);
 
 					for (int i = 0; i < this.model.size(); ++i) {
-						if (this.model.get(i).card() == card.card()) {
+						if (this.model.get(i).card() == this.dragCard.card()) {
 							this.model.set(i, this.model.get(i));
 						}
 					}
 				}
+			} else if (dragSource != null) {
+				if (!immutableModel.get()) {
+					this.model.add(new CardInstance(dragSource.dragCard.printing()));
+				}
+			} else {
+				// TODO: Accept transfer from other programs/areas?
 			}
 
 			layout();
 
-			de.acceptTransferModes(de.getAcceptedTransferMode());
+			CardView.dragTarget = this;
 			de.setDropCompleted(true);
 			de.consume();
 		});
 
 		setOnDragDone(de -> {
 			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-				if (de.getGestureTarget() != this) {
-					this.model.remove(this.dragCard);
-				} else {
+				if (dragTarget == this) {
 					if (this.grouping.supportsModification()) {
 						this.dragGroup.group.remove(this.dragCard);
 
@@ -517,13 +508,21 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							}
 						}
 					}
+				} else if (dragTarget != null) {
+					if (!immutableModel.get()) {
+						this.model.remove(this.dragCard);
+					}
+				} else {
+					// TODO: Accept transfer to other programs/areas?
+					// probably passively... just say 'okay whatevs'...
 				}
-
-				layout();
 			}
 
 			this.dragCard = null;
 			this.dragGroup = null;
+
+			CardView.dragSource = null;
+			CardView.dragModified = false;
 
 			de.consume();
 		});
@@ -882,14 +881,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return this.sortingElements;
 	}
 
-	public void dragModes(TransferMode... dragModes) {
-		this.dragModes = dragModes;
-	}
-
-	public void dropModes(TransferMode... dropModes) {
-		this.dropModes = dropModes;
-	}
-
 	public void doubleClick(Consumer<CardInstance> doubleClick) {
 		this.doubleClick = doubleClick;
 	}
@@ -903,6 +894,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public BooleanProperty showVersionsSeparatelyProperty() { return showVersionsSeparately; }
+
+	public BooleanProperty immutableModelProperty() {
+		return immutableModel;
+	}
 
 	public DoubleProperty scrollMinX() {
 		return scrollMinX;
