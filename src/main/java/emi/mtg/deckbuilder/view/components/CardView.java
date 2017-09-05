@@ -39,84 +39,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class CardView extends Canvas implements ListChangeListener<CardInstance> {
-	public static class UniqueList extends TransformationList<CardInstance, CardInstance> {
-		private int[] sourceIndices;
-
-		/**
-		 * Creates a new Transformation list wrapped around the source list.
-		 *
-		 * @param source the wrapped list
-		 */
-		protected UniqueList(ObservableList<? extends CardInstance> source) {
-			super(source);
-
-			sourceChanged(null);
-		}
-
-		// TODO: Actually implement a change handler.
-		@Override
-		protected synchronized void sourceChanged(Change<? extends CardInstance> c) {
-			HashSet<Card> set = new HashSet<>();
-			ArrayList<Integer> indexList = new ArrayList<>();
-
-			int i = 0;
-			for (Iterator<? extends CardInstance> iter = this.getSource().iterator(); iter.hasNext(); ) {
-				if (set.add(iter.next().card())) {
-					indexList.add(i);
-				}
-
-				++i;
-			}
-
-			this.sourceIndices = indexList.stream().mapToInt(Integer::intValue).toArray();
-		}
-
-		@Override
-		public int getSourceIndex(int index) {
-			return sourceIndices[index];
-		}
-
-		@Override
-		public CardInstance get(int index) {
-			return this.getSource().get(sourceIndices[index]);
-		}
-
-		@Override
-		public int size() {
-			return sourceIndices.length;
-		}
-
-		public void select(CardInstance ci) {
-			int slotIndex = -1, newSourceIndex = -1;
-			for (int local = 0, remote = 0; remote < this.getSource().size(); ++remote) {
-				if (sourceIndices[local] == remote) {
-					if (this.getSource().get(sourceIndices[local]).card() == ci.card()) {
-						slotIndex = local;
-					} else {
-						++local;
-					}
-				}
-
-				if (this.getSource().get(remote).printing() == ci.printing()) {
-					newSourceIndex = remote;
-				}
-
-				if (slotIndex >= 0 && newSourceIndex >= 0) {
-					break;
-				}
-			}
-
-			if (slotIndex < 0 || newSourceIndex < 0) {
-				throw new NoSuchElementException();
-			}
-
-			beginChange();
-			nextSet(slotIndex, this.get(slotIndex));
-			sourceIndices[slotIndex] = newSourceIndex;
-			endChange();
-		}
-	}
-
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
 
@@ -312,7 +234,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private ObservableList<CardInstance> model;
 	private FilteredList<CardInstance> filteredModel;
-	private UniqueList uniqueModel;
 	private Group[] groupedModel;
 
 	private LayoutEngine engine;
@@ -339,7 +260,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private DoubleProperty cardScaleProperty;
 	private BooleanProperty showEmptyGroupsProperty;
-	private BooleanProperty showVersionsSeparately;
 	private BooleanProperty immutableModel;
 
 	private static boolean dragModified = false;
@@ -362,9 +282,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.showEmptyGroupsProperty = new SimpleBooleanProperty(false);
 		this.showEmptyGroupsProperty.addListener(ce -> layout());
-
-		this.showVersionsSeparately = new SimpleBooleanProperty(true);
-		this.showVersionsSeparately.addListener(ce -> this.makeUnique(true));
 
 		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
 
@@ -532,11 +449,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnMouseClicked(me -> {
 			if (me.getButton() == MouseButton.PRIMARY) {
 				if (me.isAltDown()) {
-					if (showVersionsSeparately.get() || hoverCard.card().printings().size() == 1) {
+					if (hoverCard.card().printings().size() == 1) {
 						return;
 					}
 
 					Dialog<Void> dlg = new Dialog<>();
+
+					dlg.setTitle("Version Selector");
 
 					ObservableList<CardInstance> tmpModel = new ObservableListWrapper<>(hoverCard.card().printings().stream()
 							.map(CardInstance::new)
@@ -545,8 +464,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 					prPane.view().doubleClick(ci -> {
 						dlg.close();
-						uniqueModel.select(ci);
+						//uniqueModel.select(ci);
+
+						context.preferences.preferredPrintings.put(ci.card().fullName(), ci.printing().id());
+						filter(this.filter);
 					});
+
+					prPane.view().immutableModelProperty().bind(immutableModel);
+					prPane.showVersionsSeparately.set(true);
+					prPane.setPrefHeight(this.getScene().getHeight() / 1.5);
+					prPane.setPrefWidth(this.getScene().getWidth() / 1.5);
 
 					dlg.getDialogPane().setContent(prPane);
 					dlg.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
@@ -794,26 +721,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			this.filter = filter;
 			this.filteredModel = this.model.filtered(this.filter);
 
-			this.makeUnique(true);
+			this.group(this.grouping, true);
 		}
 	}
 
 	public void filter(Predicate<CardInstance> filter) {
 		filter(filter, false);
-	}
-
-	private synchronized void makeUnique(boolean sync) {
-		if (!sync) {
-			ForkJoinPool.commonPool().submit(() -> makeUnique(false));
-		} else {
-			if (showVersionsSeparately.get()) {
-				this.uniqueModel = null;
-			} else {
-				this.uniqueModel = new UniqueList(this.filteredModel);
-			}
-
-			this.group(this.grouping, true);
-		}
 	}
 
 	private synchronized void group(Grouping grouping, boolean sync) {
@@ -824,7 +737,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			this.groupedModel = new Group[this.grouping.groups().length];
 			for (int i = 0; i < this.grouping.groups().length; ++i) {
-				this.groupedModel[i] = new Group(this.grouping.groups()[i], this.uniqueModel == null ? this.filteredModel : this.uniqueModel, this.sort);
+				this.groupedModel[i] = new Group(this.grouping.groups()[i], this.filteredModel, this.sort);
 			}
 
 			layout();
@@ -892,8 +805,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public BooleanProperty showEmptyGroupsProperty() {
 		return showEmptyGroupsProperty;
 	}
-
-	public BooleanProperty showVersionsSeparatelyProperty() { return showVersionsSeparately; }
 
 	public BooleanProperty immutableModelProperty() {
 		return immutableModel;

@@ -27,7 +27,9 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
@@ -106,12 +108,27 @@ public class CardPane extends BorderPane {
 		}
 	}
 
+	private static Predicate<CardInstance> uniquenessPredicate(Context context) {
+		Map<String, String> prefPrintCache = new HashMap<>();
+
+		return ci -> {
+			if (context.preferences.preferredPrintings.containsKey(ci.card().fullName())) {
+				return ci.printing().id().equals(context.preferences.preferredPrintings.get(ci.card().fullName()));
+			}
+
+			synchronized(prefPrintCache) {
+				return ci.printing().id().toString().equals(prefPrintCache.computeIfAbsent(ci.card().fullName(), fn -> ci.card().printings().iterator().next().id().toString()));
+			}
+		};
+	}
+
 	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().allMatch(f -> CardType.CONSTRUCTED_TYPES.containsAll(f.type().cardTypes()));
 
 	private final EventHandler<ActionEvent> updateFilter;
 	private final CardView cardView;
 
 	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
+	public final BooleanProperty showVersionsSeparately = new SimpleBooleanProperty(true);
 
 	public CardPane(String title, Context context, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
 		super();
@@ -176,7 +193,7 @@ public class CardPane extends BorderPane {
 		showIllegalCards.selectedProperty().bindBidirectional(this.showIllegalCards);
 
 		CheckMenuItem showVersionsSeparately = new CheckMenuItem("Show Versions Separately");
-		showVersionsSeparately.selectedProperty().bindBidirectional(this.cardView.showVersionsSeparatelyProperty());
+		showVersionsSeparately.selectedProperty().bindBidirectional(this.showVersionsSeparately);
 
 		ContextMenu deckMenu = new ContextMenu();
 
@@ -212,12 +229,17 @@ public class CardPane extends BorderPane {
 				compositeFilter = compositeFilter.and(c -> context.deck.format.cardIsLegal(c.card()));
 			}
 
+			if (!showVersionsSeparately.isSelected()) {
+				compositeFilter = compositeFilter.and(uniquenessPredicate(context));
+			}
+
 			this.cardView.filter(compositeFilter);
 			this.cardView.requestFocus();
 		};
 
 		findOtherCards.setOnAction(updateFilter);
 		showIllegalCards.setOnAction(updateFilter);
+		showVersionsSeparately.setOnAction(updateFilter);
 		filter.setOnAction(updateFilter);
 
 		Label deckStats = new Label("? Land / ? Creature / ? Other");
