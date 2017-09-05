@@ -180,6 +180,7 @@ public class MainWindow extends Application {
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> this.deckPanes.get(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.showIllegalCards.set(false);
+		collection.showVersionsSeparately.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
 
