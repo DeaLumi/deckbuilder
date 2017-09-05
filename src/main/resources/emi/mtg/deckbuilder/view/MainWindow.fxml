@@ -28,6 +28,8 @@
                 <Menu text="Application">
                     <!-- TODO: Action -->
                     <!--<MenuItem text="Settings..."/>-->
+                    <MenuItem text="Save Preferences" onAction="#savePreferences"/>
+                    <SeparatorMenuItem/>
                     <MenuItem text="Manage Tags" onAction="#showTagManagementDialog"/>
                     <MenuItem text="Save Card Tags" onAction="#saveTags"/>
                     <SeparatorMenuItem/>

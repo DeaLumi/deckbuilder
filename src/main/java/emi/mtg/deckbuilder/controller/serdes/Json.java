@@ -8,7 +8,7 @@ import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
-import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.controller.TypeAdapters;
 import emi.mtg.deckbuilder.model.DeckList;
 
 import java.io.File;
@@ -34,8 +34,8 @@ public class Json implements DeckImportExport {
 		this.formats = formats;
 
 		this.gson = new GsonBuilder()
-				.registerTypeAdapter(Card.Printing.class, CardInstance.createCardAdapter(cs))
-				.registerTypeAdapter(Format.class, DeckList.createFormatAdapter(formats))
+				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(cs))
+				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter(formats))
 				.setPrettyPrinting()
 				.create();
 	}

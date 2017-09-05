@@ -30,29 +30,6 @@ public class DeckList implements Deck {
 		}
 	}
 
-	public static TypeAdapter<Format> createFormatAdapter(Map<String, Format> formats) {
-		return new TypeAdapter<Format>() {
-			@Override
-			public void write(JsonWriter out, Format value) throws IOException {
-				if (value == null) {
-					out.nullValue();
-				} else {
-					out.value(formats.entrySet().stream().filter(e -> e.getValue().equals(value)).map(Map.Entry::getKey).findAny().orElse(null));
-				}
-			}
-
-			@Override
-			public Format read(JsonReader in) throws IOException {
-				switch (in.peek()) {
-					case STRING:
-						return formats.get(in.nextString());
-					default:
-						return null;
-				}
-			}
-		};
-	}
-
 	public String name;
 	public Format format;
 	public String author;

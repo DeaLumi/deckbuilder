@@ -494,4 +494,9 @@ public class MainWindow extends Application {
 			ioe.printStackTrace(); // TODO: Handle gracefully
 		}
 	}
+
+	@FXML
+	protected void savePreferences() throws IOException {
+		context.savePreferences();
+	}
 }
