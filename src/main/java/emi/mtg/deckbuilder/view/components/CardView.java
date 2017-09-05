@@ -453,6 +453,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						return;
 					}
 
+					if (immutableModel.get()) {
+						if (filteredModel.stream().anyMatch(ci -> ci.card() == hoverCard.card() && ci.printing() != hoverCard.printing())) {
+							return; // Other versions are already represented. TODO: I hate this. Bind to CardPane's showVersionsSeparately?
+						}
+					}
+
 					Dialog<Void> dlg = new Dialog<>();
 
 					dlg.setTitle("Version Selector");
@@ -462,15 +468,20 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							.collect(Collectors.toList()));
 					CardPane prPane = new CardPane("Variations", context, tmpModel, "Flow Grid");
 
+					final CardInstance modifyingCard = hoverCard;
 					prPane.view().doubleClick(ci -> {
 						dlg.close();
-						//uniqueModel.select(ci);
 
-						context.preferences.preferredPrintings.put(ci.card().fullName(), ci.printing().id());
+						if (immutableModel.get()) {
+							context.preferences.preferredPrintings.put(ci.card().fullName(), ci.printing().id());
+						} else {
+							modifyingCard.printing(ci.printing());
+						}
+
 						filter(this.filter);
 					});
 
-					prPane.view().immutableModelProperty().bind(immutableModel);
+					prPane.view().immutableModelProperty().set(true);
 					prPane.showVersionsSeparately.set(true);
 					prPane.setPrefHeight(this.getScene().getHeight() / 1.5);
 					prPane.setPrefWidth(this.getScene().getWidth() / 1.5);
