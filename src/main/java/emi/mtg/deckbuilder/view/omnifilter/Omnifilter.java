@@ -111,7 +111,7 @@ public class Omnifilter {
 
 				predicate = predicate.and(stub.uncheckedInstance(context, op, value));
 			} else {
-				predicate = predicate.and(ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())));
+				predicate = predicate.and(ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())) || ci.card().fullName().toLowerCase().contains(value.toLowerCase()));
 			}
 		}
 
