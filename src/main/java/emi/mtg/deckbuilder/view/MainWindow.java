@@ -51,12 +51,6 @@ public class MainWindow extends Application {
 			throw new Error("Couldn't create Context.", e);
 		}
 		context = ctxTmp;
-
-		try {
-			context.tags.load(new File("tags.json")); // TODO: Move this to controller...?
-		} catch (IOException ioe) {
-			ioe.printStackTrace();
-		}
 	}
 
 	private static final Map<FileChooser.ExtensionFilter, DeckImportExport> importExports = Service.Loader.load(DeckImportExport.class).stream()
@@ -153,6 +147,14 @@ public class MainWindow extends Application {
 	@Override
 	public void start(Stage stage) throws Exception {
 		this.stage = stage;
+
+		this.stage.setOnCloseRequest(we -> {
+			try {
+				context.savePreferences();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		});
 
 		stage.setTitle("Deck Builder v0.0.0");
 
