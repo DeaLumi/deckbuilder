@@ -8,6 +8,8 @@ import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 
@@ -45,6 +47,34 @@ public class TypeAdapters {
 			@Override
 			public Card.Printing read(JsonReader in) throws IOException {
 				return data.printing(UUID.fromString(in.nextString()));
+			}
+		};
+	}
+
+	public static TypeAdapter<Path> createPathTypeAdapter() {
+		return new TypeAdapter<Path>() {
+			@Override
+			public void write(JsonWriter jsonWriter, Path path) throws IOException {
+				if (path == null) {
+					jsonWriter.nullValue();
+				} else {
+					jsonWriter.value(path.toString());
+				}
+			}
+
+			@Override
+			public Path read(JsonReader jsonReader) throws IOException {
+				switch (jsonReader.peek()) {
+					case NULL:
+						return null;
+					case STRING:
+						return Paths.get(jsonReader.nextString());
+					case NAME:
+						return Paths.get(jsonReader.nextName());
+					default:
+						assert false;
+						return null;
+				}
 			}
 		};
 	}

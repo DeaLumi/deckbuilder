@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.controller;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
@@ -11,6 +12,7 @@ import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.Images;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,7 @@ public class Context {
 				.setPrettyPrinting()
 				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(this.data))
 				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter(FORMATS))
+				.registerTypeAdapter(Path.class, TypeAdapters.createPathTypeAdapter())
 				.create();
 
 		if (PREFERENCES.exists()) {
