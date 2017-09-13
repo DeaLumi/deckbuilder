@@ -7,6 +7,7 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
+import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.controller.serdes.Json;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -31,6 +32,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -496,5 +499,28 @@ public class MainWindow extends Application {
 	@FXML
 	protected void savePreferences() throws IOException {
 		context.savePreferences();
+	}
+
+	@FXML
+	protected void update() throws IOException {
+		TextInputDialog uriInput = new TextInputDialog(context.preferences.updateUri.toString());
+		uriInput.setTitle("Update Source");
+		uriInput.setHeaderText("Update Server URI");
+
+		String newUri = uriInput.showAndWait().orElse(null);
+
+		if (newUri != null) {
+			URI uri;
+			try {
+				uri = new URI(newUri);
+
+				context.preferences.updateUri = uri;
+				savePreferences();
+			} catch (URISyntaxException urise) {
+				throw new IOException(urise);
+			}
+
+			new Updater(context).update(uri);
+		}
 	}
 }

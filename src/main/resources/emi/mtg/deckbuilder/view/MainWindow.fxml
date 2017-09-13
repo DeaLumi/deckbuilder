@@ -33,6 +33,8 @@
                     <MenuItem text="Manage Tags" onAction="#showTagManagementDialog"/>
                     <MenuItem text="Save Card Tags" onAction="#saveTags"/>
                     <SeparatorMenuItem/>
+                    <MenuItem text="Update" onAction="#update"/>
+                    <SeparatorMenuItem/>
                     <MenuItem text="Quit" onAction="#actionQuit">
                         <accelerator>
                             <KeyCodeCombination code="Q" alt="UP" control="UP" shift="UP" meta="DOWN" shortcut="ANY"/>
