@@ -2,11 +2,12 @@ package emi.mtg.deckbuilder.controller;
 
 import emi.mtg.deckbuilder.view.MainWindow;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -14,33 +15,48 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class Updater {
-	protected final String scriptExtension;
-	protected final String header;
-	protected final String sleep, cpR, rmR, rm;
-	protected final FileAttribute[] scriptAttributes;
+	// Script parameters:
+	// 1 - path of JRE's java executable
+	// 2 - path of this jar's parent directory
+	// 3 - complete path of this jar
+	// 4 - path of extracted update
+
+	private static final String WINDOWS_SCRIPT =
+			"@echo off\r\n" +
+			"ping -n 3 127.0.0.1 > nul\r\n" +
+			"xcopy /S /K /Y \"%4$s\" \"%2$s\"\r\n" +
+			"rmdir /S /Q \"%4$s\"\r\n" +
+			"start /B \"%1$s\" -jar \"%3$s\"" +
+			"(goto) 2>nul & del \"%~f0\"";
+
+	private static final String BASH_SCRIPT =
+			"#!/bin/sh\n" +
+			"sleep 3\n" +
+			"cp -r \"%4$s/\" \"%2$s\"\n" +
+			"rm -rf \"%4$s\"\n" +
+			"rm \"$0\"\n" +
+			"nohup \"%1$s\" -jar \"%3$s\" &\n";
+
+	private static final String SCRIPT;
+	private static final String SCRIPT_EXTENSION;
+	private static final FileAttribute[] SCRIPT_ATTRIBUTES;
+
+	static {
+		if (System.getProperty("os.name").startsWith("Windows")) {
+			SCRIPT = WINDOWS_SCRIPT;
+			SCRIPT_EXTENSION = "bat";
+			SCRIPT_ATTRIBUTES = new FileAttribute[0];
+		} else {
+			SCRIPT = BASH_SCRIPT;
+			SCRIPT_EXTENSION = "sh";
+			SCRIPT_ATTRIBUTES = new FileAttribute[] { PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx")) };
+		}
+	}
 
 	protected final Context context;
 
 	public Updater(Context context) throws IOException {
 		this.context = context;
-
-		if (System.getProperty("os.name").startsWith("Windows")) {
-			scriptExtension = "bat";
-			header = "@echo off";
-			sleep = "ping -n 5 127.0.0.1 > nul";
-			cpR = "xcopy.exe /S /K /Y %s .";
-			rm = "del %s";
-			rmR = "rmdir /S /Q %s";
-			scriptAttributes = new FileAttribute[0];
-		} else {
-			scriptExtension = "sh";
-			header = "#!/bin/sh";
-			sleep = "sleep 5";
-			cpR = "cp -r %s/ .";
-			rm = "rm %s";
-			rmR = "rm -r %s";
-			scriptAttributes = new FileAttribute[] { PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx")) };
-		}
 	}
 
 	public void update(URI remote) throws IOException {
@@ -66,34 +82,29 @@ public class Updater {
 			zin.close();
 		}
 
-		final String nl = System.lineSeparator();
-
-		Path script = Files.createFile(Paths.get(".update." + scriptExtension), scriptAttributes);
+		Path script = Files.createFile(Paths.get(".update." + SCRIPT_EXTENSION), SCRIPT_ATTRIBUTES);
 		Writer scriptWriter = Files.newBufferedWriter(script, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-		scriptWriter.append(header).append(nl);
-		scriptWriter.append(sleep).append(nl);
-
-		scriptWriter.append(String.format(cpR, updateDir.toString())).append(nl);
-		scriptWriter.append(String.format(rmR, updateDir.toString())).append(nl);
-
 		String java = Paths.get(System.getProperty("java.home"), "bin", "java").toString();
-		String jar = MainWindow.class.getProtectionDomain().getCodeSource().getLocation().toString().substring(6);
+
+		URL jarUrl = MainWindow.class.getProtectionDomain().getCodeSource().getLocation();
+		String jarPath;
+		String jarDir;
+		try {
+			jarPath = jarUrl.toURI().getPath();
+		} catch (URISyntaxException urise) {
+			jarPath = jarUrl.getPath();
+		}
+		jarDir = Paths.get(jarPath).getParent().toString();
+
+		scriptWriter.append(String.format(SCRIPT, java, jarDir, jarPath, updateDir.toString()));
+		scriptWriter.close();
+
+		// TODO: Clean up these files?
 
 		Path input = Files.createTempFile("input", "");
 		Path output = Files.createTempFile("output", "");
 		Path error = Files.createTempFile("error", "");
-
-		scriptWriter.append(String.format("\"%s\" -jar \"%s\"", java, jar)).append(nl);
-		scriptWriter.append(String.format(rm, input.toString())).append(nl);
-		scriptWriter.append(String.format(rm, output.toString())).append(nl);
-		scriptWriter.append(String.format(rm, error.toString())).append(nl);
-		scriptWriter.append(String.format(rm, script.toString())).append(nl);
-
-		scriptWriter.close();
-
-		// TODO: Launch script
-		// TODO: Restart program (end of script?)
 
 		new ProcessBuilder()
 				.command(script.toAbsolutePath().toString())
