@@ -85,19 +85,19 @@ public class Updater {
 		Path script = Files.createFile(Paths.get(".update." + SCRIPT_EXTENSION), SCRIPT_ATTRIBUTES);
 		Writer scriptWriter = Files.newBufferedWriter(script, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-		String java = Paths.get(System.getProperty("java.home"), "bin", "java").toString();
+		Path java = Paths.get(System.getProperty("java.home"), "bin", "java").toAbsolutePath();
 
 		URL jarUrl = MainWindow.class.getProtectionDomain().getCodeSource().getLocation();
-		String jarPath;
-		String jarDir;
+		Path jarPath;
+		Path jarDir;
 		try {
-			jarPath = jarUrl.toURI().getPath();
+			jarPath = Paths.get(jarUrl.toURI()).toAbsolutePath();
 		} catch (URISyntaxException urise) {
-			jarPath = jarUrl.getPath();
+			jarPath = Paths.get(jarUrl.getPath()).toAbsolutePath();
 		}
-		jarDir = Paths.get(jarPath).getParent().toString();
+		jarDir = jarPath.getParent();
 
-		scriptWriter.append(String.format(SCRIPT, java, jarDir, jarPath, updateDir.toString()));
+		scriptWriter.append(String.format(SCRIPT, java.toString(), jarDir.toString(), jarPath.toString(), updateDir.toString()));
 		scriptWriter.close();
 
 		// TODO: Clean up these files?
