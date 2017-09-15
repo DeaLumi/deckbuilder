@@ -19,6 +19,7 @@ import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -37,6 +38,7 @@ import java.net.URISyntaxException;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 public class MainWindow extends Application {
@@ -505,22 +507,41 @@ public class MainWindow extends Application {
 	protected void update() throws IOException {
 		TextInputDialog uriInput = new TextInputDialog(context.preferences.updateUri.toString());
 		uriInput.setTitle("Update Source");
-		uriInput.setHeaderText("Update Server URI");
+		uriInput.setHeaderText("Update Server URL");
+		uriInput.setContentText("URL:");
+		uriInput.setWidth(256);
+		uriInput.getDialogPane().setExpanded(true);
 
-		String newUri = uriInput.showAndWait().orElse(null);
+		Updater updater = new Updater(context);
 
-		if (newUri != null) {
-			URI uri;
+		ProgressBar progress = new ProgressBar(0.0);
+		progress.progressProperty().bind(updater.progress);
+		uriInput.getDialogPane().setExpandableContent(progress);
+
+		Button btnOk = (Button) uriInput.getDialogPane().lookupButton(ButtonType.OK);
+		btnOk.addEventFilter(ActionEvent.ACTION, ae -> {
+			String newUri = uriInput.getEditor().getText();
+
 			try {
-				uri = new URI(newUri);
-
+				URI uri = new URI(newUri);
 				context.preferences.updateUri = uri;
 				savePreferences();
-			} catch (URISyntaxException urise) {
-				throw new IOException(urise);
+
+				ForkJoinPool.commonPool().submit(() -> {
+					try {
+						updater.update(uri);
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				});
+			} catch (IOException | URISyntaxException e) {
+				throw new RuntimeException(e);
 			}
 
-			new Updater(context).update(uri);
-		}
+			btnOk.setDisable(true);
+			ae.consume();
+		});
+
+		uriInput.showAndWait();
 	}
 }
