@@ -26,8 +26,8 @@ public class Updater {
 			"ping -n 3 127.0.0.1 > nul\r\n" +
 			"xcopy /S /K /Y \"%4$s\" \"%2$s\"\r\n" +
 			"rmdir /S /Q \"%4$s\"\r\n" +
-			"start /B \"%1$s\" -jar \"%3$s\"" +
-			"(goto) 2>nul & del \"%~f0\"";
+			"start \"Deckbuilder\" /B \"%1$s\" -jar \"%3$s\"\r\n" +
+			"(goto) 2>nul & del \"%%~f0\"\r\n";
 
 	private static final String BASH_SCRIPT =
 			"#!/bin/sh\n" +
