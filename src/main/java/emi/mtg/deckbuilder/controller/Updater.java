@@ -1,6 +1,8 @@
 package emi.mtg.deckbuilder.controller;
 
 import emi.mtg.deckbuilder.view.MainWindow;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,6 +10,7 @@ import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -26,8 +29,8 @@ public class Updater {
 			"ping -n 3 127.0.0.1 > nul\r\n" +
 			"xcopy /S /K /Y \"%4$s\" \"%2$s\"\r\n" +
 			"rmdir /S /Q \"%4$s\"\r\n" +
-			"start /B \"%1$s\" -jar \"%3$s\"" +
-			"(goto) 2>nul & del \"%~f0\"";
+			"start \"Deckbuilder\" /B \"%1$s\" -jar \"%3$s\"\r\n" +
+			"(goto) 2>nul & del \"%%~f0\"\r\n";
 
 	private static final String BASH_SCRIPT =
 			"#!/bin/sh\n" +
@@ -59,10 +62,89 @@ public class Updater {
 		this.context = context;
 	}
 
+	public final DoubleProperty progress = new SimpleDoubleProperty(0.0);
+
+	private class Downloader extends InputStream {
+
+		private long read;
+		private final long length;
+		private final InputStream source;
+
+		public Downloader(URL url) throws IOException {
+			super();
+
+			URLConnection conn = url.openConnection();
+
+			this.read = 0;
+			this.length = conn.getContentLengthLong();
+			this.source = conn.getInputStream();
+
+			Updater.this.progress.set(0.0);
+		}
+
+		@Override
+		public int read(byte[] b) throws IOException {
+			int out = source.read(b);
+			incrementProgress(out);
+			return out;
+		}
+
+		@Override
+		public int read(byte[] b, int off, int len) throws IOException {
+			int out = source.read(b, off, len);
+			incrementProgress(out);
+			return out;
+		}
+
+		@Override
+		public long skip(long n) throws IOException {
+			long out = source.skip(n);
+			incrementProgress(out);
+			return out;
+		}
+
+		@Override
+		public int available() throws IOException {
+			return source.available();
+		}
+
+		@Override
+		public int read() throws IOException {
+			int out = source.read();
+			incrementProgress(1);
+			return out;
+		}
+
+		@Override
+		public void close() throws IOException {
+			source.close();
+		}
+
+		@Override
+		public synchronized void mark(int readlimit) {
+			source.mark(readlimit);
+		}
+
+		@Override
+		public synchronized void reset() throws IOException {
+			source.reset();
+		}
+
+		@Override
+		public boolean markSupported() {
+			return source.markSupported();
+		}
+
+		private void incrementProgress(long delta) {
+			read += delta;
+			Updater.this.progress.set((double) read / (double) length);
+		}
+	}
+
 	public void update(URI remote) throws IOException {
 		Path updateDir = Files.createDirectories(Paths.get(".update"));
 
-		try (InputStream input = remote.toURL().openStream()) {
+		try (InputStream input = new Downloader(remote.toURL())) {
 			ZipInputStream zin = new ZipInputStream(input);
 
 			ZipEntry entry = zin.getNextEntry();
