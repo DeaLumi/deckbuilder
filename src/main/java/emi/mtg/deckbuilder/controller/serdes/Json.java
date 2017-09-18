@@ -2,7 +2,6 @@ package emi.mtg.deckbuilder.controller.serdes;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
@@ -20,9 +19,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-@Service.Provider(DeckImportExport.class)
-@Service.Property.String(name="name", value="JSON")
-@Service.Property.String(name="extension", value="json")
+// N.B. MainWindow uses this class directly, so we don't actually provide the DeckImportExport service.
 public class Json implements DeckImportExport {
 	private final DataSource cs;
 	private final Gson gson;

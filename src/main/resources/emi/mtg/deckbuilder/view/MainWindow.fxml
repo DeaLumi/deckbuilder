@@ -12,21 +12,20 @@
         <MenuBar>
             <menus>
                 <Menu text="Deck">
-                    <Menu text="New" fx:id="newDeckMenu"/> <!-- Children are populated by controller. -->
+                    <Menu text="New..." fx:id="newDeckMenu" accelerator="Shortcut+N"/> <!-- Children are populated by controller. -->
+                    <MenuItem text="Open" onAction="#openDeck" accelerator="Shortcut+O"/>
+                    <MenuItem text="Save" fx:id="saveDeckMenuItem" onAction="#saveDeck" accelerator="Shortcut+S"/>
+                    <MenuItem text="Save As" fx:id="saveDeckAsMenuItem" onAction="#saveDeckAs" accelerator="Alt+Shortcut+S"/>
+                    <SeparatorMenuItem/>
                     <Menu text="Import..." fx:id="importDeckMenu"/> <!-- Children are populated by controller. -->
-                    <Menu text="Export" fx:id="exportDeckMenu"/> <!-- Children are populated by controller. -->
-                    <MenuItem text="Re-Export" fx:id="reexportMenuItem" onAction="#reexportDeck">
-                        <accelerator>
-                            <KeyCodeCombination code="S" alt="UP" control="UP" shift="UP" meta="DOWN" shortcut="ANY"/>
-                        </accelerator>
-                    </MenuItem>
+                    <Menu text="Export..." fx:id="exportDeckMenu"/> <!-- Children are populated by controller. -->
+                    <MenuItem text="Re-Export" fx:id="reexportMenuItem" onAction="#reexportDeck"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Validate" onAction="#validateDeck"/>
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
                     <MenuItem text="Statistics" onAction="#showDeckStatisticsDialog"/>
                 </Menu>
                 <Menu text="Application">
-                    <!-- TODO: Action -->
                     <!--<MenuItem text="Settings..."/>-->
                     <MenuItem text="Save Preferences" onAction="#savePreferences"/>
                     <SeparatorMenuItem/>

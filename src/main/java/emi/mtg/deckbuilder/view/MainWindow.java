@@ -91,7 +91,11 @@ public class MainWindow extends Application {
 	private final Map<Zone, CardPane> deckPanes;
 	private CardPane sideboard;
 
-	private FileChooser fileChooser;
+	private final FileChooser primaryFileChooser = new FileChooser();
+	private final DeckImportExport primarySerdes = new Json(context.data, Context.FORMATS);
+	private File currentDeckFile;
+
+	private FileChooser importFileChooser;
 	private DeckImportExport reexportSerdes;
 	private File reexportFile;
 
@@ -200,8 +204,8 @@ public class MainWindow extends Application {
 	}
 
 	private void setupImportExport() {
-		this.fileChooser = new FileChooser();
-		this.fileChooser.getExtensionFilters().setAll(importExports.keySet());
+		this.importFileChooser = new FileChooser();
+		this.importFileChooser.getExtensionFilters().setAll(importExports.keySet());
 
 		for (Format format : Context.FORMATS.values()) {
 			MenuItem item = new MenuItem(format.name());
@@ -212,7 +216,7 @@ public class MainWindow extends Application {
 		for (Map.Entry<FileChooser.ExtensionFilter, DeckImportExport> dies : importExports.entrySet()) {
 			MenuItem importItem = new MenuItem(dies.getKey().getDescription());
 			importItem.setOnAction(ae -> {
-				fileChooser.setSelectedExtensionFilter(dies.getKey());
+				importFileChooser.setSelectedExtensionFilter(dies.getKey());
 				importDeck();
 			});
 
@@ -220,7 +224,7 @@ public class MainWindow extends Application {
 
 			MenuItem exportItem = new MenuItem(dies.getKey().getDescription());
 			exportItem.setOnAction(ae -> {
-				fileChooser.setSelectedExtensionFilter(dies.getKey());
+				importFileChooser.setSelectedExtensionFilter(dies.getKey());
 				exportDeck();
 			});
 
@@ -282,6 +286,69 @@ public class MainWindow extends Application {
 		reexportMenuItem.setDisable(true);
 	}
 
+	@FXML
+	protected void newDeck() {
+		newDeck(context.preferences.defaultFormat);
+		currentDeckFile = null;
+
+		reexportSerdes = null;
+		reexportFile = null;
+	}
+
+	@FXML
+	protected void openDeck() throws IOException {
+		File from = primaryFileChooser.showOpenDialog(this.stage);
+
+		if (from == null) {
+			return;
+		}
+
+		try {
+			setDeck(primarySerdes.importDeck(from));
+			currentDeckFile = from;
+
+			reexportSerdes = null;
+			reexportFile = null;
+		} catch (IOException ioe) {
+			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
+			alert.setHeaderText("An error occurred while opening:");
+			alert.initOwner(this.stage);
+			alert.showAndWait();
+		}
+	}
+
+	@FXML
+	protected void saveDeck() {
+		if (currentDeckFile == null) {
+			saveDeckAs();
+		} else {
+			saveDeck(currentDeckFile);
+		}
+	}
+
+	@FXML
+	protected void saveDeckAs() {
+		File to = primaryFileChooser.showSaveDialog(this.stage);
+
+		if (to == null) {
+			return;
+		}
+
+		saveDeck(to);
+	}
+
+	private void saveDeck(File to) {
+		try {
+			primarySerdes.exportDeck(context.deck, to);
+			currentDeckFile = to;
+		} catch (IOException ioe) {
+			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
+			alert.setHeaderText("An error occurred while saving:");
+			alert.initOwner(this.stage);
+			alert.showAndWait();
+		}
+	}
+
 	private boolean warnAboutSerdes(DeckImportExport die) {
 		StringBuilder builder = new StringBuilder();
 
@@ -300,8 +367,8 @@ public class MainWindow extends Application {
 	}
 
 	protected void importDeck() {
-		File f = this.fileChooser.showOpenDialog(this.stage);
-		DeckImportExport die = importExports.get(this.fileChooser.getSelectedExtensionFilter());
+		File f = this.importFileChooser.showOpenDialog(this.stage);
+		DeckImportExport die = importExports.get(this.importFileChooser.getSelectedExtensionFilter());
 
 		if (f == null) {
 			return;
@@ -332,8 +399,8 @@ public class MainWindow extends Application {
 	}
 
 	protected void exportDeck() {
-		File f = this.fileChooser.showSaveDialog(this.stage);
-		DeckImportExport die = importExports.get(this.fileChooser.getSelectedExtensionFilter());
+		File f = this.importFileChooser.showSaveDialog(this.stage);
+		DeckImportExport die = importExports.get(this.importFileChooser.getSelectedExtensionFilter());
 
 		if (f == null) {
 			return;
