@@ -55,7 +55,7 @@ public class Context {
 		this.images = new Images();
 		this.tags = new Tags(this);
 		this.deck = new DeckList();
-		this.deck.format = preferences.defaultFormat;
+		this.deck.formatProperty().setValue(preferences.defaultFormat);
 
 		try {
 			this.tags.load(TAGS);

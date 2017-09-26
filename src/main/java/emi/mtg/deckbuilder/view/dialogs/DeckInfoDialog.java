@@ -30,19 +30,19 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 		loader.setRoot(getDialogPane());
 		loader.load();
 
-		deckNameField.setText(deck.name);
-		authorField.setText(deck.author);
-		descriptionField.setText(deck.description);
+		deckNameField.setText(deck.nameProperty().getValue());
+		authorField.setText(deck.authorProperty().getValue());
+		descriptionField.setText(deck.descriptionProperty().getValue());
 
 		formatCombo.getItems().setAll(formats);
-		formatCombo.getSelectionModel().select(deck.format);
+		formatCombo.getSelectionModel().select(deck.formatProperty().getValue());
 
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
-				deck.name = deckNameField.getText();
-				deck.author = authorField.getText();
-				deck.format = formatCombo.getValue();
-				deck.description = descriptionField.getText();
+				deck.nameProperty().setValue(deckNameField.getText());
+				deck.authorProperty().setValue(authorField.getText());
+				deck.formatProperty().setValue(formatCombo.getValue());
+				deck.descriptionProperty().setValue(descriptionField.getText());
 				return true;
 			} else {
 				return false;

@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
-import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.controller.TypeAdapters;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -14,7 +13,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +31,8 @@ public class Json implements DeckImportExport {
 		this.gson = new GsonBuilder()
 				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(cs))
 				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter(formats))
+				.registerTypeAdapterFactory(TypeAdapters.createPropertyTypeAdapterFactory())
+				.registerTypeAdapterFactory(TypeAdapters.createObservableListTypeAdapterFactory())
 				.setPrettyPrinting()
 				.create();
 	}
@@ -44,11 +44,6 @@ public class Json implements DeckImportExport {
 		DeckList out = gson.fromJson(reader, DeckList.class);
 
 		reader.close();
-
-		// In case the JSON was exported with null values.
-		for (Zone zone : Zone.values()) {
-			out.cards.computeIfAbsent(zone, z -> new ArrayList<>());
-		}
 
 		return out;
 	}

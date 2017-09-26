@@ -226,7 +226,7 @@ public class CardPane extends BorderPane {
 			}
 
 			if (!showIllegalCards.isSelected()) {
-				compositeFilter = compositeFilter.and(c -> context.deck.format.cardIsLegal(c.card()));
+				compositeFilter = compositeFilter.and(c -> context.deck.formatProperty().getValue().cardIsLegal(c.card()));
 			}
 
 			if (!showVersionsSeparately.isSelected()) {

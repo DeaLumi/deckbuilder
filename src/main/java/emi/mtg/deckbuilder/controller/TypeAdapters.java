@@ -1,13 +1,23 @@
 package emi.mtg.deckbuilder.controller;
 
+import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
+import javafx.beans.property.Property;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -75,6 +85,102 @@ public class TypeAdapters {
 						assert false;
 						return null;
 				}
+			}
+		};
+	}
+
+	public static TypeAdapterFactory createPropertyTypeAdapterFactory() {
+		return new TypeAdapterFactory() {
+			@Override
+			public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
+				if (!Property.class.isAssignableFrom(typeToken.getRawType())) {
+					return null;
+				}
+
+				if (!(typeToken.getType() instanceof ParameterizedType)) {
+					return null; // TODO: Raw object property...?
+				}
+
+				ParameterizedType type = (ParameterizedType) typeToken.getType();
+				Type innerType = type.getActualTypeArguments()[0];
+				TypeAdapter<?> inner = gson.getAdapter(TypeToken.get(innerType));
+
+				if (inner == null) {
+					System.err.println("Can't create property type adapter for un-adapted inner type " + innerType.getTypeName());
+					return null; // Can't deserialize without inner type...
+				}
+
+				return (TypeAdapter<T>) createTypeAdapter(inner);
+			}
+
+			private <T> TypeAdapter<Property<T>> createTypeAdapter(TypeAdapter<T> inner) {
+				return new TypeAdapter<Property<T>>() {
+					@Override
+					public void write(JsonWriter out, Property<T> value) throws IOException {
+						inner.write(out, value.getValue());
+					}
+
+					@Override
+					public Property<T> read(JsonReader in) throws IOException {
+						return new SimpleObjectProperty<>(inner.read(in));
+					}
+				};
+			}
+		};
+	}
+
+	public static TypeAdapterFactory createObservableListTypeAdapterFactory() {
+		return new TypeAdapterFactory() {
+			@Override
+			public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
+				if (!ObservableList.class.isAssignableFrom(typeToken.getRawType())) {
+					return null;
+				}
+
+				if (!(typeToken.getType() instanceof ParameterizedType)) {
+					return null; // TODO: Raw object property...?
+				}
+
+				ParameterizedType type = (ParameterizedType) typeToken.getType();
+				Type innerType = type.getActualTypeArguments()[0];
+				TypeAdapter<?> adapter = gson.getAdapter(TypeToken.get(innerType));
+
+				if (adapter == null) {
+					System.err.println("Can't create observable list type adapter for un-adapted inner type " + innerType.getTypeName());
+					return null; // Can't deserialize without inner type...
+				}
+
+				return (TypeAdapter<T>) createTypeAdapter(adapter);
+			}
+
+			private <T> TypeAdapter<ObservableList<T>> createTypeAdapter(TypeAdapter<T> inner) {
+				return new TypeAdapter<ObservableList<T>>() {
+					@Override
+					public void write(JsonWriter out, ObservableList<T> value) throws IOException {
+						out.beginArray();
+
+						for (T el : value) {
+							inner.write(out, el);
+						}
+
+						out.endArray();
+					}
+
+					@Override
+					public ObservableList<T> read(JsonReader in) throws IOException {
+						in.beginArray();
+
+						ObservableList<T> list = FXCollections.observableArrayList();
+
+						while (in.peek() != JsonToken.END_ARRAY) {
+							list.add(inner.read(in));
+						}
+
+						in.endArray();
+
+						return list;
+					}
+				};
 			}
 		};
 	}

@@ -1,105 +1,131 @@
 package emi.mtg.deckbuilder.model;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Deck;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import javafx.beans.property.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 public class DeckList implements Deck {
-	private static class CardInstanceListWrapper extends AbstractList<Card.Printing> {
-		private List<CardInstance> backing;
-
-		public CardInstanceListWrapper(List<CardInstance> backing) {
-			this.backing = backing;
-		}
-
-		@Override
-		public Card.Printing get(int index) {
-			return backing.get(index).printing();
-		}
-
-		@Override
-		public int size() {
-			return backing.size();
-		}
-	}
-
-	public String name;
-	public Format format;
-	public String author;
-	public String description;
-	public Map<Zone, List<CardInstance>> cards;
-	public List<CardInstance> sideboard;
-
-	private transient Map<Zone, CardInstanceListWrapper> cardsWrapper;
-	private transient CardInstanceListWrapper sideboardWrapper;
-
-	public DeckList() {
-		this("", "", null, "", new EnumMap<>(Zone.class), new ArrayList<>());
-	}
-
-	public DeckList(String name, String author, Format format, String description, Map<Zone, List<CardInstance>> cards, List<CardInstance> sideboard) {
-		this.name = name;
-		this.author = author;
-		this.format = format;
-		this.description = description;
-		this.cards = cards;
-		this.sideboard = sideboard;
+	private static Map<Zone, ObservableList<CardInstance>> emptyDeck() {
+		Map<Zone, ObservableList<CardInstance>> zones = new EnumMap<>(Zone.class);
 
 		for (Zone zone : Zone.values()) {
-			this.cards.computeIfAbsent(zone, z -> new ArrayList<>());
+			zones.put(zone, FXCollections.observableArrayList());
+		}
+
+		return zones;
+	}
+
+	public class Variant implements Deck.Variant {
+		private Property<String> name = new SimpleStringProperty("");
+		private Property<String> description = new SimpleStringProperty("");
+
+		private Map<Zone, ObservableList<CardInstance>> cards = emptyDeck();
+
+		@Override
+		public Deck deck() {
+			return DeckList.this;
+		}
+
+		@Override
+		public String name() {
+			return name.getValue();
+		}
+
+		public Property<String> nameProperty() {
+			return name;
+		}
+
+		@Override
+		public String description() {
+			return description.getValue();
+		}
+
+		public Property<String> descriptionProperty() {
+			return description;
+		}
+
+		@Override
+		public ObservableList<CardInstance> cards(Zone zone) {
+			return cards.get(zone);
 		}
 	}
 
-	private void init() {
-		// We generate wrappers on demand, not for performance, but to avoid annoyances with GSON.
-		if (this.sideboardWrapper == null) {
-			this.sideboardWrapper = new CardInstanceListWrapper(this.sideboard);
+	private Property<String> name = new SimpleStringProperty("");
+	private Property<Format> format = new SimpleObjectProperty<>(null);
+	private Property<String> author = new SimpleStringProperty("");
+	private Property<String> description = new SimpleStringProperty("");
+
+	private ObservableList<Variant> variants = FXCollections.observableArrayList();
+	public transient final ObjectProperty<Variant> primaryVariant = new SimpleObjectProperty<>();
+
+	public DeckList() {
+		this("", "", null, "", Collections.emptyMap());
+	}
+
+	public DeckList(String name, String author, Format format, String description, Map<Zone, List<CardInstance>> cards) {
+		this.name.setValue(name);
+		this.author.setValue(author);
+		this.format.setValue(format);
+		this.description.setValue(description);
+
+		Variant variant = new Variant();
+		variant.name.setValue("Main");
+		variant.description.setValue("");
+
+		for (Zone zone : Zone.values()) {
+			variant.cards(zone).setAll(cards.getOrDefault(zone, Collections.emptyList()));
 		}
 
-		if (this.cardsWrapper == null) {
-			this.cardsWrapper = new HashMap<>();
-			for (Zone zone : Zone.values()) {
-				this.cardsWrapper.put(zone, new CardInstanceListWrapper(this.cards.get(zone)));
-			}
-		}
+		this.variants.setAll(variant);
+		this.primaryVariant.set(variant);
 	}
 
 	@Override
 	public String name() {
+		return name.getValue();
+	}
+
+	public Property<String> nameProperty() {
 		return name;
 	}
 
 	@Override
 	public String author() {
+		return author.getValue();
+	}
+
+	public Property<String> authorProperty() {
 		return author;
 	}
 
 	@Override
 	public Format format() {
+		return format.getValue();
+	}
+
+	public Property<Format> formatProperty() {
 		return format;
 	}
 
 	@Override
 	public String description() {
+		return description.getValue();
+	}
+
+	public Property<String> descriptionProperty() {
 		return description;
 	}
 
 	@Override
-	public Map<Zone, ? extends List<? extends Card.Printing>> cards() {
-		init();
-		return this.cardsWrapper;
-	}
-
-	@Override
-	public List<? extends Card.Printing> sideboard() {
-		init();
-		return this.sideboardWrapper;
+	public ObservableList<Variant> variants() {
+		return variants;
 	}
 }

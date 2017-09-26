@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.controller.serdes;
 
-import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
@@ -36,11 +35,10 @@ public class TextFile implements DeckImportExport {
 		Scanner scanner = new Scanner(from);
 
 		DeckList list = new DeckList();
-		list.name = from.getName();
-		list.format = Context.FORMATS.get("Standard");
+		list.nameProperty().setValue(from.getName().substring(0, from.getName().lastIndexOf('.')));
+		list.formatProperty().setValue(Context.FORMATS.get("Standard"));
 
 		Zone zone = Zone.Library;
-		boolean sideboarding = false;
 
 		while (scanner.hasNextLine()) {
 			String line = scanner.nextLine();
@@ -52,11 +50,6 @@ public class TextFile implements DeckImportExport {
 			Matcher m = LINE_PATTERN.matcher(line);
 
 			if (!m.matches()) {
-				if ("Sideboard:".equals(line.trim())) {
-					sideboarding = true;
-					continue;
-				}
-
 				try {
 					zone = Zone.valueOf(line.trim().substring(0, line.trim().length() - 1));
 					continue;
@@ -79,7 +72,7 @@ public class TextFile implements DeckImportExport {
 			// TODO: Just take the first printing for now...
 			CardInstance ci = new CardInstance(card.printings().iterator().next());
 			for (int i = 0; i < count; ++i) {
-				(sideboarding ? list.sideboard : list.cards.computeIfAbsent(zone, z -> new ObservableListWrapper<>(new ArrayList<>()))).add(ci);
+				list.primaryVariant.get().cards(zone).add(ci);
 			}
 		}
 
@@ -108,21 +101,16 @@ public class TextFile implements DeckImportExport {
 	public void exportDeck(DeckList deck, File to) throws IOException {
 		FileWriter writer = new FileWriter(to);
 
-		for (Map.Entry<Zone, List<CardInstance>> entry : deck.cards.entrySet()) {
-			if (entry.getValue() == null || entry.getValue().isEmpty()) {
+		for (Zone zone : Zone.values()) {
+			if (deck.primaryVariant.get().cards(zone).isEmpty()) {
 				continue;
 			}
 
-			if (entry.getKey() != Zone.Library) {
-				writer.append('\n').append(entry.getKey().name()).append(':').append('\n');
+			if (zone != Zone.Library) {
+				writer.append('\n').append(zone.name()).append(':').append('\n');
 			}
 
-			writeList(entry.getValue(), writer);
-		}
-
-		if (deck.sideboard != null && !deck.sideboard.isEmpty()) {
-			writer.append('\n').append("Sideboard:").append('\n');
-			writeList(deck.sideboard, writer);
+			writeList(deck.primaryVariant.get().cards(zone), writer);
 		}
 
 		writer.close();
@@ -130,6 +118,6 @@ public class TextFile implements DeckImportExport {
 
 	@Override
 	public Set<Features> unsupportedFeatures() {
-		return EnumSet.of(Features.Author, Features.DeckName, Features.Description, Features.CardArt, Features.Format);
+		return EnumSet.of(Features.Author, Features.DeckName, Features.Description, Features.CardArt, Features.Format, Features.Variants);
 	}
 }

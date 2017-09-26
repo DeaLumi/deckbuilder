@@ -15,19 +15,16 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.swing.text.html.parser.Parser;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service.Provider(DeckImportExport.class)
 @Service.Property.String(name="name", value="MTGO")
@@ -94,9 +91,10 @@ public class MTGO implements DeckImportExport {
 			}
 		}
 
-		Map<Zone, List<CardInstance>> cards = new HashMap<>(Collections.singletonMap(Zone.Library, library));
-		return new DeckList(from.getName().substring(0, from.getName().lastIndexOf('.')),
-				"<No Author>", Context.FORMATS.get("Standard"), "<No Description>", cards, sideboard);
+		Map<Zone, List<CardInstance>> cards = new HashMap<>();
+		cards.put(Zone.Library, library);
+		cards.put(Zone.Sideboard, sideboard);
+		return new DeckList(from.getName().substring(0, from.getName().lastIndexOf('.')), "", Context.FORMATS.get("Standard"), "", cards);
 	}
 
 	@Override
@@ -126,7 +124,7 @@ public class MTGO implements DeckImportExport {
 		deckEl.appendChild(preconDeckIdEl);
 
 		Map<Card.Printing, Integer> multiset = new LinkedHashMap<>();
-		for (Card.Printing pr : deck.cards().get(Zone.Library)) {
+		for (Card.Printing pr : deck.primaryVariant.get().cards(Zone.Library)) {
 			multiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
 		}
 
@@ -146,7 +144,7 @@ public class MTGO implements DeckImportExport {
 		}
 
 		Map<Card.Printing, Integer> sbMultiset = new LinkedHashMap<>();
-		for (Card.Printing pr : deck.sideboard()) {
+		for (Card.Printing pr : deck.primaryVariant.get().cards(Zone.Sideboard)) {
 			sbMultiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
 		}
 

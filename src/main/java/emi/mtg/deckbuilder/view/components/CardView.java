@@ -15,7 +15,6 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
-import javafx.collections.transformation.TransformationList;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
@@ -28,7 +27,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
-import javafx.stage.Stage;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -1039,7 +1037,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						states.add(CardState.Hover);
 					}
 
-					if (context.deck != null && context.deck.format != null && !context.deck.format.cardIsLegal(ci.card())) {
+					if (context.deck != null && context.deck.formatProperty().getValue() != null && !context.deck.formatProperty().getValue().cardIsLegal(ci.card())) {
 						states.add(CardState.Flagged);
 					}
 

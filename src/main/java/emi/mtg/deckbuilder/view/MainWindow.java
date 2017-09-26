@@ -91,7 +91,6 @@ public class MainWindow extends Application {
 
 	private CardPane collection;
 	private final Map<Zone, CardPane> deckPanes;
-	private CardPane sideboard;
 
 	private final FileChooser primaryFileChooser = new FileChooser();
 	private final DeckImportExport primarySerdes = new Json(context.data, Context.FORMATS);
@@ -194,13 +193,10 @@ public class MainWindow extends Application {
 		this.collectionSplitter.getItems().add(0, collection);
 
 		for (Zone zone : Zone.values()) {
-			CardPane deckZone = new CardPane(zone.name(), context, new ObservableListWrapper<>(context.deck.cards.get(zone)), "Piles", CardView.DEFAULT_SORTING);
+			CardPane deckZone = new CardPane(zone.name(), context, context.deck.primaryVariant.get().cards(zone), "Piles", CardView.DEFAULT_SORTING);
 			deckZone.view().doubleClick(ci -> deckZone.model().remove(ci));
 			deckPanes.put(zone, deckZone);
 		}
-
-		this.sideboard = new CardPane("Sideboard", context, new ObservableListWrapper<>(context.deck.sideboard), "Piles", CardView.DEFAULT_SORTING);
-		this.sideboard.view().doubleClick(ci -> this.sideboard.model().remove(ci));
 
 		setFormat(Context.FORMATS.get("Standard"));
 	}
@@ -237,7 +233,7 @@ public class MainWindow extends Application {
 	}
 
 	private void setFormat(Format format) {
-		context.deck.format = format;
+		context.deck.formatProperty().setValue(format);
 
 		collection.updateFilter();
 
@@ -256,23 +252,17 @@ public class MainWindow extends Application {
 				++i;
 			}
 		}
-
-		if (!zoneSplitter.getItems().contains(sideboard)) {
-			zoneSplitter.getItems().add(zoneSplitter.getItems().size(), sideboard);
-			sideboard.updateFilter();
-		}
 	}
 
 	private void setDeck(DeckList deck) {
 		context.deck = deck;
 
 		for (Zone zone : Zone.values()) {
-			deckPanes.get(zone).view().model(new ObservableListWrapper<>(context.deck.cards.get(zone)));
+			deckPanes.get(zone).view().model(context.deck.primaryVariant.get().cards(zone));
 		}
-		sideboard.view().model(new ObservableListWrapper<>(context.deck.sideboard));
 
-		if (deck.format != null) {
-			setFormat(deck.format);
+		if (deck.formatProperty().getValue() != null) {
+			setFormat(deck.formatProperty().getValue());
 		}
 	}
 
@@ -280,7 +270,7 @@ public class MainWindow extends Application {
 		setFormat(format);
 
 		DeckList newDeck = new DeckList();
-		newDeck.format = format;
+		newDeck.formatProperty().setValue(format);
 		setDeck(newDeck);
 
 		reexportFile = null;
@@ -448,7 +438,7 @@ public class MainWindow extends Application {
 			did.initOwner(this.stage);
 
 			if(did.showAndWait().orElse(false)) {
-				setFormat(context.deck.format);
+				setFormat(context.deck.formatProperty().getValue());
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -540,7 +530,7 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void validateDeck() {
-		Set<String> warnings = context.deck.format.validate(context.deck);
+		Set<String> warnings = context.deck.formatProperty().getValue().validate(context.deck);
 
 		Alert alert;
 		if (warnings.isEmpty()) {
@@ -559,7 +549,7 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showDeckStatisticsDialog() {
 		try {
-			new DeckStatsDialog(context.deck.cards.get(Zone.Library)).showAndWait();
+			new DeckStatsDialog(context.deck.primaryVariant.get().cards(Zone.Library)).showAndWait();
 		} catch (IOException ioe) {
 			ioe.printStackTrace(); // TODO: Handle gracefully
 		}
