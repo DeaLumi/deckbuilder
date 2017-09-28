@@ -10,5 +10,5 @@ import java.util.UUID;
 public class Preferences {
 	public HashMap<String, UUID> preferredPrintings = new HashMap<>();
 	public Format defaultFormat = new Standard();
-	public URI updateUri = URI.create("http://apexfrp.us.to/deckbuilder-nodata.zip");
+	public URI updateUri;
 }

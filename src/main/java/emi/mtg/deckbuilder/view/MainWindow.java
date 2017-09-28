@@ -46,22 +46,6 @@ public class MainWindow extends Application {
 		launch(args);
 	}
 
-	private static final Context context;
-
-	static {
-		Context ctxTmp;
-		try {
-			ctxTmp = new Context();
-		} catch (IOException e) {
-			throw new Error("Couldn't create Context.", e);
-		}
-		context = ctxTmp;
-	}
-
-	private static final Map<FileChooser.ExtensionFilter, DeckImportExport> importExports = Service.Loader.load(DeckImportExport.class).stream()
-			.collect(Collectors.toMap(dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
-					dies -> dies.uncheckedInstance(context.data, Context.FORMATS)));
-
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
 		return new ObservableListWrapper<>(cs.printings().stream()
 				.map(CardInstance::new)
@@ -89,20 +73,21 @@ public class MainWindow extends Application {
 	@FXML
 	private MenuItem reexportMenuItem;
 
-	private CardPane collection;
-	private final Map<Zone, CardPane> deckPanes;
+	private Context context;
 
-	private final FileChooser primaryFileChooser = new FileChooser();
-	private final DeckImportExport primarySerdes = new Json(context.data, Context.FORMATS);
+	private CardPane collection;
+	private Map<Zone, CardPane> deckPanes;
+
+	private FileChooser primaryFileChooser;
+	private DeckImportExport primarySerdes;
 	private File currentDeckFile;
 
+	private Map<FileChooser.ExtensionFilter, DeckImportExport> importExports;
 	private FileChooser importFileChooser;
 	private DeckImportExport reexportSerdes;
 	private File reexportFile;
 
 	public MainWindow() {
-		this.deckPanes = new EnumMap<>(Zone.class);
-
 		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
 			boolean deckSaved = true;
 
@@ -147,10 +132,21 @@ public class MainWindow extends Application {
 
 			alert.showAndWait();
 		});
-
 	}
 
 	private Stage stage;
+
+	@Override
+	public void init() throws Exception {
+		this.context = new Context();
+
+		this.primarySerdes = new Json(context.data, Context.FORMATS);
+
+		this.importExports = Service.Loader.load(DeckImportExport.class).stream()
+				.collect(Collectors.toMap(
+						dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
+						dies -> dies.uncheckedInstance(context.data, Context.FORMATS)));
+	}
 
 	@Override
 	public void start(Stage stage) throws Exception {
@@ -164,23 +160,18 @@ public class MainWindow extends Application {
 			}
 		});
 
-		stage.setTitle("Deck Builder v0.0.0");
-
-		stage.setScene(new Scene(root, 1024, 1024));
-		stage.setMaximized(true);
-		stage.show();
-	}
-
-	@Override
-	public void init() throws Exception {
-		super.init();
-
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("MainWindow.fxml"));
 		loader.setController(this);
 		loader.load();
 
 		setupUI();
 		setupImportExport();
+
+		stage.setTitle("Deck Builder v0.0.0");
+
+		stage.setScene(new Scene(root, 1024, 1024));
+		stage.setMaximized(true);
+		stage.show();
 	}
 
 	private void setupUI() {
@@ -191,6 +182,8 @@ public class MainWindow extends Application {
 		collection.showVersionsSeparately.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
+
+		this.deckPanes = new EnumMap<>(Zone.class);
 
 		for (Zone zone : Zone.values()) {
 			CardPane deckZone = new CardPane(zone.name(), context, context.deck.primaryVariant.get().cards(zone), "Piles", CardView.DEFAULT_SORTING);
