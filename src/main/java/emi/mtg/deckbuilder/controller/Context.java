@@ -8,6 +8,7 @@ import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.scryfall.ScryfallDataSource;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.EmptyDataSource;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.Images;
 
@@ -34,7 +35,13 @@ public class Context {
 	public final Preferences preferences;
 
 	public Context() throws IOException {
-		this.data = new ScryfallDataSource();
+		DataSource data;
+		try {
+			data = new ScryfallDataSource();
+		} catch (IOException ioe) {
+			data = new EmptyDataSource();
+		}
+		this.data = data;
 
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
