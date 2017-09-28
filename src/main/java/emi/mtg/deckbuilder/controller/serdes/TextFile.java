@@ -2,8 +2,6 @@ package emi.mtg.deckbuilder.controller.serdes;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
-import emi.lib.mtg.DataSource;
-import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
@@ -24,10 +22,10 @@ import java.util.regex.Pattern;
 public class TextFile implements DeckImportExport {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
 
-	private final DataSource cs;
+	private final Context context;
 
-	public TextFile(DataSource cs, Map<String, Format> formats) {
-		this.cs = cs;
+	public TextFile(Context context) {
+		this.context = context;
 	}
 
 	@Override
@@ -63,7 +61,7 @@ public class TextFile implements DeckImportExport {
 			int count = Integer.parseInt(m.group("preCount") != null ? m.group("preCount") : m.group("postCount"));
 			String cardName = m.group("preCardName") != null ? m.group("preCardName") : m.group("postCardName");
 
-			Card card = cs.card(cardName);
+			Card card = context.data.card(cardName);
 
 			if (card == null) {
 				throw new IOException("Couldn't find card named " + cardName);

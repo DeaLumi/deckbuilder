@@ -2,8 +2,6 @@ package emi.mtg.deckbuilder.controller.serdes;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
-import emi.lib.mtg.DataSource;
-import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
@@ -30,10 +28,10 @@ import java.util.*;
 @Service.Property.String(name="name", value="MTGO")
 @Service.Property.String(name="extension", value="dek")
 public class MTGO implements DeckImportExport {
-	private final DataSource cs;
+	private final Context context;
 
-	public MTGO(DataSource cs, Map<String, Format> formats) {
-		this.cs = cs;
+	public MTGO(Context context) {
+		this.context = context;
 	}
 
 	@Override
@@ -63,7 +61,7 @@ public class MTGO implements DeckImportExport {
 			String name = element.getAttributes().getNamedItem("Name").getNodeValue();
 
 			Card.Printing printing = printingsCache.computeIfAbsent(catId, id -> {
-				for (Card.Printing pr : cs.printings()) {
+				for (Card.Printing pr : context.data.printings()) {
 					if (catId.equals(pr.mtgoCatalogId())) {
 						return pr;
 					} else {
@@ -75,7 +73,7 @@ public class MTGO implements DeckImportExport {
 			});
 
 			if (printing == null) {
-				Card card = cs.card(name);
+				Card card = context.data.card(name);
 
 				if (card == null) {
 					throw new IOException("Couldn't find card " + name + " / " + catId);

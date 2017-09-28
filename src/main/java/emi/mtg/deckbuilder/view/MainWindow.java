@@ -92,9 +92,7 @@ public class MainWindow extends Application {
 			boolean deckSaved = true;
 
 			try {
-				importExports.values().stream().filter(s -> s instanceof Json).findAny()
-						.orElseGet(() -> new Json(context.data, Context.FORMATS))
-						.exportDeck(context.deck, new File("emergency-dump.json"));
+				primarySerdes.exportDeck(context.deck, new File("emergency-dump.json"));
 			} catch (IOException ioe) {
 				deckSaved = false;
 			}
@@ -139,13 +137,6 @@ public class MainWindow extends Application {
 	@Override
 	public void init() throws Exception {
 		this.context = new Context();
-
-		this.primarySerdes = new Json(context.data, Context.FORMATS);
-
-		this.importExports = Service.Loader.load(DeckImportExport.class).stream()
-				.collect(Collectors.toMap(
-						dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
-						dies -> dies.uncheckedInstance(context.data, Context.FORMATS)));
 	}
 
 	@Override
@@ -195,6 +186,16 @@ public class MainWindow extends Application {
 	}
 
 	private void setupImportExport() {
+		this.primarySerdes = new Json(context);
+
+		this.primaryFileChooser = new FileChooser();
+		this.primaryFileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files (*.json)", "*.json"));
+
+		this.importExports = Service.Loader.load(DeckImportExport.class).stream()
+				.collect(Collectors.toMap(
+						dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
+						dies -> dies.uncheckedInstance(context)));
+
 		this.importFileChooser = new FileChooser();
 		this.importFileChooser.getExtensionFilters().setAll(importExports.keySet());
 

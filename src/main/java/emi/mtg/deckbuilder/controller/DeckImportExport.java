@@ -1,15 +1,13 @@
 package emi.mtg.deckbuilder.controller;
 
 import emi.lib.Service;
-import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.model.DeckList;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 
-@Service({DataSource.class, Map.class})
+@Service(Context.class)
 @Service.Property.String(name="name")
 @Service.Property.String(name="extension")
 public interface DeckImportExport {

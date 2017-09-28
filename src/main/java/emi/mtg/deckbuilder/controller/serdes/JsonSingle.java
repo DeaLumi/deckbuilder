@@ -1,14 +1,10 @@
 package emi.mtg.deckbuilder.controller.serdes;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import emi.lib.Service;
-import emi.lib.mtg.Card;
-import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
-import emi.mtg.deckbuilder.controller.TypeAdapters;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 
@@ -31,27 +27,17 @@ public class JsonSingle implements DeckImportExport {
 		List<CardInstance> sideboard = Collections.emptyList();
 	}
 
-	private final DataSource cs;
-	private final Gson gson;
-	private final Map<String, Format> formats;
+	private final Context context;
 
-	public JsonSingle(DataSource cs, Map<String, Format> formats) {
-		this.cs = cs;
-
-		this.formats = formats;
-
-		this.gson = new GsonBuilder()
-				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(cs))
-				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter(formats))
-				.setPrettyPrinting()
-				.create();
+	public JsonSingle(Context context) {
+		this.context = context;
 	}
 
 	@Override
 	public DeckList importDeck(File from) throws IOException {
 		FileReader reader = new FileReader(from);
 
-		OldDeckList out = gson.fromJson(reader, OldDeckList.class);
+		OldDeckList out = context.gson.fromJson(reader, OldDeckList.class);
 		out.cards.put(Zone.Sideboard, out.sideboard);
 
 		reader.close();

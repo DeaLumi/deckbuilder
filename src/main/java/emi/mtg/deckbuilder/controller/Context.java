@@ -41,6 +41,8 @@ public class Context {
 				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(this.data))
 				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter(FORMATS))
 				.registerTypeAdapter(Path.class, TypeAdapters.createPathTypeAdapter())
+				.registerTypeAdapterFactory(TypeAdapters.createPropertyTypeAdapterFactory())
+				.registerTypeAdapterFactory(TypeAdapters.createObservableListTypeAdapterFactory())
 				.create();
 
 		if (PREFERENCES.exists()) {
