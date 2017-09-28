@@ -50,7 +50,6 @@ public class MTGO implements DeckImportExport {
 		}
 
 		Map<Integer, Card.Printing> printingsCache = new HashMap<>();
-		Set<String> missingCards = new HashSet<>();
 
 		NodeList cardss = xml.getDocumentElement().getElementsByTagName("Cards");
 		for (int i = 0; i < cardss.getLength(); ++i) {
@@ -81,7 +80,6 @@ public class MTGO implements DeckImportExport {
 
 				printing = card.printings().iterator().next();
 				System.err.println("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name, using first printing.");
-				missingCards.add(name);
 			}
 
 			for (int n = 0; n < qty; ++n) {
