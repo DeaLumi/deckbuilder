@@ -66,8 +66,8 @@ public class DeckList implements Deck {
 	private ObservableList<Variant> variants = FXCollections.observableArrayList();
 	public transient final ObjectProperty<Variant> primaryVariant = new SimpleObjectProperty<>();
 
-	public DeckList() {
-		this("", "", null, "", Collections.emptyMap());
+	private DeckList() {
+
 	}
 
 	public DeckList(String name, String author, Format format, String description, Map<Zone, List<CardInstance>> cards) {

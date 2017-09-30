@@ -14,6 +14,7 @@ import emi.mtg.deckbuilder.view.Images;
 
 import java.io.*;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -63,8 +64,7 @@ public class Context {
 
 		this.images = new Images();
 		this.tags = new Tags(this);
-		this.deck = new DeckList();
-		this.deck.formatProperty().setValue(preferences.defaultFormat);
+		this.deck = new DeckList("", "", preferences.defaultFormat, "", Collections.emptyMap());
 
 		try {
 			this.tags.load(TAGS);

@@ -24,6 +24,7 @@ public class Json implements DeckImportExport {
 		FileReader reader = new FileReader(from);
 
 		DeckList out = context.gson.fromJson(reader, DeckList.class);
+		out.primaryVariant.set(out.variants().get(0));
 
 		reader.close();
 

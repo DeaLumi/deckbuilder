@@ -32,9 +32,8 @@ public class TextFile implements DeckImportExport {
 	public DeckList importDeck(File from) throws IOException {
 		Scanner scanner = new Scanner(from);
 
-		DeckList list = new DeckList();
-		list.nameProperty().setValue(from.getName().substring(0, from.getName().lastIndexOf('.')));
-		list.formatProperty().setValue(Context.FORMATS.get("Standard"));
+		final String name = from.getName().substring(0, from.getName().lastIndexOf('.'));
+		DeckList list = new DeckList(name, "", Context.FORMATS.get("Standard"), "", Collections.emptyMap());
 
 		Zone zone = Zone.Library;
 

@@ -35,6 +35,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -263,8 +264,7 @@ public class MainWindow extends Application {
 	private void newDeck(Format format) {
 		setFormat(format);
 
-		DeckList newDeck = new DeckList();
-		newDeck.formatProperty().setValue(format);
+		DeckList newDeck = new DeckList("", "", format, "", Collections.emptyMap());
 		setDeck(newDeck);
 
 		reexportFile = null;
