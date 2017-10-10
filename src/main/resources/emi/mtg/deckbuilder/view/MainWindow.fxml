@@ -32,7 +32,8 @@
                     <MenuItem text="Manage Tags" onAction="#showTagManagementDialog"/>
                     <MenuItem text="Save Card Tags" onAction="#saveTags"/>
                     <SeparatorMenuItem/>
-                    <MenuItem text="Update" onAction="#update"/>
+                    <MenuItem text="Update Deck Builder" onAction="#updateDeckbuilder"/>
+                    <MenuItem text="Update Data" onAction="#updateData"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Quit" onAction="#actionQuit">
                         <accelerator>

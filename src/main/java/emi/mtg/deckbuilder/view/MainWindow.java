@@ -17,6 +17,7 @@ import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -164,6 +165,14 @@ public class MainWindow extends Application {
 		stage.setScene(new Scene(root, 1024, 1024));
 		stage.setMaximized(true);
 		stage.show();
+
+		if (context.data.needsUpdate()) {
+			Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Data source seems stale -- update?", ButtonType.YES, ButtonType.NO);
+			confirm.initOwner(stage);
+			if (confirm.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+				doGraphicalDataUpdate();
+			}
+		}
 	}
 
 	private void setupUI() {
@@ -555,7 +564,7 @@ public class MainWindow extends Application {
 	}
 
 	@FXML
-	protected void update() throws IOException {
+	protected void updateDeckbuilder() throws IOException {
 		TextInputDialog uriInput = new TextInputDialog(context.preferences.updateUri.toString());
 		uriInput.setTitle("Update Source");
 		uriInput.setHeaderText("Update Server URL");
@@ -594,5 +603,56 @@ public class MainWindow extends Application {
 		});
 
 		uriInput.showAndWait();
+	}
+
+	@FXML
+	protected void updateData() throws IOException {
+		if (!context.data.needsUpdate()) {
+			Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Data source seems fresh. Update anyway?", ButtonType.YES, ButtonType.NO);
+			confirm.initOwner(stage);
+			if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) {
+				return;
+			}
+		}
+
+		doGraphicalDataUpdate();
+	}
+
+	private void doGraphicalDataUpdate() {
+		Alert progressDialog = new Alert(Alert.AlertType.NONE, "Updating...", ButtonType.CLOSE);
+		progressDialog.setHeaderText("Updating...");
+		progressDialog.setWidth(256);
+		progressDialog.initOwner(stage);
+		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
+
+		ProgressBar pbar = new ProgressBar(0.0);
+		progressDialog.getDialogPane().setContent(pbar);
+
+		progressDialog.show();
+
+		ForkJoinPool.commonPool().submit(() -> {
+			try {
+				if (context.data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
+					Platform.runLater(() -> {
+						progressDialog.close();
+						Alert alert = new Alert(Alert.AlertType.INFORMATION, "Please restart the program. (I'm working on obviating this step.)", ButtonType.OK);
+						alert.setHeaderText("Update completed.");
+						alert.setTitle("Update Complete");
+						alert.initOwner(stage);
+						alert.showAndWait();
+					});
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				Platform.runLater(() -> {
+					progressDialog.close();
+					Alert alert = new Alert(Alert.AlertType.ERROR, "You may need to re-try the update.", ButtonType.OK);
+					alert.setTitle("Update Error");
+					alert.setHeaderText("An error occurred.");
+					alert.initOwner(stage);
+					alert.showAndWait();
+				});
+			}
+		});
 	}
 }
