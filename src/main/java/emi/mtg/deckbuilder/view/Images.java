@@ -8,9 +8,13 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
 import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.ref.SoftReference;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,6 +28,8 @@ public class Images {
 
 	public static final Image CARD_BACK_THUMB = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
 	public static final Image CARD_BACK = new Image("file:Back.xlhq.jpg", CARD_WIDTH, CARD_HEIGHT, true, true);
+
+	private static final BufferedImage IMAGE_BUFFER = new BufferedImage((int) CARD_WIDTH, (int) CARD_HEIGHT, BufferedImage.TYPE_INT_ARGB_PRE);
 
 	private static final List<ImageSource> sources;
 
@@ -145,7 +151,9 @@ public class Images {
 								throw new IOException("Couldn't create parent directory for set " + face.printing().set().code());
 							}
 
-							ImageIO.write(SwingFXUtils.fromFXImage(scaled, null), "png", thumbFile);
+							synchronized(IMAGE_BUFFER) {
+								ImageIO.write(SwingFXUtils.fromFXImage(scaled, IMAGE_BUFFER), "png", thumbFile);
+							}
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
