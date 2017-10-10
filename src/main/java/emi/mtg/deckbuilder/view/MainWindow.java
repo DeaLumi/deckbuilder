@@ -14,7 +14,6 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
-import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -548,15 +547,6 @@ public class MainWindow extends Application {
 		alert.initOwner(this.stage);
 
 		alert.showAndWait();
-	}
-
-	@FXML
-	protected void showDeckStatisticsDialog() {
-		try {
-			new DeckStatsDialog(context.deck.primaryVariant.get().cards(Zone.Library)).showAndWait();
-		} catch (IOException ioe) {
-			ioe.printStackTrace(); // TODO: Handle gracefully
-		}
 	}
 
 	@FXML

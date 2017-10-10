@@ -4,6 +4,7 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardType;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.SortDialog;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.application.Platform;
@@ -27,6 +28,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -186,6 +188,15 @@ public class CardPane extends BorderPane {
 		cardScale.setContent(cardScaleSlider);
 		cardScale.setHideOnClick(false);
 
+		MenuItem statisticsButton = new MenuItem("Statistics");
+		statisticsButton.setOnAction(ae -> {
+			try {
+				new DeckStatsDialog(this.cardView.model()).show();
+			} catch (IOException e) {
+				throw new RuntimeException(e); // TODO: Handle gracefully
+			}
+		});
+
 		CheckMenuItem findOtherCards = new CheckMenuItem("Show Nontraditional Cards");
 		findOtherCards.setSelected(false);
 
@@ -201,6 +212,8 @@ public class CardPane extends BorderPane {
 		deckMenu.getItems().add(displayMenu);
 		deckMenu.getItems().add(sortButton);
 		deckMenu.getItems().add(cardScale);
+		deckMenu.getItems().add(new SeparatorMenuItem());
+		deckMenu.getItems().add(statisticsButton);
 		deckMenu.getItems().add(new SeparatorMenuItem());
 		deckMenu.getItems().add(showIllegalCards);
 		deckMenu.getItems().add(findOtherCards);

@@ -23,7 +23,6 @@
                     <SeparatorMenuItem/>
                     <MenuItem text="Validate" onAction="#validateDeck"/>
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
-                    <MenuItem text="Statistics" onAction="#showDeckStatisticsDialog"/>
                 </Menu>
                 <Menu text="Application">
                     <!--<MenuItem text="Settings..."/>-->
