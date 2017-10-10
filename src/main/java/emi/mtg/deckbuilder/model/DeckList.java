@@ -30,7 +30,7 @@ public class DeckList implements Deck {
 		private Map<Zone, ObservableList<CardInstance>> cards = emptyDeck();
 
 		@Override
-		public Deck deck() {
+		public DeckList deck() {
 			return DeckList.this;
 		}
 
@@ -55,6 +55,11 @@ public class DeckList implements Deck {
 		@Override
 		public ObservableList<CardInstance> cards(Zone zone) {
 			return cards.get(zone);
+		}
+
+		@Override
+		public String toString() {
+			return name.getValue();
 		}
 	}
 
