@@ -13,6 +13,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
+import emi.mtg.deckbuilder.view.components.VariantPane;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
@@ -36,7 +37,6 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
@@ -60,9 +60,6 @@ public class MainWindow extends Application {
 	private SplitPane collectionSplitter;
 
 	@FXML
-	private SplitPane zoneSplitter;
-
-	@FXML
 	private Menu newDeckMenu;
 
 	@FXML
@@ -74,10 +71,12 @@ public class MainWindow extends Application {
 	@FXML
 	private MenuItem reexportMenuItem;
 
+	@FXML
+	private TabPane deckVariantTabs;
+
 	private Context context;
 
 	private CardPane collection;
-	private Map<Zone, CardPane> deckPanes;
 
 	private FileChooser primaryFileChooser;
 	private DeckImportExport primarySerdes;
@@ -158,6 +157,7 @@ public class MainWindow extends Application {
 
 		setupUI();
 		setupImportExport();
+		setDeck(context.deck); // TODO: This looks tautological...
 
 		stage.setTitle("Deck Builder v0.0.0");
 
@@ -177,21 +177,11 @@ public class MainWindow extends Application {
 	private void setupUI() {
 		collection = new CardPane("Collection", context, new ReadOnlyListWrapper<>(collectionModel(context.data)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().immutableModelProperty().set(true);
-		collection.view().doubleClick(ci -> this.deckPanes.get(Zone.Library).model().add(new CardInstance(ci.printing())));
+		collection.view().doubleClick(ci -> ((VariantPane) deckVariantTabs.getSelectionModel().getSelectedItem()).deckPanes.get(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.showIllegalCards.set(false);
 		collection.showVersionsSeparately.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
-
-		this.deckPanes = new EnumMap<>(Zone.class);
-
-		for (Zone zone : Zone.values()) {
-			CardPane deckZone = new CardPane(zone.name(), context, context.deck.primaryVariant.get().cards(zone), "Piles", CardView.DEFAULT_SORTING);
-			deckZone.view().doubleClick(ci -> deckZone.model().remove(ci));
-			deckPanes.put(zone, deckZone);
-		}
-
-		setFormat(Context.FORMATS.get("Standard"));
 	}
 
 	private void setupImportExport() {
@@ -235,43 +225,17 @@ public class MainWindow extends Application {
 		this.reexportMenuItem.setDisable(true);
 	}
 
-	private void setFormat(Format format) {
-		context.deck.formatProperty().setValue(format);
-
-		collection.updateFilter();
-
-		int i = 0;
-		for (Zone zone : Zone.values()) {
-			if (zoneSplitter.getItems().contains(deckPanes.get(zone))) {
-				if (!format.deckZones().contains(zone)) {
-					zoneSplitter.getItems().remove(deckPanes.get(zone));
-				} else {
-					deckPanes.get(zone).updateFilter();
-					++i;
-				}
-			} else if (format.deckZones().contains(zone)) {
-				zoneSplitter.getItems().add(i, deckPanes.get(zone));
-				deckPanes.get(zone).updateFilter();
-				++i;
-			}
-		}
-	}
-
 	private void setDeck(DeckList deck) {
 		context.deck = deck;
+		collection.updateFilter();
 
-		for (Zone zone : Zone.values()) {
-			deckPanes.get(zone).view().model(context.deck.primaryVariant.get().cards(zone));
-		}
-
-		if (deck.formatProperty().getValue() != null) {
-			setFormat(deck.formatProperty().getValue());
+		deckVariantTabs.getTabs().clear();
+		for (DeckList.Variant variant : deck.variants()) {
+			deckVariantTabs.getTabs().add(new VariantPane(context, variant));
 		}
 	}
 
 	private void newDeck(Format format) {
-		setFormat(format);
-
 		DeckList newDeck = new DeckList("", "", format, "", Collections.emptyMap());
 		setDeck(newDeck);
 
@@ -441,7 +405,7 @@ public class MainWindow extends Application {
 			did.initOwner(this.stage);
 
 			if(did.showAndWait().orElse(false)) {
-				setFormat(context.deck.formatProperty().getValue());
+				collection.updateFilter();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -644,6 +608,22 @@ public class MainWindow extends Application {
 					alert.showAndWait();
 				});
 			}
+		});
+	}
+
+	@FXML
+	protected void newDeckVariant() {
+		TextInputDialog nameDialog = new TextInputDialog();
+		nameDialog.setTitle("New Deck Variant");
+		nameDialog.setHeaderText("New Deck Variant");
+		nameDialog.setContentText("Name:");
+		nameDialog.initOwner(stage);
+		nameDialog.showAndWait().ifPresent(s -> {
+			DeckList.Variant var = context.deck.new Variant();
+			var.nameProperty().setValue(s);
+			context.deck.variants().add(var);
+
+			deckVariantTabs.getTabs().add(new VariantPane(context, var));
 		});
 	}
 }
