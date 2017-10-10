@@ -276,6 +276,7 @@ public class MainWindow extends Application {
 		DeckList newDeck = new DeckList("", "", format, "", Collections.emptyMap());
 		setDeck(newDeck);
 
+		currentDeckFile = null;
 		reexportFile = null;
 		reexportSerdes = null;
 		reexportMenuItem.setDisable(true);
