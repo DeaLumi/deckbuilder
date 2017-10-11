@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.controller.serdes;
+package emi.mtg.deckbuilder.controller.serdes.full;
 
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;

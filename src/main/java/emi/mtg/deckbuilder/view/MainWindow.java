@@ -8,7 +8,7 @@ import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckImportExport;
 import emi.mtg.deckbuilder.controller.Updater;
-import emi.mtg.deckbuilder.controller.serdes.Json;
+import emi.mtg.deckbuilder.controller.serdes.full.Json;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
