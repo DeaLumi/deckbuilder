@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.controller.serdes;
+package emi.mtg.deckbuilder.controller.serdes.variant;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
