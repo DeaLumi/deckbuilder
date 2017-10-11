@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.controller.serdes.full;
 
 import emi.mtg.deckbuilder.controller.Context;
-import emi.mtg.deckbuilder.controller.DeckImportExport;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.DeckList;
 
 import java.io.File;

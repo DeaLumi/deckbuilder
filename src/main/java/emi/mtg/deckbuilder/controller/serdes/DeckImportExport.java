@@ -1,6 +1,7 @@
-package emi.mtg.deckbuilder.controller;
+package emi.mtg.deckbuilder.controller.serdes;
 
 import emi.lib.Service;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.DeckList;
 
 import java.io.File;
