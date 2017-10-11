@@ -18,15 +18,12 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.geometry.Side;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -138,8 +135,9 @@ public class CardPane extends BorderPane {
 		this.cardView = new CardView(context, model, initEngine, "CMC", sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
 
-		Button label = new Button(title);
-		label.setFont(Font.font(null, FontWeight.BOLD, -1));
+		MenuBar menuBar = new MenuBar();
+		Menu deckMenu = new Menu(title);
+		menuBar.getMenus().add(deckMenu);
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
@@ -206,8 +204,6 @@ public class CardPane extends BorderPane {
 		CheckMenuItem showVersionsSeparately = new CheckMenuItem("Show Versions Separately");
 		showVersionsSeparately.selectedProperty().bindBidirectional(this.showVersionsSeparately);
 
-		ContextMenu deckMenu = new ContextMenu();
-
 		deckMenu.getItems().add(groupingMenu);
 		deckMenu.getItems().add(displayMenu);
 		deckMenu.getItems().add(sortButton);
@@ -218,14 +214,6 @@ public class CardPane extends BorderPane {
 		deckMenu.getItems().add(showIllegalCards);
 		deckMenu.getItems().add(findOtherCards);
 		deckMenu.getItems().add(showVersionsSeparately);
-
-		label.setOnAction(ae -> {
-			if (deckMenu.isShowing()) {
-				deckMenu.hide();
-			} else {
-				deckMenu.show(label, Side.BOTTOM, 0, 0);
-			}
-		});
 
 		final TextField filter = new TextField();
 		filter.setPromptText("Omnifilter...");
@@ -288,11 +276,11 @@ public class CardPane extends BorderPane {
 
 		HBox controlBar = new HBox(8.0);
 		controlBar.setPadding(new Insets(8.0));
-		controlBar.setAlignment(Pos.BASELINE_LEFT);
-		controlBar.getChildren().add(label);
+		controlBar.setAlignment(Pos.CENTER_LEFT);
+		controlBar.getChildren().add(menuBar);
 		controlBar.getChildren().add(filter);
 		controlBar.getChildren().add(deckStats);
-		HBox.setHgrow(label, Priority.NEVER);
+		HBox.setHgrow(menuBar, Priority.NEVER);
 		HBox.setHgrow(filter, Priority.SOMETIMES);
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
