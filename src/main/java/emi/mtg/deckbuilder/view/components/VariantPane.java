@@ -11,9 +11,12 @@ import javafx.scene.input.MouseButton;
 import java.util.EnumMap;
 
 public class VariantPane extends Tab {
+	public final DeckList.Variant variant;
 	public final EnumMap<Zone, CardPane> deckPanes;
 
 	public VariantPane(Context context, DeckList.Variant variant) {
+		this.variant = variant;
+
 		setText("");
 
 		Label label = new Label();

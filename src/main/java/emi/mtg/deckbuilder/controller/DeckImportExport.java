@@ -18,7 +18,7 @@ public interface DeckImportExport {
 		Format ("Intended deck format"),
 		CardArt ("Specific card printings"),
 		OtherZones ("Zones (beyond library & sideboard)"),
-		Variants ("Deck variants (beyond one)");
+		Variants ("Deck variants (only current will be exported)");
 
 		private final String description;
 

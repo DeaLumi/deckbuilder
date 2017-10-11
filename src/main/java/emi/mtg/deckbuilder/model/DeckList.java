@@ -3,7 +3,6 @@ package emi.mtg.deckbuilder.model;
 import emi.lib.mtg.game.Deck;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -72,7 +71,6 @@ public class DeckList implements Deck {
 	private Property<String> description = new SimpleStringProperty("");
 
 	private ObservableList<Variant> variants = FXCollections.observableArrayList();
-	public transient final ObjectProperty<Variant> primaryVariant = new SimpleObjectProperty<>();
 
 	private DeckList() {
 
@@ -93,7 +91,6 @@ public class DeckList implements Deck {
 		}
 
 		this.variants.setAll(variant);
-		this.primaryVariant.set(variant);
 	}
 
 	@Override

@@ -45,7 +45,6 @@ public class Json implements DeckImportExport {
 
 		DeckList out = context.gson.fromJson(reader, DeckList.class);
 		updateVariantsParent(out);
-		out.primaryVariant.set(out.variants().get(0));
 
 		reader.close();
 

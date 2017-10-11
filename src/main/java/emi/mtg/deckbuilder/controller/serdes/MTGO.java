@@ -120,7 +120,7 @@ public class MTGO implements DeckImportExport {
 		deckEl.appendChild(preconDeckIdEl);
 
 		Map<Card.Printing, Integer> multiset = new LinkedHashMap<>();
-		for (Card.Printing pr : deck.primaryVariant.get().cards(Zone.Library)) {
+		for (Card.Printing pr : context.activeVariant.cards(Zone.Library)) {
 			multiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
 		}
 
@@ -140,7 +140,7 @@ public class MTGO implements DeckImportExport {
 		}
 
 		Map<Card.Printing, Integer> sbMultiset = new LinkedHashMap<>();
-		for (Card.Printing pr : deck.primaryVariant.get().cards(Zone.Sideboard)) {
+		for (Card.Printing pr : context.activeVariant.cards(Zone.Sideboard)) {
 			sbMultiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
 		}
 

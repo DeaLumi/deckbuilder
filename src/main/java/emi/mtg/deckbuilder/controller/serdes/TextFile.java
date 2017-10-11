@@ -69,7 +69,7 @@ public class TextFile implements DeckImportExport {
 			// TODO: Just take the first printing for now...
 			CardInstance ci = new CardInstance(card.printings().iterator().next());
 			for (int i = 0; i < count; ++i) {
-				list.primaryVariant.get().cards(zone).add(ci);
+				list.variants().get(0).cards(zone).add(ci);
 			}
 		}
 
@@ -99,7 +99,7 @@ public class TextFile implements DeckImportExport {
 		FileWriter writer = new FileWriter(to);
 
 		for (Zone zone : Zone.values()) {
-			if (deck.primaryVariant.get().cards(zone).isEmpty()) {
+			if (context.activeVariant.cards(zone).isEmpty()) {
 				continue;
 			}
 
@@ -107,7 +107,7 @@ public class TextFile implements DeckImportExport {
 				writer.append('\n').append(zone.name()).append(':').append('\n');
 			}
 
-			writeList(deck.primaryVariant.get().cards(zone), writer);
+			writeList(context.activeVariant.cards(zone), writer);
 		}
 
 		writer.close();
