@@ -19,6 +19,7 @@ import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyListWrapper;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -227,11 +228,32 @@ public class MainWindow extends Application {
 		this.reexportMenuItem.setDisable(true);
 	}
 
+	private final ListChangeListener<? super DeckList.Variant> deckVariantsChangedListener = e -> {
+		while (e.next()) {
+			if (e.wasRemoved()) {
+				deckVariantTabs.getTabs().removeIf(t -> e.getRemoved().contains(((VariantPane) t).variant));
+			}
+
+			if (e.wasAdded()) {
+				deckVariantTabs.getTabs().addAll(e.getAddedSubList().stream()
+						.map(v -> new VariantPane(context, v))
+						.toArray(VariantPane[]::new));
+			}
+
+			if (e.wasPermutated()) {
+				throw new UnsupportedOperationException("Please don't permute variants yet...");
+			}
+		}
+	};
+
 	private void setDeck(DeckList deck) {
 		context.deck = deck;
 		context.activeVariant = deck.variants().get(0);
 
 		collection.updateFilter();
+
+		deck.variants().removeListener(deckVariantsChangedListener);
+		deck.variants().addListener(deckVariantsChangedListener);
 
 		deckVariantTabs.getTabs().clear();
 		for (DeckList.Variant variant : deck.variants()) {
@@ -626,8 +648,6 @@ public class MainWindow extends Application {
 			DeckList.Variant var = context.deck.new Variant();
 			var.nameProperty().setValue(s);
 			context.deck.variants().add(var);
-
-			deckVariantTabs.getTabs().add(new VariantPane(context, var));
 		});
 	}
 }
