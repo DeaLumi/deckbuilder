@@ -14,7 +14,7 @@ import java.util.Set;
 public interface VariantImportExport {
 	DeckList.Variant importVariant(DeckList decklist, File from) throws IOException;
 
-	void exportVariant(DeckList deck, DeckList.Variant variant, File to) throws IOException;
+	void exportVariant(DeckList.Variant variant, File to) throws IOException;
 
 	Set<Features> unsupportedFeatures();
 }

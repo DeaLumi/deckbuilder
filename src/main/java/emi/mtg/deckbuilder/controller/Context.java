@@ -32,7 +32,6 @@ public class Context {
 	public final Tags tags;
 
 	public DeckList deck;
-	public DeckList.Variant activeVariant;
 
 	public final Preferences preferences;
 
@@ -66,7 +65,6 @@ public class Context {
 		this.images = new Images();
 		this.tags = new Tags(this);
 		this.deck = new DeckList("", "", preferences.defaultFormat, "", Collections.emptyMap());
-		this.activeVariant = this.deck.variants().get(0);
 
 		try {
 			this.tags.load(TAGS);

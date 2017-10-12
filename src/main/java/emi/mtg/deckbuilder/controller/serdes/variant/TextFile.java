@@ -4,8 +4,8 @@ import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
-import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.Features;
+import emi.mtg.deckbuilder.controller.serdes.VariantImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 
@@ -17,10 +17,10 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Service.Provider(DeckImportExport.class)
+@Service.Provider(VariantImportExport.class)
 @Service.Property.String(name="name", value="Plain Text File")
 @Service.Property.String(name="extension", value="txt")
-public class TextFile implements DeckImportExport {
+public class TextFile implements VariantImportExport {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
 
 	private final Context context;
@@ -30,13 +30,13 @@ public class TextFile implements DeckImportExport {
 	}
 
 	@Override
-	public DeckList importDeck(File from) throws IOException {
+	public DeckList.Variant importVariant(DeckList deck, File from) throws IOException {
 		Scanner scanner = new Scanner(from);
 
 		final String name = from.getName().substring(0, from.getName().lastIndexOf('.'));
-		DeckList list = new DeckList(name, "", Context.FORMATS.get("Standard"), "", Collections.emptyMap());
 
 		Zone zone = Zone.Library;
+		Map<Zone, List<CardInstance>> cards = new HashMap<>();
 
 		while (scanner.hasNextLine()) {
 			String line = scanner.nextLine();
@@ -70,11 +70,11 @@ public class TextFile implements DeckImportExport {
 			// TODO: Just take the first printing for now...
 			CardInstance ci = new CardInstance(card.printings().iterator().next());
 			for (int i = 0; i < count; ++i) {
-				list.variants().get(0).cards(zone).add(ci);
+				cards.get(zone).add(ci);
 			}
 		}
 
-		return list;
+		return deck.new Variant(name, "", cards);
 	}
 
 	private static void writeList(List<CardInstance> list, Writer writer) throws IOException {
@@ -96,11 +96,11 @@ public class TextFile implements DeckImportExport {
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
+	public void exportVariant(DeckList.Variant variant, File to) throws IOException {
 		FileWriter writer = new FileWriter(to);
 
 		for (Zone zone : Zone.values()) {
-			if (context.activeVariant.cards(zone).isEmpty()) {
+			if (variant.cards(zone).isEmpty()) {
 				continue;
 			}
 
@@ -108,7 +108,7 @@ public class TextFile implements DeckImportExport {
 				writer.append('\n').append(zone.name()).append(':').append('\n');
 			}
 
-			writeList(context.activeVariant.cards(zone), writer);
+			writeList(variant.cards(zone), writer);
 		}
 
 		writer.close();

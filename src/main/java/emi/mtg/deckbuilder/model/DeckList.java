@@ -31,6 +31,21 @@ public class DeckList implements Deck {
 
 		private Map<Zone, ObservableList<CardInstance>> cards = emptyDeck();
 
+		private Variant() {
+
+		}
+
+		public Variant(String name, String description, Map<Zone, ? extends List<CardInstance>> cards) {
+			this.name.setValue(name);
+			this.description.setValue(description);
+
+			for (Map.Entry<Zone, ? extends List<CardInstance>> entry : cards.entrySet()) {
+				this.cards.get(entry.getKey()).setAll(entry.getValue());
+			}
+
+			DeckList.this.variants.add(this);
+		}
+
 		@Override
 		public DeckList deck() {
 			return DeckList.this;
@@ -57,6 +72,10 @@ public class DeckList implements Deck {
 		@Override
 		public ObservableList<CardInstance> cards(Zone zone) {
 			return cards.get(zone);
+		}
+
+		public Map<Zone, ObservableList<CardInstance>> cards() {
+			return cards;
 		}
 
 		@Override

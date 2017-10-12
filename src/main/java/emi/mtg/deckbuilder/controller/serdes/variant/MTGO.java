@@ -4,8 +4,8 @@ import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
-import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.Features;
+import emi.mtg.deckbuilder.controller.serdes.VariantImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import org.w3c.dom.Document;
@@ -25,10 +25,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-@Service.Provider(DeckImportExport.class)
+@Service.Provider(VariantImportExport.class)
 @Service.Property.String(name="name", value="MTGO")
 @Service.Property.String(name="extension", value="dek")
-public class MTGO implements DeckImportExport {
+public class MTGO implements VariantImportExport {
 	private final Context context;
 
 	public MTGO(Context context) {
@@ -36,7 +36,7 @@ public class MTGO implements DeckImportExport {
 	}
 
 	@Override
-	public DeckList importDeck(File from) throws IOException {
+	public DeckList.Variant importVariant(DeckList deck, File from) throws IOException {
 		Document xml;
 
 		List<CardInstance> library = new ArrayList<>(),
@@ -91,11 +91,11 @@ public class MTGO implements DeckImportExport {
 		Map<Zone, List<CardInstance>> cards = new HashMap<>();
 		cards.put(Zone.Library, library);
 		cards.put(Zone.Sideboard, sideboard);
-		return new DeckList(from.getName().substring(0, from.getName().lastIndexOf('.')), "", Context.FORMATS.get("Standard"), "", cards);
+		return deck.new Variant(from.getName().substring(0, from.getName().lastIndexOf('.')), "", cards);
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
+	public void exportVariant(DeckList.Variant variant, File to) throws IOException {
 		Document xml;
 		try {
 			xml = DocumentBuilderFactory.newInstance()
@@ -121,7 +121,7 @@ public class MTGO implements DeckImportExport {
 		deckEl.appendChild(preconDeckIdEl);
 
 		Map<Card.Printing, Integer> multiset = new LinkedHashMap<>();
-		for (Card.Printing pr : context.activeVariant.cards(Zone.Library)) {
+		for (Card.Printing pr : variant.cards(Zone.Library)) {
 			multiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
 		}
 
@@ -141,7 +141,7 @@ public class MTGO implements DeckImportExport {
 		}
 
 		Map<Card.Printing, Integer> sbMultiset = new LinkedHashMap<>();
-		for (Card.Printing pr : context.activeVariant.cards(Zone.Sideboard)) {
+		for (Card.Printing pr : variant.cards(Zone.Sideboard)) {
 			sbMultiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
 		}
 

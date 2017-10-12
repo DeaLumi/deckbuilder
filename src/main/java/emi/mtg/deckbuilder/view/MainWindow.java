@@ -184,8 +184,6 @@ public class MainWindow extends Application {
 		collection.showVersionsSeparately.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
-
-		deckVariantTabs.getSelectionModel().selectedItemProperty().addListener((obs, old, t) -> context.activeVariant = t == null ? null : ((VariantPane) t).variant);
 	}
 
 	private void setupImportExport() {
@@ -249,7 +247,6 @@ public class MainWindow extends Application {
 
 	private void setDeck(DeckList deck) {
 		context.deck = deck;
-		context.activeVariant = deck.variants().get(0);
 
 		collection.updateFilter();
 
@@ -645,11 +642,7 @@ public class MainWindow extends Application {
 		nameDialog.setHeaderText("New Deck Variant");
 		nameDialog.setContentText("Name:");
 		nameDialog.initOwner(stage);
-		nameDialog.showAndWait().ifPresent(s -> {
-			DeckList.Variant var = context.deck.new Variant();
-			var.nameProperty().setValue(s);
-			context.deck.variants().add(var);
-		});
+		nameDialog.showAndWait().ifPresent(s -> context.deck.new Variant(s, "", Collections.emptyMap()));
 	}
 
 	@FXML
