@@ -17,10 +17,6 @@
                     <MenuItem text="Save" fx:id="saveDeckMenuItem" onAction="#saveDeck" accelerator="Shortcut+S"/>
                     <MenuItem text="Save As" fx:id="saveDeckAsMenuItem" onAction="#saveDeckAs" accelerator="Alt+Shortcut+S"/>
                     <SeparatorMenuItem/>
-                    <Menu text="Import..." fx:id="importDeckMenu"/> <!-- Children are populated by controller. -->
-                    <Menu text="Export..." fx:id="exportDeckMenu"/> <!-- Children are populated by controller. -->
-                    <MenuItem text="Re-Export" fx:id="reexportMenuItem" onAction="#reexportDeck"/>
-                    <SeparatorMenuItem/>
                     <MenuItem text="Validate" onAction="#validateDeck"/>
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
                 </Menu>

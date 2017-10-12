@@ -1,14 +1,14 @@
 package emi.mtg.deckbuilder.view;
 
 import com.sun.javafx.collections.ObservableListWrapper;
-import emi.lib.Service;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
-import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.Updater;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.Features;
+import emi.mtg.deckbuilder.controller.serdes.VariantImportExport;
 import emi.mtg.deckbuilder.controller.serdes.full.Json;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -65,15 +65,6 @@ public class MainWindow extends Application {
 	private Menu newDeckMenu;
 
 	@FXML
-	private Menu importDeckMenu;
-
-	@FXML
-	private Menu exportDeckMenu;
-
-	@FXML
-	private MenuItem reexportMenuItem;
-
-	@FXML
 	private TabPane deckVariantTabs;
 
 	private Context context;
@@ -84,10 +75,6 @@ public class MainWindow extends Application {
 	private DeckImportExport primarySerdes;
 	private File currentDeckFile;
 
-	private Map<FileChooser.ExtensionFilter, DeckImportExport> importExports;
-	private FileChooser importFileChooser;
-	private DeckImportExport reexportSerdes;
-	private File reexportFile;
 
 	public MainWindow() {
 		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
@@ -192,39 +179,11 @@ public class MainWindow extends Application {
 		this.primaryFileChooser = new FileChooser();
 		this.primaryFileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files (*.json)", "*.json"));
 
-		this.importExports = Service.Loader.load(DeckImportExport.class).stream()
-				.collect(Collectors.toMap(
-						dies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", dies.string("name"), dies.string("extension")), String.format("*.%s", dies.string("extension"))),
-						dies -> dies.uncheckedInstance(context)));
-
-		this.importFileChooser = new FileChooser();
-		this.importFileChooser.getExtensionFilters().setAll(importExports.keySet());
-
 		for (Format format : Context.FORMATS.values()) {
 			MenuItem item = new MenuItem(format.name());
 			item.setOnAction(ae -> newDeck(format));
 			this.newDeckMenu.getItems().add(item);
 		}
-
-		for (Map.Entry<FileChooser.ExtensionFilter, DeckImportExport> dies : importExports.entrySet()) {
-			MenuItem importItem = new MenuItem(dies.getKey().getDescription());
-			importItem.setOnAction(ae -> {
-				importFileChooser.setSelectedExtensionFilter(dies.getKey());
-				importDeck();
-			});
-
-			this.importDeckMenu.getItems().add(importItem);
-
-			MenuItem exportItem = new MenuItem(dies.getKey().getDescription());
-			exportItem.setOnAction(ae -> {
-				importFileChooser.setSelectedExtensionFilter(dies.getKey());
-				exportDeck();
-			});
-
-			this.exportDeckMenu.getItems().add(exportItem);
-		}
-
-		this.reexportMenuItem.setDisable(true);
 	}
 
 	private final ListChangeListener<? super DeckList.Variant> deckVariantsChangedListener = e -> {
@@ -264,18 +223,12 @@ public class MainWindow extends Application {
 		setDeck(newDeck);
 
 		currentDeckFile = null;
-		reexportFile = null;
-		reexportSerdes = null;
-		reexportMenuItem.setDisable(true);
 	}
 
 	@FXML
 	protected void newDeck() {
 		newDeck(context.preferences.defaultFormat);
 		currentDeckFile = null;
-
-		reexportSerdes = null;
-		reexportFile = null;
 	}
 
 	@FXML
@@ -289,9 +242,6 @@ public class MainWindow extends Application {
 		try {
 			setDeck(primarySerdes.importDeck(from));
 			currentDeckFile = from;
-
-			reexportSerdes = null;
-			reexportFile = null;
 		} catch (IOException ioe) {
 			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
 			alert.setHeaderText("An error occurred while opening:");
@@ -347,79 +297,6 @@ public class MainWindow extends Application {
 		alert.initOwner(this.stage);
 
 		return alert.showAndWait().orElse(null) == ButtonType.YES;
-	}
-
-	protected void importDeck() {
-		File f = this.importFileChooser.showOpenDialog(this.stage);
-		DeckImportExport die = importExports.get(this.importFileChooser.getSelectedExtensionFilter());
-
-		if (f == null) {
-			return;
-		}
-
-		reexportFile = f;
-		reexportSerdes = die;
-		reexportMenuItem.setDisable(false);
-
-		importDeck(f, die);
-	}
-
-	protected void importDeck(File from, DeckImportExport serdes) {
-		if (!serdes.unsupportedFeatures().isEmpty()) {
-			if (!warnAboutSerdes(serdes)) {
-				return;
-			}
-		}
-
-		try {
-			setDeck(serdes.importDeck(from));
-		} catch (IOException ioe) {
-			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
-			alert.setHeaderText("An error occurred while importing:");
-			alert.initOwner(this.stage);
-			alert.showAndWait();
-		}
-	}
-
-	protected void exportDeck() {
-		File f = this.importFileChooser.showSaveDialog(this.stage);
-		DeckImportExport die = importExports.get(this.importFileChooser.getSelectedExtensionFilter());
-
-		if (f == null) {
-			return;
-		}
-
-		reexportFile = f;
-		reexportSerdes = die;
-		reexportMenuItem.setDisable(false);
-
-		exportDeck(f, die);
-	}
-
-	protected void exportDeck(File to, DeckImportExport serdes) {
-		if (!serdes.unsupportedFeatures().isEmpty()) {
-			if (!warnAboutSerdes(serdes)) {
-				return;
-			}
-		}
-
-		try {
-			serdes.exportDeck(context.deck, to);
-		} catch (IOException ioe) {
-			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
-			alert.setHeaderText("An error occurred while exporting:");
-			alert.initOwner(this.stage);
-			alert.showAndWait();
-		}
-	}
-
-	@FXML
-	protected void reexportDeck() {
-		if (reexportSerdes == null || reexportFile == null) {
-			return;
-		}
-
-		exportDeck(reexportFile, reexportSerdes);
 	}
 
 	@FXML
