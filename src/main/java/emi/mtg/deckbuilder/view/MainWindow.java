@@ -8,6 +8,7 @@ import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.Updater;
+import emi.mtg.deckbuilder.controller.serdes.Features;
 import emi.mtg.deckbuilder.controller.serdes.full.Json;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -339,7 +340,7 @@ public class MainWindow extends Application {
 
 		builder.append("The file format you selected doesn't support the following features:\n");
 
-		for (DeckImportExport.Features feature : die.unsupportedFeatures()) {
+		for (Features feature : die.unsupportedFeatures()) {
 			builder.append(" \u2022 ").append(feature.toString()).append('\n');
 		}
 

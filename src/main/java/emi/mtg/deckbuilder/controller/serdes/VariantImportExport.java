@@ -11,10 +11,10 @@ import java.util.Set;
 @Service(Context.class)
 @Service.Property.String(name="name")
 @Service.Property.String(name="extension")
-public interface DeckImportExport {
-	DeckList importDeck(File from) throws IOException;
+public interface VariantImportExport {
+	DeckList.Variant importVariant(DeckList decklist, File from) throws IOException;
 
-	void exportDeck(DeckList deck, File to) throws IOException;
+	void exportVariant(DeckList deck, DeckList.Variant variant, File to) throws IOException;
 
 	Set<Features> unsupportedFeatures();
 }

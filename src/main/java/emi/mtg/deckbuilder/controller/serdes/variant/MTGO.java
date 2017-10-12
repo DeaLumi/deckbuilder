@@ -5,6 +5,7 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
+import emi.mtg.deckbuilder.controller.serdes.Features;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import org.w3c.dom.Document;
