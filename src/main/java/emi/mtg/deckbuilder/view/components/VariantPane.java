@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.components;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.view.MainWindow;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
@@ -14,7 +15,7 @@ public class VariantPane extends Tab {
 	public final DeckList.Variant variant;
 	public final EnumMap<Zone, CardPane> deckPanes;
 
-	public VariantPane(Context context, DeckList.Variant variant) {
+	public VariantPane(MainWindow window, Context context, DeckList.Variant variant) {
 		this.variant = variant;
 
 		setText("");
@@ -25,6 +26,20 @@ public class VariantPane extends Tab {
 		TextField nameInput = new TextField();
 
 		setGraphic(label);
+
+		ContextMenu labelMenu = new ContextMenu();
+
+		MenuItem infoMenuItem = new MenuItem("Info...");
+		infoMenuItem.setOnAction(ae -> window.showVariantInfo(variant));
+
+		MenuItem duplicateMenuItem = new MenuItem("Duplicate");
+		duplicateMenuItem.setOnAction(ae -> window.duplicateVariant(variant));
+
+		MenuItem exportMenuItem = new MenuItem("Export...");
+		exportMenuItem.setOnAction(ae -> window.exportVariant(variant));
+
+		labelMenu.getItems().setAll(infoMenuItem, duplicateMenuItem, new SeparatorMenuItem(), exportMenuItem);
+		label.setContextMenu(labelMenu);
 
 		label.setOnMouseClicked(me -> {
 			if (me.getButton() == MouseButton.PRIMARY && me.getClickCount() == 2) {

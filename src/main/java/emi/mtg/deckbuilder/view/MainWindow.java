@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view;
 
 import com.sun.javafx.collections.ObservableListWrapper;
+import emi.lib.Service;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
@@ -75,6 +76,8 @@ public class MainWindow extends Application {
 	private DeckImportExport primarySerdes;
 	private File currentDeckFile;
 
+	private Map<FileChooser.ExtensionFilter, VariantImportExport> variantSerdes;
+	private FileChooser variantFileChooser;
 
 	public MainWindow() {
 		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
@@ -184,6 +187,15 @@ public class MainWindow extends Application {
 			item.setOnAction(ae -> newDeck(format));
 			this.newDeckMenu.getItems().add(item);
 		}
+
+		this.variantSerdes = Service.Loader.load(VariantImportExport.class).stream()
+				.collect(Collectors.toMap(
+						vies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", vies.string("name"), vies.string("extension")), String.format("*.%s", vies.string("extension"))),
+						vies -> vies.uncheckedInstance(context)
+				));
+
+		this.variantFileChooser = new FileChooser();
+		this.variantFileChooser.getExtensionFilters().setAll(this.variantSerdes.keySet());
 	}
 
 	private final ListChangeListener<? super DeckList.Variant> deckVariantsChangedListener = e -> {
@@ -194,7 +206,7 @@ public class MainWindow extends Application {
 
 			if (e.wasAdded()) {
 				deckVariantTabs.getTabs().addAll(e.getAddedSubList().stream()
-						.map(v -> new VariantPane(context, v))
+						.map(v -> new VariantPane(this, context, v))
 						.toArray(VariantPane[]::new));
 			}
 
@@ -214,7 +226,7 @@ public class MainWindow extends Application {
 
 		deckVariantTabs.getTabs().clear();
 		for (DeckList.Variant variant : deck.variants()) {
-			deckVariantTabs.getTabs().add(new VariantPane(context, variant));
+			deckVariantTabs.getTabs().add(new VariantPane(this, context, variant));
 		}
 	}
 
@@ -282,12 +294,12 @@ public class MainWindow extends Application {
 		}
 	}
 
-	private boolean warnAboutSerdes(DeckImportExport die) {
+	private boolean warnAboutSerdes(Set<Features> unsupportedFeatures) {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append("The file format you selected doesn't support the following features:\n");
 
-		for (Features feature : die.unsupportedFeatures()) {
+		for (Features feature : unsupportedFeatures) {
 			builder.append(" \u2022 ").append(feature.toString()).append('\n');
 		}
 
@@ -523,17 +535,61 @@ public class MainWindow extends Application {
 	}
 
 	@FXML
-	protected void duplicateActiveVariant() {
+	protected void importVariant() {
+		File f = variantFileChooser.showOpenDialog(stage);
+
+		if (f == null) {
+			return;
+		}
+
+		VariantImportExport importer = variantSerdes.get(variantFileChooser.getSelectedExtensionFilter());
+
+		if (!importer.unsupportedFeatures().isEmpty()) {
+			if (!warnAboutSerdes(importer.unsupportedFeatures())) {
+				return;
+			}
+		}
+
+		try {
+			importer.importVariant(context.deck, f);
+		} catch (IOException ioe) {
+			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
+			alert.setHeaderText("An error occurred while importing:");
+			alert.initOwner(stage);
+			alert.showAndWait();
+		}
+	}
+
+	public void duplicateVariant(DeckList.Variant variant) {
+		variant.deck().new Variant(variant.name(), variant.description(), variant.cards());
+	}
+
+	public void showVariantInfo(DeckList.Variant variant) {
 		throw new UnsupportedOperationException();
 	}
 
-	@FXML
-	protected void editActiveVariantInfo() {
-		throw new UnsupportedOperationException();
-	}
+	public void exportVariant(DeckList.Variant variant) {
+		File f = variantFileChooser.showSaveDialog(stage);
 
-	@FXML
-	protected void deleteActiveVariant() {
-		throw new UnsupportedOperationException();
+		if (f == null) {
+			return;
+		}
+
+		VariantImportExport exporter = variantSerdes.get(variantFileChooser.getSelectedExtensionFilter());
+
+		if (!exporter.unsupportedFeatures().isEmpty()) {
+			if (!warnAboutSerdes(exporter.unsupportedFeatures())) {
+				return;
+			}
+		}
+
+		try {
+			exporter.exportVariant(variant, f);
+		} catch (IOException ioe) {
+			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
+			alert.setHeaderText("An error occurred while exporting:");
+			alert.initOwner(stage);
+			alert.showAndWait();
+		}
 	}
 }
