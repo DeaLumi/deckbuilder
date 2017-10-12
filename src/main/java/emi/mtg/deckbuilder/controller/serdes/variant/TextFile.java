@@ -68,9 +68,9 @@ public class TextFile implements VariantImportExport {
 			}
 
 			// TODO: Just take the first printing for now...
-			CardInstance ci = new CardInstance(card.printings().iterator().next());
+			Card.Printing printing = card.printings().iterator().next();
 			for (int i = 0; i < count; ++i) {
-				cards.get(zone).add(ci);
+				cards.computeIfAbsent(zone, z -> new ArrayList<>()).add(new CardInstance(printing));
 			}
 		}
 
