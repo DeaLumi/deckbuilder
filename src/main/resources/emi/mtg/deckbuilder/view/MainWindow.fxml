@@ -51,7 +51,26 @@
         <SplitPane orientation="VERTICAL" fx:id="collectionSplitter">
             <AnchorPane>
                 <TabPane fx:id="deckVariantTabs" AnchorPane.rightAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0"/>
-                <Button AnchorPane.rightAnchor="2.0" AnchorPane.topAnchor="2.0" text="+" onAction="#newDeckVariant"/>
+                <MenuBar AnchorPane.topAnchor="2.0" AnchorPane.rightAnchor="2.0" style="/*-fx-background-color: #00000000;*/">
+                    <Menu text="Variant">
+                        <MenuItem text="New..." onAction="#newVariant"/>
+                        <SeparatorMenuItem/>
+                        <MenuItem text="Info..." onAction="#editActiveVariantInfo"/>
+                        <MenuItem text="Duplicate" onAction="#duplicateActiveVariant"/>
+                        <MenuItem text="Delete" onAction="#deleteActiveVariant"/>
+                        <SeparatorMenuItem/>
+                        <Menu text="Import..." fx:id="importVariantMenu">
+                            <MenuItem text="JSON"/>
+                            <MenuItem text="MTGO"/>
+                            <MenuItem text="Plain Text"/>
+                        </Menu>
+                        <Menu text="Export..." fx:id="exportVariantMenu">
+                            <MenuItem text="JSON"/>
+                            <MenuItem text="MTGO"/>
+                            <MenuItem text="Plain Text"/>
+                        </Menu>
+                    </Menu>
+                </MenuBar>
             </AnchorPane>
         </SplitPane>
     </center>

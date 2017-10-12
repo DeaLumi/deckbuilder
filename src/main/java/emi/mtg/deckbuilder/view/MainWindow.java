@@ -639,7 +639,7 @@ public class MainWindow extends Application {
 	}
 
 	@FXML
-	protected void newDeckVariant() {
+	protected void newVariant() {
 		TextInputDialog nameDialog = new TextInputDialog();
 		nameDialog.setTitle("New Deck Variant");
 		nameDialog.setHeaderText("New Deck Variant");
@@ -650,5 +650,20 @@ public class MainWindow extends Application {
 			var.nameProperty().setValue(s);
 			context.deck.variants().add(var);
 		});
+	}
+
+	@FXML
+	protected void duplicateActiveVariant() {
+		throw new UnsupportedOperationException();
+	}
+
+	@FXML
+	protected void editActiveVariantInfo() {
+		throw new UnsupportedOperationException();
+	}
+
+	@FXML
+	protected void deleteActiveVariant() {
+		throw new UnsupportedOperationException();
 	}
 }
