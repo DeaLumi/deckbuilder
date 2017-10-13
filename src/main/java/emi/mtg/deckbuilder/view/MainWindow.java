@@ -384,7 +384,7 @@ public class MainWindow extends Application {
 				+ "\u2022 Change any view to Grouping -> Tags to group cards by their tags.\n"
 				+ "\u2022 While grouped by tags, drag cards to their tag groups to assign tags!\n"
 				+ "\u2022 You can even Control+Drag to assign multiple tags to a card!\n"
-				+ "\u2022 Search for cards by tag with the 'is' filter: \"is:wrath\"\n"
+				+ "\u2022 Search for cards by tag with the 'tag' filter: \"tag:wrath\"\n"
 				+ "\n"
 				+ "I never claimed to be good at UI design! :^)", ButtonType.OK);
 
