@@ -535,7 +535,10 @@ public class MainWindow extends Application {
 				if (context.data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
 					Platform.runLater(() -> {
 						progressDialog.close();
-						Alert alert = new Alert(Alert.AlertType.INFORMATION, "Please restart the program. (I'm working on obviating this step.)", ButtonType.OK);
+
+						collection.view().model(new ReadOnlyListWrapper<>(collectionModel(context.data)));
+
+						Alert alert = new Alert(Alert.AlertType.INFORMATION, "Live updates are a new feature; if anything acts hinky, please restart the program!", ButtonType.OK);
 						alert.setHeaderText("Update completed.");
 						alert.setTitle("Update Complete");
 						alert.initOwner(stage);
