@@ -40,6 +40,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
@@ -67,6 +68,12 @@ public class MainWindow extends Application {
 
 	@FXML
 	private TabPane deckVariantTabs;
+
+	@FXML
+	private Tab deckVariantTabNew;
+
+	@FXML
+	private Tab deckVariantTabImport;
 
 	private Context context;
 
@@ -174,6 +181,24 @@ public class MainWindow extends Application {
 		collection.showVersionsSeparately.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
+
+		deckVariantTabs.getSelectionModel().selectedItemProperty().addListener((obs, old, newTab) -> {
+			if ((newTab != deckVariantTabNew && newTab != deckVariantTabImport) || deckVariantTabs.getTabs().size() <= 2) {
+				return;
+			}
+
+			if (newTab == deckVariantTabNew) {
+				newVariant();
+			} else if (newTab == deckVariantTabImport) {
+				importVariant();
+			}
+
+			if (obs.getValue() == newTab) {
+				if (old != deckVariantTabNew && old != deckVariantTabImport) {
+					deckVariantTabs.getSelectionModel().select(old);
+				}
+			}
+		});
 	}
 
 	private void setupImportExport() {
@@ -201,13 +226,19 @@ public class MainWindow extends Application {
 	private final ListChangeListener<? super DeckList.Variant> deckVariantsChangedListener = e -> {
 		while (e.next()) {
 			if (e.wasRemoved()) {
-				deckVariantTabs.getTabs().removeIf(t -> e.getRemoved().contains(((VariantPane) t).variant));
+				deckVariantTabs.getTabs().removeIf(t -> t != deckVariantTabNew && t != deckVariantTabImport && e.getRemoved().contains(((VariantPane) t).variant));
 			}
 
 			if (e.wasAdded()) {
-				deckVariantTabs.getTabs().addAll(e.getAddedSubList().stream()
+				int lastIndex = deckVariantTabs.getTabs().indexOf(deckVariantTabNew);
+
+				List<VariantPane> newPanes = e.getAddedSubList().stream()
 						.map(v -> new VariantPane(this, context, v))
-						.toArray(VariantPane[]::new));
+						.collect(Collectors.toList());
+
+				deckVariantTabs.getTabs().addAll(lastIndex, newPanes);
+				System.err.println("Added " + newPanes.size() + " tabs; selecting " + (lastIndex + newPanes.size() - 1));
+				deckVariantTabs.getSelectionModel().select(lastIndex + newPanes.size() - 1);
 			}
 
 			if (e.wasPermutated()) {
@@ -224,10 +255,11 @@ public class MainWindow extends Application {
 		deck.variants().removeListener(deckVariantsChangedListener);
 		deck.variants().addListener(deckVariantsChangedListener);
 
-		deckVariantTabs.getTabs().clear();
-		for (DeckList.Variant variant : deck.variants()) {
-			deckVariantTabs.getTabs().add(new VariantPane(this, context, variant));
-		}
+		deckVariantTabs.getTabs().removeIf(t -> t != deckVariantTabNew && t != deckVariantTabImport);
+		deckVariantTabs.getTabs().addAll(0, deck.variants().stream()
+			.map(v -> new VariantPane(this, context, v))
+			.collect(Collectors.toList()));
+		deckVariantTabs.getSelectionModel().select(deckVariantTabs.getTabs().indexOf(deckVariantTabNew) - 1);
 	}
 
 	private void newDeck(Format format) {

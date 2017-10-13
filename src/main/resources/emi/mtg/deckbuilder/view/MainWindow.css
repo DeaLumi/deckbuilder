@@ -1,0 +1,16 @@
+
+.tab-pane > .tab-header-area > .headers-region > .functionalTab {
+    -fx-background-radius: 3 3 3 3;
+    -fx-padding: 0 8 0 8;
+}
+
+.tab-pane .tab Label.tab-label {
+    -fx-font-weight: bold;
+    -fx-font-size: 1.2em;
+}
+
+.tab-pane .tab.functionalTab Label.tab-label {
+    -fx-font-size: 0.8em;
+    -fx-font-weight: bold;
+    -fx-text-fill: #808080;
+}

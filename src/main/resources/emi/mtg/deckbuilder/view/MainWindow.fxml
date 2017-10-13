@@ -7,7 +7,11 @@
 <?import javafx.scene.layout.*?>
 
 <?import javafx.scene.input.KeyCodeCombination?>
+
 <BorderPane fx:id="root" xmlns:fx="http://javafx.com/fxml">
+    <stylesheets>
+        /emi/mtg/deckbuilder/view/MainWindow.css
+    </stylesheets>
     <top>
         <MenuBar>
             <menus>
@@ -45,15 +49,10 @@
     </top>
     <center>
         <SplitPane orientation="VERTICAL" fx:id="collectionSplitter">
-            <AnchorPane>
-                <TabPane fx:id="deckVariantTabs" AnchorPane.rightAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0"/>
-                <MenuBar AnchorPane.topAnchor="2.0" AnchorPane.rightAnchor="2.0" style="/*-fx-background-color: #00000000;*/">
-                    <Menu text="Variant">
-                        <MenuItem text="New..." onAction="#newVariant"/>
-                        <MenuItem text="Import..." onAction="#importVariant"/> <!-- Children are populated by controller. -->
-                    </Menu>
-                </MenuBar>
-            </AnchorPane>
+            <TabPane fx:id="deckVariantTabs" AnchorPane.rightAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0" styleClass="variantTabs">
+                <Tab text="New..." fx:id="deckVariantTabNew" closable="false" styleClass="functionalTab"/>
+                <Tab text="Import..." fx:id="deckVariantTabImport" closable="false" styleClass="functionalTab"/>
+            </TabPane>
         </SplitPane>
     </center>
 </BorderPane>
