@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<Dialog xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml">
+    <dialogPane>
+        <DialogPane>
+            <content>
+                <GridPane hgap="8.0" vgap="8.0">
+                    <Label text="Name:"
+                           GridPane.valignment="TOP"
+                           GridPane.halignment="RIGHT"
+                           GridPane.rowIndex="0"
+                           GridPane.columnIndex="0"/>
+                    <TextField fx:id="variantName" promptText="Variant name"
+                               GridPane.valignment="TOP"
+                               GridPane.halignment="LEFT"
+                               GridPane.rowIndex="0"
+                               GridPane.columnIndex="1"/>
+
+                    <Label text="Description:"
+                           GridPane.valignment="TOP"
+                           GridPane.halignment="RIGHT"
+                           GridPane.rowIndex="1"
+                           GridPane.columnIndex="0"/>
+                    <TextArea fx:id="variantDescription" promptText="Variant description"
+                              GridPane.valignment="TOP"
+                              GridPane.halignment="LEFT"
+                              GridPane.rowIndex="1"
+                              GridPane.columnIndex="1"/>
+                </GridPane>
+            </content>
+            <buttonTypes>
+                <ButtonType fx:constant="OK"/>
+                <ButtonType fx:constant="CANCEL"/>
+            </buttonTypes>
+        </DialogPane>
+    </dialogPane>
+</Dialog>

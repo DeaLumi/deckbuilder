@@ -597,7 +597,29 @@ public class MainWindow extends Application {
 	}
 
 	public void showVariantInfo(DeckList.Variant variant) {
-		throw new UnsupportedOperationException();
+		try {
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("dialogs/VariantInfoDialog.fxml"));
+			Dialog<Void> dlg = loader.load();
+
+			TextField name = (TextField) dlg.getDialogPane().lookup("#variantName");
+			name.setText(variant.name());
+
+			TextArea description = (TextArea) dlg.getDialogPane().lookup("#variantDescription");
+			description.setText(variant.description());
+
+			dlg.setResultConverter(bt -> {
+				if (bt == ButtonType.OK) {
+					variant.nameProperty().setValue(name.getText());
+					variant.descriptionProperty().setValue(description.getText());
+				}
+
+				return null;
+			});
+
+			dlg.showAndWait();
+		} catch (IOException ioe) {
+			throw new RuntimeException(ioe);
+		}
 	}
 
 	public void exportVariant(DeckList.Variant variant) {
