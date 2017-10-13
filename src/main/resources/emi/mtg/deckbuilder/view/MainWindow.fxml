@@ -41,6 +41,7 @@
                     </MenuItem>
                 </Menu>
                 <Menu text="Help">
+                    <MenuItem text="Tips &amp; Tricks" onAction="#showTipsAndTricks"/>
                     <MenuItem text="Filter Syntax" onAction="#showFilterSyntax"/>
                     <MenuItem text="About" onAction="#showAboutDialog"/>
                 </Menu>

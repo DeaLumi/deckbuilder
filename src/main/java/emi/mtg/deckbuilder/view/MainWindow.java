@@ -363,6 +363,39 @@ public class MainWindow extends Application {
 	}
 
 	@FXML
+	protected void showTipsAndTricks() {
+		Alert alert = new Alert(Alert.AlertType.INFORMATION,
+				"The UI of this program is really dense! Here are some bits on some subtle\n"
+				+ "but powerful features!\n"
+				+ "\n"
+				+ "Deck variants:\n"
+				+ "\u2022 Tabs on the bottom show different versions of your deck.\n"
+				+ "\u2022 All versions are saved to one file when you use Deck -> Save/Save As.\n"
+				+ "\u2022 To rename a variant, double-click the tab, or right click -> Info...\n"
+				+ "\u2022 You can export a variant to a single decklist as plain text or MTGO v4 .dek\n"
+				+ "\n"
+				+ "Card versions:\n"
+				+ "\u2022 Alt+Click on cards to show all printings.\n"
+				+ "\u2022 Double-click a printing to change the version of the card you clicked on.\n"
+				+ "\u2022 Application -> Save Preferences to remember chosen versions in the Collection.\n"
+				+ "\n"
+				+ "Tags:\n"
+				+ "\u2022 Application -> Manage Tags to define categories for cards.\n"
+				+ "\u2022 Change any view to Grouping -> Tags to group cards by their tags.\n"
+				+ "\u2022 While grouped by tags, drag cards to their tag groups to assign tags!\n"
+				+ "\u2022 You can even Control+Drag to assign multiple tags to a card!\n"
+				+ "\u2022 Search for cards by tag with the 'is' filter: \"is:wrath\"\n"
+				+ "\n"
+				+ "I never claimed to be good at UI design! :^)", ButtonType.OK);
+
+		alert.setTitle("Tips and Tricks");
+		alert.setHeaderText("Tips and Tricks");
+		alert.getDialogPane().setPrefWidth(550);
+		alert.initOwner(stage);
+		alert.showAndWait();
+	}
+
+	@FXML
 	protected void showFilterSyntax() {
 		Alert alert = new Alert(Alert.AlertType.INFORMATION,
 				"General:\n"
