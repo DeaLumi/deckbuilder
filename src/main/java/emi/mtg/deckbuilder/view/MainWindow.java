@@ -465,7 +465,7 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void updateDeckbuilder() throws IOException {
-		TextInputDialog uriInput = new TextInputDialog(context.preferences.updateUri.toString());
+		TextInputDialog uriInput = new TextInputDialog(context.preferences.updateUri == null ? "" : context.preferences.updateUri.toString());
 		uriInput.setTitle("Update Source");
 		uriInput.setHeaderText("Update Server URL");
 		uriInput.setContentText("URL:");
