@@ -469,7 +469,6 @@ public class MainWindow extends Application {
 		uriInput.setTitle("Update Source");
 		uriInput.setHeaderText("Update Server URL");
 		uriInput.setContentText("URL:");
-		uriInput.setWidth(256);
 		uriInput.getDialogPane().setExpanded(true);
 
 		Updater updater = new Updater(context);
@@ -477,6 +476,7 @@ public class MainWindow extends Application {
 		ProgressBar progress = new ProgressBar(0.0);
 		progress.progressProperty().bind(updater.progress);
 		uriInput.getDialogPane().setExpandableContent(progress);
+		uriInput.getDialogPane().setPrefWidth(512.0);
 
 		Button btnOk = (Button) uriInput.getDialogPane().lookupButton(ButtonType.OK);
 		btnOk.addEventFilter(ActionEvent.ACTION, ae -> {
@@ -502,6 +502,7 @@ public class MainWindow extends Application {
 			ae.consume();
 		});
 
+		uriInput.initOwner(stage);
 		uriInput.showAndWait();
 	}
 
@@ -521,13 +522,13 @@ public class MainWindow extends Application {
 	private void doGraphicalDataUpdate() {
 		Alert progressDialog = new Alert(Alert.AlertType.NONE, "Updating...", ButtonType.CLOSE);
 		progressDialog.setHeaderText("Updating...");
-		progressDialog.setWidth(256);
-		progressDialog.initOwner(stage);
 		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
 
 		ProgressBar pbar = new ProgressBar(0.0);
 		progressDialog.getDialogPane().setContent(pbar);
+		progressDialog.getDialogPane().setPrefWidth(256.0);
 
+		progressDialog.initOwner(stage);
 		progressDialog.show();
 
 		ForkJoinPool.commonPool().submit(() -> {
