@@ -492,7 +492,7 @@ public class MainWindow extends Application {
 				+ "\n"
 				+ "Upcoming features:\n"
 				+ "\u2022 Logic \u2014 And, or, not, and parenthetical grouping.\n"
-				+ "\u2022 Keys \u2014 Set, mana, power, toughness, loyalty, etc.",
+				+ "\u2022 Keys \u2014 Mana, power, toughness, loyalty, etc.",
 				ButtonType.OK
 		);
 
