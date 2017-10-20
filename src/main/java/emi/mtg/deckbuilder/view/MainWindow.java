@@ -296,33 +296,43 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void saveDeck() {
+		doSaveDeck();
+	}
+
+	protected boolean doSaveDeck() {
 		if (currentDeckFile == null) {
-			saveDeckAs();
+			return doSaveDeckAs();
 		} else {
-			saveDeck(currentDeckFile);
+			return saveDeck(currentDeckFile);
 		}
 	}
 
 	@FXML
 	protected void saveDeckAs() {
+		doSaveDeckAs();
+	}
+
+	protected boolean doSaveDeckAs() {
 		File to = primaryFileChooser.showSaveDialog(this.stage);
 
 		if (to == null) {
-			return;
+			return false;
 		}
 
-		saveDeck(to);
+		return saveDeck(to);
 	}
 
-	private void saveDeck(File to) {
+	private boolean saveDeck(File to) {
 		try {
 			primarySerdes.exportDeck(context.deck, to);
 			currentDeckFile = to;
+			return true;
 		} catch (IOException ioe) {
 			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
 			alert.setHeaderText("An error occurred while saving:");
 			alert.initOwner(this.stage);
 			alert.showAndWait();
+			return false;
 		}
 	}
 
