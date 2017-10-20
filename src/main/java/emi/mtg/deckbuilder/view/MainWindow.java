@@ -76,6 +76,7 @@ public class MainWindow extends Application {
 	private Tab deckVariantTabImport;
 
 	private Context context;
+	private boolean deckModified;
 
 	private CardPane collection;
 
@@ -143,6 +144,11 @@ public class MainWindow extends Application {
 		this.stage = stage;
 
 		this.stage.setOnCloseRequest(we -> {
+			if (!offerSaveIfModified()) {
+				we.consume();
+				return;
+			}
+
 			try {
 				context.savePreferences();
 			} catch (IOException e) {
@@ -223,32 +229,50 @@ public class MainWindow extends Application {
 		this.variantFileChooser.getExtensionFilters().setAll(this.variantSerdes.keySet());
 	}
 
+	private final ListChangeListener<Object> deckListChangedListener = e -> deckModified = true;
+
 	private final ListChangeListener<? super DeckList.Variant> deckVariantsChangedListener = e -> {
 		while (e.next()) {
 			if (e.wasRemoved()) {
+				e.getRemoved().stream()
+						.flatMap(v -> v.cards().values().stream())
+						.forEach(l -> l.removeListener(deckListChangedListener));
+
 				deckVariantTabs.getTabs().removeIf(t -> t != deckVariantTabNew && t != deckVariantTabImport && e.getRemoved().contains(((VariantPane) t).variant));
+
+				deckModified = true;
 			}
 
 			if (e.wasAdded()) {
 				int lastIndex = deckVariantTabs.getTabs().indexOf(deckVariantTabNew);
+
+				e.getAddedSubList().stream()
+						.flatMap(v -> v.cards().values().stream())
+						.forEach(l -> l.addListener(deckListChangedListener));
 
 				List<VariantPane> newPanes = e.getAddedSubList().stream()
 						.map(v -> new VariantPane(this, context, v))
 						.collect(Collectors.toList());
 
 				deckVariantTabs.getTabs().addAll(lastIndex, newPanes);
-				System.err.println("Added " + newPanes.size() + " tabs; selecting " + (lastIndex + newPanes.size() - 1));
 				deckVariantTabs.getSelectionModel().select(lastIndex + newPanes.size() - 1);
+
+				deckModified = true;
 			}
 
 			if (e.wasPermutated()) {
 				throw new UnsupportedOperationException("Please don't permute variants yet...");
+			}
+
+			if (e.wasReplaced()) {
+				throw new UnsupportedOperationException("Please don't replace variants yet...");
 			}
 		}
 	};
 
 	private void setDeck(DeckList deck) {
 		context.deck = deck;
+		deckModified = false;
 
 		collection.updateFilter();
 
@@ -260,6 +284,10 @@ public class MainWindow extends Application {
 			.map(v -> new VariantPane(this, context, v))
 			.collect(Collectors.toList()));
 		deckVariantTabs.getSelectionModel().select(deckVariantTabs.getTabs().indexOf(deckVariantTabNew) - 1);
+
+		deck.variants().stream()
+				.flatMap(v -> v.cards().values().stream())
+				.forEach(l -> l.addListener(deckListChangedListener));
 	}
 
 	private void newDeck(Format format) {
@@ -271,12 +299,20 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void newDeck() {
+		if (!offerSaveIfModified()) {
+			return;
+		}
+
 		newDeck(context.preferences.defaultFormat);
 		currentDeckFile = null;
 	}
 
 	@FXML
 	protected void openDeck() throws IOException {
+		if (!offerSaveIfModified()) {
+			return;
+		}
+
 		File from = primaryFileChooser.showOpenDialog(this.stage);
 
 		if (from == null) {
@@ -292,6 +328,26 @@ public class MainWindow extends Application {
 			alert.initOwner(this.stage);
 			alert.showAndWait();
 		}
+	}
+
+	protected boolean offerSaveIfModified() {
+		if (deckModified) {
+			Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Deck is modified. Save?", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
+			alert.setHeaderText("Deck Modified");
+			alert.initOwner(stage);
+
+			ButtonType type = alert.showAndWait().orElse(ButtonType.CANCEL);
+
+			if (type == ButtonType.CANCEL) {
+				return false;
+			}
+
+			if (type == ButtonType.YES) {
+				return doSaveDeck();
+			}
+		}
+
+		return true;
 	}
 
 	@FXML
@@ -325,6 +381,7 @@ public class MainWindow extends Application {
 	private boolean saveDeck(File to) {
 		try {
 			primarySerdes.exportDeck(context.deck, to);
+			deckModified = false;
 			currentDeckFile = to;
 			return true;
 		} catch (IOException ioe) {
