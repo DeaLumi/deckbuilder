@@ -10,6 +10,7 @@ import emi.lib.mtg.scryfall.ScryfallDataSource;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.EmptyDataSource;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.Images;
 
 import java.io.*;
@@ -25,6 +26,7 @@ public class Context {
 			.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
 
 	private static final Path PREFERENCES = Paths.get("preferences.json");
+	private static final Path STATE = Paths.get("state.json");
 	private static final Path TAGS = Paths.get("tags.json");
 
 	public final Gson gson;
@@ -36,6 +38,7 @@ public class Context {
 	public DeckList deck;
 
 	public final Preferences preferences;
+	public final State state;
 
 	public Context() throws IOException {
 		DataSource data;
@@ -63,6 +66,14 @@ public class Context {
 			this.preferences = new Preferences();
 		}
 
+		if (Files.exists(STATE)) {
+			Reader reader = Files.newBufferedReader(STATE);
+			this.state = gson.fromJson(reader, State.class);
+			reader.close();
+		} else {
+			this.state = new State();
+		}
+
 		this.images = new Images();
 		this.tags = new Tags(this);
 		this.deck = new DeckList("", "", preferences.defaultFormat, "", Collections.emptyMap());
@@ -86,5 +97,12 @@ public class Context {
 
 	public void saveTags() throws IOException {
 		this.tags.save(TAGS);
+	}
+
+	public void saveState() throws IOException {
+		OutputStream fos = Files.newOutputStream(STATE);
+		OutputStreamWriter writer = new OutputStreamWriter(fos);
+		gson.toJson(this.state, writer);
+		writer.close();
 	}
 }

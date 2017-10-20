@@ -151,6 +151,7 @@ public class MainWindow extends Application {
 
 			try {
 				context.savePreferences();
+				context.saveState();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
