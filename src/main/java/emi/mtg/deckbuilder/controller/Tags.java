@@ -8,6 +8,8 @@ import com.google.gson.stream.JsonWriter;
 import emi.lib.mtg.Card;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -53,9 +55,8 @@ public class Tags {
 		}
 	}
 
-	public void load(File from) throws IOException {
-		FileInputStream fis = new FileInputStream(from);
-		JsonReader reader = gson.newJsonReader(new InputStreamReader(fis));
+	public void load(Path from) throws IOException {
+		JsonReader reader = gson.newJsonReader(Files.newBufferedReader(from));
 
 		this.cardsMap.clear();
 
@@ -71,7 +72,7 @@ public class Tags {
 				Card card = context.data.card(cardName);
 
 				if (card == null) {
-					System.err.println("Warning: Tags file " + from.getAbsolutePath() + " refers to unknown card " + cardName + " -- are we in the right universe?");
+					System.err.println("Warning: Tags file " + from.toString() + " refers to unknown card " + cardName + " -- are we in the right universe?");
 					System.err.flush();
 					continue;
 				}
@@ -87,9 +88,8 @@ public class Tags {
 		reader.close();
 	}
 
-	public void save(File to) throws IOException {
-		FileOutputStream fis = new FileOutputStream(to);
-		JsonWriter writer = gson.newJsonWriter(new OutputStreamWriter(fis));
+	public void save(Path to) throws IOException {
+		JsonWriter writer = gson.newJsonWriter(Files.newBufferedWriter(to));
 
 		writer.beginObject();
 		for (Map.Entry<String, Set<Card>> tagsEntry : cardsMap.entrySet()) {

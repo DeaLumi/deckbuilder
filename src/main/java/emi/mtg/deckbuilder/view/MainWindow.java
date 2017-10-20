@@ -523,7 +523,7 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showTagManagementDialog() {
 		try {
-			TagManagementDialog dlg = new TagManagementDialog(context.tags);
+			TagManagementDialog dlg = new TagManagementDialog(context);
 			dlg.initOwner(this.stage);
 			dlg.showAndWait();
 		} catch (IOException ioe) {
@@ -534,7 +534,7 @@ public class MainWindow extends Application {
 	@FXML
 	protected void saveTags() {
 		try {
-			context.tags.save(new File("tags.json")); // TODO: Move this to controller?
+			context.saveTags(); // TODO: Move this to controller?
 		} catch (IOException ioe) {
 			ioe.printStackTrace(); // TODO: Handle gracefully
 		}

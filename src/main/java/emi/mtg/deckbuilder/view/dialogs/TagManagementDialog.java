@@ -1,6 +1,6 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
-import emi.mtg.deckbuilder.controller.Tags;
+import emi.mtg.deckbuilder.controller.Context;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -9,12 +9,11 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
 public class TagManagementDialog extends Dialog<Void> {
-	private final static File TAGS_FILE = new File("tags.json");
+	// TODO: Rework this dialog to not change live data...
 
 	@FXML
 	private ListView<String> knownTagsList;
@@ -27,22 +26,22 @@ public class TagManagementDialog extends Dialog<Void> {
 
 	@FXML
 	protected void removeSelected() {
-		tags.tags().removeAll(knownTagsList.getSelectionModel().getSelectedItems());
+		context.tags.tags().removeAll(knownTagsList.getSelectionModel().getSelectedItems());
 		knownTagsList.getItems().removeAll(knownTagsList.getSelectionModel().getSelectedItems());
 	}
 
 	@FXML
 	protected void addTag() {
 		if (!knownTagsList.getItems().contains(newTagText.getText())) {
-			tags.add(newTagText.getText());
+			context.tags.add(newTagText.getText());
 			knownTagsList.getItems().add(newTagText.getText());
 			newTagText.setText("");
 		}
 	}
 
-	private final Tags tags;
+	private final Context context;
 
-	public TagManagementDialog(Tags tags) throws IOException {
+	public TagManagementDialog(Context context) throws IOException {
 		super();
 
 		setTitle("Tags");
@@ -52,9 +51,9 @@ public class TagManagementDialog extends Dialog<Void> {
 		loader.setRoot(getDialogPane());
 		loader.load();
 
-		this.tags = tags;
+		this.context = context;
 
-		knownTagsList.setItems(FXCollections.observableArrayList(new ArrayList<>(tags.tags())));
+		knownTagsList.setItems(FXCollections.observableArrayList(new ArrayList<>(context.tags.tags())));
 		knownTagsList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
 		knownTagsList.setCellFactory(lv -> new ListCell<String>() {
@@ -72,7 +71,7 @@ public class TagManagementDialog extends Dialog<Void> {
 
 					button.setOnAction(ae -> {
 						knownTagsList.getItems().remove(item);
-						tags.tags().remove(item);
+						context.tags.tags().remove(item);
 					});
 
 					AnchorPane.setLeftAnchor(label, 0.0);
@@ -94,9 +93,9 @@ public class TagManagementDialog extends Dialog<Void> {
 		setResultConverter(bt -> {
 			try {
 				if (bt == ButtonType.APPLY) {
-					this.tags.save(TAGS_FILE);
+					context.saveTags();
 				} else if (bt == ButtonType.CANCEL) {
-					this.tags.load(TAGS_FILE);
+					context.loadTags();
 				}
 			} catch (IOException ioe) {
 				ioe.printStackTrace();

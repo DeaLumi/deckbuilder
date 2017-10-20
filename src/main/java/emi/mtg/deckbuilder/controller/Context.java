@@ -13,7 +13,9 @@ import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.Images;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,8 +24,8 @@ public class Context {
 	public static final Map<String, Format> FORMATS = Service.Loader.load(Format.class).stream()
 			.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
 
-	private static final File PREFERENCES = new File("preferences.json");
-	private static final File TAGS = new File("tags.json");
+	private static final Path PREFERENCES = Paths.get("preferences.json");
+	private static final Path TAGS = Paths.get("tags.json");
 
 	public final Gson gson;
 
@@ -53,9 +55,8 @@ public class Context {
 				.registerTypeAdapterFactory(TypeAdapters.createObservableListTypeAdapterFactory())
 				.create();
 
-		if (PREFERENCES.exists()) {
-			FileInputStream fis = new FileInputStream(PREFERENCES);
-			InputStreamReader reader = new InputStreamReader(fis);
+		if (Files.exists(PREFERENCES)) {
+			Reader reader = Files.newBufferedReader(PREFERENCES);
 			this.preferences = gson.fromJson(reader, Preferences.class);
 			reader.close();
 		} else {
@@ -66,6 +67,16 @@ public class Context {
 		this.tags = new Tags(this);
 		this.deck = new DeckList("", "", preferences.defaultFormat, "", Collections.emptyMap());
 
+		loadTags();
+	}
+
+	public void savePreferences() throws IOException {
+		Writer writer = Files.newBufferedWriter(PREFERENCES);
+		gson.toJson(this.preferences, writer);
+		writer.close();
+	}
+
+	public void loadTags() throws IOException {
 		try {
 			this.tags.load(TAGS);
 		} catch (FileNotFoundException fnfe) {
@@ -73,10 +84,7 @@ public class Context {
 		}
 	}
 
-	public void savePreferences() throws IOException {
-		FileOutputStream fos = new FileOutputStream(new File("preferences.json"));
-		OutputStreamWriter writer = new OutputStreamWriter(fos);
-		gson.toJson(this.preferences, writer);
-		writer.close();
+	public void saveTags() throws IOException {
+		this.tags.save(TAGS);
 	}
 }
