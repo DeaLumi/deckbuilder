@@ -575,7 +575,6 @@ public class MainWindow extends Application {
 		Updater updater = new Updater(context);
 
 		ProgressBar progress = new ProgressBar(0.0);
-		progress.progressProperty().bind(updater.progress);
 		uriInput.getDialogPane().setExpandableContent(progress);
 		uriInput.getDialogPane().setPrefWidth(512.0);
 
@@ -590,7 +589,7 @@ public class MainWindow extends Application {
 
 				ForkJoinPool.commonPool().submit(() -> {
 					try {
-						updater.update(uri);
+						updater.update(uri, d -> Platform.runLater(() -> progress.setProgress(d)));
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					}

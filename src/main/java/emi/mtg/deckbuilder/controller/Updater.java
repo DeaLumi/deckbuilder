@@ -1,8 +1,6 @@
 package emi.mtg.deckbuilder.controller;
 
 import emi.mtg.deckbuilder.view.MainWindow;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +12,7 @@ import java.net.URLConnection;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.function.DoubleConsumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -62,15 +61,14 @@ public class Updater {
 		this.context = context;
 	}
 
-	public final DoubleProperty progress = new SimpleDoubleProperty(0.0);
-
-	private class Downloader extends InputStream {
+	private static class Downloader extends InputStream {
 
 		private long read;
 		private final long length;
 		private final InputStream source;
+		private final DoubleConsumer progress;
 
-		public Downloader(URL url) throws IOException {
+		private Downloader(URL url, DoubleConsumer progress) throws IOException {
 			super();
 
 			URLConnection conn = url.openConnection();
@@ -78,8 +76,9 @@ public class Updater {
 			this.read = 0;
 			this.length = conn.getContentLengthLong();
 			this.source = conn.getInputStream();
+			this.progress = progress;
 
-			Updater.this.progress.set(0.0);
+			progress.accept(0.0);
 		}
 
 		@Override
@@ -118,6 +117,7 @@ public class Updater {
 		@Override
 		public void close() throws IOException {
 			source.close();
+			progress.accept(1.0);
 		}
 
 		@Override
@@ -137,14 +137,14 @@ public class Updater {
 
 		private void incrementProgress(long delta) {
 			read += delta;
-			Updater.this.progress.set((double) read / (double) length);
+			progress.accept((double) read / (double) length);
 		}
 	}
 
-	public void update(URI remote) throws IOException {
+	public void update(URI remote, DoubleConsumer progress) throws IOException {
 		Path updateDir = Files.createDirectories(Paths.get(".update"));
 
-		try (InputStream input = new Downloader(remote.toURL())) {
+		try (InputStream input = new Downloader(remote.toURL(), progress)) {
 			ZipInputStream zin = new ZipInputStream(input);
 
 			ZipEntry entry = zin.getNextEntry();
