@@ -579,6 +579,7 @@ public class MainWindow extends Application {
 		uriInput.getDialogPane().setPrefWidth(512.0);
 
 		Button btnOk = (Button) uriInput.getDialogPane().lookupButton(ButtonType.OK);
+		Button btnCancel = (Button) uriInput.getDialogPane().lookupButton(ButtonType.CANCEL);
 		btnOk.addEventFilter(ActionEvent.ACTION, ae -> {
 			String newUri = uriInput.getEditor().getText();
 
@@ -594,9 +595,11 @@ public class MainWindow extends Application {
 					}
 				});
 			} catch (IOException | URISyntaxException e) {
+				uriInput.close();
 				throw new RuntimeException(e);
 			}
 
+			btnCancel.setDisable(true);
 			btnOk.setDisable(true);
 			ae.consume();
 		});
