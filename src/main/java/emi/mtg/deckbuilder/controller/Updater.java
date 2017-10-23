@@ -5,7 +5,6 @@ import emi.mtg.deckbuilder.view.MainWindow;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -141,10 +140,14 @@ public class Updater {
 		}
 	}
 
-	public void update(URI remote, DoubleConsumer progress) throws IOException {
+	public void update(DoubleConsumer progress) throws IOException {
+		if (context.preferences.updateUri == null) {
+			return;
+		}
+
 		Path updateDir = Files.createDirectories(Paths.get(".update"));
 
-		try (InputStream input = new Downloader(remote.toURL(), progress)) {
+		try (InputStream input = new Downloader(context.preferences.updateUri.toURL(), progress)) {
 			ZipInputStream zin = new ZipInputStream(input);
 
 			ZipEntry entry = zin.getNextEntry();

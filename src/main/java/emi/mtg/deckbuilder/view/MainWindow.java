@@ -583,13 +583,12 @@ public class MainWindow extends Application {
 			String newUri = uriInput.getEditor().getText();
 
 			try {
-				URI uri = new URI(newUri);
-				context.preferences.updateUri = uri;
+				context.preferences.updateUri = new URI(newUri);
 				savePreferences();
 
 				ForkJoinPool.commonPool().submit(() -> {
 					try {
-						updater.update(uri, d -> Platform.runLater(() -> progress.setProgress(d)));
+						updater.update(d -> Platform.runLater(() -> progress.setProgress(d)));
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					}
