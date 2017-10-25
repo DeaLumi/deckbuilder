@@ -5,6 +5,7 @@ import emi.mtg.deckbuilder.view.MainWindow;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
+import java.net.HttpURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -140,6 +141,30 @@ public class Updater {
 		}
 	}
 
+	public boolean needsUpdate() throws IOException {
+		if (context.preferences.updateUri == null) {
+			return false; // If there is no update URI, live off the grid.
+		}
+
+		URLConnection connection = context.preferences.updateUri.toURL().openConnection();
+
+		if (!(connection instanceof HttpURLConnection)) {
+			System.err.println("Can't check for updates -- not an HTTP connection...");
+			return false;
+		}
+
+		HttpURLConnection httpConn = (HttpURLConnection) connection;
+
+		httpConn.setIfModifiedSince(Files.getLastModifiedTime(getJarPath()).toMillis());
+		httpConn.setRequestMethod("HEAD");
+
+		if (httpConn.getResponseCode() >= 400) {
+			throw new IOException(String.format("Error checking update server for update: %s", httpConn.getResponseMessage()));
+		}
+
+		return httpConn.getResponseCode() != 304;
+	}
+
 	public void update(DoubleConsumer progress) throws IOException {
 		if (context.preferences.updateUri == null) {
 			return;
@@ -173,14 +198,8 @@ public class Updater {
 		Path java = Paths.get(System.getProperty("java.home"), "bin", "java").toAbsolutePath();
 
 		URL jarUrl = MainWindow.class.getProtectionDomain().getCodeSource().getLocation();
-		Path jarPath;
-		Path jarDir;
-		try {
-			jarPath = Paths.get(jarUrl.toURI()).toAbsolutePath();
-		} catch (URISyntaxException urise) {
-			jarPath = Paths.get(jarUrl.getPath()).toAbsolutePath();
-		}
-		jarDir = jarPath.getParent();
+		Path jarPath = getJarPath();
+		Path jarDir = jarPath.getParent();
 
 		scriptWriter.append(String.format(SCRIPT, java.toString(), jarDir.toString(), jarPath.toString(), updateDir.toString()));
 		scriptWriter.close();
@@ -199,6 +218,18 @@ public class Updater {
 				.start();
 
 		System.exit(0);
+	}
+
+	private static Path getJarPath() {
+		URL jarUrl = MainWindow.class.getProtectionDomain().getCodeSource().getLocation();
+		Path jarPath;
+		try {
+			jarPath = Paths.get(jarUrl.toURI()).toAbsolutePath();
+		} catch (URISyntaxException urise) {
+			jarPath = Paths.get(jarUrl.getPath()).toAbsolutePath();
+		}
+
+		return jarPath;
 	}
 
 }
