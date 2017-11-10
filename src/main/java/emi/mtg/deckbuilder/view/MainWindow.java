@@ -75,6 +75,8 @@ public class MainWindow extends Application {
 	@FXML
 	private Tab deckVariantTabImport;
 
+	private Updater updater;
+
 	private Context context;
 	private boolean deckModified;
 
@@ -137,6 +139,7 @@ public class MainWindow extends Application {
 	@Override
 	public void init() throws Exception {
 		this.context = new Context();
+		this.updater = new Updater(this.context);
 	}
 
 	@Override
@@ -571,8 +574,6 @@ public class MainWindow extends Application {
 		uriInput.setHeaderText("Update Server URL");
 		uriInput.setContentText("URL:");
 		uriInput.getDialogPane().setExpanded(true);
-
-		Updater updater = new Updater(context);
 
 		ProgressBar progress = new ProgressBar(0.0);
 		uriInput.getDialogPane().setExpandableContent(progress);
