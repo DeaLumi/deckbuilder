@@ -457,7 +457,7 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void showFilterSyntax() {
-		information("Syntax Help", "Omnifilter Syntax",
+		Alert alert = information("Syntax Help", "Omnifilter Syntax",
 				"General:\n"
 				+ "\u2022 Separate search terms with a space.\n"
 				+ "\u2022 Search terms that don't start with a key and operator search card names.\n"
@@ -485,8 +485,9 @@ public class MainWindow extends Application {
 				+ "\n"
 				+ "Upcoming features:\n"
 				+ "\u2022 Logic \u2014 And, or, not, and parenthetical grouping.\n"
-				+ "\u2022 Keys \u2014 Mana, power, toughness, loyalty, etc.")
-				.showAndWait();
+				+ "\u2022 Keys \u2014 Mana, power, toughness, loyalty, etc.");
+		alert.getDialogPane().setPrefWidth(550.0);
+		alert.showAndWait();
 	}
 
 	@FXML
