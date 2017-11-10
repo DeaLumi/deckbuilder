@@ -327,19 +327,14 @@ public class MainWindow extends Application {
 			setDeck(primarySerdes.importDeck(from));
 			currentDeckFile = from;
 		} catch (IOException ioe) {
-			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
-			alert.setHeaderText("An error occurred while opening:");
-			alert.initOwner(this.stage);
-			alert.showAndWait();
+			ioe.printStackTrace();
+			error("Open Error", "An error occurred while opening:", ioe.getMessage()).showAndWait();
 		}
 	}
 
 	protected boolean offerSaveIfModified() {
 		if (deckModified) {
-			Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Deck is modified. Save?", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
-			alert.setHeaderText("Deck Modified");
-			alert.initOwner(stage);
-
+			Alert alert = alert(Alert.AlertType.CONFIRMATION, "Deck Modified", "Deck has been modified.", "Would you like to save this deck?", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
 			ButtonType type = alert.showAndWait().orElse(ButtonType.CANCEL);
 
 			if (type == ButtonType.CANCEL) {
@@ -389,10 +384,8 @@ public class MainWindow extends Application {
 			currentDeckFile = to;
 			return true;
 		} catch (IOException ioe) {
-			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
-			alert.setHeaderText("An error occurred while saving:");
-			alert.initOwner(this.stage);
-			alert.showAndWait();
+			ioe.printStackTrace();
+			error("Save Error", "An error occurred while saving:", ioe.getMessage()).showAndWait();
 			return false;
 		}
 	}
@@ -408,10 +401,9 @@ public class MainWindow extends Application {
 
 		builder.append('\n').append("Is this okay?");
 
-		Alert alert = new Alert(Alert.AlertType.WARNING, builder.toString(), ButtonType.YES, ButtonType.NO);
-		alert.initOwner(this.stage);
-
-		return alert.showAndWait().orElse(null) == ButtonType.YES;
+		return confirmation("Warning", "Some information may be lost:", builder.toString())
+				.showAndWait()
+				.orElse(ButtonType.NO) == ButtonType.YES;
 	}
 
 	@FXML
@@ -435,7 +427,7 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void showTipsAndTricks() {
-		Alert alert = new Alert(Alert.AlertType.INFORMATION,
+		Alert alert = information("Program Usage", "Tips and Tricks",
 				"The UI of this program is really dense! Here are some bits on some subtle\n"
 				+ "but powerful features!\n"
 				+ "\n"
@@ -457,18 +449,14 @@ public class MainWindow extends Application {
 				+ "\u2022 You can even Control+Drag to assign multiple tags to a card!\n"
 				+ "\u2022 Search for cards by tag with the 'tag' filter: \"tag:wrath\"\n"
 				+ "\n"
-				+ "I never claimed to be good at UI design! :^)", ButtonType.OK);
-
-		alert.setTitle("Tips and Tricks");
-		alert.setHeaderText("Tips and Tricks");
-		alert.getDialogPane().setPrefWidth(550);
-		alert.initOwner(stage);
+				+ "I never claimed to be good at UI design! :^)");
+		alert.getDialogPane().setPrefWidth(550.0);
 		alert.showAndWait();
 	}
 
 	@FXML
 	protected void showFilterSyntax() {
-		Alert alert = new Alert(Alert.AlertType.INFORMATION,
+		information("Syntax Help", "Omnifilter Syntax",
 				"General:\n"
 				+ "\u2022 Separate search terms with a space.\n"
 				+ "\u2022 Search terms that don't start with a key and operator search card names.\n"
@@ -496,32 +484,20 @@ public class MainWindow extends Application {
 				+ "\n"
 				+ "Upcoming features:\n"
 				+ "\u2022 Logic \u2014 And, or, not, and parenthetical grouping.\n"
-				+ "\u2022 Keys \u2014 Mana, power, toughness, loyalty, etc.",
-				ButtonType.OK
-		);
-
-		alert.setTitle("Syntax Help");
-		alert.setHeaderText("Omnifilter Syntax");
-		alert.initOwner(this.stage);
-
-		alert.showAndWait();
+				+ "\u2022 Keys \u2014 Mana, power, toughness, loyalty, etc.")
+				.showAndWait();
 	}
 
 	@FXML
 	protected void showAboutDialog() {
-		Alert alert = new Alert(Alert.AlertType.NONE,
+		information("About Deck Builder", "Deck Builder v0.0.0",
 				"Developer: Emi (@DeaLumi)\n" +
 				"Data & Images: Scryfall (@Scryfall)\n" +
 				"\n" +
 				"Source code will be available at some point probably. Feel free to DM me with feedback/issues on Twitter!\n" +
 				"\n" +
-				"Special thanks to MagnetMan, for generously indulging my madness time and time again.\n", ButtonType.OK);
-
-		alert.setTitle("About Deck Builder");
-		alert.setHeaderText("Deck Builder v0.0.0");
-		alert.initOwner(this.stage);
-
-		alert.showAndWait();
+				"Special thanks to MagnetMan, for generously indulging my madness time and time again.\n")
+				.showAndWait();
 	}
 
 	@FXML
@@ -548,18 +524,11 @@ public class MainWindow extends Application {
 	protected void validateDeck() {
 		Set<String> warnings = context.deck.formatProperty().getValue().validate(context.deck);
 
-		Alert alert;
 		if (warnings.isEmpty()) {
-			alert = new Alert(Alert.AlertType.INFORMATION, "Deck is valid.", ButtonType.OK);
+			information("Deck Validation", "Deck is valid.", "No validation errors were found!").showAndWait();
 		} else {
-			alert = new Alert(Alert.AlertType.ERROR, "", ButtonType.OK);
-			alert.setHeaderText("Deck has errors:");
-			alert.setContentText(warnings.stream().map(s -> "\u2022 " + s).collect(Collectors.joining("\n")));
+			error("Deck Validation", "Deck has errors:", warnings.stream().map(s -> "\u2022 " + s).collect(Collectors.joining("\n"))).showAndWait();
 		}
-		alert.setTitle("Deck Validation");
-		alert.initOwner(this.stage);
-
-		alert.showAndWait();
 	}
 
 	@FXML
@@ -609,20 +578,7 @@ public class MainWindow extends Application {
 		uriInput.showAndWait();
 	}
 
-	@FXML
-	protected void updateData() throws IOException {
-		if (!context.data.needsUpdate()) {
-			Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Data source seems fresh. Update anyway?", ButtonType.YES, ButtonType.NO);
-			confirm.initOwner(stage);
-			if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) {
-				return;
-			}
-		}
-
-		doGraphicalDataUpdate();
-	}
-
-	private void doGraphicalDataUpdate() {
+	private void doGraphicalProgramUpdate() {
 		Alert progressDialog = new Alert(Alert.AlertType.NONE, "Updating...", ButtonType.CLOSE);
 		progressDialog.setHeaderText("Updating...");
 		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
@@ -636,29 +592,52 @@ public class MainWindow extends Application {
 
 		ForkJoinPool.commonPool().submit(() -> {
 			try {
+				updater.update(d -> Platform.runLater(() -> pbar.setProgress(d)));
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			} finally {
+				Platform.runLater(progressDialog::close);
+			}
+		});
+	}
+
+	@FXML
+	protected void updateData() throws IOException {
+		if (!context.data.needsUpdate() && confirmation("Update Data", "Data is fresh.", "Data source seems fresh. Update anyway?")
+				.showAndWait()
+				.orElse(ButtonType.NO) != ButtonType.YES) {
+			return;
+		}
+
+		doGraphicalDataUpdate();
+	}
+
+	private void doGraphicalDataUpdate() {
+		Alert progressDialog = alert(Alert.AlertType.NONE, "Updating", "Updating...", "", ButtonType.CLOSE);
+		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
+
+		ProgressBar pbar = new ProgressBar(0.0);
+		progressDialog.getDialogPane().setContent(pbar);
+		progressDialog.getDialogPane().setPrefWidth(256.0);
+
+		progressDialog.show();
+
+		ForkJoinPool.commonPool().submit(() -> {
+			try {
 				if (context.data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
 					Platform.runLater(() -> {
 						progressDialog.close();
 
 						collection.view().model(new ReadOnlyListWrapper<>(collectionModel(context.data)));
 
-						Alert alert = new Alert(Alert.AlertType.INFORMATION, "Live updates are a new feature; if anything acts hinky, please restart the program!", ButtonType.OK);
-						alert.setHeaderText("Update completed.");
-						alert.setTitle("Update Complete");
-						alert.initOwner(stage);
-						alert.showAndWait();
+						information("Update Complete", "Update completed.", "Live updates are a new feature; if anything acts hinky, please restart the program!")
+								.showAndWait();
 					});
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
-				Platform.runLater(() -> {
-					progressDialog.close();
-					Alert alert = new Alert(Alert.AlertType.ERROR, "You may need to re-try the update.", ButtonType.OK);
-					alert.setTitle("Update Error");
-					alert.setHeaderText("An error occurred.");
-					alert.initOwner(stage);
-					alert.showAndWait();
-				});
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			} finally {
+				Platform.runLater(progressDialog::close);
 			}
 		});
 	}
@@ -692,10 +671,8 @@ public class MainWindow extends Application {
 		try {
 			importer.importVariant(context.deck, f);
 		} catch (IOException ioe) {
-			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
-			alert.setHeaderText("An error occurred while importing:");
-			alert.initOwner(stage);
-			alert.showAndWait();
+			ioe.printStackTrace();
+			error("Import Error", "An error occurred while importing:", ioe.getMessage()).showAndWait();
 		}
 	}
 
@@ -747,10 +724,44 @@ public class MainWindow extends Application {
 		try {
 			exporter.exportVariant(variant, f);
 		} catch (IOException ioe) {
-			Alert alert = new Alert(Alert.AlertType.ERROR, ioe.getMessage(), ButtonType.OK);
-			alert.setHeaderText("An error occurred while exporting:");
-			alert.initOwner(stage);
-			alert.showAndWait();
+			ioe.printStackTrace();
+			error("Export Error", "An error occurred while exporting:", ioe.getMessage()).showAndWait();
 		}
+	}
+
+	private Alert confirmation(String title, String headerText, String text) {
+		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, text, ButtonType.YES, ButtonType.NO);
+		confirm.setTitle(title);
+		confirm.setHeaderText(headerText);
+		confirm.initOwner(stage);
+		return confirm;
+	}
+
+	private Alert information(String title, String headerText, String text) {
+		return notification(Alert.AlertType.INFORMATION, title, headerText, text);
+	}
+
+	private Alert error(String title, String headerText, String text) {
+		return notification(Alert.AlertType.ERROR, title, headerText, text);
+	}
+
+	private Alert warning(String title, String headerText, String text) {
+		return notification(Alert.AlertType.WARNING, title, headerText, text);
+	}
+
+	private Alert notification(Alert.AlertType type, String title, String headerText, String text) {
+		Alert notification = new Alert(type, text, ButtonType.OK);
+		notification.setTitle(title);
+		notification.setHeaderText(headerText);
+		notification.initOwner(stage);
+		return notification;
+	}
+
+	private Alert alert(Alert.AlertType type, String title, String headerText, String text, ButtonType... buttons) {
+		Alert alert = new Alert(type, text, buttons);
+		alert.setTitle(title);
+		alert.setHeaderText(headerText);
+		alert.initOwner(stage);
+		return alert;
 	}
 }
