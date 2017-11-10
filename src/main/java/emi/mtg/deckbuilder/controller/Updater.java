@@ -162,7 +162,7 @@ public class Updater {
 			throw new IOException(String.format("Error checking update server for update: %s", httpConn.getResponseMessage()));
 		}
 
-		return httpConn.getResponseCode() != 304;
+		return httpConn.getResponseCode() == 200;
 	}
 
 	public void update(DoubleConsumer progress) throws IOException {
