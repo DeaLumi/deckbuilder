@@ -24,8 +24,8 @@ public class JsonSingle implements VariantImportExport {
 		Format format = null;
 		String author = "";
 
-		Map<Zone, List<CardInstance>> cards = Collections.emptyMap();
-		List<CardInstance> sideboard = Collections.emptyList();
+		Map<Zone, List<CardInstance>> cards = new EnumMap<>(Zone.class);
+		List<CardInstance> sideboard = new ArrayList<>();
 	}
 
 	private final Context context;
@@ -43,7 +43,7 @@ public class JsonSingle implements VariantImportExport {
 
 		reader.close();
 
-		return decklist.new Variant(out.name, out.description, out.cards);
+		return decklist.new Variant(out.name.isEmpty() ? "<Unnamed>" : out.name, out.description, out.cards);
 	}
 
 	@Override
