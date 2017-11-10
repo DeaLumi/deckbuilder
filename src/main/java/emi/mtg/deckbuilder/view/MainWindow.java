@@ -95,7 +95,8 @@ public class MainWindow extends Application {
 
 			try {
 				primarySerdes.exportDeck(context.deck, new File("emergency-dump.json"));
-			} catch (IOException ioe) {
+			} catch (Throwable t) {
+				e.addSuppressed(t);
 				deckSaved = false;
 			}
 
