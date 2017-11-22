@@ -175,12 +175,12 @@ public class MainWindow extends Application {
 		stage.setMaximized(true);
 		stage.show();
 
-		if (context.data.needsUpdate()) {
-			Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Data source seems stale -- update?", ButtonType.YES, ButtonType.NO);
-			confirm.initOwner(stage);
-			if (confirm.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-				doGraphicalDataUpdate();
-			}
+		if (context.preferences.autoUpdateProgram && updater.needsUpdate() && confirmation("Updater", "Program Update Available", "A new version of the deckbuilder is available -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+			doGraphicalProgramUpdate();
+		}
+
+		if (context.preferences.autoUpdateData && context.data.needsUpdate() && confirmation("Updater", "Data Update Available","Data source seems stale -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+			doGraphicalDataUpdate();
 		}
 	}
 

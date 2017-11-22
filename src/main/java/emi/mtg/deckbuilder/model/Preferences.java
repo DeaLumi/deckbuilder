@@ -11,4 +11,7 @@ public class Preferences {
 	public HashMap<String, UUID> preferredPrintings = new HashMap<>();
 	public Format defaultFormat = new Standard();
 	public URI updateUri;
+
+	public boolean autoUpdateData = true;
+	public boolean autoUpdateProgram = false;
 }
