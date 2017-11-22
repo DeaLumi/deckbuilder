@@ -15,6 +15,7 @@ import emi.mtg.deckbuilder.view.Images;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -90,7 +91,7 @@ public class Context {
 	public void loadTags() throws IOException {
 		try {
 			this.tags.load(TAGS);
-		} catch (FileNotFoundException fnfe) {
+		} catch (NoSuchFileException fnfe) {
 			// do nothing
 		}
 	}
