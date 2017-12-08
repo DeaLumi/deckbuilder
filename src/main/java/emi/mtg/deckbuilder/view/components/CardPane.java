@@ -261,7 +261,7 @@ public class CardPane extends BorderPane {
 					if (front != null && front.type().cardTypes().contains(CardType.Creature)) {
 						creature.incrementAndGet();
 					} else if (front != null && front.type().cardTypes().contains(CardType.Land)) {
-						creature.incrementAndGet();
+						land.incrementAndGet();
 					} else {
 						other.incrementAndGet();
 					}
