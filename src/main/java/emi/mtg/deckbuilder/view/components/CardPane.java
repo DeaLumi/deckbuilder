@@ -257,14 +257,13 @@ public class CardPane extends BorderPane {
 				AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
 
 				for (CardInstance ci : cardView.filteredModel()) {
-					for (Card.Face f : ci.card().faces()) {
-						if (f.type().cardTypes().contains(CardType.Creature)) {
-							creature.incrementAndGet();
-						} else if (f.type().cardTypes().contains(CardType.Land)) {
-							land.incrementAndGet();
-						} else {
-							other.incrementAndGet();
-						}
+					Card.Face front = ci.card().face(Card.Face.Kind.Front);
+					if (front != null && front.type().cardTypes().contains(CardType.Creature)) {
+						creature.incrementAndGet();
+					} else if (front != null && front.type().cardTypes().contains(CardType.Land)) {
+						creature.incrementAndGet();
+					} else {
+						other.incrementAndGet();
 					}
 				}
 
