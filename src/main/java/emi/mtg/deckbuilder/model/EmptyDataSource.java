@@ -19,11 +19,6 @@ public class EmptyDataSource implements DataSource {
 	}
 
 	@Override
-	public Card card(String name) {
-		return null;
-	}
-
-	@Override
 	public Set<? extends Card.Printing> printings() {
 		return Collections.emptySet();
 	}

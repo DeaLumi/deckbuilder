@@ -69,15 +69,13 @@ public class Tags {
 			reader.beginArray();
 			while (reader.peek() == JsonToken.STRING) {
 				String cardName = reader.nextString();
-				Card card = context.data.card(cardName);
+				Collection<Card> namedCards = context.data.cards().stream().filter(c -> c.name().equals(cardName)).collect(Collectors.toSet());
 
-				if (card == null) {
+				if (namedCards.isEmpty()) {
 					System.err.println("Warning: Tags file " + from.toString() + " refers to unknown card " + cardName + " -- are we in the right universe?");
-					System.err.flush();
-					continue;
 				}
 
-				cards.add(card);
+				cards.addAll(namedCards);
 			}
 			reader.endArray();
 

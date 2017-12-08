@@ -73,14 +73,14 @@ public class MTGO implements VariantImportExport {
 			});
 
 			if (printing == null) {
-				Card card = context.data.card(name);
+				Card card = context.data.cards().stream().filter(c -> c.name().equals(name)).findAny().orElse(null);
 
 				if (card == null) {
 					throw new IOException("Couldn't find card " + name + " / " + catId);
 				}
 
 				printing = card.printings().iterator().next();
-				System.err.println("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name, using first printing.");
+				System.err.println("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name, using first printing. This won't export back to MTGO.");
 			}
 
 			for (int n = 0; n < qty; ++n) {

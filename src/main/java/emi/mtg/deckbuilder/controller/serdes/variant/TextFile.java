@@ -61,7 +61,7 @@ public class TextFile implements VariantImportExport {
 			int count = Integer.parseInt(m.group("preCount") != null ? m.group("preCount") : m.group("postCount"));
 			String cardName = m.group("preCardName") != null ? m.group("preCardName") : m.group("postCardName");
 
-			Card card = context.data.card(cardName);
+			Card card = context.data.cards().stream().filter(c -> c.name().equals(name)).findAny().orElse(null);
 
 			if (card == null) {
 				throw new IOException("Couldn't find card named " + cardName);

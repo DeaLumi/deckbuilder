@@ -108,7 +108,7 @@ public class CardPane extends BorderPane {
 	}
 
 	private static Predicate<CardInstance> uniquenessPredicate(Context context) {
-		Map<String, String> prefPrintCache = new HashMap<>();
+		Map<Card, String> prefPrintCache = new HashMap<>();
 
 		return ci -> {
 			if (context.preferences.preferredPrintings.containsKey(ci.card().fullName())) {
@@ -116,7 +116,7 @@ public class CardPane extends BorderPane {
 			}
 
 			synchronized(prefPrintCache) {
-				return ci.printing().id().toString().equals(prefPrintCache.computeIfAbsent(ci.card().fullName(), fn -> ci.card().printings().iterator().next().id().toString()));
+				return ci.printing().id().toString().equals(prefPrintCache.computeIfAbsent(ci.card(), fn -> ci.card().printings().iterator().next().id().toString()));
 			}
 		};
 	}
