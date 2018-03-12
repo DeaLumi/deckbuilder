@@ -397,7 +397,17 @@ public class MainWindow extends Application {
 		builder.append("The file format you selected doesn't support the following features:\n");
 
 		for (Features feature : unsupportedFeatures) {
+			if (feature == Features.Import || feature == Features.Export) {
+				continue;
+			}
+
 			builder.append(" \u2022 ").append(feature.toString()).append('\n');
+		}
+
+		if (unsupportedFeatures.contains(Features.Import)) {
+			builder.append('\n').append("Additionally, you will not be able to re-import from this file.");
+		} else if (unsupportedFeatures.contains(Features.Export)) {
+			builder.append('\n').append("Additionally, you will not be able to re-export to this file.");
 		}
 
 		builder.append('\n').append("Is this okay?");

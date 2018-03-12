@@ -53,6 +53,6 @@ public class JsonSingle implements VariantImportExport {
 
 	@Override
 	public Set<Features> unsupportedFeatures() {
-		return EnumSet.of(Features.Variants, Features.Author);
+		return EnumSet.of(Features.Variants, Features.Author, Features.Export);
 	}
 }

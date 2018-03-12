@@ -7,7 +7,9 @@ public enum Features {
 	Format("Intended deck format"),
 	CardArt("Specific card printings"),
 	OtherZones("Zones (beyond library & sideboard)"),
-	Variants("Deck variants (only current will be exported)");
+	Variants("Deck variants (only current will be exported)"),
+	Export("Exporting"),
+	Import("Importing");
 
 	private final String description;
 
