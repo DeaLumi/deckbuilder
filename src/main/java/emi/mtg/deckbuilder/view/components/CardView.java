@@ -626,7 +626,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
 
 			try {
-				context.images.get(zoomedCard.printing()).thenAccept((Image image) -> Platform.runLater(() -> zoomPreview = new CardZoomPreview(start, image))).get();
+				zoomPreview = new CardZoomPreview(context, start, zoomedCard.printing());
 			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
