@@ -13,7 +13,7 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 	public PowerToughnessLoyalty(Context context, Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 		this.hasValue = !value.contains("*") && !value.contains("X");
-		this.value = hasValue ? -1 : Float.parseFloat(value.toLowerCase());
+		this.value = hasValue ? Float.parseFloat(value.toLowerCase()) : -1;
 	}
 
 	@Service.Provider(Omnifilter.Subfilter.class)
@@ -78,20 +78,26 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 	@Override
 	public boolean testFace(Card.Face face) {
+		double converted = faceConvertedAttribute(face);
+
+		if (Double.isNaN(converted)) {
+			return false;
+		}
+
 		switch (operator) {
 			case DIRECT:
 			case EQUALS:
-				return hasValue ? value == face.convertedPower() : face.power().contains("*");
+				return hasValue ? value == converted : faceAttribute(face).contains("*");
 			case LESS_OR_EQUALS:
-				return value <= face.convertedPower();
+				return converted <= value;
 			case LESS_THAN:
-				return value < face.convertedPower();
+				return converted < value;
 			case GREATER_THAN:
-				return value > face.convertedPower();
+				return converted > value;
 			case GREATER_OR_EQUALS:
-				return value >= face.convertedPower();
+				return converted >= value;
 			case NOT_EQUALS:
-				return hasValue ? value != face.convertedPower() : !face.power().contains("*");
+				return hasValue ? value != converted : !faceAttribute(face).contains("*");
 			default:
 				assert false;
 				return false;
