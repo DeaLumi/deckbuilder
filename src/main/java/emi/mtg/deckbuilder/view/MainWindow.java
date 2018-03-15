@@ -646,10 +646,11 @@ public class MainWindow extends Application {
 								.showAndWait();
 					});
 				}
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			} finally {
-				Platform.runLater(progressDialog::close);
+			} catch (Throwable e) {
+				Platform.runLater(() -> {
+					progressDialog.close();
+					throw new RuntimeException(e);
+				});
 			}
 		});
 	}
