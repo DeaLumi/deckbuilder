@@ -83,7 +83,7 @@ public class Omnifilter {
 		return Collections.unmodifiableMap(map);
 	}
 
-	private static final Pattern PATTERN = Pattern.compile("(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]*\"|[^\\s]*)");
+	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]*\"|[^\\s]*)");
 
 	public static Predicate<CardInstance> parse(Context context, String expression) {
 		Matcher m = PATTERN.matcher(expression);
@@ -99,6 +99,8 @@ public class Omnifilter {
 
 			String key = m.group("key");
 
+			Predicate<CardInstance> append;
+
 			if (key != null) {
 				Operator op = Operator.forString(m.group("op"));
 
@@ -109,10 +111,12 @@ public class Omnifilter {
 					continue;
 				}
 
-				predicate = predicate.and(stub.uncheckedInstance(context, op, value));
+				append = stub.uncheckedInstance(context, op, value);
 			} else {
-				predicate = predicate.and(ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())) || ci.card().fullName().toLowerCase().contains(value.toLowerCase()));
+				append = ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())) || ci.card().fullName().toLowerCase().contains(value.toLowerCase());
 			}
+
+			predicate = predicate.and(m.group("negate") == null ? append : append.negate());
 		}
 
 		return predicate;
