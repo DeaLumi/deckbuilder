@@ -188,6 +188,14 @@ public class CardPane extends BorderPane {
 
 		MenuItem statisticsButton = new MenuItem("Statistics");
 		statisticsButton.setOnAction(ae -> {
+			if (this.cardView.model().size() > 1000) {
+				Alert notification = new Alert(Alert.AlertType.ERROR, "There are too many cards!", ButtonType.OK);
+				notification.setTitle("Statistics");
+				notification.setHeaderText("Too Many Cards");
+				notification.show();
+				return;
+			}
+
 			try {
 				new DeckStatsDialog(this.cardView.model()).show();
 			} catch (IOException e) {
