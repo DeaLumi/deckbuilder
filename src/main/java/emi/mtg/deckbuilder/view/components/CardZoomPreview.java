@@ -42,6 +42,8 @@ public class CardZoomPreview {
 		// work out the images
 		if (printing.face(Card.Face.Kind.Transformed) != null) {
 			faces.addAll(Arrays.asList(printing.face(Card.Face.Kind.Front), printing.face(Card.Face.Kind.Transformed)));
+		} else if (printing.face(Card.Face.Kind.Left) != null) {
+			faces.add(printing.face(Card.Face.Kind.Left));
 		} else {
 			faces.add(printing.face(Card.Face.Kind.Front));
 		}
