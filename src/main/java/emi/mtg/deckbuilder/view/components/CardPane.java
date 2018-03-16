@@ -251,16 +251,12 @@ public class CardPane extends BorderPane {
 		showVersionsSeparately.setOnAction(updateFilter);
 		filter.setOnAction(updateFilter);
 
-		Label deckStats = new Label("? Land / ? Creature / ? Other");
+		Label deckStats = new Label("");
 
 		// TODO: EW. EW. EW. EW. EW.
 		Thread statRefreshThread = new Thread(() -> {
 			while (!Thread.interrupted()) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException ie) {
-					break;
-				}
+				final long total = cardView.filteredModel().size();
 
 				AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
 
@@ -275,7 +271,23 @@ public class CardPane extends BorderPane {
 					}
 				}
 
-				Platform.runLater(() -> deckStats.setText(String.format("%d Land / %d Creature / %d Other", land.get(), creature.get(), other.get())));
+				StringBuilder str = new StringBuilder();
+
+				if (total != 0) {
+					str.append(total).append(" Card").append(total == 1 ? "" : "s").append(": ");
+
+					boolean comma = append(str, false, land, "Land");
+					comma = append(str, comma, creature, "Creature");
+					append(str, comma, other, "Other");
+				}
+
+				Platform.runLater(() -> deckStats.setText(str.toString()));
+
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException ie) {
+					break;
+				}
 			}
 		}, "Stat Refresh Thread");
 		statRefreshThread.setDaemon(true);
@@ -293,6 +305,24 @@ public class CardPane extends BorderPane {
 		this.setTop(controlBar);
 
 		updateFilter();
+	}
+
+	private static boolean append(StringBuilder str, boolean comma, AtomicLong qty, String qtyName) {
+		if (qty.get() > 0) {
+			if (comma) {
+				str.append(", ");
+			}
+
+			str.append(qty.get()).append(' ').append(qtyName);
+
+			if (qty.get() != 1) {
+				str.append('s');
+			}
+
+			return true;
+		} else {
+			return comma;
+		}
 	}
 
 	public void updateFilter() {
