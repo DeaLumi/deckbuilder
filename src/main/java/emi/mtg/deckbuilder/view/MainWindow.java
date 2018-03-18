@@ -39,10 +39,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
@@ -182,10 +179,17 @@ public class MainWindow extends Application {
 		if (context.preferences.autoUpdateData && context.data.needsUpdate() && confirmation("Updater", "Data Update Available","Data source seems stale -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 			doGraphicalDataUpdate();
 		}
+
+		Alert loading = information("Loading", "Loading Card Data...", "Please wait a moment!");
+		loading.getButtonTypes().clear();
+		loading.show();
+		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(context.data)));
+		loading.getButtonTypes().add(ButtonType.OK);
+		loading.hide();
 	}
 
 	private void setupUI() {
-		collection = new CardPane("Collection", context, new ReadOnlyListWrapper<>(collectionModel(context.data)), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
+		collection = new CardPane("Collection", context, new ObservableListWrapper<>(new ArrayList<>()), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> ((VariantPane) deckVariantTabs.getSelectionModel().getSelectedItem()).deckPanes.get(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.showIllegalCards.set(false);
