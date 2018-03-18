@@ -10,20 +10,6 @@ import emi.mtg.deckbuilder.view.components.CardView;
 public class ManaCost implements CardView.Sorting {
 	@Override
 	public int compare(CardInstance c1, CardInstance c2) {
-		if (c1.card().manaCost().color().size() != c2.card().manaCost().color().size()) {
-			int s1 = c1.card().manaCost().color().size();
-			if (s1 == 0) {
-				s1 = emi.lib.mtg.characteristic.Color.values().length + 1;
-			}
-
-			int s2 = c2.card().manaCost().color().size();
-			if (s2 == 0) {
-				s2 = emi.lib.mtg.characteristic.Color.values().length + 1;
-			}
-
-			return s1 - s2;
-		}
-
 		for (int i = emi.lib.mtg.characteristic.Color.values().length - 1; i >= 0; --i) {
 			emi.lib.mtg.characteristic.Color c = emi.lib.mtg.characteristic.Color.values()[i];
 			long n1 = -c1.card().manaCost().symbols().stream().map(ManaSymbol::color).filter(s -> s.contains(c)).count();

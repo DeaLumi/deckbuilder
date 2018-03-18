@@ -188,12 +188,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				.collect(Collectors.toMap(g -> g.string("name"), g -> g.uncheckedInstance())));
 
 		DEFAULT_SORTING = Collections.unmodifiableList(Arrays.asList(
+				new ActiveSorting(sortings.get("Color"), false),
+				new ActiveSorting(sortings.get("Converted Mana Cost"), false),
 				new ActiveSorting(sortings.get("Mana Cost"), false),
 				new ActiveSorting(sortings.get("Name"), false)
 		));
 
 		DEFAULT_COLLECTION_SORTING = Collections.unmodifiableList(Arrays.asList(
 				new ActiveSorting(sortings.get("Rarity"), true),
+				new ActiveSorting(sortings.get("Color"), false),
+				new ActiveSorting(sortings.get("Converted Mana Cost"), false),
 				new ActiveSorting(sortings.get("Mana Cost"), false),
 				new ActiveSorting(sortings.get("Name"), false)
 		));

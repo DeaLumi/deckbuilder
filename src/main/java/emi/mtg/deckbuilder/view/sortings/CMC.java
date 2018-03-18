@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.sortings;
 
 import emi.lib.Service;
+import emi.lib.mtg.characteristic.ManaCost;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -9,7 +10,14 @@ import emi.mtg.deckbuilder.view.components.CardView;
 public class CMC implements CardView.Sorting {
 	@Override
 	public int compare(CardInstance o1, CardInstance o2) {
-		return (int) (o1.card().manaCost().convertedCost() - o2.card().manaCost().convertedCost());
+		ManaCost mc1 = o1.card().manaCost();
+		ManaCost mc2 = o2.card().manaCost();
+
+		if (mc1.varies() != mc2.varies()) {
+			return mc1.varies() ? 1 : -1;
+		} else {
+			return Double.compare(o1.card().manaCost().convertedCost(), o2.card().manaCost().convertedCost());
+		}
 	}
 
 	@Override
