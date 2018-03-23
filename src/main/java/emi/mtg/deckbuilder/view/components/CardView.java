@@ -349,7 +349,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				context.images.getThumbnail(this.dragCard.printing()).thenAccept(db::setDragView).get();
 			} catch (ExecutionException | InterruptedException e) {
 				e.printStackTrace();
-				db.setDragView(Images.CARD_BACK_THUMB);
+				db.setDragView(Images.UNAVAILABLE_CARD);
 			}
 
 			Map<DataFormat, Object> content = new HashMap<>();
@@ -1045,7 +1045,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						states.add(CardState.Flagged);
 					}
 
-					renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.CARD_BACK), states));
+					renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.UNAVAILABLE_CARD), states));
 				} else {
 					futureImage.thenRun(this::scheduleRender);
 				}

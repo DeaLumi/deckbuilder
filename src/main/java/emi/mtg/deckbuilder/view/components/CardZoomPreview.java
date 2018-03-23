@@ -2,12 +2,14 @@ package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.view.Images;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
+import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -25,17 +27,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.IntFunction;
-import java.util.stream.Collectors;
 
 public class CardZoomPreview {
-	private final double DURATION = 100;
+	private static final double DURATION = 300;
 
 	private final Stage stage;
-	private boolean closing;
+	private final Rectangle2D start;
+	private final List<ImageView> imageViewList;
+	private final HBox row;
+	private ParallelTransition runningAnimation;
 
 	public CardZoomPreview(Context context, Rectangle2D start, Card.Printing printing) throws ExecutionException, InterruptedException {
-		this.closing = false;
+		this.start = start;
 
 		List<Card.Printing.Face> faces = new ArrayList<>();
 
@@ -43,97 +46,103 @@ public class CardZoomPreview {
 		if (printing.face(Card.Face.Kind.Transformed) != null) {
 			faces.addAll(Arrays.asList(printing.face(Card.Face.Kind.Front), printing.face(Card.Face.Kind.Transformed)));
 		} else if (printing.face(Card.Face.Kind.Left) != null) {
-			faces.add(printing.face(Card.Face.Kind.Left));
+			faces.addAll(Arrays.asList(printing.face(Card.Face.Kind.Left), printing.face(Card.Face.Kind.Right)));
+		} else if (printing.face(Card.Face.Kind.Flipped) != null) {
+			faces.addAll(Arrays.asList(printing.face(Card.Face.Kind.Front), printing.face(Card.Face.Kind.Flipped)));
 		} else {
 			faces.add(printing.face(Card.Face.Kind.Front));
 		}
 
 		this.stage = new Stage(StageStyle.TRANSPARENT);
 
-		CompletableFuture<Image>[] images = faces.stream().map(context.images::get).toArray((IntFunction<CompletableFuture<Image>[]>) CompletableFuture[]::new);
-		CompletableFuture.allOf(images).thenRun(() -> Platform.runLater(() -> {
-			// In case we got cancelled...
-			if (this.closing) {
-				return;
+		this.imageViewList = new ArrayList<>(faces.size());
+
+		for (Card.Printing.Face face : faces) {
+			CompletableFuture<Image> image = context.images.getFace(face);
+
+			Image img = image.getNow(Images.LOADING_CARD_LARGE);
+			ImageView view = new ImageView(img);
+			imageViewList.add(view);
+
+			if (!image.isDone()) {
+				image.thenAcceptAsync(loaded -> Platform.runLater(() -> {
+					view.setImage(loaded);
+					this.resizeStage();
+				}));
 			}
+		}
 
-			List<Image> imageList = Arrays.stream(images).map(i -> {
-				try {
-					return i.get();
-				} catch (InterruptedException | ExecutionException e) {
-					throw new Error(e);
-				}
-			}).collect(Collectors.toList());
+		this.row = new HBox();
+		this.row.setAlignment(Pos.CENTER_LEFT);
+		this.row.getChildren().setAll(imageViewList);
+		this.row.setOpacity(0.0);
 
-			double iw = imageList.stream().mapToDouble(Image::getWidth).sum();
-			double ih = imageList.stream().mapToDouble(Image::getHeight).max().orElseThrow(IllegalArgumentException::new);
+		Scene scene = new Scene(new Group(this.row));
+		scene.setFill(Color.TRANSPARENT);
 
-			Rectangle2D endUnbound = new Rectangle2D(start.getMinX() - (iw - start.getWidth()) / 2.0,
-					start.getMinY() - (ih - start.getHeight()) / 2.0,
-					iw,
-					ih);
+		this.stage.setScene(scene);
+		this.stage.show();
+		this.resizeStage();
+	}
 
-			ObservableList<Screen> screens = Screen.getScreensForRectangle(start);
+	private void resizeStage() {
+		double iw = imageViewList.stream().map(ImageView::getImage).mapToDouble(Image::getWidth).sum();
+		double ih = imageViewList.stream().map(ImageView::getImage).mapToDouble(Image::getHeight).max().orElseThrow(IllegalArgumentException::new);
 
-			double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE,
-					maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
+		Rectangle2D endUnbound = new Rectangle2D(this.start.getMinX() - (iw - start.getWidth()) / 2.0,
+				this.start.getMinY() - (ih - start.getHeight()) / 2.0,
+				iw,
+				ih);
 
-			for (Screen scr : screens) {
-				Rectangle2D bounds = scr.getVisualBounds();
+		ObservableList<Screen> screens = Screen.getScreensForRectangle(start);
 
-				minX = Math.min(bounds.getMinX(), minX);
-				minY = Math.min(bounds.getMinY(), minY);
-				maxX = Math.max(bounds.getMaxX(), maxX);
-				maxY = Math.max(bounds.getMaxY(), maxY);
-			}
+		double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE,
+				maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
 
-			Rectangle2D end = new Rectangle2D(
-					Math.max(minX, Math.min(endUnbound.getMinX(), maxX - endUnbound.getWidth())),
-					Math.max(minY, Math.min(endUnbound.getMinY(), maxY - endUnbound.getHeight())),
-					endUnbound.getWidth(),
-					endUnbound.getHeight()
-			);
+		for (Screen scr : screens) {
+			Rectangle2D bounds = scr.getVisualBounds();
 
-			ScaleTransition st = new ScaleTransition(Duration.millis(DURATION));
-			st.setFromX(start.getWidth() / end.getWidth());
-			st.setFromY(start.getHeight() / end.getHeight());
-			st.setToX(1.0);
-			st.setToY(1.0);
+			minX = Math.min(bounds.getMinX(), minX);
+			minY = Math.min(bounds.getMinY(), minY);
+			maxX = Math.max(bounds.getMaxX(), maxX);
+			maxY = Math.max(bounds.getMaxY(), maxY);
+		}
 
-			TranslateTransition tt = new TranslateTransition(Duration.millis(DURATION));
-			tt.setFromX(start.getMinX() - end.getMinX() - (end.getWidth() - start.getWidth()) / 2.0);
-			tt.setFromY(start.getMinY() - end.getMinY() - (end.getHeight() - start.getHeight()) / 2.0);
-			tt.setToX(0.0);
-			tt.setToY(0.0);
+		Rectangle2D end = new Rectangle2D(
+				Math.max(minX, Math.min(endUnbound.getMinX(), maxX - endUnbound.getWidth())),
+				Math.max(minY, Math.min(endUnbound.getMinY(), maxY - endUnbound.getHeight())),
+				endUnbound.getWidth(),
+				endUnbound.getHeight()
+		);
 
-			FadeTransition ft = new FadeTransition(Duration.millis(DURATION));
-			ft.setFromValue(0.0);
-			ft.setToValue(1.0);
+		this.stage.setX(end.getMinX());
+		this.stage.setY(end.getMinY());
+		this.stage.setWidth(end.getWidth());
+		this.stage.setHeight(end.getHeight());
 
-			HBox row = new HBox();
+		ScaleTransition st = new ScaleTransition(Duration.millis(DURATION));
+		st.setFromX(start.getWidth() / end.getWidth());
+		st.setFromY(start.getHeight() / end.getHeight());
+		st.setToX(1.0);
+		st.setToY(1.0);
 
-			for (Image img : imageList) {
-				ImageView image = new ImageView(img);
-				row.getChildren().add(image);
-			}
+		TranslateTransition tt = new TranslateTransition(Duration.millis(DURATION));
+		tt.setFromX(start.getMinX() - end.getMinX() - (end.getWidth() - start.getWidth()) / 2.0);
+		tt.setFromY(start.getMinY() - end.getMinY() - (end.getHeight() - start.getHeight()) / 2.0);
+		tt.setToX(0.0);
+		tt.setToY(0.0);
 
-			Scene scene = new Scene(new Group(row));
-			scene.setFill(Color.TRANSPARENT);
+		FadeTransition ft = new FadeTransition(Duration.millis(DURATION));
+		ft.setFromValue(row.getOpacity());
+		ft.setToValue(1.0);
 
-			this.stage.setScene(scene);
-			this.stage.setX(end.getMinX());
-			this.stage.setY(end.getMinY());
-			this.stage.setWidth(end.getWidth());
-			this.stage.setHeight(end.getHeight());
-			this.stage.show();
-
-			ParallelTransition pt = new ParallelTransition(row, st, ft, tt);
-			pt.play();
-		}));
+		Duration oldProgress = runningAnimation != null ? runningAnimation.getCurrentTime() : Duration.ZERO;
+		runningAnimation = new ParallelTransition(row, st, ft, tt);
+		runningAnimation.playFrom(oldProgress);
 	}
 
 	public void close() {
-		this.closing = true;
+		this.runningAnimation.stop();
 		this.stage.close();
 	}
 }

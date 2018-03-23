@@ -4,7 +4,6 @@ import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.ImageSource;
 import javafx.application.Platform;
-import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
@@ -18,27 +17,17 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 
-import javax.imageio.ImageIO;
-import java.io.File;
-import java.io.FileInputStream;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Service.Provider(ImageSource.class)
 @Service.Property.String(name="name", value="Cheap Card Renderer")
 @Service.Property.Number(name="priority", value=0.01)
 public class RenderedImageSource implements ImageSource {
-
-	private static final File PARENT_DIR = new File(new File("images"), "rendered");
-
-	static {
-		if (!PARENT_DIR.exists() && !PARENT_DIR.mkdirs()) {
-			throw new Error("Unable to create a directory for rendered images...");
-		}
-	}
-
 	private static Font fallback(FontWeight weight, FontPosture posture, double size, String... families) {
 		Font font;
 
@@ -272,46 +261,39 @@ public class RenderedImageSource implements ImageSource {
 	}
 
 	@Override
-	public InputStream open(Card.Printing.Face face) throws IOException {
-		File f = new File(new File(PARENT_DIR, String.format("s%s", face.printing().set().code())), String.format("%s%d.png", face.face().name(), face.printing().variation()));
-
-		if (f.exists()) {
-			return new FileInputStream(f);
-		}
-
+	public BufferedImage open(Card.Printing.Face face) throws IOException {
 		CardRenderLayout layout = new CardRenderLayout(face);
 
-		Task<Void> imageRenderTask = new Task<Void>() {
-			@Override
-			protected Void call() throws Exception {
-				Scene scene = new Scene(layout, WIDTH, HEIGHT, Color.TRANSPARENT);
+		CompletableFuture<WritableImage> render = new CompletableFuture<>();
 
-				if (!f.getParentFile().exists() && !f.mkdirs()) {
-					throw new Error("Unable to create parent directories for " + f.getAbsolutePath());
-				}
+		Platform.runLater(() -> {
+			Scene scene = new Scene(layout, WIDTH, HEIGHT, Color.TRANSPARENT);
+			WritableImage image = scene.snapshot(null);
+			render.complete(image);
+		});
 
-				WritableImage image = scene.snapshot(null);
-				ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", f);
-				return null;
-			}
-		};
-
-		Platform.runLater(imageRenderTask);
-
-		// I don't like blocking here...
-		while (!imageRenderTask.isDone()) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException ie) {
-				break;
-			}
+		try {
+			return SwingFXUtils.fromFXImage(render.get(), null); // TODO: This is pretty wasteful.
+		} catch (InterruptedException e) {
+			return null; // We're dying anyway?
+		} catch (ExecutionException e) {
+			throw new IOException(e);
 		}
-
-		return new FileInputStream(f);
 	}
 
 	@Override
-	public InputStream open(Card.Printing printing) throws IOException {
-		return null;
+	public BufferedImage open(Card.Printing printing) throws IOException {
+		if (printing.face(Card.Face.Kind.Front) != null) {
+			return open(printing.face(Card.Face.Kind.Front));
+		} else if (printing.face(Card.Face.Kind.Left) != null) {
+			return open(printing.face(Card.Face.Kind.Left));
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public boolean cacheable() {
+		return false;
 	}
 }
