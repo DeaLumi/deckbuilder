@@ -146,7 +146,7 @@ public class Images {
 
 	private static <T> CompletableFuture<Image> open(T key, Map<T, SoftReference<Image>> cache, ImageOpener getter, Function<BufferedImage, BufferedImage> transform) {
 		synchronized(cache) {
-			if (!cache.containsKey(key) || cache.get(key) == null) {
+			if (!cache.containsKey(key) || cache.get(key) == null || cache.get(key).get() == null) {
 				cache.put(key, new SoftReference<>(LOADING_CARD));
 
 				CompletableFuture<Image> ret = new CompletableFuture<>();

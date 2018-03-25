@@ -29,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class CardZoomPreview {
-	private static final double DURATION = 300;
+	private static final double DURATION = 150;
 
 	private final Stage stage;
 	private final Rectangle2D start;
