@@ -7,10 +7,7 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.Images;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.*;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -232,6 +229,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
+	public static class ContextMenu extends javafx.scene.control.ContextMenu {
+		public final SimpleObjectProperty<CardInstance> card = new SimpleObjectProperty<>();
+		public final SimpleObjectProperty<CardView.Group> group = new SimpleObjectProperty<>();
+		public final SimpleObjectProperty<CardView> view = new SimpleObjectProperty<>();
+	}
+
 	private final Context context;
 
 	private ObservableList<CardInstance> model;
@@ -259,6 +262,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private CardZoomPreview zoomPreview;
 
 	private Consumer<CardInstance> doubleClick;
+	private ContextMenu contextMenu;
 
 	private DoubleProperty cardScaleProperty;
 	private BooleanProperty showEmptyGroupsProperty;
@@ -300,6 +304,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.hoverGroup = this.dragGroup = null;
 
 		this.doubleClick = ci -> {};
+		this.contextMenu = null;
 
 		model(model, true);
 
@@ -501,6 +506,18 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						layout();
 					}
 				}
+			} else if (me.getButton() == MouseButton.SECONDARY) {
+				if (this.contextMenu != null) {
+					if (hoverCard != null) {
+						// For now, we only show the menu if there's a card.
+						// It's possible there will be group actions later.
+						this.contextMenu.hide();
+						this.contextMenu.view.set(this);
+						this.contextMenu.card.set(hoverCard);
+						this.contextMenu.group.set(hoverGroup);
+						this.contextMenu.show(this, me.getScreenX(), me.getScreenY());
+					}
+				}
 			}
 		});
 
@@ -510,6 +527,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		});
 
 		setOnMousePressed(me -> {
+			if (this.contextMenu != null) {
+				this.contextMenu.hide();
+			}
+
 			if (!me.isAltDown() && me.getButton() == MouseButton.PRIMARY && hoverCard == null) {
 				panning = true;
 				lastDragX = me.getX();
@@ -807,8 +828,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return this.sortingElements;
 	}
 
-	public void doubleClick(Consumer<CardInstance> doubleClick) {
+	public CardView doubleClick(Consumer<CardInstance> doubleClick) {
 		this.doubleClick = doubleClick;
+		return this;
+	}
+
+	public CardView contextMenu(ContextMenu contextMenu) {
+		this.contextMenu = contextMenu;
+		return this;
 	}
 
 	public DoubleProperty cardScaleProperty() {

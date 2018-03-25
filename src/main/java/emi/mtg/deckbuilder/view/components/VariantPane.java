@@ -2,14 +2,18 @@ package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.MainWindow;
 import javafx.beans.binding.Bindings;
+import javafx.collections.ObservableList;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 
 import java.util.EnumMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class VariantPane extends Tab {
 	public final DeckList.Variant variant;
@@ -62,6 +66,8 @@ public class VariantPane extends Tab {
 			}
 		});
 
+		CardView.ContextMenu contextMenu = createZoneContextMenu(context);
+
 		SplitPane splitter = new SplitPane();
 
 		this.deckPanes = new EnumMap<>(Zone.class);
@@ -69,6 +75,7 @@ public class VariantPane extends Tab {
 		for (Zone zone : Zone.values()) {
 			CardPane deckZone = new CardPane(zone.name(), context, variant.cards(zone), "Piles", CardView.DEFAULT_SORTING);
 			deckZone.view().doubleClick(ci -> deckZone.model().remove(ci));
+			deckZone.view().contextMenu(contextMenu);
 			deckPanes.put(zone, deckZone);
 
 			if (variant.deck().format().deckZones().contains(zone)) {
@@ -97,5 +104,46 @@ public class VariantPane extends Tab {
 		});
 
 		closableProperty().bind(Bindings.size(variant.deck().variants()).greaterThan(1));
+	}
+
+	private CardView.ContextMenu createZoneContextMenu(Context context) {
+		CardView.ContextMenu zoneContextMenu = new CardView.ContextMenu();
+
+		MenuItem removeAllMenuItem = new MenuItem("Remove All");
+		removeAllMenuItem.visibleProperty().bind(zoneContextMenu.card.isNotNull());
+		removeAllMenuItem.setOnAction(ae -> zoneContextMenu.view.get().model().removeIf(ci -> zoneContextMenu.card.get().card().equals(ci.card())));
+
+		Menu moveAllMenu = new Menu("Move All To");
+		moveAllMenu.visibleProperty().bind(zoneContextMenu.card.isNotNull());
+
+		for (Zone zone : Zone.values()) {
+			MenuItem moveToZoneMenuItem = new MenuItem(zone.name());
+			moveToZoneMenuItem.visibleProperty().bind(zoneContextMenu.card.isNotNull().and(Bindings.createBooleanBinding(() -> {
+				if (deckPanes == null || deckPanes.get(zone) == null) {
+					return false;
+				}
+
+				if (zoneContextMenu.view.get() == null) {
+					return false;
+				}
+
+				return context.deck.format().deckZones().contains(zone) && zoneContextMenu.view.get().model() != deckPanes.get(zone).model();
+			}, zoneContextMenu.view)));
+			moveToZoneMenuItem.setOnAction(ae -> {
+				CardInstance card = zoneContextMenu.card.get();
+				ObservableList<CardInstance> sourceModel = zoneContextMenu.view.get().model();
+				ObservableList<CardInstance> targetModel = deckPanes.get(zone).model();
+
+				List<CardInstance> moving = sourceModel.stream().filter(ci -> ci.card().equals(card.card())).collect(Collectors.toList());
+				sourceModel.removeAll(moving);
+				targetModel.addAll(moving);
+			});
+
+			moveAllMenu.getItems().add(moveToZoneMenuItem);
+		}
+
+		zoneContextMenu.getItems().addAll(removeAllMenuItem, moveAllMenu);
+
+		return zoneContextMenu;
 	}
 }

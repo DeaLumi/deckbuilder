@@ -5,6 +5,7 @@ import emi.lib.Service;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.lib.mtg.game.impl.formats.TraditionalFormat;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
@@ -20,6 +21,7 @@ import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -78,6 +80,7 @@ public class MainWindow extends Application {
 	private boolean deckModified;
 
 	private CardPane collection;
+	private CardView.ContextMenu collectionContextMenu;
 
 	private FileChooser primaryFileChooser;
 	private DeckImportExport primarySerdes;
@@ -188,10 +191,48 @@ public class MainWindow extends Application {
 		loading.hide();
 	}
 
+	private CardPane deckPane(Zone zone) {
+		return ((VariantPane) deckVariantTabs.getSelectionModel().getSelectedItem()).deckPanes.get(zone);
+	}
+
+	private void createCollectionContextMenu() {
+		collectionContextMenu = new CardView.ContextMenu();
+
+		Menu fillMenu = new Menu("Fill");
+		fillMenu.visibleProperty().bind(collectionContextMenu.card.isNotNull());
+
+		for (Zone zone : Zone.values()) {
+			MenuItem fillZoneMenuItem = new MenuItem(zone.name());
+			fillZoneMenuItem.visibleProperty().bind(collectionContextMenu.card.isNotNull().and(Bindings.createBooleanBinding(() -> context.deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty())));
+			fillZoneMenuItem.setOnAction(ae -> {
+				long max;
+				if (context.deck.format() instanceof TraditionalFormat) {
+					max = ((TraditionalFormat) context.deck.format()).maxCardCopies();
+				} else {
+					max = 1;
+				}
+
+				ObservableList<CardInstance> zoneModel = deckPane(zone).model();
+				CardInstance source = collectionContextMenu.card.get();
+
+				long count = max - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
+				for (int i = 0; i < count; ++i) {
+					zoneModel.add(new CardInstance(source.printing()));
+				}
+			});
+			fillMenu.getItems().add(fillZoneMenuItem);
+		}
+
+		collectionContextMenu.getItems().addAll(fillMenu);
+	}
+
 	private void setupUI() {
+		createCollectionContextMenu();
+
 		collection = new CardPane("Collection", context, new ObservableListWrapper<>(new ArrayList<>()), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().immutableModelProperty().set(true);
-		collection.view().doubleClick(ci -> ((VariantPane) deckVariantTabs.getSelectionModel().getSelectedItem()).deckPanes.get(Zone.Library).model().add(new CardInstance(ci.printing())));
+		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
+		collection.view().contextMenu(collectionContextMenu);
 		collection.showIllegalCards.set(false);
 		collection.showVersionsSeparately.set(false);
 
