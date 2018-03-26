@@ -74,7 +74,10 @@ public class VariantPane extends Tab {
 
 		for (Zone zone : Zone.values()) {
 			CardPane deckZone = new CardPane(zone.name(), context, variant.cards(zone), "Piles", CardView.DEFAULT_SORTING);
-			deckZone.view().doubleClick(ci -> deckZone.model().remove(ci));
+			deckZone.view().doubleClick(ci -> {
+				deckZone.model().remove(ci);
+				window.collection().view().scheduleRender();
+			});
 			deckZone.view().contextMenu(contextMenu);
 			deckPanes.put(zone, deckZone);
 

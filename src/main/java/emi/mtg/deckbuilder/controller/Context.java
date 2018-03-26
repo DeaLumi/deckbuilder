@@ -6,19 +6,20 @@ import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
+import emi.lib.mtg.game.impl.formats.AbstractFormat;
 import emi.lib.mtg.scryfall.ScryfallDataSource;
-import emi.mtg.deckbuilder.model.DeckList;
-import emi.mtg.deckbuilder.model.EmptyDataSource;
-import emi.mtg.deckbuilder.model.Preferences;
-import emi.mtg.deckbuilder.model.State;
+import emi.mtg.deckbuilder.model.*;
 import emi.mtg.deckbuilder.view.Images;
+import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -37,6 +38,7 @@ public class Context {
 	public final Tags tags;
 
 	public DeckList deck;
+	public DeckList.Variant activeVariant;
 
 	public final Preferences preferences;
 	public final State state;
@@ -105,5 +107,35 @@ public class Context {
 		OutputStreamWriter writer = new OutputStreamWriter(fos);
 		gson.toJson(this.state, writer);
 		writer.close();
+	}
+
+	public EnumSet<CardView.CardState> flagCard(CardInstance ci, boolean countIsInfinite) {
+		EnumSet<CardView.CardState> states = EnumSet.noneOf(CardView.CardState.class);
+
+		if (deck != null && deck.format() != null) {
+			if (!deck.format().cardIsLegal(ci.card())) {
+				states.add(CardView.CardState.Flagged);
+			}
+
+			if (deck.format() instanceof AbstractFormat) {
+				AbstractFormat fmt = (AbstractFormat) deck.format();
+				long zonedCount = activeVariant.cards().values().stream()
+						.flatMap(Collection::stream)
+						.filter(inZone -> inZone.card().equals(ci.card()))
+						.count();
+
+				if (countIsInfinite) {
+					if (zonedCount >= fmt.maxCardCopies()) {
+						states.add(CardView.CardState.Full);
+					}
+				} else {
+					if (zonedCount > fmt.maxCardCopies()) {
+						states.add(CardView.CardState.Flagged);
+					}
+				}
+			}
+		}
+
+		return states;
 	}
 }

@@ -5,7 +5,7 @@ import emi.lib.Service;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
-import emi.lib.mtg.game.impl.formats.TraditionalFormat;
+import emi.lib.mtg.game.impl.formats.AbstractFormat;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
@@ -206,8 +206,8 @@ public class MainWindow extends Application {
 			fillZoneMenuItem.visibleProperty().bind(collectionContextMenu.card.isNotNull().and(Bindings.createBooleanBinding(() -> context.deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty())));
 			fillZoneMenuItem.setOnAction(ae -> {
 				long max;
-				if (context.deck.format() instanceof TraditionalFormat) {
-					max = ((TraditionalFormat) context.deck.format()).maxCardCopies();
+				if (context.deck.format() instanceof AbstractFormat) {
+					max = ((AbstractFormat) context.deck.format()).maxCardCopies();
 				} else {
 					max = 1;
 				}
@@ -240,6 +240,10 @@ public class MainWindow extends Application {
 
 		deckVariantTabs.getSelectionModel().selectedItemProperty().addListener((obs, old, newTab) -> {
 			if ((newTab != deckVariantTabNew && newTab != deckVariantTabImport) || deckVariantTabs.getTabs().size() <= 2) {
+				if (newTab instanceof VariantPane) {
+					context.activeVariant = ((VariantPane) newTab).variant;
+				}
+
 				return;
 			}
 
@@ -255,6 +259,10 @@ public class MainWindow extends Application {
 				}
 			}
 		});
+	}
+
+	public CardPane collection() {
+		return collection;
 	}
 
 	private void setupImportExport() {

@@ -977,9 +977,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		scheduleRender();
 	}
 
-	private enum CardState {
+	public enum CardState {
 		Hover,
-		Flagged
+		Flagged,
+		Full
 	}
 
 	class RenderStruct {
@@ -1062,14 +1063,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				CompletableFuture<Image> futureImage = this.context.images.getThumbnail(printing);
 
 				if (futureImage.isDone()) {
-					EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
+					EnumSet<CardState> states = context.flagCard(ci, immutableModel.getValue());
 
 					if (hoverCard == ci) {
 						states.add(CardState.Hover);
-					}
-
-					if (context.deck != null && context.deck.formatProperty().getValue() != null && !context.deck.formatProperty().getValue().cardIsLegal(ci.card())) {
-						states.add(CardState.Flagged);
 					}
 
 					renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.UNAVAILABLE_CARD), states));
@@ -1114,11 +1111,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			for (Map.Entry<MVec2d, RenderStruct> str : renderMap.entrySet()) {
 				if (str.getValue().state.contains(CardState.Hover)) {
-					gfx.setFill(Color.color(0.7, 0.7, 0.7));
+					gfx.setFill(Color.color(0.2, 0.5, 1.0));
 					gfx.fillRoundRect(str.getKey().x - p, str.getKey().y - p, p + w + p, p + h + p, w / 8.0, w / 8.0);
 				}
 
 				gfx.drawImage(str.getValue().img, str.getKey().x, str.getKey().y, cardWidth(), cardHeight());
+
+				if (str.getValue().state.contains(CardState.Full)) {
+					gfx.setFill(Color.color(0.0, 0.0, 0.0, 0.5));
+					gfx.fillRoundRect(str.getKey().x, str.getKey().y, cardWidth(), cardHeight(), w / 8.0, w / 8.0);
+				}
 
 				if (str.getValue().state.contains(CardState.Flagged)) {
 					gfx.setStroke(Color.RED);
