@@ -8,8 +8,10 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.Images;
 import javafx.application.Platform;
 import javafx.beans.property.*;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Rectangle2D;
@@ -249,11 +251,21 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
 
-	private boolean panning;
-	private double lastDragX, lastDragY;
+	private enum DragMode {
+		None,
+		DragAndDrop,
+		Panning,
+		Zooming,
+		Selecting
+	}
+
+	private volatile DragMode dragMode;
+	private volatile double dragStartX, dragStartY;
+	private volatile double lastDragX, lastDragY;
 
 	private Group hoverGroup;
 	private CardInstance hoverCard;
+	public final ObservableSet<CardInstance> selectedCards = FXCollections.observableSet(new HashSet<>());
 
 	private Group dragGroup;
 	private CardInstance dragCard;
@@ -456,7 +468,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnMouseClicked(me -> {
 			if (me.getButton() == MouseButton.PRIMARY) {
 				if (me.isAltDown()) {
-					if (hoverCard.card().printings().size() == 1) {
+					if (hoverCard == null || hoverCard.card().printings().size() == 1) {
 						return;
 					}
 
@@ -527,39 +539,68 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		});
 
 		setOnMousePressed(me -> {
+			this.requestFocus();
+
 			if (this.contextMenu != null) {
 				this.contextMenu.hide();
 			}
 
-			if (!me.isAltDown() && me.getButton() == MouseButton.PRIMARY && hoverCard == null) {
-				panning = true;
-				lastDragX = me.getX();
-				lastDragY = me.getY();
-				me.consume();
+			dragStartX = lastDragX = me.getX();
+			dragStartY = lastDragY = me.getY();
+
+			if (me.getButton() == MouseButton.PRIMARY) {
+				dragMode = hoverCard == null ? DragMode.Selecting : DragMode.DragAndDrop;
+			} else if (me.getButton() == MouseButton.SECONDARY) {
+				dragMode = DragMode.None;
 			} else if (me.getButton() == MouseButton.MIDDLE) {
-				showPreview(me);
+				dragMode = hoverCard == null ? DragMode.Panning : DragMode.Zooming;
 			}
 		});
 
 		setOnMouseDragged(me -> {
-			if (panning) {
-				scrollX.set(Math.max(scrollMinX.get(), Math.min(scrollX.get() - (me.getX() - lastDragX), scrollMaxX.get())));
-				scrollY.set(Math.max(scrollMinY.get(), Math.min(scrollY.get() - (me.getY() - lastDragY), scrollMaxY.get())));
-
-				lastDragX = me.getX();
-				lastDragY = me.getY();
-				me.consume();
-			} else if (me.getButton() == MouseButton.MIDDLE) {
-				showPreview(me);
+			switch (dragMode) {
+				case None:
+					break;
+				case DragAndDrop:
+					break;
+				case Panning:
+					scrollX.set(Math.max(scrollMinX.get(), Math.min(scrollX.get() - (me.getX() - lastDragX), scrollMaxX.get())));
+					scrollY.set(Math.max(scrollMinY.get(), Math.min(scrollY.get() - (me.getY() - lastDragY), scrollMaxY.get())));
+					break;
+				case Selecting:
+					break;
+				case Zooming:
+					showPreview(me);
+					break;
 			}
+
+			lastDragX = me.getX();
+			lastDragY = me.getY();
+
+			scheduleRender();
 		});
 
 		setOnMouseReleased(me -> {
-			if (panning) {
-				lastDragX = -1;
-				lastDragY = -1;
-				panning = false;
+			switch (dragMode) {
+				case None:
+					break;
+				case DragAndDrop:
+					break;
+				case Panning:
+					break;
+				case Zooming:
+					break;
+				case Selecting:
+					selectedCards.clear();
+					selectedCards.addAll(cardsInBounds(dragStartX, dragStartY, me.getX(), me.getY()));
+					break;
 			}
+
+			lastDragX = -1;
+			lastDragY = -1;
+			dragStartX = -1;
+			dragStartY = -1;
+			dragMode = DragMode.None;
 
 			if (zoomPreview != null) {
 				zoomPreview.close();
@@ -656,6 +697,48 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				e.printStackTrace();
 			}
 		}
+	}
+
+	private Set<CardInstance> cardsInBounds(double x1, double y1, double x2, double y2) {
+		Set<CardInstance> selectedCards = new HashSet<>();
+
+		double x1s = Math.min(x1, x2);
+		double y1s = Math.min(y1, y2);
+		double x2s = Math.max(x1, x2);
+		double y2s = Math.max(y1, y2);
+
+		MVec2d loc = new MVec2d();
+		for (int i = 0; i < groupedModel.length; ++i) {
+			if (groupedModel[i] == null) {
+				continue;
+			}
+
+			final Bounds bounds = groupedModel[i].groupBounds;
+			final MVec2d gpos = new MVec2d(bounds.pos).plus(-scrollX.get(), -scrollY.get());
+
+			if (gpos.x < -bounds.dim.x || gpos.x > getWidth() || gpos.y < -bounds.dim.y || gpos.y > getHeight()) {
+				continue;
+			}
+
+			for (int j = 0; j < groupedModel[i].model.size(); ++j) {
+				loc = engine.coordinatesOf(j, loc);
+				loc = loc.plus(groupedModel[i].groupBounds.pos).plus(-scrollX.get(), -scrollY.get());
+
+				if (loc.x < -cardWidth() || loc.x > getWidth() || loc.y < -cardHeight() || loc.y > getHeight()) {
+					continue;
+				}
+
+				final CardInstance ci = groupedModel[i].model.get(j);
+				double cx = loc.x + cardWidth() / 2;
+				double cy = loc.y + cardHeight() / 2;
+
+				if (cx >= x1s && cx <= x2s && cy >= y1s && cy <= y2s) {
+					selectedCards.add(ci);
+				}
+			}
+		}
+
+		return selectedCards;
 	}
 
 	private MVec2d cardCoordinatesOf(double x, double y) {
@@ -995,19 +1078,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		public final Image img;
 		public final EnumSet<CardState> state;
 
-		public RenderStruct(Image img) {
-			this.img = img;
-			this.state = EnumSet.noneOf(CardState.class);
-		}
-
 		public RenderStruct(Image img, EnumSet<CardState> states) {
 			this.img = img;
 			this.state = states;
-		}
-
-		public RenderStruct(Image img, CardState state, CardState... states) {
-			this.img = img;
-			this.state = EnumSet.of(state, states);
 		}
 	}
 
@@ -1077,6 +1150,21 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						states.add(CardState.Hover);
 					}
 
+					if (selectedCards.contains(ci)) {
+						states.add(CardState.Selected);
+					} else {
+						double dragBoxX1 = Math.min(dragStartX, lastDragX);
+						double dragBoxY1 = Math.min(dragStartY, lastDragY);
+						double dragBoxX2 = Math.max(dragStartX, lastDragX);
+						double dragBoxY2 = Math.max(dragStartY, lastDragY);
+						double cx = loc.x + cardWidth()/2;
+						double cy = loc.y + cardHeight()/2;
+
+						if (cx >= dragBoxX1 && cx <= dragBoxX2 && cy >= dragBoxY1 && cy <= dragBoxY2) {
+							states.add(CardState.Selected);
+						}
+					}
+
 					renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.UNAVAILABLE_CARD), states));
 				} else {
 					futureImage.thenRun(this::scheduleRender);
@@ -1139,6 +1227,21 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						}
 					}
 				}
+			}
+
+			if (dragMode == DragMode.Selecting) {
+				double x = Math.min(dragStartX, lastDragX);
+				double y = Math.min(dragStartY, lastDragY);
+				double w = Math.max(dragStartX, lastDragX) - x;
+				double h = Math.max(dragStartY, lastDragY) - y;
+
+				gfx.setFill(Color.color(0.11764706f, 0.5647059f, 1.0f, 0.25f));
+				gfx.fillRect(x, y, w, h);
+
+				gfx.setStroke(Color.DODGERBLUE);
+				gfx.setFill(Color.TRANSPARENT);
+				gfx.setLineWidth(2.0);
+				gfx.strokeRect(x, y, w, h);
 			}
 		});
 	}
