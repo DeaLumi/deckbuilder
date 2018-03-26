@@ -276,7 +276,7 @@ public class CardPane extends BorderPane {
 				Platform.runLater(() -> deckStats.setText(str.toString()));
 
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(500);
 				} catch (InterruptedException ie) {
 					break;
 				}
