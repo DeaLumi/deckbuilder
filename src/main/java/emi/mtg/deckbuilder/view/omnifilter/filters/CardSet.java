@@ -10,27 +10,34 @@ import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 @Service.Property.String(name="shorthand", value="s")
 public class CardSet implements Omnifilter.Subfilter {
 	private final Omnifilter.Operator operator;
-	private final String value;
+	private final emi.lib.mtg.Set value;
 
 	public CardSet(Context context, Omnifilter.Operator operator, String value) {
 		this.operator = operator;
-		this.value = value.toLowerCase();
+		this.value = context.data.sets().stream()
+			.filter(s -> s.name().toLowerCase().equals(value.toLowerCase()) || s.code().toLowerCase().equals(value.toLowerCase()))
+			.findAny().orElse(null);
 	}
 
 	@Override
 	public boolean test(CardInstance ci) {
+		if (value == null) {
+			return false;
+		}
+
 		switch (operator) {
-			case DIRECT:
-			case EQUALS:
-				return ci.printing().set().name().toLowerCase().equals(value) || ci.printing().set().code().toLowerCase().equals(value);
-			case NOT_EQUALS:
-				return !ci.printing().set().name().toLowerCase().equals(value) && !ci.printing().set().code().toLowerCase().equals(value);
-			case LESS_THAN:
-			case GREATER_THAN:
 			case LESS_OR_EQUALS:
+			case EQUALS:
+				return ci.set() == value;
+			case NOT_EQUALS:
+				return ci.set() != value;
+			case GREATER_THAN:
+				return ci.card().printings().stream().anyMatch(x -> x.set() == value) && ci.set() != value;
+			case DIRECT:
 			case GREATER_OR_EQUALS:
-				// TODO: Maybe throw in constructor...
-				return true;
+				return ci.card().printings().stream().anyMatch(x -> x.set() == value);
+			case LESS_THAN:
+				return false;
 			default:
 				assert false;
 				return false;
