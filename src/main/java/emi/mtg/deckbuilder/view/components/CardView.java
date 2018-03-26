@@ -978,9 +978,17 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public enum CardState {
-		Hover,
-		Flagged,
-		Full
+		Hover (Color.DODGERBLUE, Color.TRANSPARENT),
+		Selected (Color.YELLOW, Color.TRANSPARENT),
+		Flagged (Color.RED, Color.TRANSPARENT),
+		Full (Color.TRANSPARENT, Color.color(0.0f, 0.0f, 0.0f, 0.5f));
+
+		public final Color outlineColor, fillColor;
+
+		CardState(Color outlineColor, Color fillColor) {
+			this.outlineColor = outlineColor;
+			this.fillColor = fillColor;
+		}
 	}
 
 	class RenderStruct {
@@ -1105,27 +1113,31 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						groupedModel[i].labelBounds.dim.x);
 			}
 
-			final double w = cardWidth();
-			final double h = cardHeight();
-			final double p = cardPadding();
+			final double cw = cardWidth();
+			final double ch = cardHeight();
 
 			for (Map.Entry<MVec2d, RenderStruct> str : renderMap.entrySet()) {
-				if (str.getValue().state.contains(CardState.Hover)) {
-					gfx.setFill(Color.color(0.2, 0.5, 1.0));
-					gfx.fillRoundRect(str.getKey().x - p, str.getKey().y - p, p + w + p, p + h + p, w / 8.0, w / 8.0);
-				}
+				gfx.drawImage(str.getValue().img, str.getKey().x, str.getKey().y, cw, ch);
 
-				gfx.drawImage(str.getValue().img, str.getKey().x, str.getKey().y, cardWidth(), cardHeight());
+				boolean drewFill = false, drewOutline = false;
 
-				if (str.getValue().state.contains(CardState.Full)) {
-					gfx.setFill(Color.color(0.0, 0.0, 0.0, 0.5));
-					gfx.fillRoundRect(str.getKey().x, str.getKey().y, cardWidth(), cardHeight(), w / 8.0, w / 8.0);
-				}
+				for (CardState state : CardState.values()) {
+					if (str.getValue().state.contains(state)) {
+						if (!drewFill && state.fillColor != Color.TRANSPARENT) {
+							drewFill = true;
 
-				if (str.getValue().state.contains(CardState.Flagged)) {
-					gfx.setStroke(Color.RED);
-					gfx.setLineWidth(4.0);
-					gfx.strokeRoundRect(str.getKey().x, str.getKey().y, w, h, w / 12.0, w / 12.0);
+							gfx.setFill(state.fillColor);
+							gfx.fillRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 8.0, cw / 8.0);
+						}
+
+						if (!drewOutline && state.outlineColor != Color.TRANSPARENT) {
+							drewOutline = true;
+
+							gfx.setStroke(state.outlineColor);
+							gfx.setLineWidth(4.0);
+							gfx.strokeRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 12.0, cw / 12.0);
+						}
+					}
 				}
 			}
 		});
