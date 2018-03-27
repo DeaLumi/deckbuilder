@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
+import emi.lib.mtg.characteristic.Supertype;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.impl.formats.AbstractFormat;
 import emi.lib.mtg.scryfall.ScryfallDataSource;
@@ -117,20 +118,24 @@ public class Context {
 				states.add(CardView.CardState.Flagged);
 			}
 
-			if (deck.format() instanceof AbstractFormat) {
-				AbstractFormat fmt = (AbstractFormat) deck.format();
-				long zonedCount = activeVariant.cards().values().stream()
-						.flatMap(Collection::stream)
-						.filter(inZone -> inZone.card().equals(ci.card()))
-						.count();
+			// TODO: libmtg should really have, like, card.quantityRule() or something.
+			Card.Face front = ci.card().face(Card.Face.Kind.Front);
+			if (front == null || (!front.type().supertypes().contains(Supertype.Basic) && !front.rules().contains("A deck can have any number of cards named"))) {
+				if (deck.format() instanceof AbstractFormat) {
+					AbstractFormat fmt = (AbstractFormat) deck.format();
+					long zonedCount = activeVariant.cards().values().stream()
+							.flatMap(Collection::stream)
+							.filter(inZone -> inZone.card().equals(ci.card()))
+							.count();
 
-				if (countIsInfinite) {
-					if (zonedCount >= fmt.maxCardCopies()) {
-						states.add(CardView.CardState.Full);
-					}
-				} else {
-					if (zonedCount > fmt.maxCardCopies()) {
-						states.add(CardView.CardState.Flagged);
+					if (countIsInfinite) {
+						if (zonedCount >= fmt.maxCardCopies()) {
+							states.add(CardView.CardState.Full);
+						}
+					} else {
+						if (zonedCount > fmt.maxCardCopies()) {
+							states.add(CardView.CardState.Flagged);
+						}
 					}
 				}
 			}
