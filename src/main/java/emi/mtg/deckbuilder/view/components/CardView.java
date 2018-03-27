@@ -259,7 +259,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		Selecting
 	}
 
-	private volatile DragMode dragMode;
+	private volatile DragMode dragMode = DragMode.None;
 	private volatile double dragStartX, dragStartY;
 	private volatile double lastDragX, lastDragY;
 
@@ -463,8 +463,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			de.consume();
 		});
 
-		setOnMousePressed(me -> this.requestFocus());
-
 		setOnMouseClicked(me -> {
 			if (me.getButton() == MouseButton.PRIMARY) {
 				if (me.isAltDown()) {
@@ -549,11 +547,40 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			dragStartY = lastDragY = me.getY();
 
 			if (me.getButton() == MouseButton.PRIMARY) {
-				dragMode = hoverCard == null ? DragMode.Selecting : DragMode.DragAndDrop;
+				if (!me.isAltDown()) {
+					if (hoverCard == null) {
+						if (!me.isControlDown()) {
+							selectedCards.clear();
+						}
+
+						dragMode = DragMode.Selecting;
+					} else {
+						dragMode = DragMode.DragAndDrop;
+
+						if (!selectedCards.contains(hoverCard)) {
+							if (!me.isControlDown()) {
+								selectedCards.clear();
+							}
+							selectedCards.add(hoverCard);
+						}
+					}
+				}
 			} else if (me.getButton() == MouseButton.SECONDARY) {
 				dragMode = DragMode.None;
+
+				if (!selectedCards.contains(hoverCard)) {
+					if (!me.isControlDown()) {
+						selectedCards.clear();
+					}
+					selectedCards.add(hoverCard);
+				}
 			} else if (me.getButton() == MouseButton.MIDDLE) {
-				dragMode = hoverCard == null ? DragMode.Panning : DragMode.Zooming;
+				if (hoverCard == null) {
+					dragMode = DragMode.Panning;
+				} else {
+					dragMode = DragMode.Zooming;
+					showPreview(me);
+				}
 			}
 		});
 
@@ -591,7 +618,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				case Zooming:
 					break;
 				case Selecting:
-					selectedCards.clear();
+					if (!me.isControlDown()) {
+						selectedCards.clear();
+					}
 					selectedCards.addAll(cardsInBounds(dragStartX, dragStartY, me.getX(), me.getY()));
 					break;
 			}
@@ -699,6 +728,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
+	private boolean cardInBounds(MVec2d loc, double x1, double y1, double x2, double y2) {
+		return loc.x + cardWidth() >= x1 && loc.x <= x2 && loc.y + cardHeight() >= y1 && loc.y <= y2;
+	}
+
 	private Set<CardInstance> cardsInBounds(double x1, double y1, double x2, double y2) {
 		Set<CardInstance> selectedCards = new HashSet<>();
 
@@ -728,12 +761,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					continue;
 				}
 
-				final CardInstance ci = groupedModel[i].model.get(j);
-				double cx = loc.x + cardWidth() / 2;
-				double cy = loc.y + cardHeight() / 2;
-
-				if (cx >= x1s && cx <= x2s && cy >= y1s && cy <= y2s) {
-					selectedCards.add(ci);
+				if (cardInBounds(loc, x1s, y1s, x2s, y2s)) {
+					selectedCards.add(groupedModel[i].model.get(j));
 				}
 			}
 		}
@@ -1062,7 +1091,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public enum CardState {
 		Hover (Color.DODGERBLUE, Color.TRANSPARENT),
-		Selected (Color.YELLOW, Color.TRANSPARENT),
+		Selected (Color.GREEN, Color.TRANSPARENT),
 		Flagged (Color.RED, Color.TRANSPARENT),
 		Full (Color.TRANSPARENT, Color.color(0.0f, 0.0f, 0.0f, 0.5f));
 
@@ -1118,6 +1147,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		SortedMap<MVec2d, RenderStruct> renderMap = new TreeMap<>();
 		MVec2d loc = new MVec2d();
 
+		double dragBoxX1 = Math.min(dragStartX, lastDragX);
+		double dragBoxY1 = Math.min(dragStartY, lastDragY);
+		double dragBoxX2 = Math.max(dragStartX, lastDragX);
+		double dragBoxY2 = Math.max(dragStartY, lastDragY);
+
 		for (int i = 0; i < groupedModel.length; ++i) {
 			if (groupedModel[i] == null) {
 				continue;
@@ -1152,15 +1186,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 					if (selectedCards.contains(ci)) {
 						states.add(CardState.Selected);
-					} else {
-						double dragBoxX1 = Math.min(dragStartX, lastDragX);
-						double dragBoxY1 = Math.min(dragStartY, lastDragY);
-						double dragBoxX2 = Math.max(dragStartX, lastDragX);
-						double dragBoxY2 = Math.max(dragStartY, lastDragY);
-						double cx = loc.x + cardWidth()/2;
-						double cy = loc.y + cardHeight()/2;
-
-						if (cx >= dragBoxX1 && cx <= dragBoxX2 && cy >= dragBoxY1 && cy <= dragBoxY2) {
+					} else if (dragMode == DragMode.Selecting) {
+						if (cardInBounds(loc, dragBoxX1, dragBoxY1, dragBoxX2, dragBoxY2)) {
 							states.add(CardState.Selected);
 						}
 					}
@@ -1222,7 +1249,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							drewOutline = true;
 
 							gfx.setStroke(state.outlineColor);
-							gfx.setLineWidth(4.0);
+							gfx.setLineWidth(6.0);
 							gfx.strokeRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 12.0, cw / 12.0);
 						}
 					}
