@@ -66,7 +66,7 @@ public class VariantPane extends Tab {
 			}
 		});
 
-		CardView.ContextMenu contextMenu = createZoneContextMenu(context);
+		CardView.ContextMenu contextMenu = createZoneContextMenu(context, window);
 
 		SplitPane splitter = new SplitPane();
 
@@ -109,19 +109,23 @@ public class VariantPane extends Tab {
 		closableProperty().bind(Bindings.size(variant.deck().variants()).greaterThan(1));
 	}
 
-	private CardView.ContextMenu createZoneContextMenu(Context context) {
+	private CardView.ContextMenu createZoneContextMenu(Context context, MainWindow window) {
 		CardView.ContextMenu zoneContextMenu = new CardView.ContextMenu();
 
 		MenuItem removeAllMenuItem = new MenuItem("Remove All");
-		removeAllMenuItem.visibleProperty().bind(zoneContextMenu.card.isNotNull());
-		removeAllMenuItem.setOnAction(ae -> zoneContextMenu.view.get().model().removeIf(ci -> zoneContextMenu.card.get().card().equals(ci.card())));
+		removeAllMenuItem.visibleProperty().bind(zoneContextMenu.cards.sizeProperty().isEqualTo(1));
+		removeAllMenuItem.setOnAction(ae -> {
+			zoneContextMenu.view.get().model().removeIf(ci -> zoneContextMenu.cards.get().stream().anyMatch(ciSel -> ciSel.card() == ci.card()));
+			zoneContextMenu.cards.clear();
+			window.collection().view().scheduleRender();
+		});
 
 		Menu moveAllMenu = new Menu("Move All To");
-		moveAllMenu.visibleProperty().bind(zoneContextMenu.card.isNotNull());
+		moveAllMenu.visibleProperty().bind(zoneContextMenu.cards.sizeProperty().isEqualTo(1));
 
 		for (Zone zone : Zone.values()) {
 			MenuItem moveToZoneMenuItem = new MenuItem(zone.name());
-			moveToZoneMenuItem.visibleProperty().bind(zoneContextMenu.card.isNotNull().and(Bindings.createBooleanBinding(() -> {
+			moveToZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> {
 				if (deckPanes == null || deckPanes.get(zone) == null) {
 					return false;
 				}
@@ -131,17 +135,19 @@ public class VariantPane extends Tab {
 				}
 
 				return context.deck.format().deckZones().contains(zone) && zoneContextMenu.view.get().model() != deckPanes.get(zone).model();
-			}, zoneContextMenu.view)));
+			}, zoneContextMenu.view));
 			moveToZoneMenuItem.setOnAction(ae -> {
-				CardInstance card = zoneContextMenu.card.get();
-				ObservableList<CardInstance> sourceModel = zoneContextMenu.view.get().model();
-				ObservableList<CardInstance> targetModel = deckPanes.get(zone).model();
+				for (CardInstance card : zoneContextMenu.cards) {
+					ObservableList<CardInstance> sourceModel = zoneContextMenu.view.get().model();
+					ObservableList<CardInstance> targetModel = deckPanes.get(zone).model();
 
-				List<CardInstance> moving = sourceModel.stream().filter(ci -> ci.card().equals(card.card())).collect(Collectors.toList());
-				sourceModel.removeAll(moving);
-				targetModel.addAll(moving);
+					List<CardInstance> moving = sourceModel.stream().filter(ci -> ci.card().equals(card.card())).collect(Collectors.toList());
+					sourceModel.removeAll(moving);
+					targetModel.addAll(moving);
+				}
+				zoneContextMenu.cards.clear();
+				window.collection().view().scheduleRender();
 			});
-
 			moveAllMenu.getItems().add(moveToZoneMenuItem);
 		}
 

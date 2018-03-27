@@ -232,7 +232,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public static class ContextMenu extends javafx.scene.control.ContextMenu {
-		public final SimpleObjectProperty<CardInstance> card = new SimpleObjectProperty<>();
+		public final SetProperty<CardInstance> cards = new SimpleSetProperty<>();
 		public final SimpleObjectProperty<CardView.Group> group = new SimpleObjectProperty<>();
 		public final SimpleObjectProperty<CardView> view = new SimpleObjectProperty<>();
 	}
@@ -343,6 +343,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			if (de.getButton() != MouseButton.PRIMARY) {
 				return;
 			}
+
+			selectedCards.retainAll(model);
 
 			if (selectedCards.isEmpty()) {
 				return;
@@ -520,12 +522,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				}
 			} else if (me.getButton() == MouseButton.SECONDARY) {
 				if (this.contextMenu != null) {
-					if (hoverCard != null) {
-						// For now, we only show the menu if there's a card.
-						// It's possible there will be group actions later.
+					selectedCards.retainAll(model);
+					if (!selectedCards.isEmpty()) {
 						this.contextMenu.hide();
 						this.contextMenu.view.set(this);
-						this.contextMenu.card.set(hoverCard);
+						this.contextMenu.cards.set(selectedCards);
 						this.contextMenu.group.set(hoverGroup);
 						this.contextMenu.show(this, me.getScreenX(), me.getScreenY());
 					}
@@ -540,6 +541,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		setOnMousePressed(me -> {
 			this.requestFocus();
+			mouseMoved(me.getX(), me.getY());
 
 			if (this.contextMenu != null) {
 				this.contextMenu.hide();
@@ -1092,10 +1094,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public enum CardState {
-		Hover (Color.DODGERBLUE, Color.TRANSPARENT),
-		Selected (Color.GREEN, Color.TRANSPARENT),
-		Flagged (Color.RED, Color.TRANSPARENT),
-		Full (Color.TRANSPARENT, Color.color(0.0f, 0.0f, 0.0f, 0.5f));
+		Full (Color.TRANSPARENT, Color.color(0.0f, 0.0f, 0.0f, 0.5f)),
+		Hover (Color.GREEN, Color.TRANSPARENT),
+		Selected (Color.DODGERBLUE, Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25)),
+		Flagged (Color.RED, Color.TRANSPARENT);
 
 		public final Color outlineColor, fillColor;
 
@@ -1264,7 +1266,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				double w = Math.max(dragStartX, lastDragX) - x;
 				double h = Math.max(dragStartY, lastDragY) - y;
 
-				gfx.setFill(Color.color(0.11764706f, 0.5647059f, 1.0f, 0.25f));
+				gfx.setFill(Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25));
 				gfx.fillRect(x, y, w, h);
 
 				gfx.setStroke(Color.DODGERBLUE);

@@ -199,25 +199,26 @@ public class MainWindow extends Application {
 		collectionContextMenu = new CardView.ContextMenu();
 
 		Menu fillMenu = new Menu("Fill");
-		fillMenu.visibleProperty().bind(collectionContextMenu.card.isNotNull());
+		fillMenu.visibleProperty().bind(collectionContextMenu.cards.emptyProperty().not());
 
 		for (Zone zone : Zone.values()) {
 			MenuItem fillZoneMenuItem = new MenuItem(zone.name());
-			fillZoneMenuItem.visibleProperty().bind(collectionContextMenu.card.isNotNull().and(Bindings.createBooleanBinding(() -> context.deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty())));
+			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> context.deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty()));
 			fillZoneMenuItem.setOnAction(ae -> {
-				long max;
-				if (context.deck.format() instanceof AbstractFormat) {
-					max = ((AbstractFormat) context.deck.format()).maxCardCopies();
-				} else {
-					max = 1;
-				}
+				for (CardInstance source : collectionContextMenu.cards) {
+					long max;
+					if (context.deck.format() instanceof AbstractFormat) {
+						max = ((AbstractFormat) context.deck.format()).maxCardCopies();
+					} else {
+						max = 1;
+					}
 
-				ObservableList<CardInstance> zoneModel = deckPane(zone).model();
-				CardInstance source = collectionContextMenu.card.get();
+					ObservableList<CardInstance> zoneModel = deckPane(zone).model();
 
-				long count = max - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
-				for (int i = 0; i < count; ++i) {
-					zoneModel.add(new CardInstance(source.printing()));
+					long count = max - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
+					for (int i = 0; i < count; ++i) {
+						zoneModel.add(new CardInstance(source.printing()));
+					}
 				}
 			});
 			fillMenu.getItems().add(fillZoneMenuItem);
