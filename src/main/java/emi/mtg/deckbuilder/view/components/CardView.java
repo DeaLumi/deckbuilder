@@ -378,17 +378,19 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			mouseMoved(de.getX(), de.getY());
 
 			if (CardView.dragSource == this) {
-				if (!selectedCards.stream().allMatch(hoverGroup.group::contains)) {
+				if (hoverGroup != null && !selectedCards.stream().allMatch(hoverGroup.group::contains)) {
 					if (CardView.dragModified) {
 						de.acceptTransferModes(TransferMode.LINK);
 					} else {
 						de.acceptTransferModes(TransferMode.MOVE);
 					}
-				} else {
+				} else if (hoverGroup != null) {
 					de.acceptTransferModes(); // TODO: If we ever allow rearranging within groups.
+				} else {
+					// Don't accept.
 				}
 				de.consume();
-			} else if (CardView.dragSource != this) {
+			} else if (CardView.dragSource != null) {
 				if (CardView.dragModified) {
 					de.acceptTransferModes(TransferMode.COPY);
 				} else {
@@ -452,7 +454,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							}
 						}
 					}
-				} else if (CardView.dragTarget != this) {
+				} else if (CardView.dragTarget != null) {
 					if (!immutableModel.get()) {
 						this.model.removeAll(selectedCards);
 					}
