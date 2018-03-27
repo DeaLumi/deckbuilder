@@ -267,9 +267,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private CardInstance hoverCard;
 	public final ObservableSet<CardInstance> selectedCards = FXCollections.observableSet(new HashSet<>());
 
-	private Group dragGroup;
-	private CardInstance dragCard;
-
 	private CardInstance zoomedCard;
 	private CardZoomPreview zoomPreview;
 
@@ -312,8 +309,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.immutableModel = new SimpleBooleanProperty(false);
 
-		this.hoverCard = this.dragCard = null;
-		this.hoverGroup = this.dragGroup = null;
+		this.hoverCard = null;
+		this.hoverGroup = null;
 
 		this.doubleClick = ci -> {};
 		this.contextMenu = null;
@@ -343,63 +340,58 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		});
 
 		setOnDragDetected(de -> {
-			mouseMoved(de.getX(), de.getY());
-
 			if (de.getButton() != MouseButton.PRIMARY) {
 				return;
 			}
 
-			this.dragCard = this.hoverCard;
-			this.dragGroup = this.hoverGroup;
-
-			if (this.dragCard == null) {
-				de.consume();
+			if (selectedCards.isEmpty()) {
 				return;
 			}
 
-			// TODO: This is a workaround: JDK-8148025
-			CardView.dragModified = de.isControlDown();
-			CardView.dragSource = this;
-
 			Dragboard db = this.startDragAndDrop(TransferMode.ANY);
-			try {
-				context.images.getThumbnail(this.dragCard.printing()).thenAccept(db::setDragView).get();
-			} catch (ExecutionException | InterruptedException e) {
-				e.printStackTrace();
-				db.setDragView(Images.UNAVAILABLE_CARD);
+
+			CardInstance view;
+			if (selectedCards.size() == 1) {
+				view = selectedCards.iterator().next();
+			} else if (hoverCard != null) {
+				view = hoverCard;
+			} else {
+				view = null;
 			}
 
-			Map<DataFormat, Object> content = new HashMap<>();
-			content.put(DataFormat.PLAIN_TEXT, this.dragCard.card().name());
-			content.put(DRAG_FORMAT, this.dragCard.printing().id());
-			db.setContent(content);
+			if (view != null) {
+				db.setDragView(context.images.getThumbnail(view.printing()).thenApply(img -> {
+					db.setDragView(img);
+					return img;
+				}).getNow(Images.LOADING_CARD));
+			}
 
+			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, selectedCards.toString()));
+			CardView.dragModified = de.isControlDown();
+			CardView.dragSource = this;
 			de.consume();
 		});
 
 		setOnDragOver(de -> {
 			mouseMoved(de.getX(), de.getY());
 
-			if (dragSource == this) {
-				if (this.hoverGroup != this.dragGroup) {
-					if (dragModified) {
+			if (CardView.dragSource == this) {
+				if (!selectedCards.stream().allMatch(hoverGroup.group::contains)) {
+					if (CardView.dragModified) {
 						de.acceptTransferModes(TransferMode.LINK);
 					} else {
 						de.acceptTransferModes(TransferMode.MOVE);
 					}
 				} else {
-					de.acceptTransferModes(); // TODO: If we ever allow rearranging groups.
+					de.acceptTransferModes(); // TODO: If we ever allow rearranging within groups.
 				}
-
 				de.consume();
-			} else if (dragSource != null) {
-				// Manually calculate set intersection, since we didn't enforce dragModes in DragDetected.
-				if (dragModified) {
+			} else if (CardView.dragSource != this) {
+				if (CardView.dragModified) {
 					de.acceptTransferModes(TransferMode.COPY);
 				} else {
 					de.acceptTransferModes(TransferMode.MOVE);
 				}
-
 				de.consume();
 			} else {
 				// TODO: Accept transfer from other programs/areas?
@@ -407,19 +399,23 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		});
 
 		setOnDragDropped(de -> {
-			if (dragSource == this) {
+			if (CardView.dragSource == this) {
 				if (this.grouping.supportsModification()) {
-					this.hoverGroup.group.add(this.dragCard);
+					this.selectedCards.forEach(this.hoverGroup.group::add);
 
+					Set<Card> cards = this.selectedCards.stream().map(CardInstance::card).collect(Collectors.toSet());
 					for (int i = 0; i < this.model.size(); ++i) {
-						if (this.model.get(i).card() == this.dragCard.card()) {
-							this.model.set(i, this.model.get(i));
+						if (cards.contains(this.model.get(i).card())) {
+							this.model.set(i, this.model.get(i)); // Refresh groupings
 						}
 					}
 				}
-			} else if (dragSource != null) {
+			} else if (CardView.dragSource != null) {
 				if (!immutableModel.get()) {
-					this.model.add(new CardInstance(dragSource.dragCard.printing()));
+					Set<CardInstance> newCards = dragSource.selectedCards.stream().map(CardInstance::printing).map(CardInstance::new).collect(Collectors.toSet());
+					this.model.addAll(newCards);
+					this.selectedCards.clear();
+					this.selectedCards.addAll(newCards);
 				}
 			} else {
 				// TODO: Accept transfer from other programs/areas?
@@ -434,32 +430,38 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		setOnDragDone(de -> {
 			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-				if (dragTarget == this) {
+				if (CardView.dragTarget == this) {
 					if (this.grouping.supportsModification()) {
-						this.dragGroup.group.remove(this.dragCard);
+						Set<Card> modifiedCards = new HashSet<>();
+						for (Group group : this.groupedModel) {
+							if (group == hoverGroup) {
+								continue;
+							}
+
+							for (CardInstance ci : selectedCards) {
+								group.group.remove(ci);
+								modifiedCards.add(ci.card());
+							}
+						}
 
 						for (int i = 0; i < this.model.size(); ++i) {
-							if (this.model.get(i).card() == this.dragCard.card()) {
+							if (modifiedCards.contains(this.model.get(i).card())) {
 								this.model.set(i, this.model.get(i));
 							}
 						}
 					}
-				} else if (dragTarget != null) {
+				} else if (CardView.dragTarget != this) {
 					if (!immutableModel.get()) {
-						this.model.remove(this.dragCard);
+						this.model.removeAll(selectedCards);
 					}
-				} else {
-					// TODO: Accept transfer to other programs/areas?
-					// probably passively... just say 'okay whatevs'...
+					selectedCards.clear();
 				}
 			}
 
-			this.dragCard = null;
-			this.dragGroup = null;
+			layout();
 
 			CardView.dragSource = null;
-			CardView.dragModified = false;
-
+			CardView.dragTarget = null;
 			de.consume();
 		});
 
