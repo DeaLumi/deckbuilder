@@ -4,7 +4,6 @@ import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.ImageSource;
 import emi.lib.mtg.img.MtgAwtImageUtils;
-import emi.lib.mtg.img.MtgImageUtils;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
@@ -38,6 +37,23 @@ public class Images {
 
 	public static final Image UNAVAILABLE_CARD, UNAVAILABLE_CARD_LARGE, LOADING_CARD, LOADING_CARD_LARGE;
 
+	static Image loadImage(String path, int w, int h, int blank) {
+		try {
+			InputStream input = Images.class.getResourceAsStream(path);
+			Image img = new Image(input);
+			input.close();
+			return img;
+		} catch (IOException | NullPointerException e) {
+			WritableImage writable = new WritableImage(w, h);
+			for (int y = 0; y < h; ++y) {
+				for (int x = 0; x < w; ++x) {
+					writable.getPixelWriter().setArgb(x, y, blank);
+				}
+			}
+			return writable;
+		}
+	}
+
 	static {
 		if (!IMAGES.exists() && !IMAGES.mkdirs()) {
 			throw new Error("Unable to create directory for card images...");
@@ -51,39 +67,10 @@ public class Images {
 			throw new Error("Unable to create directory for card face images...");
 		}
 
-		Image unavailable;
-		try {
-			InputStream input = Images.class.getResourceAsStream("/META-INF/unavailable.png");
-			unavailable = new Image(input);
-			input.close();
-		} catch (IOException | NullPointerException e) {
-			WritableImage writable = new WritableImage((int) CARD_WIDTH, (int) CARD_HEIGHT);
-			for (int y = 0; y < CARD_HEIGHT; ++y) {
-				for (int x = 0; x < CARD_WIDTH; ++x) {
-					writable.getPixelWriter().setArgb(x, y, 0xff000000);
-				}
-			}
-			unavailable = writable;
-		}
-		UNAVAILABLE_CARD_LARGE = unavailable;
-		UNAVAILABLE_CARD = MtgImageUtils.scaled(unavailable, CARD_WIDTH, CARD_HEIGHT, true);
-
-		Image loading;
-		try {
-			InputStream input = Images.class.getResourceAsStream("/META-INF/loading.png");
-			loading = new Image(input);
-			input.close();
-		} catch (IOException | NullPointerException e) {
-			WritableImage writable = new WritableImage((int) CARD_WIDTH, (int) CARD_HEIGHT);
-			for (int y = 0; y < CARD_HEIGHT; ++y) {
-				for (int x = 0; x < CARD_WIDTH; ++x) {
-					writable.getPixelWriter().setArgb(x, y, 0xffff0000);
-				}
-			}
-			loading = writable;
-		}
-		LOADING_CARD_LARGE = loading;
-		LOADING_CARD = MtgImageUtils.scaled(loading, CARD_WIDTH, CARD_HEIGHT, true);
+		UNAVAILABLE_CARD_LARGE = loadImage("/META-INF/unavailable.png", 2 * (int) CARD_WIDTH, 2 * (int) CARD_HEIGHT, 0xff000000);
+		UNAVAILABLE_CARD = loadImage("/META-INF/unavailable-small.png", (int) CARD_WIDTH, (int) CARD_HEIGHT, 0xff000000);
+		LOADING_CARD_LARGE = loadImage("/META-INF/loading.png", 2 * (int) CARD_WIDTH, 2 * (int) CARD_HEIGHT, 0xffff0000);
+		LOADING_CARD = loadImage("/META-INF/loading-small.png", (int) CARD_WIDTH, (int) CARD_HEIGHT, 0xffff0000);
 	}
 
 	private static final ExecutorService IMAGE_LOAD_POOL = Executors.newCachedThreadPool(r -> {
@@ -170,7 +157,7 @@ public class Images {
 										cache.put(key, new SoftReference<>(image));
 										ret.complete(image);
 
-										if (source.cacheable()) {
+										if (key instanceof Card.Printing || source.cacheable()) {
 											if ((!f.getParentFile().exists() || !f.getParentFile().isDirectory()) && !f.getParentFile().mkdirs()) {
 												throw new IOException();
 											}
