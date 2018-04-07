@@ -26,6 +26,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
+import javafx.stage.Screen;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -292,7 +293,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.sort = convertSorts(sorts);
 		this.grouping = groupingsMap.get(grouping).uncheckedInstance(context);
 
-		this.cardScaleProperty = new SimpleDoubleProperty(1.0);
+		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());
 
 		this.showEmptyGroupsProperty = new SimpleBooleanProperty(false);
