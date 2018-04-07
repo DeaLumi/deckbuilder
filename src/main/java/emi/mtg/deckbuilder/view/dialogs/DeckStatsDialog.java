@@ -116,7 +116,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 							case 0:
 								continue;
 							case 1:
-								key = mc.color().iterator().next();
+								key = sym.color().iterator().next();
 								break;
 							default:
 								key = null;
