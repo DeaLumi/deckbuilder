@@ -154,8 +154,7 @@ public class MainWindow extends Application {
 			}
 
 			try {
-				context.savePreferences();
-				context.saveState();
+				context.saveAll();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -621,7 +620,7 @@ public class MainWindow extends Application {
 
 			try {
 				context.preferences.updateUri = new URI(newUri);
-				savePreferences();
+				context.saveAll();
 
 				ForkJoinPool.commonPool().submit(() -> {
 					try {

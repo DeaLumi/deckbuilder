@@ -143,4 +143,10 @@ public class Context {
 
 		return states;
 	}
+
+	public void saveAll() throws IOException {
+		savePreferences();
+		saveTags();
+		saveState();
+	}
 }
