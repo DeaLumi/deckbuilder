@@ -240,9 +240,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private final Context context;
 
-	private ObservableList<CardInstance> model;
-	private FilteredList<CardInstance> filteredModel;
-	private Group[] groupedModel;
+	private volatile ObservableList<CardInstance> model;
+	private volatile FilteredList<CardInstance> filteredModel;
+	private volatile Group[] groupedModel;
 
 	private LayoutEngine engine;
 	private Comparator<CardInstance> sort;
@@ -345,7 +345,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				return;
 			}
 
-			selectedCards.retainAll(model);
+			selectedCards.retainAll(this.model);
 
 			if (selectedCards.isEmpty()) {
 				return;
@@ -525,7 +525,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				}
 			} else if (me.getButton() == MouseButton.SECONDARY) {
 				if (this.contextMenu != null) {
-					selectedCards.retainAll(model);
+					selectedCards.retainAll(this.model);
 					if (!selectedCards.isEmpty()) {
 						this.contextMenu.hide();
 						this.contextMenu.view.set(this);

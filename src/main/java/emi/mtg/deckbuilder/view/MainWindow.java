@@ -41,6 +41,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
@@ -48,6 +53,24 @@ import java.util.stream.Collectors;
 public class MainWindow extends Application {
 	public static void main(String[] args) {
 		launch(args);
+	}
+
+	private static final ClassLoader pluginClassLoader;
+
+	static {
+		ClassLoader tmp;
+		try {
+			List<URL> urls = new ArrayList<>();
+			for (Path path : Files.newDirectoryStream(Paths.get("plugins/"), "*.jar")) {
+				urls.add(path.toUri().toURL());
+			}
+			tmp = new URLClassLoader(urls.toArray(new URL[urls.size()]), MainWindow.class.getClassLoader());
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+			System.err.println("Warning: Unable to load any plugins...");
+			tmp = new URLClassLoader(new URL[0], MainWindow.class.getClassLoader());
+		}
+		pluginClassLoader = tmp;
 	}
 
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
@@ -277,7 +300,7 @@ public class MainWindow extends Application {
 			this.newDeckMenu.getItems().add(item);
 		}
 
-		this.variantSerdes = Service.Loader.load(VariantImportExport.class).stream()
+		this.variantSerdes = Service.Loader.load(VariantImportExport.class, pluginClassLoader).stream()
 				.collect(Collectors.toMap(
 						vies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", vies.string("name"), vies.string("extension")), String.format("*.%s", vies.string("extension"))),
 						vies -> vies.uncheckedInstance(context)
