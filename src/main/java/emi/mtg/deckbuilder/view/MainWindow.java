@@ -520,12 +520,6 @@ public class MainWindow extends Application {
 				"The UI of this program is really dense! Here are some bits on some subtle\n"
 				+ "but powerful features!\n"
 				+ "\n"
-				+ "Deck variants:\n"
-				+ "\u2022 Tabs on the bottom show different versions of your deck.\n"
-				+ "\u2022 All versions are saved to one file when you use Deck -> Save/Save As.\n"
-				+ "\u2022 To rename a variant, double-click the tab, or right click -> Info...\n"
-				+ "\u2022 You can export a variant to a single decklist as plain text or MTGO v4 .dek\n"
-				+ "\n"
 				+ "Card versions:\n"
 				+ "\u2022 Alt+Click on cards to show all printings.\n"
 				+ "\u2022 Double-click a printing to change the version of the card you clicked on.\n"
@@ -573,7 +567,7 @@ public class MainWindow extends Application {
 				+ "\n"
 				+ "Upcoming features:\n"
 				+ "\u2022 Logic \u2014 And, or, not, and parenthetical grouping.\n"
-				+ "\u2022 Keys \u2014 Mana, power, toughness, loyalty, etc.");
+				+ "\u2022 More keys \u2014 e.g. Mana cost.");
 		alert.getDialogPane().setPrefWidth(550.0);
 		alert.showAndWait();
 	}
