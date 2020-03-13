@@ -10,6 +10,7 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.impl.formats.AbstractFormat;
 import emi.lib.mtg.scryfall.ScryfallDataSource;
 import emi.mtg.deckbuilder.model.*;
+import emi.mtg.deckbuilder.util.Profiling;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -22,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 public class Context {
@@ -39,12 +41,12 @@ public class Context {
 	public final Tags tags;
 
 	public DeckList deck;
-	public DeckList.Variant activeVariant;
 
 	public final Preferences preferences;
 	public final State state;
 
 	public Context() throws IOException {
+		Profiling.start();
 		DataSource data;
 		try {
 			data = new ScryfallDataSource();
@@ -52,7 +54,9 @@ public class Context {
 			data = new EmptyDataSource();
 		}
 		this.data = data;
+		Profiling.stop("DataSource");
 
+		Profiling.start();
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
 				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(this.data))
@@ -61,7 +65,9 @@ public class Context {
 				.registerTypeAdapterFactory(TypeAdapters.createPropertyTypeAdapterFactory())
 				.registerTypeAdapterFactory(TypeAdapters.createObservableListTypeAdapterFactory())
 				.create();
+		Profiling.stop("gson");
 
+		Profiling.start();
 		if (Files.exists(PREFERENCES)) {
 			Reader reader = Files.newBufferedReader(PREFERENCES);
 			this.preferences = gson.fromJson(reader, Preferences.class);
@@ -69,7 +75,9 @@ public class Context {
 		} else {
 			this.preferences = new Preferences();
 		}
+		Profiling.stop("preferences");
 
+		Profiling.start();
 		if (Files.exists(STATE)) {
 			Reader reader = Files.newBufferedReader(STATE);
 			this.state = gson.fromJson(reader, State.class);
@@ -77,12 +85,21 @@ public class Context {
 		} else {
 			this.state = new State();
 		}
+		Profiling.stop("state");
 
+		Profiling.start();
 		this.images = new Images();
+		Profiling.stop("new Images()");
+		Profiling.start();
 		this.tags = new Tags(this);
+		Profiling.stop("new Tags()");
+		Profiling.start();
 		this.deck = new DeckList("", "", preferences.defaultFormat, "", Collections.emptyMap());
+		Profiling.stop("new DeckList()");
 
+		Profiling.start();
 		loadTags();
+		Profiling.stop("loadTags()");
 	}
 
 	public void savePreferences() throws IOException {
@@ -92,11 +109,15 @@ public class Context {
 	}
 
 	public void loadTags() throws IOException {
-		try {
-			this.tags.load(TAGS);
-		} catch (NoSuchFileException fnfe) {
-			// do nothing
-		}
+		ForkJoinPool.commonPool().submit(() -> {
+			try {
+				this.tags.load(TAGS);
+			} catch (NoSuchFileException fnfe) {
+				// do nothing
+			} catch (IOException e) {
+				throw new RuntimeException(e); // TODO do this better
+			}
+		});
 	}
 
 	public void saveTags() throws IOException {
@@ -123,7 +144,7 @@ public class Context {
 			if (front == null || (!front.type().supertypes().contains(Supertype.Basic) && !front.rules().contains("A deck can have any number of cards named"))) {
 				if (deck.format() instanceof AbstractFormat) {
 					AbstractFormat fmt = (AbstractFormat) deck.format();
-					long zonedCount = activeVariant.cards().values().stream()
+					long zonedCount = deck.cards().values().stream()
 							.flatMap(Collection::stream)
 							.filter(inZone -> inZone.card().equals(ci.card()))
 							.count();

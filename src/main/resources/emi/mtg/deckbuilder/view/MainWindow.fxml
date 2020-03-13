@@ -33,6 +33,7 @@
                     <SeparatorMenuItem/>
                     <MenuItem text="Update Deck Builder" onAction="#updateDeckbuilder"/>
                     <MenuItem text="Update Data" onAction="#updateData"/>
+                    <MenuItem text="Remodel" onAction="#remodel"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Quit" onAction="#actionQuit">
                         <accelerator>
@@ -50,10 +51,7 @@
     </top>
     <center>
         <SplitPane orientation="VERTICAL" fx:id="collectionSplitter">
-            <TabPane fx:id="deckVariantTabs" AnchorPane.rightAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0" styleClass="variantTabs">
-                <Tab text="New..." fx:id="deckVariantTabNew" closable="false" styleClass="functionalTab"/>
-                <Tab text="Import..." fx:id="deckVariantTabImport" closable="false" styleClass="functionalTab"/>
-            </TabPane>
+            <SplitPane fx:id="deckSplitter" AnchorPane.rightAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0"/>
         </SplitPane>
     </center>
 </BorderPane>

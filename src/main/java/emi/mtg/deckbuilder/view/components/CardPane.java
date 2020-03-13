@@ -9,9 +9,7 @@ import emi.mtg.deckbuilder.view.dialogs.SortDialog;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.*;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -123,6 +121,7 @@ public class CardPane extends BorderPane {
 
 	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().allMatch(f -> CardType.CONSTRUCTED_TYPES.containsAll(f.type().cardTypes()));
 
+	private final Menu deckMenu;
 	private final EventHandler<ActionEvent> updateFilter;
 	private final CardView cardView;
 
@@ -136,7 +135,7 @@ public class CardPane extends BorderPane {
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		MenuBar menuBar = new MenuBar();
-		Menu deckMenu = new Menu(title);
+		deckMenu = new Menu(title);
 		menuBar.getMenus().add(deckMenu);
 
 		Menu groupingMenu = new Menu("Grouping");
@@ -297,6 +296,10 @@ public class CardPane extends BorderPane {
 		this.setTop(controlBar);
 
 		updateFilter();
+	}
+
+	public String title() {
+		return deckMenu.getText();
 	}
 
 	private static boolean append(StringBuilder str, boolean comma, AtomicLong qty, String qtyName) {

@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.controller.serdes.full;
+package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -21,32 +20,11 @@ public class Json implements DeckImportExport {
 		this.context = context;
 	}
 
-	/**
-	 * This is a nasty hack to update the parent pointer of all variants
-	 * in a newly-loaded decklist, via reflection. Note that this MUST
-	 * happen before the decklist is made available to any other thread!
-	 * @param deck The freshly-deserialized decklist.
-	 */
-	private static void updateVariantsParent(DeckList deck) {
-		try {
-			Field f = DeckList.Variant.class.getDeclaredField("this$0");
-			f.setAccessible(true);
-
-			for (DeckList.Variant var : deck.variants()) {
-				f.set(var, deck);
-			}
-		} catch (NoSuchFieldException | IllegalAccessException e) {
-			e.printStackTrace();
-		}
-	}
-
 	@Override
 	public DeckList importDeck(File from) throws IOException {
 		FileReader reader = new FileReader(from);
 
-		DeckList out = context.gson.fromJson(reader, DeckList.class);
-		updateVariantsParent(out);
-
+		DeckList out = context.gson.getAdapter(DeckList.class).fromJson(reader);
 		reader.close();
 
 		return out;

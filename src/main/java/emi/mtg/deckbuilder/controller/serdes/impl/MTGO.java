@@ -1,12 +1,12 @@
-package emi.mtg.deckbuilder.controller.serdes.variant;
+package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
 import emi.lib.mtg.game.impl.formats.EDH;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.Features;
-import emi.mtg.deckbuilder.controller.serdes.VariantImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import org.w3c.dom.Document;
@@ -27,10 +27,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service.Provider(VariantImportExport.class)
+@Service.Provider(DeckImportExport.class)
 @Service.Property.String(name="name", value="MTGO")
 @Service.Property.String(name="extension", value="dek")
-public class MTGO implements VariantImportExport {
+public class MTGO implements DeckImportExport {
 	private final Context context;
 
 	public MTGO(Context context) {
@@ -38,7 +38,7 @@ public class MTGO implements VariantImportExport {
 	}
 
 	@Override
-	public DeckList.Variant importVariant(DeckList deck, File from) throws IOException {
+	public DeckList importDeck(File from) throws IOException {
 		Document xml;
 
 		List<CardInstance> library = new ArrayList<>(),
@@ -93,7 +93,8 @@ public class MTGO implements VariantImportExport {
 		Map<Zone, List<CardInstance>> cards = new HashMap<>();
 		cards.put(Zone.Library, library);
 		cards.put(Zone.Sideboard, sideboard);
-		return deck.new Variant(from.getName().substring(0, from.getName().lastIndexOf('.')), "", cards);
+
+		return new DeckList(from.getName().substring(0, from.getName().lastIndexOf('.')), "", null, "Imported from MTGO.", cards);
 	}
 
 	private static void appendZone(Document xml, Element deckEl, Collection<? extends Card.Printing> printings, boolean sideboard, Set<String> missingCards, Set<String> subbedCards) {
@@ -133,7 +134,7 @@ public class MTGO implements VariantImportExport {
 	}
 
 	@Override
-	public void exportVariant(DeckList.Variant variant, File to) throws IOException {
+	public void exportDeck(DeckList deck, File to) throws IOException {
 		Document xml;
 		try {
 			xml = DocumentBuilderFactory.newInstance()
@@ -160,11 +161,11 @@ public class MTGO implements VariantImportExport {
 		preconDeckIdEl.setTextContent("0");
 		deckEl.appendChild(preconDeckIdEl);
 
-		appendZone(xml, deckEl, variant.cards(Zone.Library), false, missingCards, subbedCards);
-		appendZone(xml, deckEl, variant.cards(Zone.Sideboard), true, missingCards, subbedCards);
+		appendZone(xml, deckEl, deck.cards(Zone.Library), false, missingCards, subbedCards);
+		appendZone(xml, deckEl, deck.cards(Zone.Sideboard), true, missingCards, subbedCards);
 
-		if (variant.deck().format() instanceof EDH) {
-			appendZone(xml, deckEl, variant.cards(Zone.Command), true, missingCards, subbedCards);
+		if (deck.format() instanceof EDH) {
+			appendZone(xml, deckEl, deck.cards(Zone.Command), true, missingCards, subbedCards);
 		}
 
 		if (!missingCards.isEmpty()) {

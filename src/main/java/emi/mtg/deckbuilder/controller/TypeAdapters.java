@@ -56,7 +56,9 @@ public class TypeAdapters {
 
 			@Override
 			public Card.Printing read(JsonReader in) throws IOException {
-				return data.printing(UUID.fromString(in.nextString()));
+				UUID id = UUID.fromString(in.nextString());
+				Card.Printing pr = data.printing(id);
+				return pr;
 			}
 		};
 	}

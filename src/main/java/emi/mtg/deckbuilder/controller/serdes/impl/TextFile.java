@@ -1,11 +1,11 @@
-package emi.mtg.deckbuilder.controller.serdes.variant;
+package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.Features;
-import emi.mtg.deckbuilder.controller.serdes.VariantImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 
@@ -17,10 +17,10 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Service.Provider(VariantImportExport.class)
+@Service.Provider(DeckImportExport.class)
 @Service.Property.String(name="name", value="Plain Text File")
 @Service.Property.String(name="extension", value="txt")
-public class TextFile implements VariantImportExport {
+public class TextFile implements DeckImportExport {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
 
 	private final Context context;
@@ -30,7 +30,7 @@ public class TextFile implements VariantImportExport {
 	}
 
 	@Override
-	public DeckList.Variant importVariant(DeckList deck, File from) throws IOException {
+	public DeckList importDeck(File from) throws IOException {
 		Scanner scanner = new Scanner(from);
 
 		final String name = from.getName().substring(0, from.getName().lastIndexOf('.'));
@@ -74,7 +74,7 @@ public class TextFile implements VariantImportExport {
 			}
 		}
 
-		return deck.new Variant(name, "", cards);
+		return new DeckList(name, "", null, "", cards);
 	}
 
 	private static void writeList(List<CardInstance> list, Writer writer) throws IOException {
@@ -96,11 +96,11 @@ public class TextFile implements VariantImportExport {
 	}
 
 	@Override
-	public void exportVariant(DeckList.Variant variant, File to) throws IOException {
+	public void exportDeck(DeckList deck, File to) throws IOException {
 		FileWriter writer = new FileWriter(to);
 
 		for (Zone zone : Zone.values()) {
-			if (variant.cards(zone).isEmpty()) {
+			if (deck.cards(zone).isEmpty()) {
 				continue;
 			}
 
@@ -108,7 +108,7 @@ public class TextFile implements VariantImportExport {
 				writer.append('\n').append(zone.name()).append(':').append('\n');
 			}
 
-			writeList(variant.cards(zone), writer);
+			writeList(deck.cards(zone), writer);
 		}
 
 		writer.close();

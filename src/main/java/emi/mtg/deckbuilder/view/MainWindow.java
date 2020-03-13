@@ -10,13 +10,12 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.Features;
-import emi.mtg.deckbuilder.controller.serdes.VariantImportExport;
-import emi.mtg.deckbuilder.controller.serdes.full.Json;
+import emi.mtg.deckbuilder.controller.serdes.impl.Json;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.util.Profiling;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
-import emi.mtg.deckbuilder.view.components.VariantPane;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
@@ -89,13 +88,7 @@ public class MainWindow extends Application {
 	private Menu newDeckMenu;
 
 	@FXML
-	private TabPane deckVariantTabs;
-
-	@FXML
-	private Tab deckVariantTabNew;
-
-	@FXML
-	private Tab deckVariantTabImport;
+	private SplitPane deckSplitter;
 
 	private Updater updater;
 
@@ -109,8 +102,8 @@ public class MainWindow extends Application {
 	private DeckImportExport primarySerdes;
 	private File currentDeckFile;
 
-	private Map<FileChooser.ExtensionFilter, VariantImportExport> variantSerdes;
-	private FileChooser variantFileChooser;
+	private Map<FileChooser.ExtensionFilter, DeckImportExport> deckSerdes;
+	private FileChooser serdesFileChooser;
 
 	public MainWindow() {
 		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
@@ -163,7 +156,9 @@ public class MainWindow extends Application {
 	@Override
 	public void init() throws Exception {
 		this.context = new Context();
+		Profiling.start();
 		this.updater = new Updater(this.context);
+		Profiling.stop("new Updater()");
 	}
 
 	@Override
@@ -187,15 +182,21 @@ public class MainWindow extends Application {
 		loader.setController(this);
 		loader.load();
 
+		Profiling.start();
 		setupUI();
 		setupImportExport();
+		Profiling.stop("setupUI()");
+		Profiling.start();
 		setDeck(context.deck); // TODO: This looks tautological...
+		Profiling.stop("setDeck()");
 
 		stage.setTitle("Deck Builder v0.0.0");
 
+		Profiling.start();
 		stage.setScene(new Scene(root, 1024, 1024));
 		stage.setMaximized(true);
 		stage.show();
+		Profiling.stop("stage.show()");
 
 		if (context.preferences.autoUpdateProgram && updater.needsUpdate() && confirmation("Updater", "Program Update Available", "A new version of the deckbuilder is available -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 			doGraphicalProgramUpdate();
@@ -205,16 +206,20 @@ public class MainWindow extends Application {
 			doGraphicalDataUpdate();
 		}
 
+		Profiling.start();
 		Alert loading = information("Loading", "Loading Card Data...", "Please wait a moment!");
 		loading.getButtonTypes().clear();
 		loading.show();
 		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(context.data)));
 		loading.getButtonTypes().add(ButtonType.OK);
 		loading.hide();
+		Profiling.stop("set model");
+
+		Profiling.report();
 	}
 
 	private CardPane deckPane(Zone zone) {
-		return ((VariantPane) deckVariantTabs.getSelectionModel().getSelectedItem()).deckPanes.get(zone);
+		return deckSplitter.getItems().stream().map(pane -> (CardPane) pane).filter(pane -> pane.title().equals(zone.name())).findAny().orElseThrow(() -> new AssertionError("No zone " + zone.name() + " in deck!"));
 	}
 
 	private void createCollectionContextMenu() {
@@ -260,28 +265,6 @@ public class MainWindow extends Application {
 		collection.showVersionsSeparately.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
-
-		deckVariantTabs.getSelectionModel().selectedItemProperty().addListener((obs, old, newTab) -> {
-			if ((newTab != deckVariantTabNew && newTab != deckVariantTabImport) || deckVariantTabs.getTabs().size() <= 2) {
-				if (newTab instanceof VariantPane) {
-					context.activeVariant = ((VariantPane) newTab).variant;
-				}
-
-				return;
-			}
-
-			if (newTab == deckVariantTabNew) {
-				newVariant();
-			} else if (newTab == deckVariantTabImport) {
-				importVariant();
-			}
-
-			if (obs.getValue() == newTab) {
-				if (old != deckVariantTabNew && old != deckVariantTabImport) {
-					deckVariantTabs.getSelectionModel().select(old);
-				}
-			}
-		});
 	}
 
 	public CardPane collection() {
@@ -300,56 +283,17 @@ public class MainWindow extends Application {
 			this.newDeckMenu.getItems().add(item);
 		}
 
-		this.variantSerdes = Service.Loader.load(VariantImportExport.class, pluginClassLoader).stream()
+		this.deckSerdes = Service.Loader.load(DeckImportExport.class, pluginClassLoader).stream()
 				.collect(Collectors.toMap(
 						vies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", vies.string("name"), vies.string("extension")), String.format("*.%s", vies.string("extension"))),
 						vies -> vies.uncheckedInstance(context)
 				));
 
-		this.variantFileChooser = new FileChooser();
-		this.variantFileChooser.getExtensionFilters().setAll(this.variantSerdes.keySet());
+		this.serdesFileChooser = new FileChooser();
+		this.serdesFileChooser.getExtensionFilters().setAll(this.deckSerdes.keySet());
 	}
 
 	private final ListChangeListener<Object> deckListChangedListener = e -> deckModified = true;
-
-	private final ListChangeListener<? super DeckList.Variant> deckVariantsChangedListener = e -> {
-		while (e.next()) {
-			if (e.wasRemoved()) {
-				e.getRemoved().stream()
-						.flatMap(v -> v.cards().values().stream())
-						.forEach(l -> l.removeListener(deckListChangedListener));
-
-				deckVariantTabs.getTabs().removeIf(t -> t != deckVariantTabNew && t != deckVariantTabImport && e.getRemoved().contains(((VariantPane) t).variant));
-
-				deckModified = true;
-			}
-
-			if (e.wasAdded()) {
-				int lastIndex = deckVariantTabs.getTabs().indexOf(deckVariantTabNew);
-
-				e.getAddedSubList().stream()
-						.flatMap(v -> v.cards().values().stream())
-						.forEach(l -> l.addListener(deckListChangedListener));
-
-				List<VariantPane> newPanes = e.getAddedSubList().stream()
-						.map(v -> new VariantPane(this, context, v))
-						.collect(Collectors.toList());
-
-				deckVariantTabs.getTabs().addAll(lastIndex, newPanes);
-				deckVariantTabs.getSelectionModel().select(lastIndex + newPanes.size() - 1);
-
-				deckModified = true;
-			}
-
-			if (e.wasPermutated()) {
-				throw new UnsupportedOperationException("Please don't permute variants yet...");
-			}
-
-			if (e.wasReplaced()) {
-				throw new UnsupportedOperationException("Please don't replace variants yet...");
-			}
-		}
-	};
 
 	private void setDeck(DeckList deck) {
 		context.deck = deck;
@@ -357,18 +301,11 @@ public class MainWindow extends Application {
 
 		collection.updateFilter();
 
-		deck.variants().removeListener(deckVariantsChangedListener);
-		deck.variants().addListener(deckVariantsChangedListener);
-
-		deckVariantTabs.getTabs().removeIf(t -> t != deckVariantTabNew && t != deckVariantTabImport);
-		deckVariantTabs.getTabs().addAll(0, deck.variants().stream()
-			.map(v -> new VariantPane(this, context, v))
-			.collect(Collectors.toList()));
-		deckVariantTabs.getSelectionModel().select(deckVariantTabs.getTabs().indexOf(deckVariantTabNew) - 1);
-
-		deck.variants().stream()
-				.flatMap(v -> v.cards().values().stream())
-				.forEach(l -> l.addListener(deckListChangedListener));
+		deckSplitter.getItems().clear();
+		deckSplitter.getItems().addAll(deck.format().deckZones().stream()
+																.map(z -> new CardPane(z.name(), context, deck.cards(z)))
+																.peek(pane -> pane.model().addListener(deckListChangedListener))
+																.collect(Collectors.toList()));
 	}
 
 	private void newDeck(Format format) {
@@ -401,12 +338,77 @@ public class MainWindow extends Application {
 		}
 
 		try {
+			if(checkDeckForVariants(from)) {
+				return;
+			}
+
 			setDeck(primarySerdes.importDeck(from));
 			currentDeckFile = from;
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			error("Open Error", "An error occurred while opening:", ioe.getMessage()).showAndWait();
 		}
+	}
+
+	private static class DeckListWithVariants {
+		private static class Variant {
+			public String name;
+			public String description;
+			public Map<Zone, List<CardInstance>> cards;
+		}
+
+		public String name;
+		public Format format;
+		public String author;
+		public String description;
+		public List<Variant> variants;
+
+		public DeckList toDeckList(Variant var) {
+			return new DeckList(var != null && var.name != null && !var.name.isEmpty() ? var.name : this.name,
+					this.author,
+					this.format,
+					var != null && var.description != null && !var.description.isEmpty() ? var.description : this.description,
+					var != null && var.cards != null ? var.cards : Collections.emptyMap());
+		}
+	}
+
+	private boolean checkDeckForVariants(File f) throws IOException {
+		java.io.FileReader reader = new java.io.FileReader(f);
+		DeckListWithVariants lwv = context.gson.getAdapter(DeckListWithVariants.class).fromJson(reader);
+
+		if (lwv == null || lwv.variants == null) {
+			return false;
+		}
+
+		if (lwv.variants.size() <= 1) {
+			DeckListWithVariants.Variant var = lwv.variants.stream().findAny().orElse(null);
+			DeckList list = lwv.toDeckList(var);
+			setDeck(list);
+			currentDeckFile = f;
+			return true;
+		}
+
+		Optional<ButtonType> response = confirmation("Format Mismatch",
+				"Old Format Detected",
+				"The file you're trying to open contains multiple deck-variants.\nThis feature is deprecated. Would you like to save all variants separately?").showAndWait();
+
+		if (response.isPresent() && response.get() == ButtonType.YES) {
+			File parentDir = f.getParentFile();
+			File variantDir = new File(parentDir, (lwv.name != null && !lwv.name.isEmpty() ? lwv.name : f.getName()) + "-Variants");
+			if (!variantDir.isDirectory() && !variantDir.mkdir()) {
+				throw new IOException("Unable to create output directory for variants!");
+			}
+
+			for (int i = 0; i < lwv.variants.size(); ++i) {
+				DeckListWithVariants.Variant var = lwv.variants.get(i);
+				DeckList list = lwv.toDeckList(var);
+				primarySerdes.exportDeck(list, new File(variantDir, String.format("%d - %s.json", i, var.name != null && !var.name.isEmpty() ? var.name : "Unnamed")));
+			}
+
+			information("Success", "Variants Saved", "All variants were saved individually to " + variantDir.getAbsolutePath()).showAndWait();
+		}
+
+		return true;
 	}
 
 	protected boolean offerSaveIfModified() {
@@ -690,6 +692,11 @@ public class MainWindow extends Application {
 	}
 
 	@FXML
+	protected void remodel() {
+		collection.view().model(new ReadOnlyListWrapper<>(collectionModel(context.data)));
+	}
+
+	@FXML
 	protected void updateData() throws IOException {
 		if (!context.data.needsUpdate() && confirmation("Update Data", "Data is fresh.", "Data source seems fresh. Update anyway?")
 				.showAndWait()
@@ -732,24 +739,14 @@ public class MainWindow extends Application {
 	}
 
 	@FXML
-	protected void newVariant() {
-		TextInputDialog nameDialog = new TextInputDialog();
-		nameDialog.setTitle("New Deck Variant");
-		nameDialog.setHeaderText("New Deck Variant");
-		nameDialog.setContentText("Name:");
-		nameDialog.initOwner(stage);
-		nameDialog.showAndWait().ifPresent(s -> context.deck.new Variant(s, "", Collections.emptyMap()));
-	}
-
-	@FXML
-	protected void importVariant() {
-		File f = variantFileChooser.showOpenDialog(stage);
+	protected void importDeck() {
+		File f = serdesFileChooser.showOpenDialog(stage);
 
 		if (f == null) {
 			return;
 		}
 
-		VariantImportExport importer = variantSerdes.get(variantFileChooser.getSelectedExtensionFilter());
+		DeckImportExport importer = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
 		if (!importer.unsupportedFeatures().isEmpty()) {
 			if (!warnAboutSerdes(importer.unsupportedFeatures())) {
@@ -758,51 +755,21 @@ public class MainWindow extends Application {
 		}
 
 		try {
-			importer.importVariant(context.deck, f);
+			setDeck(importer.importDeck(f));
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			error("Import Error", "An error occurred while importing:", ioe.getMessage()).showAndWait();
 		}
 	}
 
-	public void duplicateVariant(DeckList.Variant variant) {
-		variant.deck().new Variant(variant.name(), variant.description(), variant.cards());
-	}
-
-	public void showVariantInfo(DeckList.Variant variant) {
-		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("dialogs/VariantInfoDialog.fxml"));
-			Dialog<Void> dlg = loader.load();
-
-			TextField name = (TextField) dlg.getDialogPane().lookup("#variantName");
-			name.setText(variant.name());
-
-			TextArea description = (TextArea) dlg.getDialogPane().lookup("#variantDescription");
-			description.setText(variant.description());
-
-			dlg.setResultConverter(bt -> {
-				if (bt == ButtonType.OK) {
-					variant.nameProperty().setValue(name.getText());
-					variant.descriptionProperty().setValue(description.getText());
-				}
-
-				return null;
-			});
-
-			dlg.showAndWait();
-		} catch (IOException ioe) {
-			throw new RuntimeException(ioe);
-		}
-	}
-
-	public void exportVariant(DeckList.Variant variant) {
-		File f = variantFileChooser.showSaveDialog(stage);
+	public void exportDeck(DeckList deck) {
+		File f = serdesFileChooser.showSaveDialog(stage);
 
 		if (f == null) {
 			return;
 		}
 
-		VariantImportExport exporter = variantSerdes.get(variantFileChooser.getSelectedExtensionFilter());
+		DeckImportExport exporter = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
 		if (!exporter.unsupportedFeatures().isEmpty()) {
 			if (!warnAboutSerdes(exporter.unsupportedFeatures())) {
@@ -811,7 +778,7 @@ public class MainWindow extends Application {
 		}
 
 		try {
-			exporter.exportVariant(variant, f);
+			exporter.exportDeck(deck, f);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			error("Export Error", "An error occurred while exporting:", ioe.getMessage()).showAndWait();
