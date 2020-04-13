@@ -2,8 +2,8 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
+import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
-import emi.lib.mtg.game.impl.formats.EDH;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.Features;
@@ -164,7 +164,7 @@ public class MTGO implements DeckImportExport {
 		appendZone(xml, deckEl, deck.cards(Zone.Library), false, missingCards, subbedCards);
 		appendZone(xml, deckEl, deck.cards(Zone.Sideboard), true, missingCards, subbedCards);
 
-		if (deck.format() instanceof EDH) {
+		if (deck.format() == Format.Commander || deck.format() == Format.Brawl) {
 			appendZone(xml, deckEl, deck.cards(Zone.Command), true, missingCards, subbedCards);
 		}
 

@@ -2,12 +2,10 @@ package emi.mtg.deckbuilder.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.characteristic.Supertype;
 import emi.lib.mtg.game.Format;
-import emi.lib.mtg.game.impl.formats.AbstractFormat;
 import emi.lib.mtg.scryfall.ScryfallDataSource;
 import emi.mtg.deckbuilder.model.*;
 import emi.mtg.deckbuilder.util.Profiling;
@@ -22,14 +20,9 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Collectors;
 
 public class Context {
-	public static final Map<String, Format> FORMATS = Service.Loader.load(Format.class).stream()
-			.collect(Collectors.toMap(s -> s.string("name"), s -> s.uncheckedInstance()));
-
 	private static final Path PREFERENCES = Paths.get("preferences.json");
 	private static final Path STATE = Paths.get("state.json");
 	private static final Path TAGS = Paths.get("tags.json");
@@ -60,7 +53,7 @@ public class Context {
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
 				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(this.data))
-				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter(FORMATS))
+				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter())
 				.registerTypeAdapter(Path.class, TypeAdapters.createPathTypeAdapter())
 				.registerTypeAdapterFactory(TypeAdapters.createPropertyTypeAdapterFactory())
 				.registerTypeAdapterFactory(TypeAdapters.createObservableListTypeAdapterFactory())
@@ -135,28 +128,33 @@ public class Context {
 		EnumSet<CardView.CardState> states = EnumSet.noneOf(CardView.CardState.class);
 
 		if (deck != null && deck.format() != null) {
-			if (!deck.format().cardIsLegal(ci.card())) {
-				states.add(CardView.CardState.Flagged);
+			switch(ci.card().legality(deck.format())) {
+				case Legal:
+				case Restricted:
+					break;
+				default:
+					if (preferences.theFutureIsNow && ci.card().legality(Format.Future) == Card.Legality.Legal)
+						break;
+
+					states.add(CardView.CardState.Flagged);
+					break;
 			}
 
 			// TODO: libmtg should really have, like, card.quantityRule() or something.
 			Card.Face front = ci.card().face(Card.Face.Kind.Front);
 			if (front == null || (!front.type().supertypes().contains(Supertype.Basic) && !front.rules().contains("A deck can have any number of cards named"))) {
-				if (deck.format() instanceof AbstractFormat) {
-					AbstractFormat fmt = (AbstractFormat) deck.format();
-					long zonedCount = deck.cards().values().stream()
-							.flatMap(Collection::stream)
-							.filter(inZone -> inZone.card().equals(ci.card()))
-							.count();
+				long zonedCount = deck.cards().values().stream()
+						.flatMap(Collection::stream)
+						.filter(inZone -> inZone.card().equals(ci.card()))
+						.count();
 
-					if (countIsInfinite) {
-						if (zonedCount >= fmt.maxCardCopies()) {
-							states.add(CardView.CardState.Full);
-						}
-					} else {
-						if (zonedCount > fmt.maxCardCopies()) {
-							states.add(CardView.CardState.Flagged);
-						}
+				if (countIsInfinite) {
+					if (zonedCount >= deck.format().maxCopies) {
+						states.add(CardView.CardState.Full);
+					}
+				} else {
+					if (zonedCount > deck.format().maxCopies) {
+						states.add(CardView.CardState.Flagged);
 					}
 				}
 			}

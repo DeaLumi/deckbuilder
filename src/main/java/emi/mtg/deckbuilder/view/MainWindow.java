@@ -5,7 +5,6 @@ import emi.lib.Service;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
-import emi.lib.mtg.game.impl.formats.AbstractFormat;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
@@ -237,16 +236,9 @@ public class MainWindow extends Application {
 			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> context.deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty()));
 			fillZoneMenuItem.setOnAction(ae -> {
 				for (CardInstance source : collectionContextMenu.cards) {
-					long max;
-					if (context.deck.format() instanceof AbstractFormat) {
-						max = ((AbstractFormat) context.deck.format()).maxCardCopies();
-					} else {
-						max = 1;
-					}
-
 					ObservableList<CardInstance> zoneModel = deckPane(zone).model();
 
-					long count = max - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
+					long count = context.deck.format().maxCopies - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
 					for (int i = 0; i < count; ++i) {
 						zoneModel.add(new CardInstance(source.printing()));
 					}
@@ -281,7 +273,7 @@ public class MainWindow extends Application {
 		this.primaryFileChooser = new FileChooser();
 		this.primaryFileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files (*.json)", "*.json"));
 
-		for (Format format : Context.FORMATS.values()) {
+		for (Format format : Format.values()) {
 			MenuItem item = new MenuItem(format.name());
 			item.setOnAction(ae -> newDeck(format));
 			this.newDeckMenu.getItems().add(item);
@@ -506,7 +498,7 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showDeckInfoDialog() {
 		try {
-			DeckInfoDialog did = new DeckInfoDialog(Context.FORMATS.values(), context.deck);
+			DeckInfoDialog did = new DeckInfoDialog(context.deck);
 			did.initOwner(this.stage);
 
 			if(did.showAndWait().orElse(false)) {
@@ -614,12 +606,34 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void validateDeck() {
-		Set<String> warnings = context.deck.formatProperty().getValue().validate(context.deck);
+		Format.ValidationResult result = context.deck.formatProperty().getValue().validate(context.deck);
 
-		if (warnings.isEmpty()) {
+		if (result.deckErrors.isEmpty() && result.zoneErrors.values().stream().allMatch(Set::isEmpty) && result.cardErrors.values().stream().allMatch(Set::isEmpty)) {
 			information("Deck Validation", "Deck is valid.", "No validation errors were found!").showAndWait();
 		} else {
-			error("Deck Validation", "Deck has errors:", warnings.stream().map(s -> "\u2022 " + s).collect(Collectors.joining("\n"))).showAndWait();
+			StringBuilder msg = new StringBuilder();
+			for (String err : result.deckErrors) {
+				msg.append("\u2022 ").append(err).append("\n");
+			}
+
+			for (Map.Entry<Zone, Set<String>> zone : result.zoneErrors.entrySet()) {
+				if (zone.getValue().isEmpty()) continue;
+
+				msg.append("\n").append(zone.getKey().name()).append(":\n");
+				for (String err : zone.getValue()) {
+					msg.append("\u2022 ").append(err).append("\n");
+				}
+			}
+
+			Set<String> cardErrors = result.cardErrors.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
+			if (!cardErrors.isEmpty()) {
+				msg.append("\nCard errors:\n");
+				for (String err : cardErrors) {
+					msg.append("\u2022 ").append(err).append("\n");
+				}
+			}
+
+			error("Deck Validation", "Deck has errors:", msg.toString().trim()).showAndWait();
 		}
 	}
 

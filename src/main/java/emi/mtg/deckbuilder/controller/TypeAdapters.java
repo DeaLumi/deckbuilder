@@ -20,18 +20,17 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.UUID;
 
 public class TypeAdapters {
-	public static TypeAdapter<Format> createFormatAdapter(Map<String, Format> formats) {
+	public static TypeAdapter<Format> createFormatAdapter() {
 		return new TypeAdapter<Format>() {
 			@Override
 			public void write(JsonWriter out, Format value) throws IOException {
 				if (value == null) {
 					out.nullValue();
 				} else {
-					out.value(formats.entrySet().stream().filter(e -> e.getValue().equals(value)).map(Map.Entry::getKey).findAny().orElse(null));
+					out.value(value.name());
 				}
 			}
 
@@ -39,7 +38,13 @@ public class TypeAdapters {
 			public Format read(JsonReader in) throws IOException {
 				switch (in.peek()) {
 					case STRING:
-						return formats.get(in.nextString());
+						String v = in.nextString();
+						if ("EDH".equals(v)) v = "Commander"; // Quick hack for continuity.
+						try {
+							return Format.valueOf(v);
+						} catch (IllegalArgumentException iae) {
+							return Format.Freeform;
+						}
 					default:
 						return null;
 				}

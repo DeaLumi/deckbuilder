@@ -7,7 +7,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 
 import java.io.IOException;
-import java.util.Collection;
 
 public class DeckInfoDialog extends Dialog<Boolean> {
 	@FXML
@@ -22,7 +21,7 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 	@FXML
 	private TextArea descriptionField;
 
-	public DeckInfoDialog(Collection<? extends Format> formats, DeckList deck) throws IOException {
+	public DeckInfoDialog(DeckList deck) throws IOException {
 		setTitle("Deck Info");
 
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("DeckInfoDialog.fxml"));
@@ -34,7 +33,7 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 		authorField.setText(deck.authorProperty().getValue());
 		descriptionField.setText(deck.descriptionProperty().getValue());
 
-		formatCombo.getItems().setAll(formats);
+		formatCombo.getItems().setAll(Format.values());
 		formatCombo.getSelectionModel().select(deck.formatProperty().getValue());
 
 		setResultConverter(bt -> {

@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardType;
+import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
@@ -228,7 +229,15 @@ public class CardPane extends BorderPane {
 			}
 
 			if (!showIllegalCards.isSelected()) {
-				compositeFilter = compositeFilter.and(c -> context.deck.formatProperty().getValue().cardIsLegal(c.card()));
+				compositeFilter = compositeFilter.and(c -> {
+					switch(c.card().legality(context.deck.formatProperty().getValue())) {
+						case Legal:
+						case Restricted:
+							return true;
+						default:
+							return context.preferences.theFutureIsNow && c.card().legality(Format.Future) == Card.Legality.Legal;
+					}
+				});
 			}
 
 			if (!showVersionsSeparately.isSelected()) {
