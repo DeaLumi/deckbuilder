@@ -745,11 +745,18 @@ public class MainWindow extends Application {
 
 		ForkJoinPool.commonPool().submit(() -> {
 			try {
+				context.saveTags();
 				if (context.data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
 					Platform.runLater(() -> {
 						progressDialog.close();
 
 						collection.view().model(new ReadOnlyListWrapper<>(collectionModel(context.data)));
+
+						try {
+							context.loadTags();
+						} catch (IOException ioe) {
+							throw new Error(ioe);
+						}
 
 						information("Update Complete", "Update completed.", "Live updates are a new feature; if anything acts hinky, please restart the program!")
 								.showAndWait();
