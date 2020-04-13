@@ -219,7 +219,11 @@ public class MainWindow extends Application {
 	}
 
 	private CardPane deckPane(Zone zone) {
-		return deckSplitter.getItems().stream().map(pane -> (CardPane) pane).filter(pane -> pane.title().equals(zone.name())).findAny().orElseThrow(() -> new AssertionError("No zone " + zone.name() + " in deck!"));
+		return deckSplitter.getItems().stream()
+				.map(pane -> (CardPane) pane)
+				.filter(pane -> pane.title().equals(zone.name()))
+				.findAny()
+				.orElseThrow(() -> new AssertionError("No zone " + zone.name() + " in deck!"));
 	}
 
 	private void createCollectionContextMenu() {
@@ -303,9 +307,13 @@ public class MainWindow extends Application {
 
 		deckSplitter.getItems().clear();
 		deckSplitter.getItems().addAll(deck.format().deckZones().stream()
-																.map(z -> new CardPane(z.name(), context, deck.cards(z)))
-																.peek(pane -> pane.model().addListener(deckListChangedListener))
-																.collect(Collectors.toList()));
+				.map(z -> new CardPane(z.name(), context, deck.cards(z)))
+				.peek(pane -> pane.model().addListener(deckListChangedListener))
+				.peek(pane -> pane.view().doubleClick(ci -> {
+					pane.model().remove(ci);
+					collection.view().scheduleRender();
+				}))
+				.collect(Collectors.toList()));
 	}
 
 	private void newDeck(Format format) {
@@ -734,6 +742,10 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void importDeck() {
+		if (!offerSaveIfModified()) {
+			return;
+		}
+
 		File f = serdesFileChooser.showOpenDialog(stage);
 
 		if (f == null) {
@@ -756,7 +768,8 @@ public class MainWindow extends Application {
 		}
 	}
 
-	public void exportDeck(DeckList deck) {
+	@FXML
+	protected void exportDeck() {
 		File f = serdesFileChooser.showSaveDialog(stage);
 
 		if (f == null) {
@@ -772,7 +785,7 @@ public class MainWindow extends Application {
 		}
 
 		try {
-			exporter.exportDeck(deck, f);
+			exporter.exportDeck(context.deck, f);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			error("Export Error", "An error occurred while exporting:", ioe.getMessage()).showAndWait();

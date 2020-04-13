@@ -852,7 +852,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		if (!sync) {
 			ForkJoinPool.commonPool().submit(() -> model(model, true));
 		} else {
+			if (this.model != null) {
+				this.model.removeListener(this);
+			}
 			this.model = model;
+			model.addListener(this);
 			this.filter(this.filter, true);
 		}
 	}
