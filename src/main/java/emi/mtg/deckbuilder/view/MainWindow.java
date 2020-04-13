@@ -317,7 +317,7 @@ public class MainWindow extends Application {
 	}
 
 	private void newDeck(Format format) {
-		DeckList newDeck = new DeckList("", "", format, "", Collections.emptyMap());
+		DeckList newDeck = new DeckList("", context.preferences.authorName, format, "", Collections.emptyMap());
 		setDeck(newDeck);
 
 		currentDeckFile = null;

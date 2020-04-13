@@ -14,4 +14,8 @@ public class Preferences {
 
 	public boolean autoUpdateData = true;
 	public boolean autoUpdateProgram = false;
+
+	public boolean theFutureIsNow = true;
+
+	public String authorName = "";
 }

@@ -94,7 +94,7 @@ public class Context {
 		this.tags = new Tags(this);
 		Profiling.stop("new Tags()");
 		Profiling.start();
-		this.deck = new DeckList("", "", preferences.defaultFormat, "", Collections.emptyMap());
+		this.deck = new DeckList("", preferences.authorName, preferences.defaultFormat, "", Collections.emptyMap());
 		Profiling.stop("new DeckList()");
 
 		Profiling.start();
