@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+<fx:root type="DialogPane" xmlns="http://javafx.com/javafx"
+         xmlns:fx="http://javafx.com/fxml">
+    <content>
+        <GridPane hgap="8.0" vgap="8.0">
+            <Label text="Default Author:"
+                   GridPane.valignment="BASELINE"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="0"
+                   GridPane.columnIndex="0"/>
+            <TextField fx:id="authorName"
+                       prefColumnCount="40"
+                       promptText="Default deck author name"
+                       GridPane.valignment="BASELINE"
+                       GridPane.halignment="LEFT"
+                       GridPane.rowIndex="0"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Default Format:"
+                   GridPane.valignment="BASELINE"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="1"
+                   GridPane.columnIndex="0"/>
+            <ComboBox fx:id="defaultFormat" promptText="Default format"
+                      GridPane.valignment="BASELINE"
+                      GridPane.halignment="LEFT"
+                      GridPane.rowIndex="1"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="The Future is Now:"
+                   GridPane.valignment="TOP"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="2"
+                   GridPane.columnIndex="0"/>
+            <CheckBox fx:id="theFutureIsNow"
+                      GridPane.valignment="TOP"
+                      GridPane.halignment="LEFT"
+                      GridPane.rowIndex="2"
+                      GridPane.columnIndex="1">
+                <tooltip>
+                    <Tooltip text="Always treat Future-legal cards as legal."/>
+                </tooltip>
+            </CheckBox>
+
+            <Separator GridPane.rowIndex="3"
+                       GridPane.columnSpan="2"
+                       GridPane.columnIndex="0"/>
+
+            <Label text="Auto-Update Data:"
+                   GridPane.valignment="TOP"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="4"
+                   GridPane.columnIndex="0"/>
+            <CheckBox fx:id="autoUpdateData"
+                      GridPane.valignment="TOP"
+                      GridPane.halignment="LEFT"
+                      GridPane.rowIndex="4"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Auto-Update Deckbuilder:"
+                   GridPane.valignment="TOP"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="5"
+                   GridPane.columnIndex="0"/>
+            <CheckBox fx:id="autoUpdateProgram"
+                      GridPane.valignment="TOP"
+                      GridPane.halignment="LEFT"
+                      GridPane.rowIndex="5"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Builder Update URL:"
+                   GridPane.valignment="BASELINE"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="6"
+                   GridPane.columnIndex="0"/>
+            <TextField fx:id="updateUrlField" promptText="Update URL"
+                       prefColumnCount="40"
+                       GridPane.valignment="BASELINE"
+                       GridPane.halignment="LEFT"
+                       GridPane.rowIndex="6"
+                       GridPane.columnIndex="1">
+                <font>
+                    <Font name="Courier New"/>
+                </font>
+                <tooltip>
+                    <Tooltip text="WARNING: Don't change this lightly! Hacking potential!"/>
+                </tooltip>
+            </TextField>
+        </GridPane>
+    </content>
+    <buttonTypes>
+        <ButtonType fx:constant="OK"/>
+        <ButtonType fx:constant="CANCEL"/>
+    </buttonTypes>
+</fx:root>

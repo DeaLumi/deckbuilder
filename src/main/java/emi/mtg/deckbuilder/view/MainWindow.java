@@ -16,6 +16,7 @@ import emi.mtg.deckbuilder.util.Profiling;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
+import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -638,8 +639,17 @@ public class MainWindow extends Application {
 	}
 
 	@FXML
-	protected void savePreferences() throws IOException {
-		context.savePreferences();
+	protected void showPreferencesDialog() throws IOException {
+		try {
+			PreferencesDialog pd = new PreferencesDialog(context.preferences);
+			pd.initOwner(this.stage);
+
+			if(pd.showAndWait().orElse(false)) {
+				context.savePreferences();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@FXML

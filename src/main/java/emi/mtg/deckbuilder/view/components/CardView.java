@@ -28,6 +28,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -498,6 +499,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 						if (immutableModel.get()) {
 							context.preferences.preferredPrintings.put(ci.card().fullName(), ci.printing().id());
+							try {
+								context.savePreferences();
+							} catch (IOException ioe) {
+								throw new Error(ioe);
+							}
 						} else {
 							modifyingCard.printing(ci.printing());
 						}
