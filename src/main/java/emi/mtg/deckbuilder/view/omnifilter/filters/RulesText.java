@@ -2,7 +2,6 @@ package emi.mtg.deckbuilder.view.omnifilter.filters;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
 @Service.Provider(Omnifilter.Subfilter.class)
@@ -12,7 +11,7 @@ public class RulesText implements Omnifilter.FaceFilter {
 	private final Omnifilter.Operator operator;
 	private final String value;
 
-	public RulesText(Context context, Omnifilter.Operator operator, String value) {
+	public RulesText(Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 		this.value = value;
 	}

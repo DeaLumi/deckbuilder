@@ -55,10 +55,7 @@ public class Updater {
 		}
 	}
 
-	protected final Context context;
-
-	public Updater(Context context) throws IOException {
-		this.context = context;
+	public Updater() {
 	}
 
 	private static class Downloader extends InputStream {
@@ -142,11 +139,11 @@ public class Updater {
 	}
 
 	public boolean needsUpdate() throws IOException {
-		if (context.preferences.updateUri == null) {
+		if (Context.get().preferences.updateUri == null) {
 			return false; // If there is no update URI, live off the grid.
 		}
 
-		URLConnection connection = context.preferences.updateUri.toURL().openConnection();
+		URLConnection connection = Context.get().preferences.updateUri.toURL().openConnection();
 
 		if (!(connection instanceof HttpURLConnection)) {
 			System.err.println("Can't check for updates -- not an HTTP connection...");
@@ -166,13 +163,13 @@ public class Updater {
 	}
 
 	public void update(DoubleConsumer progress) throws IOException {
-		if (context.preferences.updateUri == null) {
+		if (Context.get().preferences.updateUri == null) {
 			return;
 		}
 
 		Path updateDir = Files.createDirectories(Paths.get(".update"));
 
-		try (InputStream input = new Downloader(context.preferences.updateUri.toURL(), progress)) {
+		try (InputStream input = new Downloader(Context.get().preferences.updateUri.toURL(), progress)) {
 			ZipInputStream zin = new ZipInputStream(input);
 
 			ZipEntry entry = zin.getNextEntry();

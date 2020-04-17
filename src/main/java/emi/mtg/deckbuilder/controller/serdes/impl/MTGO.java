@@ -31,10 +31,7 @@ import java.util.stream.Collectors;
 @Service.Property.String(name="name", value="MTGO")
 @Service.Property.String(name="extension", value="dek")
 public class MTGO implements DeckImportExport {
-	private final Context context;
-
-	public MTGO(Context context) {
-		this.context = context;
+	public MTGO() {
 	}
 
 	@Override
@@ -63,7 +60,7 @@ public class MTGO implements DeckImportExport {
 			String name = element.getAttributes().getNamedItem("Name").getNodeValue();
 
 			Card.Printing printing = printingsCache.computeIfAbsent(catId, id -> {
-				for (Card.Printing pr : context.data.printings()) {
+				for (Card.Printing pr : Context.get().data.printings()) {
 					if (catId.equals(pr.mtgoCatalogId())) {
 						return pr;
 					} else {
@@ -75,7 +72,7 @@ public class MTGO implements DeckImportExport {
 			});
 
 			if (printing == null) {
-				Card card = context.data.cards().stream().filter(c -> c.name().equals(name)).findAny().orElse(null);
+				Card card = Context.get().data.cards().stream().filter(c -> c.name().equals(name)).findAny().orElse(null);
 
 				if (card == null) {
 					throw new IOException("Couldn't find card " + name + " / " + catId);

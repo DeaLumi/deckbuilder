@@ -2,7 +2,6 @@ package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.Service;
 import emi.lib.mtg.characteristic.Color;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -60,8 +59,8 @@ public class ColorGrouping extends CharacteristicGrouping {
 		return Collections.unmodifiableMap(tmp);
 	}
 
-	public ColorGrouping(Context context) {
-		super(context);
+	public ColorGrouping() {
+		super();
 	}
 
 	@Override

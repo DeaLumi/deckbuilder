@@ -108,12 +108,12 @@ public class CardPane extends BorderPane {
 		}
 	}
 
-	private static Predicate<CardInstance> uniquenessPredicate(Context context) {
+	private static Predicate<CardInstance> uniquenessPredicate() {
 		Map<Card, String> prefPrintCache = new HashMap<>();
 
 		return ci -> {
-			if (context.preferences.preferredPrintings.containsKey(ci.card().fullName())) {
-				return ci.printing().id().equals(context.preferences.preferredPrintings.get(ci.card().fullName()));
+			if (Context.get().preferences.preferredPrintings.containsKey(ci.card().fullName())) {
+				return ci.printing().id().equals(Context.get().preferences.preferredPrintings.get(ci.card().fullName()));
 			}
 
 			synchronized(prefPrintCache) {
@@ -131,10 +131,10 @@ public class CardPane extends BorderPane {
 	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showVersionsSeparately = new SimpleBooleanProperty(true);
 
-	public CardPane(String title, Context context, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
 		super();
 
-		this.cardView = new CardView(context, model, initEngine, "CMC", sortings);
+		this.cardView = new CardView(model, initEngine, "CMC", sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		MenuBar menuBar = new MenuBar();
@@ -222,7 +222,7 @@ public class CardPane extends BorderPane {
 		filter.setPrefWidth(250.0);
 
 		this.updateFilter = ae -> {
-			Predicate<CardInstance> compositeFilter = Omnifilter.parse(context, filter.getText());
+			Predicate<CardInstance> compositeFilter = Omnifilter.parse(filter.getText());
 
 			if (!findOtherCards.isSelected()) {
 				compositeFilter = compositeFilter.and(STANDARD_CARDS);
@@ -230,18 +230,18 @@ public class CardPane extends BorderPane {
 
 			if (!showIllegalCards.isSelected()) {
 				compositeFilter = compositeFilter.and(c -> {
-					switch(c.card().legality(context.deck.formatProperty().getValue())) {
+					switch(c.card().legality(Context.get().deck.formatProperty().getValue())) {
 						case Legal:
 						case Restricted:
 							return true;
 						default:
-							return context.preferences.theFutureIsNow && c.card().legality(Format.Future) == Card.Legality.Legal;
+							return Context.get().preferences.theFutureIsNow && c.card().legality(Format.Future) == Card.Legality.Legal;
 					}
 				});
 			}
 
 			if (!showVersionsSeparately.isSelected()) {
-				compositeFilter = compositeFilter.and(uniquenessPredicate(context));
+				compositeFilter = compositeFilter.and(uniquenessPredicate());
 			}
 
 			this.cardView.filter(compositeFilter);
@@ -335,12 +335,12 @@ public class CardPane extends BorderPane {
 		this.updateFilter.handle(null);
 	}
 
-	public CardPane(String title, Context context, ObservableList<CardInstance> model, String layoutEngine) {
-		this(title, context, model, layoutEngine, CardView.DEFAULT_SORTING);
+	public CardPane(String title, ObservableList<CardInstance> model, String layoutEngine) {
+		this(title, model, layoutEngine, CardView.DEFAULT_SORTING);
 	}
 
-	public CardPane(String title, Context context, ObservableList<CardInstance> model) {
-		this(title, context, model, "Piles", CardView.DEFAULT_SORTING);
+	public CardPane(String title, ObservableList<CardInstance> model) {
+		this(title, model, "Piles", CardView.DEFAULT_SORTING);
 	}
 
 	public ObservableList<CardInstance> model() {

@@ -2,7 +2,6 @@ package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.Service;
 import emi.lib.mtg.characteristic.CardRarity;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -21,8 +20,8 @@ public class Rarity extends CharacteristicGrouping implements CardView.Grouping 
 				.toArray(String[]::new);
 	}
 
-	public Rarity(Context context) {
-		super(context);
+	public Rarity() {
+		super();
 	}
 
 	@Override

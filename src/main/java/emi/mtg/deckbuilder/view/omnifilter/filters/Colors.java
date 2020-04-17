@@ -3,7 +3,6 @@ package emi.mtg.deckbuilder.view.omnifilter.filters;
 import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.Color;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.omnifilter.Util;
 
@@ -29,7 +28,7 @@ public class Colors implements Omnifilter.FaceFilter {
 		return Collections.unmodifiableSet(out);
 	}
 
-	public Colors(Context context, Omnifilter.Operator operator, String value) {
+	public Colors(Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 		this.colors = colorsIn(value);
 	}

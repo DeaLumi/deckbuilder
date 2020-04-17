@@ -85,7 +85,7 @@ public class Omnifilter {
 
 	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]*\"|[^\\s]*)");
 
-	public static Predicate<CardInstance> parse(Context context, String expression) {
+	public static Predicate<CardInstance> parse(String expression) {
 		Matcher m = PATTERN.matcher(expression);
 
 		Predicate<CardInstance> predicate = c -> true;
@@ -111,7 +111,7 @@ public class Omnifilter {
 					continue;
 				}
 
-				append = stub.uncheckedInstance(context, op, value);
+				append = stub.uncheckedInstance(op, value);
 			} else {
 				append = ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())) || ci.card().fullName().toLowerCase().contains(value.toLowerCase());
 			}

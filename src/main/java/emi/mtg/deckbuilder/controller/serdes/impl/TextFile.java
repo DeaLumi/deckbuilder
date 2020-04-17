@@ -23,10 +23,7 @@ import java.util.regex.Pattern;
 public class TextFile implements DeckImportExport {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
 
-	private final Context context;
-
-	public TextFile(Context context) {
-		this.context = context;
+	public TextFile() {
 	}
 
 	@Override
@@ -61,7 +58,7 @@ public class TextFile implements DeckImportExport {
 			int count = Integer.parseInt(m.group("preCount") != null ? m.group("preCount") : m.group("postCount"));
 			String cardName = m.group("preCardName") != null ? m.group("preCardName") : m.group("postCardName");
 
-			Card card = context.data.cards().stream().filter(c -> c.name().equals(cardName)).findAny().orElse(null);
+			Card card = Context.get().data.cards().stream().filter(c -> c.name().equals(cardName)).findAny().orElse(null);
 
 			if (card == null) {
 				throw new IOException("Couldn't find card named \"" + cardName + "\"");

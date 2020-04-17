@@ -2,7 +2,6 @@ package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.Service;
 import emi.lib.mtg.characteristic.CardType;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -15,8 +14,8 @@ import java.util.stream.Collectors;
 public class CardTypeGroup extends CharacteristicGrouping implements CardView.Grouping {
 	private CardType[] PRIORITIES = { CardType.Creature, CardType.Artifact };
 
-	public CardTypeGroup(Context context) {
-		super(context);
+	public CardTypeGroup() {
+		super();
 	}
 
 	@Override

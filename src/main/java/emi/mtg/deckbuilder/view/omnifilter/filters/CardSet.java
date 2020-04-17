@@ -12,9 +12,9 @@ public class CardSet implements Omnifilter.Subfilter {
 	private final Omnifilter.Operator operator;
 	private final emi.lib.mtg.Set value;
 
-	public CardSet(Context context, Omnifilter.Operator operator, String value) {
+	public CardSet(Omnifilter.Operator operator, String value) {
 		this.operator = operator;
-		this.value = context.data.sets().stream()
+		this.value = Context.get().data.sets().stream()
 			.filter(s -> s.name().toLowerCase().equals(value.toLowerCase()) || s.code().toLowerCase().equals(value.toLowerCase()))
 			.findAny().orElse(null);
 	}

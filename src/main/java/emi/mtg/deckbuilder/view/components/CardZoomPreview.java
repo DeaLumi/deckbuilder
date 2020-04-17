@@ -37,7 +37,7 @@ public class CardZoomPreview {
 	private final HBox row;
 	private ParallelTransition runningAnimation;
 
-	public CardZoomPreview(Context context, Rectangle2D start, Card.Printing printing) throws ExecutionException, InterruptedException {
+	public CardZoomPreview(Rectangle2D start, Card.Printing printing) throws ExecutionException, InterruptedException {
 		this.start = start;
 
 		List<Card.Printing.Face> faces = new ArrayList<>();
@@ -58,7 +58,7 @@ public class CardZoomPreview {
 		this.imageViewList = new ArrayList<>(faces.size());
 
 		for (Card.Printing.Face face : faces) {
-			CompletableFuture<Image> image = context.images.getFace(face);
+			CompletableFuture<Image> image = Context.get().images.getFace(face);
 
 			Image img = image.getNow(Images.LOADING_CARD_LARGE);
 			ImageView view = new ImageView(img);

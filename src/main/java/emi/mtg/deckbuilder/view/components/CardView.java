@@ -239,8 +239,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		public final SimpleObjectProperty<CardView> view = new SimpleObjectProperty<>();
 	}
 
-	private final Context context;
-
 	private volatile ObservableList<CardInstance> model;
 	private volatile FilteredList<CardInstance> filteredModel;
 	private volatile Group[] groupedModel;
@@ -282,17 +280,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private static boolean dragModified = false;
 	private static CardView dragSource = null, dragTarget = null;
 
-	public CardView(Context context, ObservableList<CardInstance> model, String engine, String grouping, List<ActiveSorting> sorts) {
+	public CardView(ObservableList<CardInstance> model, String engine, String grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
 
-		this.context = context;
-
 		this.filter = ci -> true;
 		this.sortingElements = sorts;
 		this.sort = convertSorts(sorts);
-		this.grouping = groupingsMap.get(grouping).uncheckedInstance(context);
+		this.grouping = groupingsMap.get(grouping).uncheckedInstance();
 
 		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());
@@ -364,7 +360,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 
 			if (view != null) {
-				db.setDragView(context.images.getThumbnail(view.printing()).thenApply(img -> {
+				db.setDragView(Context.get().images.getThumbnail(view.printing()).thenApply(img -> {
 					db.setDragView(img);
 					return img;
 				}).getNow(Images.LOADING_CARD));
@@ -491,16 +487,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					ObservableList<CardInstance> tmpModel = new ObservableListWrapper<>(hoverCard.card().printings().stream()
 							.map(CardInstance::new)
 							.collect(Collectors.toList()));
-					CardPane prPane = new CardPane("Variations", context, tmpModel, "Flow Grid");
+					CardPane prPane = new CardPane("Variations", tmpModel, "Flow Grid");
 
 					final CardInstance modifyingCard = hoverCard;
 					prPane.view().doubleClick(ci -> {
 						dlg.close();
 
 						if (immutableModel.get()) {
-							context.preferences.preferredPrintings.put(ci.card().fullName(), ci.printing().id());
+							Context.get().preferences.preferredPrintings.put(ci.card().fullName(), ci.printing().id());
 							try {
-								context.savePreferences();
+								Context.get().savePreferences();
 							} catch (IOException ioe) {
 								throw new Error(ioe);
 							}
@@ -734,7 +730,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
 
 			try {
-				zoomPreview = new CardZoomPreview(context, start, zoomedCard.printing());
+				zoomPreview = new CardZoomPreview(start, zoomedCard.printing());
 			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}
@@ -909,7 +905,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public void group(String grouping) {
 		if (CardView.groupingsMap.containsKey(grouping)) {
-			group(CardView.groupingsMap.get(grouping).uncheckedInstance(this.context), false);
+			group(CardView.groupingsMap.get(grouping).uncheckedInstance(), false);
 		}
 	}
 
@@ -1192,10 +1188,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				final CardInstance ci = groupedModel[i].model.get(j);
 				final Card.Printing printing = ci.printing();
 
-				CompletableFuture<Image> futureImage = this.context.images.getThumbnail(printing);
+				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
 
 				if (futureImage.isDone()) {
-					EnumSet<CardState> states = context.flagCard(ci, immutableModel.getValue());
+					EnumSet<CardState> states = Context.get().flagCard(ci, immutableModel.getValue());
 
 					if (hoverCard == ci) {
 						states.add(CardState.Hover);

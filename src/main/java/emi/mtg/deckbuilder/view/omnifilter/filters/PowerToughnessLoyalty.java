@@ -10,7 +10,7 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 	private final boolean hasValue;
 	private final double value;
 
-	public PowerToughnessLoyalty(Context context, Omnifilter.Operator operator, String value) {
+	public PowerToughnessLoyalty(Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 		this.hasValue = !value.contains("*") && !value.contains("X");
 		this.value = hasValue ? Float.parseFloat(value.toLowerCase()) : -1;
@@ -20,8 +20,8 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 	@Service.Property.String(name="key", value="power")
 	@Service.Property.String(name="shorthand", value="pow")
 	public static class Power extends PowerToughnessLoyalty {
-		public Power(Context context, Omnifilter.Operator operator, String value) {
-			super(context, operator, value);
+		public Power(Omnifilter.Operator operator, String value) {
+			super(operator, value);
 		}
 
 		@Override
@@ -39,8 +39,8 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 	@Service.Property.String(name="key", value="toughness")
 	@Service.Property.String(name="shorthand", value="tough")
 	public static class Toughness extends PowerToughnessLoyalty {
-		public Toughness(Context context, Omnifilter.Operator operator, String value) {
-			super(context, operator, value);
+		public Toughness(Omnifilter.Operator operator, String value) {
+			super(operator, value);
 		}
 
 		@Override
@@ -58,8 +58,8 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 	@Service.Property.String(name="key", value="loyalty")
 	@Service.Property.String(name="shorthand", value="loy")
 	public static class Loyalty extends PowerToughnessLoyalty {
-		public Loyalty(Context context, Omnifilter.Operator operator, String value) {
-			super(context, operator, value);
+		public Loyalty(Omnifilter.Operator operator, String value) {
+			super(operator, value);
 		}
 
 		@Override

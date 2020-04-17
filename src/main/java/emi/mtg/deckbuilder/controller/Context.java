@@ -26,6 +26,22 @@ public class Context {
 	private static final Path STATE = Paths.get("state.json");
 	private static final Path TAGS = Paths.get("tags.json");
 
+	private static final Context instance;
+
+	static {
+		synchronized (Context.class) {
+			try {
+				instance = new Context();
+			} catch (IOException e) {
+				throw new Error(e);
+			}
+		}
+	}
+
+	public static Context get() {
+		return instance;
+	}
+
 	public final Gson gson;
 
 	public final DataSource data;

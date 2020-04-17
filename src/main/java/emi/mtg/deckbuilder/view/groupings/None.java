@@ -1,7 +1,6 @@
 package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.Service;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -32,7 +31,7 @@ public class None implements CardView.Grouping {
 		}
 	};
 
-	public None(Context context) {
+	public None() {
 		/* do nothing */
 	}
 

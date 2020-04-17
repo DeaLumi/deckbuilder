@@ -26,22 +26,20 @@ public class TagManagementDialog extends Dialog<Void> {
 
 	@FXML
 	protected void removeSelected() {
-		context.tags.tags().removeAll(knownTagsList.getSelectionModel().getSelectedItems());
+		Context.get().tags.tags().removeAll(knownTagsList.getSelectionModel().getSelectedItems());
 		knownTagsList.getItems().removeAll(knownTagsList.getSelectionModel().getSelectedItems());
 	}
 
 	@FXML
 	protected void addTag() {
 		if (!knownTagsList.getItems().contains(newTagText.getText())) {
-			context.tags.add(newTagText.getText());
+			Context.get().tags.add(newTagText.getText());
 			knownTagsList.getItems().add(newTagText.getText());
 			newTagText.setText("");
 		}
 	}
 
-	private final Context context;
-
-	public TagManagementDialog(Context context) throws IOException {
+	public TagManagementDialog() throws IOException {
 		super();
 
 		setTitle("Tags");
@@ -51,9 +49,7 @@ public class TagManagementDialog extends Dialog<Void> {
 		loader.setRoot(getDialogPane());
 		loader.load();
 
-		this.context = context;
-
-		knownTagsList.setItems(FXCollections.observableArrayList(new ArrayList<>(context.tags.tags())));
+		knownTagsList.setItems(FXCollections.observableArrayList(new ArrayList<>(Context.get().tags.tags())));
 		knownTagsList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
 		knownTagsList.setCellFactory(lv -> new ListCell<String>() {
@@ -71,7 +67,7 @@ public class TagManagementDialog extends Dialog<Void> {
 
 					button.setOnAction(ae -> {
 						knownTagsList.getItems().remove(item);
-						context.tags.tags().remove(item);
+						Context.get().tags.tags().remove(item);
 					});
 
 					AnchorPane.setLeftAnchor(label, 0.0);
@@ -93,9 +89,9 @@ public class TagManagementDialog extends Dialog<Void> {
 		setResultConverter(bt -> {
 			try {
 				if (bt == ButtonType.APPLY) {
-					context.saveTags();
+					Context.get().saveTags();
 				} else if (bt == ButtonType.CANCEL) {
-					context.loadTags();
+					Context.get().loadTags();
 				}
 			} catch (IOException ioe) {
 				ioe.printStackTrace();

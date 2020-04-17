@@ -14,19 +14,17 @@ import java.util.Set;
 @Service.Property.String(name="key", value="tagged")
 @Service.Property.String(name="shorthand", value="tag")
 public class TagFilter implements Omnifilter.Subfilter {
-	private final Context context;
 	private final Omnifilter.Operator operator;
 	private final Set<String> tagSet;
 
-	public TagFilter(Context context, Omnifilter.Operator operator, String value) {
-		this.context = context;
+	public TagFilter(Omnifilter.Operator operator, String value) {
 		this.operator = operator;
 		this.tagSet = new HashSet<>(Arrays.asList(value.split(",")));
 	}
 
 	@Override
 	public boolean test(CardInstance ci) {
-		Util.SetComparison compare = Util.compareStringSetsInsensitive(context.tags.tags(ci.card()), tagSet);
+		Util.SetComparison compare = Util.compareStringSetsInsensitive(Context.get().tags.tags(ci.card()), tagSet);
 
 		switch (operator) {
 			case EQUALS:

@@ -14,17 +14,14 @@ import java.util.Set;
 
 // N.B. MainWindow uses this class directly, so we don't actually provide the DeckImportExport service.
 public class Json implements DeckImportExport {
-	private final Context context;
-
-	public Json(Context context) {
-		this.context = context;
+	public Json() {
 	}
 
 	@Override
 	public DeckList importDeck(File from) throws IOException {
 		FileReader reader = new FileReader(from);
 
-		DeckList out = context.gson.getAdapter(DeckList.class).fromJson(reader);
+		DeckList out = Context.get().gson.getAdapter(DeckList.class).fromJson(reader);
 		reader.close();
 
 		return out;
@@ -34,7 +31,7 @@ public class Json implements DeckImportExport {
 	public void exportDeck(DeckList deck, File to) throws IOException {
 		FileWriter writer = new FileWriter(to);
 
-		context.gson.toJson(deck, DeckList.class, writer);
+		Context.get().gson.toJson(deck, DeckList.class, writer);
 
 		writer.close();
 	}

@@ -91,7 +91,6 @@ public class MainWindow extends Application {
 
 	private Updater updater;
 
-	private Context context;
 	private boolean deckModified;
 
 	private CardPane collection;
@@ -109,7 +108,7 @@ public class MainWindow extends Application {
 			boolean deckSaved = true;
 
 			try {
-				primarySerdes.exportDeck(context.deck, new File("emergency-dump.json"));
+				primarySerdes.exportDeck(Context.get().deck, new File("emergency-dump.json"));
 			} catch (Throwable t) {
 				e.addSuppressed(t);
 				deckSaved = false;
@@ -153,9 +152,8 @@ public class MainWindow extends Application {
 	private Stage stage;
 
 	@Override
-	public void init() throws Exception {
-		this.context = new Context();
-		this.updater = new Updater(this.context);
+	public void init() {
+		this.updater = new Updater();
 	}
 
 	@Override
@@ -169,7 +167,7 @@ public class MainWindow extends Application {
 			}
 
 			try {
-				context.saveAll();
+				Context.get().saveAll();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -181,7 +179,7 @@ public class MainWindow extends Application {
 
 		setupUI();
 		setupImportExport();
-		setDeck(context.deck); // TODO: This looks tautological...
+		setDeck(Context.get().deck); // TODO: This looks tautological...
 
 		stage.setTitle("Deck Builder v0.0.0");
 
@@ -189,18 +187,18 @@ public class MainWindow extends Application {
 		stage.setMaximized(true);
 		stage.show();
 
-		if (context.preferences.autoUpdateProgram && updater.needsUpdate() && confirmation("Updater", "Program Update Available", "A new version of the deckbuilder is available -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+		if (Context.get().preferences.autoUpdateProgram && updater.needsUpdate() && confirmation("Updater", "Program Update Available", "A new version of the deckbuilder is available -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 			doGraphicalProgramUpdate();
 		}
 
-		if (context.preferences.autoUpdateData && context.data.needsUpdate() && confirmation("Updater", "Data Update Available","Data source seems stale -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate() && confirmation("Updater", "Data Update Available","Data source seems stale -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 			doGraphicalDataUpdate();
 		}
 
 		Alert loading = information("Loading", "Loading Card Data...", "Please wait a moment!");
 		loading.getButtonTypes().clear();
 		loading.show();
-		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(context.data)));
+		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
 		loading.getButtonTypes().add(ButtonType.OK);
 		loading.hide();
 	}
@@ -221,12 +219,12 @@ public class MainWindow extends Application {
 
 		for (Zone zone : Zone.values()) {
 			MenuItem fillZoneMenuItem = new MenuItem(zone.name());
-			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> context.deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty()));
+			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> Context.get().deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty()));
 			fillZoneMenuItem.setOnAction(ae -> {
 				for (CardInstance source : collectionContextMenu.cards) {
 					ObservableList<CardInstance> zoneModel = deckPane(zone).model();
 
-					long count = context.deck.format().maxCopies - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
+					long count = Context.get().deck.format().maxCopies - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
 					for (int i = 0; i < count; ++i) {
 						zoneModel.add(new CardInstance(source.printing()));
 					}
@@ -241,7 +239,7 @@ public class MainWindow extends Application {
 	private void setupUI() {
 		createCollectionContextMenu();
 
-		collection = new CardPane("Collection", context, new ObservableListWrapper<>(new ArrayList<>()), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
+		collection = new CardPane("Collection", new ObservableListWrapper<>(new ArrayList<>()), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.view().contextMenu(collectionContextMenu);
@@ -256,7 +254,7 @@ public class MainWindow extends Application {
 	}
 
 	private void setupImportExport() {
-		this.primarySerdes = new Json(context);
+		this.primarySerdes = new Json();
 
 		this.primaryFileChooser = new FileChooser();
 		this.primaryFileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files (*.json)", "*.json"));
@@ -270,7 +268,7 @@ public class MainWindow extends Application {
 		this.deckSerdes = Service.Loader.load(DeckImportExport.class, pluginClassLoader).stream()
 				.collect(Collectors.toMap(
 						vies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", vies.string("name"), vies.string("extension")), String.format("*.%s", vies.string("extension"))),
-						vies -> vies.uncheckedInstance(context)
+						vies -> vies.uncheckedInstance()
 				));
 
 		this.serdesFileChooser = new FileChooser();
@@ -280,14 +278,14 @@ public class MainWindow extends Application {
 	private final ListChangeListener<Object> deckListChangedListener = e -> deckModified = true;
 
 	private void setDeck(DeckList deck) {
-		context.deck = deck;
+		Context.get().deck = deck;
 		deckModified = false;
 
 		collection.updateFilter();
 
 		deckSplitter.getItems().clear();
 		deckSplitter.getItems().addAll(deck.format().deckZones().stream()
-				.map(z -> new CardPane(z.name(), context, deck.cards(z)))
+				.map(z -> new CardPane(z.name(), deck.cards(z)))
 				.peek(pane -> pane.model().addListener(deckListChangedListener))
 				.peek(pane -> pane.view().doubleClick(ci -> {
 					pane.model().remove(ci);
@@ -297,7 +295,7 @@ public class MainWindow extends Application {
 	}
 
 	private void newDeck(Format format) {
-		DeckList newDeck = new DeckList("", context.preferences.authorName, format, "", Collections.emptyMap());
+		DeckList newDeck = new DeckList("", Context.get().preferences.authorName, format, "", Collections.emptyMap());
 		setDeck(newDeck);
 
 		currentDeckFile = null;
@@ -309,7 +307,7 @@ public class MainWindow extends Application {
 			return;
 		}
 
-		newDeck(context.preferences.defaultFormat);
+		newDeck(Context.get().preferences.defaultFormat);
 		currentDeckFile = null;
 	}
 
@@ -362,7 +360,7 @@ public class MainWindow extends Application {
 
 	private boolean checkDeckForVariants(File f) throws IOException {
 		java.io.FileReader reader = new java.io.FileReader(f);
-		DeckListWithVariants lwv = context.gson.getAdapter(DeckListWithVariants.class).fromJson(reader);
+		DeckListWithVariants lwv = Context.get().gson.getAdapter(DeckListWithVariants.class).fromJson(reader);
 
 		if (lwv == null || lwv.variants == null) {
 			return false;
@@ -446,7 +444,7 @@ public class MainWindow extends Application {
 
 	private boolean saveDeck(File to) {
 		try {
-			primarySerdes.exportDeck(context.deck, to);
+			primarySerdes.exportDeck(Context.get().deck, to);
 			deckModified = false;
 			currentDeckFile = to;
 			return true;
@@ -486,7 +484,7 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showDeckInfoDialog() {
 		try {
-			DeckInfoDialog did = new DeckInfoDialog(context.deck);
+			DeckInfoDialog did = new DeckInfoDialog(Context.get().deck);
 			did.initOwner(this.stage);
 
 			if(did.showAndWait().orElse(false)) {
@@ -575,7 +573,7 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showTagManagementDialog() {
 		try {
-			TagManagementDialog dlg = new TagManagementDialog(context);
+			TagManagementDialog dlg = new TagManagementDialog();
 			dlg.initOwner(this.stage);
 			dlg.showAndWait();
 		} catch (IOException ioe) {
@@ -586,7 +584,7 @@ public class MainWindow extends Application {
 	@FXML
 	protected void saveTags() {
 		try {
-			context.saveTags(); // TODO: Move this to controller?
+			Context.get().saveTags(); // TODO: Move this to controller?
 		} catch (IOException ioe) {
 			ioe.printStackTrace(); // TODO: Handle gracefully
 		}
@@ -594,7 +592,7 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void validateDeck() {
-		Format.ValidationResult result = context.deck.formatProperty().getValue().validate(context.deck);
+		Format.ValidationResult result = Context.get().deck.formatProperty().getValue().validate(Context.get().deck);
 
 		if (result.deckErrors.isEmpty() && result.zoneErrors.values().stream().allMatch(Set::isEmpty) && result.cardErrors.values().stream().allMatch(Set::isEmpty)) {
 			information("Deck Validation", "Deck is valid.", "No validation errors were found!").showAndWait();
@@ -628,11 +626,11 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showPreferencesDialog() throws IOException {
 		try {
-			PreferencesDialog pd = new PreferencesDialog(context.preferences);
+			PreferencesDialog pd = new PreferencesDialog(Context.get().preferences);
 			pd.initOwner(this.stage);
 
 			if(pd.showAndWait().orElse(false)) {
-				context.savePreferences();
+				Context.get().savePreferences();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -641,7 +639,7 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void updateDeckbuilder() throws IOException {
-		TextInputDialog uriInput = new TextInputDialog(context.preferences.updateUri == null ? "" : context.preferences.updateUri.toString());
+		TextInputDialog uriInput = new TextInputDialog(Context.get().preferences.updateUri == null ? "" : Context.get().preferences.updateUri.toString());
 		uriInput.setTitle("Update Source");
 		uriInput.setHeaderText("Update Server URL");
 		uriInput.setContentText("URL:");
@@ -657,8 +655,8 @@ public class MainWindow extends Application {
 			String newUri = uriInput.getEditor().getText();
 
 			try {
-				context.preferences.updateUri = new URI(newUri);
-				context.saveAll();
+				Context.get().preferences.updateUri = new URI(newUri);
+				Context.get().saveAll();
 
 				ForkJoinPool.commonPool().submit(() -> {
 					try {
@@ -706,12 +704,12 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void remodel() {
-		collection.view().model(new ReadOnlyListWrapper<>(collectionModel(context.data)));
+		collection.view().model(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
 	}
 
 	@FXML
 	protected void updateData() throws IOException {
-		if (!context.data.needsUpdate() && confirmation("Update Data", "Data is fresh.", "Data source seems fresh. Update anyway?")
+		if (!Context.get().data.needsUpdate() && confirmation("Update Data", "Data is fresh.", "Data source seems fresh. Update anyway?")
 				.showAndWait()
 				.orElse(ButtonType.NO) != ButtonType.YES) {
 			return;
@@ -732,15 +730,15 @@ public class MainWindow extends Application {
 
 		ForkJoinPool.commonPool().submit(() -> {
 			try {
-				context.saveTags();
-				if (context.data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
+				Context.get().saveTags();
+				if (Context.get().data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
 					Platform.runLater(() -> {
 						progressDialog.close();
 
-						collection.view().model(new ReadOnlyListWrapper<>(collectionModel(context.data)));
+						collection.view().model(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
 
 						try {
-							context.loadTags();
+							Context.get().loadTags();
 						} catch (IOException ioe) {
 							throw new Error(ioe);
 						}
@@ -803,7 +801,7 @@ public class MainWindow extends Application {
 		}
 
 		try {
-			exporter.exportDeck(context.deck, f);
+			exporter.exportDeck(Context.get().deck, f);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			error("Export Error", "An error occurred while exporting:", ioe.getMessage()).showAndWait();

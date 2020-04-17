@@ -64,8 +64,8 @@ public class Tags implements CardView.Grouping {
 	private final emi.mtg.deckbuilder.controller.Tags tags;
 	private final Group[] groups;
 
-	public Tags(Context context) {
-		this.tags = context.tags;
+	public Tags() {
+		this.tags = Context.get().tags;
 
 		Set<String> allTags = this.tags.tags();
 		this.groups = new Group[allTags.size() + 1];
