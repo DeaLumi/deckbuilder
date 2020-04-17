@@ -12,7 +12,6 @@ import emi.mtg.deckbuilder.controller.serdes.Features;
 import emi.mtg.deckbuilder.controller.serdes.impl.Json;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
-import emi.mtg.deckbuilder.util.Profiling;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
@@ -156,9 +155,7 @@ public class MainWindow extends Application {
 	@Override
 	public void init() throws Exception {
 		this.context = new Context();
-		Profiling.start();
 		this.updater = new Updater(this.context);
-		Profiling.stop("new Updater()");
 	}
 
 	@Override
@@ -182,21 +179,15 @@ public class MainWindow extends Application {
 		loader.setController(this);
 		loader.load();
 
-		Profiling.start();
 		setupUI();
 		setupImportExport();
-		Profiling.stop("setupUI()");
-		Profiling.start();
 		setDeck(context.deck); // TODO: This looks tautological...
-		Profiling.stop("setDeck()");
 
 		stage.setTitle("Deck Builder v0.0.0");
 
-		Profiling.start();
 		stage.setScene(new Scene(root, 1024, 1024));
 		stage.setMaximized(true);
 		stage.show();
-		Profiling.stop("stage.show()");
 
 		if (context.preferences.autoUpdateProgram && updater.needsUpdate() && confirmation("Updater", "Program Update Available", "A new version of the deckbuilder is available -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 			doGraphicalProgramUpdate();
@@ -206,16 +197,12 @@ public class MainWindow extends Application {
 			doGraphicalDataUpdate();
 		}
 
-		Profiling.start();
 		Alert loading = information("Loading", "Loading Card Data...", "Please wait a moment!");
 		loading.getButtonTypes().clear();
 		loading.show();
 		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(context.data)));
 		loading.getButtonTypes().add(ButtonType.OK);
 		loading.hide();
-		Profiling.stop("set model");
-
-		Profiling.report();
 	}
 
 	private CardPane deckPane(Zone zone) {

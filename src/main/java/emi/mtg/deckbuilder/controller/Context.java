@@ -8,7 +8,6 @@ import emi.lib.mtg.characteristic.Supertype;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.scryfall.ScryfallDataSource;
 import emi.mtg.deckbuilder.model.*;
-import emi.mtg.deckbuilder.util.Profiling;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -39,7 +38,6 @@ public class Context {
 	public final State state;
 
 	public Context() throws IOException {
-		Profiling.start();
 		DataSource data;
 		try {
 			data = new ScryfallDataSource();
@@ -47,9 +45,7 @@ public class Context {
 			data = new EmptyDataSource();
 		}
 		this.data = data;
-		Profiling.stop("DataSource");
 
-		Profiling.start();
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
 				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(this.data))
@@ -58,9 +54,7 @@ public class Context {
 				.registerTypeAdapterFactory(TypeAdapters.createPropertyTypeAdapterFactory())
 				.registerTypeAdapterFactory(TypeAdapters.createObservableListTypeAdapterFactory())
 				.create();
-		Profiling.stop("gson");
 
-		Profiling.start();
 		if (Files.exists(PREFERENCES)) {
 			Reader reader = Files.newBufferedReader(PREFERENCES);
 			this.preferences = gson.fromJson(reader, Preferences.class);
@@ -68,9 +62,7 @@ public class Context {
 		} else {
 			this.preferences = new Preferences();
 		}
-		Profiling.stop("preferences");
 
-		Profiling.start();
 		if (Files.exists(STATE)) {
 			Reader reader = Files.newBufferedReader(STATE);
 			this.state = gson.fromJson(reader, State.class);
@@ -78,21 +70,12 @@ public class Context {
 		} else {
 			this.state = new State();
 		}
-		Profiling.stop("state");
 
-		Profiling.start();
 		this.images = new Images();
-		Profiling.stop("new Images()");
-		Profiling.start();
 		this.tags = new Tags(this);
-		Profiling.stop("new Tags()");
-		Profiling.start();
 		this.deck = new DeckList("", preferences.authorName, preferences.defaultFormat, "", Collections.emptyMap());
-		Profiling.stop("new DeckList()");
 
-		Profiling.start();
 		loadTags();
-		Profiling.stop("loadTags()");
 	}
 
 	public void savePreferences() throws IOException {
