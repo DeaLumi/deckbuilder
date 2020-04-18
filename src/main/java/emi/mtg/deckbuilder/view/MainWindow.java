@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class MainWindow extends Stage {
@@ -180,14 +181,6 @@ public class MainWindow extends Stage {
 		}
 	}
 
-	private void updateCollectionValidity() {
-		collection.model().stream()
-				.forEach(ci -> {
-					ci.flags.remove(CardInstance.Flags.Invalid);
-					flagCardLegality(ci);
-				});
-	}
-
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
 		return new ObservableListWrapper<>(cs.printings().stream()
 				.map(CardInstance::new)
@@ -261,7 +254,7 @@ public class MainWindow extends Stage {
 	}
 
 	private final ListChangeListener<Object> deckListChangedListener = e -> {
-		updateDeckValidity();
+		updateCardStates();
 		deckModified = true;
 		for (Zone zone : deck.format().deckZones()) {
 			deckPane(zone).view().scheduleRender();
@@ -280,8 +273,7 @@ public class MainWindow extends Stage {
 		}, deck.nameProperty()));
 
 		deckModified = false;
-		updateCollectionValidity();
-		updateDeckValidity();
+		updateCardStates();
 
 		collection.updateFilter();
 
@@ -630,16 +622,33 @@ public class MainWindow extends Stage {
 		}
 	}
 
-	private Format.ValidationResult updateDeckValidity() {
+	private Format.ValidationResult updateCardStates() {
 		Format.ValidationResult result = deck.validate();
+		Map<Card, AtomicInteger> histogram = new HashMap<>();
 
 		deck.cards().values().stream()
 				.flatMap(ObservableList::stream)
-				.forEach(ci -> {
+				.peek(ci -> {
 					if (result.cardErrors.containsKey(ci)) {
 						ci.flags.add(CardInstance.Flags.Invalid);
 					} else {
 						ci.flags.remove(CardInstance.Flags.Invalid);
+					}
+				})
+				.map(CardInstance::card)
+				.forEach(c -> histogram.computeIfAbsent(c, x -> new AtomicInteger(0)).incrementAndGet());
+
+		histogram.entrySet().removeIf(e -> e.getValue().get() < deck.format().maxCopies);
+
+		collection.model()
+				.forEach(ci -> {
+					ci.flags.remove(CardInstance.Flags.Invalid);
+					ci.flags.remove(CardInstance.Flags.Full);
+					flagCardLegality(ci);
+					if (histogram.containsKey(ci.card())) {
+						ci.flags.add(CardInstance.Flags.Full);
+					} else {
+						ci.flags.remove(CardInstance.Flags.Full);
 					}
 				});
 
@@ -648,7 +657,7 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void validateDeck() {
-		Format.ValidationResult result = updateDeckValidity();
+		Format.ValidationResult result = updateCardStates();
 
 		if (result.deckErrors.isEmpty() && result.zoneErrors.values().stream().allMatch(Set::isEmpty) && result.cardErrors.values().stream().allMatch(Set::isEmpty)) {
 			AlertBuilder.notify(this)
@@ -706,13 +715,13 @@ public class MainWindow extends Stage {
 	@FXML
 	protected void remodel() {
 		collection.view().model(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
-		updateCollectionValidity();
 
 		// We need to fix all the card instances in the current deck. They're hooked to old objects.
 		deck.cards().values().stream()
 				.flatMap(ObservableList::stream)
 				.forEach(CardInstance::refreshInstance);
-		updateDeckValidity();
+
+		updateCardStates();
 	}
 
 	@FXML
