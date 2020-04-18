@@ -4,21 +4,18 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
-import emi.lib.mtg.characteristic.Supertype;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.scryfall.ScryfallDataSource;
-import emi.mtg.deckbuilder.model.*;
+import emi.mtg.deckbuilder.model.EmptyDataSource;
+import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.Images;
-import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.concurrent.ForkJoinPool;
 
 public class Context {
@@ -47,8 +44,6 @@ public class Context {
 	public final DataSource data;
 	public final Images images;
 	public final Tags tags;
-
-	public DeckList deck;
 
 	public final Preferences preferences;
 	public final State state;
@@ -89,7 +84,6 @@ public class Context {
 
 		this.images = new Images();
 		this.tags = new Tags(this);
-		this.deck = new DeckList("", preferences.authorName, preferences.defaultFormat, "", Collections.emptyMap());
 
 		loadTags();
 	}

@@ -73,7 +73,7 @@ public class MainWindow extends Application {
 	}
 
 	private void flagCardLegality(CardInstance ci) {
-		switch (ci.card().legality(Context.get().deck.format())) {
+		switch (ci.card().legality(deck.format())) {
 			case Legal:
 			case Restricted:
 				break;
@@ -116,6 +116,7 @@ public class MainWindow extends Application {
 
 	private Updater updater;
 
+	private DeckList deck;
 	private boolean deckModified;
 
 	private CardPane collection;
@@ -133,7 +134,7 @@ public class MainWindow extends Application {
 			boolean deckSaved = true;
 
 			try {
-				primarySerdes.exportDeck(Context.get().deck, new File("emergency-dump.json"));
+				primarySerdes.exportDeck(deck, new File("emergency-dump.json"));
 			} catch (Throwable t) {
 				e.addSuppressed(t);
 				deckSaved = false;
@@ -204,7 +205,7 @@ public class MainWindow extends Application {
 
 		setupUI();
 		setupImportExport();
-		setDeck(Context.get().deck); // TODO: This looks tautological...
+		newDeck(Context.get().preferences.defaultFormat);
 
 		stage.setTitle("Deck Builder v0.0.0");
 
@@ -244,12 +245,12 @@ public class MainWindow extends Application {
 
 		for (Zone zone : Zone.values()) {
 			MenuItem fillZoneMenuItem = new MenuItem(zone.name());
-			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> Context.get().deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty()));
+			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> deck != null && deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty()));
 			fillZoneMenuItem.setOnAction(ae -> {
 				for (CardInstance source : collectionContextMenu.cards) {
 					ObservableList<CardInstance> zoneModel = deckPane(zone).model();
 
-					long count = Context.get().deck.format().maxCopies - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
+					long count = deck.format().maxCopies - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
 					for (int i = 0; i < count; ++i) {
 						zoneModel.add(new CardInstance(source.printing()));
 					}
@@ -303,13 +304,13 @@ public class MainWindow extends Application {
 	private final ListChangeListener<Object> deckListChangedListener = e -> {
 		updateDeckValidity();
 		deckModified = true;
-		for (Zone zone : Context.get().deck.format().deckZones()) {
+		for (Zone zone : deck.format().deckZones()) {
 			deckPane(zone).view().scheduleRender();
 		}
 	};
 
 	private void setDeck(DeckList deck) {
-		Context.get().deck = deck;
+		this.deck = deck;
 		deckModified = false;
 		updateCollectionValidity();
 		updateDeckValidity();
@@ -477,7 +478,7 @@ public class MainWindow extends Application {
 
 	private boolean saveDeck(File to) {
 		try {
-			primarySerdes.exportDeck(Context.get().deck, to);
+			primarySerdes.exportDeck(deck, to);
 			deckModified = false;
 			currentDeckFile = to;
 			return true;
@@ -517,7 +518,7 @@ public class MainWindow extends Application {
 	@FXML
 	protected void showDeckInfoDialog() {
 		try {
-			DeckInfoDialog did = new DeckInfoDialog(Context.get().deck);
+			DeckInfoDialog did = new DeckInfoDialog(deck);
 			did.initOwner(this.stage);
 
 			if(did.showAndWait().orElse(false)) {
@@ -624,9 +625,9 @@ public class MainWindow extends Application {
 	}
 
 	private Format.ValidationResult updateDeckValidity() {
-		Format.ValidationResult result = Context.get().deck.validate();
+		Format.ValidationResult result = deck.validate();
 
-		Context.get().deck.cards().values().stream()
+		deck.cards().values().stream()
 				.flatMap(ObservableList::stream)
 				.forEach(ci -> {
 					if (result.cardErrors.containsKey(ci)) {
@@ -850,7 +851,7 @@ public class MainWindow extends Application {
 		}
 
 		try {
-			exporter.exportDeck(Context.get().deck, f);
+			exporter.exportDeck(deck, f);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			error("Export Error", "An error occurred while exporting:", ioe.getMessage()).showAndWait();
