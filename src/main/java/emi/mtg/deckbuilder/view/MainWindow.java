@@ -15,8 +15,8 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
-import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
+import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.ListChangeListener;
@@ -145,12 +145,7 @@ public class MainWindow extends Stage {
 		setupImportExport();
 		setDeck(deck);
 
-		Alert loading = information("Loading", "Loading Card Data...", "Please wait a moment!");
-		loading.getButtonTypes().clear();
-		loading.show();
 		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
-		loading.getButtonTypes().add(ButtonType.OK);
-		loading.hide();
 	}
 
 	private CardPane deckPane(Zone zone) {
@@ -324,7 +319,12 @@ public class MainWindow extends Stage {
 			}
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
-			error("Open Error", "An error occurred while opening:", ioe.getMessage()).showAndWait();
+			AlertBuilder.notify(this)
+					.type(Alert.AlertType.ERROR)
+					.title("Open Error")
+					.headerText("An error occurred while opening:")
+					.contentText(ioe.getMessage())
+					.showAndWait();
 		}
 	}
 
@@ -350,6 +350,13 @@ public class MainWindow extends Stage {
 		}
 	}
 
+	private static final String VARIANTS_QUERY = String.join("\n",
+			"This feature has been deprecated.",
+			"Open all variants separately?");
+
+	private static final String VARIANTS_OPENED = String.join("\n",
+			"You should save each of them separately!");
+
 	private boolean checkDeckForVariants(File f) throws IOException {
 		java.io.FileReader reader = new java.io.FileReader(f);
 		DeckListWithVariants lwv = Context.get().gson.getAdapter(DeckListWithVariants.class).fromJson(reader);
@@ -365,22 +372,32 @@ public class MainWindow extends Stage {
 			return true;
 		}
 
+		if (lwv.variants.size() > 1) {
+			ButtonType result = AlertBuilder.query(this)
+					.title("Variants")
+					.headerText("A deck with variants was opened.")
+					.contentText(VARIANTS_QUERY)
+					.showAndWait().orElse(ButtonType.NO);
+
+			if (result != ButtonType.YES) {
+				return true;
+			}
+		}
+
 		int unnamed = 0;
 		for (DeckListWithVariants.Variant var : lwv.variants) {
 			MainWindow window = new MainWindow(this.owner, lwv.toDeckList(var));
 			String name = var.name == null || var.name.isEmpty() ? Integer.toString(++unnamed) : var.name;
-			window.currentDeckFile = new File(f.getParent(), String.format("%s-%s.json", f.getName().replace(".json", ""), name));
-			window.saveDeck();
+			window.deckModified = true;
 			window.show();
 		}
 
 		if (lwv.variants.size() > 1) {
-			information("Information",
-					"Variants",
-					"A deck with variants has been opened.\n" +
-							"This feature has been deprecated.\n" +
-							"All variants have been opened as separate decks.\n" +
-							"They've been saved to the deck's directory.").show();
+			AlertBuilder.notify(this)
+					.title("Variants Opened")
+					.headerText("All variants have been opened.")
+					.contentText(VARIANTS_OPENED)
+					.show();
 		}
 
 		return true;
@@ -388,8 +405,13 @@ public class MainWindow extends Stage {
 
 	protected boolean offerSaveIfModified() {
 		if (deckModified) {
-			Alert alert = alert(Alert.AlertType.CONFIRMATION, "Deck Modified", "Deck has been modified.", "Would you like to save this deck?", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
-			ButtonType type = alert.showAndWait().orElse(ButtonType.CANCEL);
+			ButtonType type = AlertBuilder.query(this)
+					.type(Alert.AlertType.WARNING)
+					.title("Deck Modified")
+					.headerText("Deck has been modified.")
+					.contentText("Would you like to save this deck?")
+					.buttons(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL)
+					.showAndWait().orElse(ButtonType.CANCEL);
 
 			if (type == ButtonType.CANCEL) {
 				return false;
@@ -439,7 +461,12 @@ public class MainWindow extends Stage {
 			return true;
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
-			error("Save Error", "An error occurred while saving:", ioe.getMessage()).showAndWait();
+			AlertBuilder.notify(this)
+					.type(Alert.AlertType.ERROR)
+					.title("Save Error")
+					.headerText("An error occurred while saving:")
+					.contentText(ioe.getMessage())
+					.showAndWait();
 			return false;
 		}
 	}
@@ -465,7 +492,10 @@ public class MainWindow extends Stage {
 
 		builder.append('\n').append("Is this okay?");
 
-		return confirmation("Warning", "Some information may be lost:", builder.toString())
+		return AlertBuilder.query(this)
+				.title("Warning")
+				.headerText("Some information may be lost:")
+				.contentText(builder.toString())
 				.showAndWait()
 				.orElse(ButtonType.NO) == ButtonType.YES;
 	}
@@ -489,73 +519,87 @@ public class MainWindow extends Stage {
 		owner.closeAllWindows();
 	}
 
+	private static final String TIPS_AND_TRICKS = String.join("\n",
+			"The UI of this program is really dense! Here are some bits on some subtle",
+			"but powerful features!",
+			"",
+			"Card versions:",
+			"\u2022 Alt+Click on cards to show all printings.",
+			"\u2022 Double-click a printing to change the version of the card you clicked on.",
+			"\u2022 Application -> Save Preferences to remember chosen versions in the Collection.",
+			"",
+			"Tags:",
+			"\u2022 Application -> Manage Tags to define categories for cards.",
+			"\u2022 Change any view to Grouping -> Tags to group cards by their tags.",
+			"\u2022 While grouped by tags, drag cards to their tag groups to assign tags!",
+			"\u2022 You can even Control+Drag to assign multiple tags to a card!",
+			"\u2022 Search for cards by tag with the 'tag' filter: \"tag:wrath\"",
+			"",
+			"I never claimed to be good at UI design! :^)");
+
 	@FXML
 	protected void showTipsAndTricks() {
-		Alert alert = information("Program Usage", "Tips and Tricks",
-				"The UI of this program is really dense! Here are some bits on some subtle\n"
-				+ "but powerful features!\n"
-				+ "\n"
-				+ "Card versions:\n"
-				+ "\u2022 Alt+Click on cards to show all printings.\n"
-				+ "\u2022 Double-click a printing to change the version of the card you clicked on.\n"
-				+ "\u2022 Application -> Save Preferences to remember chosen versions in the Collection.\n"
-				+ "\n"
-				+ "Tags:\n"
-				+ "\u2022 Application -> Manage Tags to define categories for cards.\n"
-				+ "\u2022 Change any view to Grouping -> Tags to group cards by their tags.\n"
-				+ "\u2022 While grouped by tags, drag cards to their tag groups to assign tags!\n"
-				+ "\u2022 You can even Control+Drag to assign multiple tags to a card!\n"
-				+ "\u2022 Search for cards by tag with the 'tag' filter: \"tag:wrath\"\n"
-				+ "\n"
-				+ "I never claimed to be good at UI design! :^)");
-		alert.getDialogPane().setPrefWidth(550.0);
-		alert.showAndWait();
+		AlertBuilder.notify(this)
+				.title("Program Usage")
+				.headerText("Tips and Tricks")
+				.contentText(TIPS_AND_TRICKS)
+				.showAndWait();
 	}
+
+	private static final String FILTER_SYNTAX = String.join("\n",
+			"General:",
+			"\u2022 Separate search terms with a space.",
+			"\u2022 Search terms that don't start with a key and operator search card names.",
+			"",
+			"Operators:",
+			"\u2022 ':' \u2014 Meaning varies.",
+			"\u2022 '=' \u2014 Must match the value exactly.",
+			"\u2022 '!=' \u2014 Must not exactly match the value.",
+			"\u2022 '>=' \u2014 Must contain the value.",
+			"\u2022 '>' \u2014 Must contain the value and more.",
+			"\u2022 '<=' \u2014 Value must completely contain the characteristic.",
+			"\u2022 '<' \u2014 Value must contain the characteristic and more.",
+			"",
+			"Search keys:",
+			"\u2022 'type' or 't' \u2014 Supertype/type/subtype. (Use ':' or '>='.)",
+			"\u2022 'text' or 'o' \u2014 Rules text. (Use ':' or '>='.)",
+			"\u2022 'identity' or 'ci' \u2014 Color identity. (':' means '<='.)",
+			"\u2022 'color' or 'c' \u2014 Color. (':' means '<=')",
+			"\u2022 'cmc' \u2014 Converted mana cost. (':' means '==').",
+			"",
+			"Examples:",
+			"\u2022 'color=rug t:legendary' \u2014 Finds all RUG commanders.",
+			"\u2022 't:sorcery cmc>=8' \u2014 Finds good cards for Spellweaver Helix.",
+			"\u2022 'o:when o:\"enters the battlefield\" t:creature' \u2014 Finds creatures with ETB effects.",
+			"",
+			"Upcoming features:",
+			"\u2022 Logic \u2014 And, or, not, and parenthetical grouping.",
+			"\u2022 More keys \u2014 e.g. Mana cost.");
 
 	@FXML
 	protected void showFilterSyntax() {
-		Alert alert = information("Syntax Help", "Omnifilter Syntax",
-				"General:\n"
-				+ "\u2022 Separate search terms with a space.\n"
-				+ "\u2022 Search terms that don't start with a key and operator search card names.\n"
-				+ "\n"
-				+ "Operators:\n"
-				+ "\u2022 ':' \u2014 Meaning varies.\n"
-				+ "\u2022 '=' \u2014 Must match the value exactly.\n"
-				+ "\u2022 '!=' \u2014 Must not exactly match the value.\n"
-				+ "\u2022 '>=' \u2014 Must contain the value.\n"
-				+ "\u2022 '>' \u2014 Must contain the value and more.\n"
-				+ "\u2022 '<=' \u2014 Value must completely contain the characteristic.\n"
-				+ "\u2022 '<' \u2014 Value must contain the characteristic and more.\n"
-				+ "\n"
-				+ "Search keys:\n"
-				+ "\u2022 'type' or 't' \u2014 Supertype/type/subtype. (Use ':' or '>='.)\n"
-				+ "\u2022 'text' or 'o' \u2014 Rules text. (Use ':' or '>='.)\n"
-				+ "\u2022 'identity' or 'ci' \u2014 Color identity. (':' means '<='.)\n"
-				+ "\u2022 'color' or 'c' \u2014 Color. (':' means '<=')\n"
-				+ "\u2022 'cmc' \u2014 Converted mana cost. (':' means '==').\n"
-				+ "\n"
-				+ "Examples:\n"
-				+ "\u2022 'color=rug t:legendary' \u2014 Finds all RUG commanders.\n"
-				+ "\u2022 't:sorcery cmc>=8' \u2014 Finds good cards for Spellweaver Helix.\n"
-				+ "\u2022 'o:when o:\"enters the battlefield\" t:creature' \u2014 Finds creatures with ETB effects.\n"
-				+ "\n"
-				+ "Upcoming features:\n"
-				+ "\u2022 Logic \u2014 And, or, not, and parenthetical grouping.\n"
-				+ "\u2022 More keys \u2014 e.g. Mana cost.");
-		alert.getDialogPane().setPrefWidth(550.0);
-		alert.showAndWait();
+		AlertBuilder.notify(this)
+				.title("Syntax Help")
+				.headerText("Omnifilter Syntax")
+				.contentText(FILTER_SYNTAX)
+				.showAndWait();
 	}
+
+	private static final String ABOUT_TEXT = String.join("\n",
+			"Developer: Emi (@DeaLumi)",
+			"Data & Images: Scryfall (@Scryfall)",
+			"",
+			"Source code will be available at some point probably.",
+			"Feel free to DM me with feedback/issues on Twitter!",
+			"",
+			"Special thanks to MagnetMan, for generously indulging my madness time and time again.");
 
 	@FXML
 	protected void showAboutDialog() {
-		information("About Deck Builder", "Deck Builder v0.0.0",
-				"Developer: Emi (@DeaLumi)\n" +
-				"Data & Images: Scryfall (@Scryfall)\n" +
-				"\n" +
-				"Source code will be available at some point probably. Feel free to DM me with feedback/issues on Twitter!\n" +
-				"\n" +
-				"Special thanks to MagnetMan, for generously indulging my madness time and time again.\n")
+		AlertBuilder.notify(this)
+				.title("About Deck Builder")
+				.headerText("Deck Builder v0.0.0")
+				.contentText(ABOUT_TEXT)
 				.showAndWait();
 	}
 
@@ -600,7 +644,11 @@ public class MainWindow extends Stage {
 		Format.ValidationResult result = updateDeckValidity();
 
 		if (result.deckErrors.isEmpty() && result.zoneErrors.values().stream().allMatch(Set::isEmpty) && result.cardErrors.values().stream().allMatch(Set::isEmpty)) {
-			information("Deck Validation", "Deck is valid.", "No validation errors were found!").showAndWait();
+			AlertBuilder.notify(this)
+					.title("Deck Validation")
+					.headerText("Deck is valid.")
+					.contentText("No validation errors were found!")
+					.showAndWait();
 		} else {
 			StringBuilder msg = new StringBuilder();
 			for (String err : result.deckErrors) {
@@ -624,31 +672,27 @@ public class MainWindow extends Stage {
 				}
 			}
 
-			error("Deck Validation", "Deck has errors:", msg.toString().trim()).showAndWait();
+			AlertBuilder.notify(this)
+					.type(Alert.AlertType.ERROR)
+					.title("Deck Validation")
+					.headerText("Deck has errors:")
+					.contentText(msg.toString().trim())
+					.showAndWait();
 		}
 	}
 
 	@FXML
-	protected void showPreferencesDialog() throws IOException {
-		try {
-			PreferencesDialog pd = new PreferencesDialog(Context.get().preferences);
-			pd.initOwner(this);
-
-			if(pd.showAndWait().orElse(false)) {
-				Context.get().savePreferences();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	protected void showPreferencesDialog() {
+		owner.showPreferences();
 	}
 
 	@FXML
-	protected void updateDeckbuilder() throws IOException {
+	protected void updateDeckbuilder() {
 		owner.update();
 	}
 
 	@FXML
-	protected void updateData() throws IOException {
+	protected void updateData() {
 		owner.updateData();
 	}
 
@@ -684,7 +728,12 @@ public class MainWindow extends Stage {
 			setDeck(importer.importDeck(f));
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
-			error("Import Error", "An error occurred while importing:", ioe.getMessage()).showAndWait();
+			AlertBuilder.notify(this)
+					.type(Alert.AlertType.ERROR)
+					.title("Import Error")
+					.headerText("An error occurred while importing:")
+					.contentText(ioe.getMessage())
+					.showAndWait();
 		}
 	}
 
@@ -708,43 +757,12 @@ public class MainWindow extends Stage {
 			exporter.exportDeck(deck, f);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
-			error("Export Error", "An error occurred while exporting:", ioe.getMessage()).showAndWait();
+			AlertBuilder.notify(this)
+					.type(Alert.AlertType.ERROR)
+					.title("Export Error")
+					.headerText("An error occurred while exporting:")
+					.contentText(ioe.getMessage())
+					.showAndWait();
 		}
-	}
-
-	private Alert confirmation(String title, String headerText, String text) {
-		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, text, ButtonType.YES, ButtonType.NO);
-		confirm.setTitle(title);
-		confirm.setHeaderText(headerText);
-		confirm.initOwner(this);
-		return confirm;
-	}
-
-	private Alert information(String title, String headerText, String text) {
-		return notification(Alert.AlertType.INFORMATION, title, headerText, text);
-	}
-
-	private Alert error(String title, String headerText, String text) {
-		return notification(Alert.AlertType.ERROR, title, headerText, text);
-	}
-
-	private Alert warning(String title, String headerText, String text) {
-		return notification(Alert.AlertType.WARNING, title, headerText, text);
-	}
-
-	private Alert notification(Alert.AlertType type, String title, String headerText, String text) {
-		Alert notification = new Alert(type, text, ButtonType.OK);
-		notification.setTitle(title);
-		notification.setHeaderText(headerText);
-		notification.initOwner(this);
-		return notification;
-	}
-
-	private Alert alert(Alert.AlertType type, String title, String headerText, String text, ButtonType... buttons) {
-		Alert alert = new Alert(type, text, buttons);
-		alert.setTitle(title);
-		alert.setHeaderText(headerText);
-		alert.initOwner(this);
-		return alert;
 	}
 }

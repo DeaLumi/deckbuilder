@@ -3,9 +3,13 @@ package emi.mtg.deckbuilder.view;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
+import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.scene.Group;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 
@@ -80,13 +84,26 @@ public class MainApplication extends Application {
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		this.hostStage = primaryStage;
+		hostStage.setScene(new Scene(new Group()));
 
-		if (Context.get().preferences.autoUpdateProgram && updater.needsUpdate() && confirmation("Updater", "Program Update Available", "A new version of the deckbuilder is available -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-			doGraphicalUpdate();
+		if (Context.get().preferences.autoUpdateProgram && updater.needsUpdate()) {
+			if (AlertBuilder.query(hostStage)
+					.title("Auto-Update")
+					.headerText("A program update is available.")
+					.contentText("Would you like to update?")
+					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+				doGraphicalUpdate();
+			}
 		}
 
-		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate() && confirmation("Updater", "Data Update Available","Data source seems stale -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-			doGraphicalDataUpdate();
+		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate()) {
+			if (AlertBuilder.query(hostStage)
+					.title("Auto-Update")
+					.headerText("New card data may be available.")
+					.contentText("Would you like to update?")
+					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+				doGraphicalDataUpdate();
+			}
 		}
 
 		new MainWindow(this, new DeckList("", Context.get().preferences.authorName, Context.get().preferences.defaultFormat, "", Collections.emptyMap())).show();
@@ -157,7 +174,10 @@ public class MainApplication extends Application {
 	}
 
 	public void updateData() {
-		if (!Context.get().data.needsUpdate() && confirmation("Update Data", "Data is fresh.", "Data source seems fresh. Update anyway?")
+		if (!Context.get().data.needsUpdate() && AlertBuilder.query(hostStage)
+				.title("Update Data")
+				.headerText("Data is fresh.")
+				.contentText("Data source seems fresh. Update anyway?")
 				.showAndWait()
 				.orElse(ButtonType.NO) != ButtonType.YES) {
 			return;
@@ -166,8 +186,18 @@ public class MainApplication extends Application {
 		doGraphicalDataUpdate();
 	}
 
+	private static final String DATA_UPDATED = String.join("\n",
+			"Live updates may have weird side effects.",
+			"If there are strange side-effectss, please restart the program.",
+			"Or, figure out their behavior and let me know!");
+
 	public void doGraphicalDataUpdate() {
-		Alert progressDialog = alert(Alert.AlertType.NONE, "Updating", "Updating...", "", ButtonType.CLOSE);
+		Alert progressDialog = AlertBuilder.create()
+				.type(Alert.AlertType.NONE)
+				.title("Updating")
+				.headerText("Updating...")
+				.contentText("")
+				.buttons(ButtonType.CLOSE).get();
 		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
 
 		ProgressBar pbar = new ProgressBar(0.0);
@@ -193,7 +223,10 @@ public class MainApplication extends Application {
 							throw new Error(ioe);
 						}
 
-						information("Update Complete", "Update completed.", "Live updates are a new feature; if anything acts hinky, please restart the program!")
+						AlertBuilder.notify(hostStage)
+								.title("Update Complete")
+								.headerText("Data has been updated.")
+								.contentText(DATA_UPDATED)
 								.showAndWait();
 					});
 				}
@@ -206,40 +239,16 @@ public class MainApplication extends Application {
 		});
 	}
 
-	private Alert confirmation(String title, String headerText, String text) {
-		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, text, ButtonType.YES, ButtonType.NO);
-		confirm.setTitle(title);
-		confirm.setHeaderText(headerText);
-		confirm.initOwner(hostStage);
-		return confirm;
-	}
+	public void showPreferences() {
+		try {
+			PreferencesDialog pd = new PreferencesDialog(Context.get().preferences);
+			pd.initOwner(hostStage);
 
-	private Alert information(String title, String headerText, String text) {
-		return notification(Alert.AlertType.INFORMATION, title, headerText, text);
+			if(pd.showAndWait().orElse(false)) {
+				Context.get().savePreferences();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
-
-	private Alert error(String title, String headerText, String text) {
-		return notification(Alert.AlertType.ERROR, title, headerText, text);
-	}
-
-	private Alert warning(String title, String headerText, String text) {
-		return notification(Alert.AlertType.WARNING, title, headerText, text);
-	}
-
-	private Alert notification(Alert.AlertType type, String title, String headerText, String text) {
-		Alert notification = new Alert(type, text, ButtonType.OK);
-		notification.setTitle(title);
-		notification.setHeaderText(headerText);
-		notification.initOwner(hostStage);
-		return notification;
-	}
-
-	private Alert alert(Alert.AlertType type, String title, String headerText, String text, ButtonType... buttons) {
-		Alert alert = new Alert(type, text, buttons);
-		alert.setTitle(title);
-		alert.setHeaderText(headerText);
-		alert.initOwner(hostStage);
-		return alert;
-	}
-
 }
