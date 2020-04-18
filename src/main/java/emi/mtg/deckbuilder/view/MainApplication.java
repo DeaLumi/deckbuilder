@@ -196,11 +196,6 @@ public class MainApplication extends Application {
 		doGraphicalDataUpdate();
 	}
 
-	private static final String DATA_UPDATED = String.join("\n",
-			"Live updates may have weird side effects.",
-			"If there are strange side-effectss, please restart the program.",
-			"Or, figure out their behavior and let me know!");
-
 	public void doGraphicalDataUpdate() {
 		Alert progressDialog = AlertBuilder.create()
 				.type(Alert.AlertType.NONE)
@@ -213,8 +208,6 @@ public class MainApplication extends Application {
 		ProgressBar pbar = new ProgressBar(0.0);
 		progressDialog.getDialogPane().setContent(pbar);
 		progressDialog.getDialogPane().setPrefWidth(256.0);
-
-		progressDialog.show();
 
 		ForkJoinPool.commonPool().submit(() -> {
 			try {
@@ -232,12 +225,6 @@ public class MainApplication extends Application {
 						} catch (IOException ioe) {
 							throw new Error(ioe);
 						}
-
-						AlertBuilder.notify(hostStage)
-								.title("Update Complete")
-								.headerText("Data has been updated.")
-								.contentText(DATA_UPDATED)
-								.showAndWait();
 					});
 				}
 			} catch (Throwable e) {
@@ -247,6 +234,8 @@ public class MainApplication extends Application {
 				});
 			}
 		});
+
+		progressDialog.showAndWait();
 	}
 
 	public void showPreferences() {
