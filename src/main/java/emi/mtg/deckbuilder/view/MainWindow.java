@@ -15,7 +15,6 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
-import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyListWrapper;
@@ -131,12 +130,6 @@ public class MainWindow extends Stage {
 			if (!offerSaveIfModified()) {
 				we.consume();
 				return;
-			}
-
-			try {
-				Context.get().saveAll();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
 			}
 
 			owner.deregisterMainWindow(this);
@@ -604,9 +597,7 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void showTagManagementDialog() {
-		TagManagementDialog dlg = new TagManagementDialog();
-		dlg.initOwner(this);
-		dlg.showAndWait();
+		owner.showTagManagementDialog();
 
 		collection.view().regroup();
 		for (Zone zone : deck.format().deckZones()) {
@@ -616,11 +607,7 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void saveTags() {
-		try {
-			Context.get().saveTags(); // TODO: Move this to controller?
-		} catch (IOException ioe) {
-			ioe.printStackTrace(); // TODO: Handle gracefully
-		}
+		owner.saveTags();
 	}
 
 	private Format.ValidationResult updateCardStates() {

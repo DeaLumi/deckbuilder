@@ -4,6 +4,7 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
+import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -85,6 +86,14 @@ public class MainApplication extends Application {
 	public void start(Stage primaryStage) throws Exception {
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
+
+		hostStage.setOnCloseRequest(ev -> {
+			try {
+				Context.get().saveAll();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		});
 
 		Alert alert = AlertBuilder.create()
 				.owner(hostStage)
@@ -248,6 +257,20 @@ public class MainApplication extends Application {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	public void showTagManagementDialog() {
+		TagManagementDialog dlg = new TagManagementDialog();
+		dlg.initOwner(hostStage);
+		dlg.showAndWait();
+	}
+
+	public void saveTags() {
+		try {
+			Context.get().saveTags(); // TODO: Move this to controller?
+		} catch (IOException ioe) {
+			ioe.printStackTrace(); // TODO: Handle gracefully
 		}
 	}
 }
