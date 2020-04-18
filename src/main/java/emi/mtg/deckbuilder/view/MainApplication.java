@@ -77,7 +77,6 @@ public class MainApplication extends Application {
 	void deregisterMainWindow(MainWindow window) {
 		mainWindows.remove(window);
 		if (mainWindows.isEmpty()) {
-			System.out.println("All children closed. Closing host stage.");
 			quit();
 		}
 	}
