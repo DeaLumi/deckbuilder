@@ -909,6 +909,19 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
+	public void regroup() {
+		for (Map.Entry<String, Service.Loader<Grouping>.Stub> entry : CardView.groupingsMap.entrySet()) {
+			try {
+				if (entry.getValue().providerClass().getName().equals(grouping.getClass().getName())) {
+					group(entry.getKey());
+					return;
+				}
+			} catch (ClassNotFoundException cnfe) {
+				// do nothing
+			}
+		}
+	}
+
 	private Comparator<CardInstance> convertSorts(List<ActiveSorting> sorts) {
 		List<ActiveSorting> s = sorts;
 		if (s == null) {

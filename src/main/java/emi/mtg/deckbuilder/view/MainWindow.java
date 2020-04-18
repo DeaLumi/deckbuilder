@@ -604,12 +604,13 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void showTagManagementDialog() {
-		try {
-			TagManagementDialog dlg = new TagManagementDialog();
-			dlg.initOwner(this);
-			dlg.showAndWait();
-		} catch (IOException ioe) {
-			ioe.printStackTrace(); // TODO: Handle gracefully.
+		TagManagementDialog dlg = new TagManagementDialog();
+		dlg.initOwner(this);
+		dlg.showAndWait();
+
+		collection.view().regroup();
+		for (Zone zone : deck.format().deckZones()) {
+			deckPane(zone).view().regroup();
 		}
 	}
 

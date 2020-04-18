@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<fx:root type="DialogPane" xmlns="http://javafx.com/javafx"
+<fx:root type="DialogPane" fx:controller="emi.mtg.deckbuilder.view.dialogs.TagManagementDialog" xmlns="http://javafx.com/javafx"
          xmlns:fx="http://javafx.com/fxml">
     <content>
         <BorderPane>

@@ -1,9 +1,9 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
@@ -12,7 +12,7 @@ import javafx.scene.layout.Priority;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class TagManagementDialog extends Dialog<Void> {
+public class TagManagementDialog extends Dialog<Boolean> {
 	// TODO: Rework this dialog to not change live data...
 
 	@FXML
@@ -39,15 +39,12 @@ public class TagManagementDialog extends Dialog<Void> {
 		}
 	}
 
-	public TagManagementDialog() throws IOException {
+	public TagManagementDialog() {
 		super();
 
 		setTitle("Tags");
 
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("TagManagementDialog.fxml"));
-		loader.setController(this);
-		loader.setRoot(getDialogPane());
-		loader.load();
+		FxUtils.FXML(this, getDialogPane());
 
 		knownTagsList.setItems(FXCollections.observableArrayList(new ArrayList<>(Context.get().tags.tags())));
 		knownTagsList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -98,7 +95,7 @@ public class TagManagementDialog extends Dialog<Void> {
 				// TODO: Handle gracefully
 			}
 
-			return null;
+			return true;
 		});
 	}
 }

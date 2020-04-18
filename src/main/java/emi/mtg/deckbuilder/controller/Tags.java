@@ -23,7 +23,7 @@ public class Tags {
 
 	public Tags(Context context) {
 		this.context = context;
-		this.cardsMap = new TreeMap<>();
+		this.cardsMap = Collections.synchronizedNavigableMap(new TreeMap<>());
 	}
 
 	public SortedSet<String> tags() {
