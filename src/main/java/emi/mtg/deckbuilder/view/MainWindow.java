@@ -304,10 +304,6 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void openDeck() throws IOException {
-		if (!offerSaveIfModified()) {
-			return;
-		}
-
 		File from = primaryFileChooser.showOpenDialog(this);
 
 		if (from == null) {
@@ -321,9 +317,10 @@ public class MainWindow extends Stage {
 
 			DeckList list = primarySerdes.importDeck(from);
 			if (currentDeckFile == null && !deckModified) {
+				currentDeckFile = from;
 				setDeck(list);
 			} else {
-				MainWindow window = new MainWindow(this.owner, primarySerdes.importDeck(from));
+				MainWindow window = new MainWindow(this.owner, list);
 				window.currentDeckFile = from;
 				window.show();
 			}
@@ -720,10 +717,6 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void importDeck() {
-		if (!offerSaveIfModified()) {
-			return;
-		}
-
 		File f = serdesFileChooser.showOpenDialog(this);
 
 		if (f == null) {
@@ -739,7 +732,12 @@ public class MainWindow extends Stage {
 		}
 
 		try {
-			setDeck(importer.importDeck(f));
+			DeckList list = importer.importDeck(f);
+			if (currentDeckFile == null && !deckModified) {
+				setDeck(list);
+			} else {
+				new MainWindow(this.owner, list).show();
+			}
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			AlertBuilder.notify(this)
