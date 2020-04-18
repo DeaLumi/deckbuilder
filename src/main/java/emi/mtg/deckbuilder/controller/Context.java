@@ -23,19 +23,19 @@ public class Context {
 	private static final Path STATE = Paths.get("state.json");
 	private static final Path TAGS = Paths.get("tags.json");
 
-	private static final Context instance;
-
-	static {
-		synchronized (Context.class) {
-			try {
-				instance = new Context();
-			} catch (IOException e) {
-				throw new Error(e);
-			}
-		}
-	}
+	private static Context instance;
 
 	public static Context get() {
+		synchronized (Context.class) {
+			if (instance == null) {
+				try {
+					instance = new Context();
+				} catch (IOException e) {
+					throw new Error(e);
+				}
+			}
+		}
+
 		return instance;
 	}
 

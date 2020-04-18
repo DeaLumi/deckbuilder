@@ -141,11 +141,21 @@ public class MainWindow extends Stage {
 			owner.deregisterMainWindow(this);
 		});
 
+		Alert alert = AlertBuilder.create()
+				.owner(this)
+				.title("Initializing UI")
+				.headerText("Getting things ready...")
+				.contentText("Please wait a moment!")
+				.show();
+
 		setupUI();
 		setupImportExport();
 		setDeck(deck);
 
 		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
+
+		alert.getButtonTypes().setAll(ButtonType.CLOSE);
+		alert.hide();
 	}
 
 	private CardPane deckPane(Zone zone) {

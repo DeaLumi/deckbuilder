@@ -86,6 +86,16 @@ public class MainApplication extends Application {
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
 
+		Alert alert = AlertBuilder.create()
+				.owner(hostStage)
+				.title("Loading")
+				.headerText("Loading card data...")
+				.contentText("Please wait a moment!")
+				.show();
+		Context.get();
+		alert.getButtonTypes().setAll(ButtonType.CLOSE);
+		alert.hide();
+
 		if (Context.get().preferences.autoUpdateProgram && updater.needsUpdate()) {
 			if (AlertBuilder.query(hostStage)
 					.title("Auto-Update")
