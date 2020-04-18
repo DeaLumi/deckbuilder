@@ -301,7 +301,7 @@ public class MainWindow extends Stage {
 			}
 
 			DeckList list = primarySerdes.importDeck(from);
-			if (currentDeckFile == null && !deckModified) {
+			if (currentDeckFile == null && deckIsEmpty()) {
 				currentDeckFile = from;
 				setDeck(list);
 			} else {
@@ -357,7 +357,7 @@ public class MainWindow extends Stage {
 			return false;
 		}
 
-		if (lwv.variants.size() == 1 && currentDeckFile == null && !deckModified) {
+		if (lwv.variants.size() == 1 && currentDeckFile == null && deckIsEmpty()) {
 			DeckListWithVariants.Variant var = lwv.variants.iterator().next();
 			setDeck(lwv.toDeckList(var));
 			currentDeckFile = f;
@@ -712,6 +712,10 @@ public class MainWindow extends Stage {
 		updateCardStates();
 	}
 
+	private boolean deckIsEmpty() {
+		return deck.cards().values().stream().allMatch(List::isEmpty);
+	}
+
 	@FXML
 	protected void importDeck() {
 		File f = serdesFileChooser.showOpenDialog(this);
@@ -730,7 +734,7 @@ public class MainWindow extends Stage {
 
 		try {
 			DeckList list = importer.importDeck(f);
-			if (currentDeckFile == null && !deckModified) {
+			if (currentDeckFile == null && deckIsEmpty()) {
 				setDeck(list);
 			} else {
 				new MainWindow(this.owner, list).show();
