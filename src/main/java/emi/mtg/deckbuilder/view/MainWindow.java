@@ -710,8 +710,12 @@ public class MainWindow extends Stage {
 	protected void remodel() {
 		collection.view().model(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
 		updateCollectionValidity();
+
+		// We need to fix all the card instances in the current deck. They're hooked to old objects.
+		deck.cards().values().stream()
+				.flatMap(ObservableList::stream)
+				.forEach(CardInstance::refreshInstance);
 		updateDeckValidity();
-		// TODO We actually need to rebuild the deck, here. Update all card instances to point to printings from the new data source.
 	}
 
 	@FXML

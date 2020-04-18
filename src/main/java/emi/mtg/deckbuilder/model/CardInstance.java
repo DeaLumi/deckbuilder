@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.model;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardRarity;
+import emi.mtg.deckbuilder.controller.Context;
 
 import java.io.Serializable;
 import java.util.EnumSet;
@@ -82,5 +83,12 @@ public class CardInstance implements Card.Printing, Serializable {
 	@Override
 	public UUID id() {
 		return printing.id();
+	}
+
+	public void refreshInstance() {
+		Card.Printing pr = Context.get().data.printing(printing.id());
+		if (pr != null && pr != printing) {
+			printing = pr;
+		}
 	}
 }
