@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view;
 
 import com.sun.javafx.collections.ObservableListWrapper;
 import emi.lib.Service;
+import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
@@ -71,9 +72,33 @@ public class MainWindow extends Application {
 		pluginClassLoader = tmp;
 	}
 
+	private void flagCardLegality(CardInstance ci) {
+		switch (ci.card().legality(Context.get().deck.format())) {
+			case Legal:
+			case Restricted:
+				break;
+			default:
+				if (Context.get().preferences.theFutureIsNow && ci.card().legality(Format.Future) == Card.Legality.Legal) {
+					break;
+				}
+				ci.flags.add(CardInstance.Flags.Invalid);
+				break;
+		}
+	}
+
+	private void updateCollectionValidity() {
+		collection.model().stream()
+				.forEach(ci -> {
+					ci.flags.remove(CardInstance.Flags.Invalid);
+					flagCardLegality(ci);
+				});
+	}
+
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
 		return new ObservableListWrapper<>(cs.printings().stream()
 				.map(CardInstance::new)
+				.peek(ci -> ci.flags.add(CardInstance.Flags.Unlimited))
+				.peek(this::flagCardLegality)
 				.collect(Collectors.toList()));
 	}
 
@@ -275,11 +300,19 @@ public class MainWindow extends Application {
 		this.serdesFileChooser.getExtensionFilters().setAll(this.deckSerdes.keySet());
 	}
 
-	private final ListChangeListener<Object> deckListChangedListener = e -> deckModified = true;
+	private final ListChangeListener<Object> deckListChangedListener = e -> {
+		updateDeckValidity();
+		deckModified = true;
+		for (Zone zone : Context.get().deck.format().deckZones()) {
+			deckPane(zone).view().scheduleRender();
+		}
+	};
 
 	private void setDeck(DeckList deck) {
 		Context.get().deck = deck;
 		deckModified = false;
+		updateCollectionValidity();
+		updateDeckValidity();
 
 		collection.updateFilter();
 
@@ -488,7 +521,7 @@ public class MainWindow extends Application {
 			did.initOwner(this.stage);
 
 			if(did.showAndWait().orElse(false)) {
-				collection.updateFilter();
+				setDeck(deck); // Reset the view.
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -590,9 +623,25 @@ public class MainWindow extends Application {
 		}
 	}
 
+	private Format.ValidationResult updateDeckValidity() {
+		Format.ValidationResult result = Context.get().deck.validate();
+
+		Context.get().deck.cards().values().stream()
+				.flatMap(ObservableList::stream)
+				.forEach(ci -> {
+					if (result.cardErrors.containsKey(ci)) {
+						ci.flags.add(CardInstance.Flags.Invalid);
+					} else {
+						ci.flags.remove(CardInstance.Flags.Invalid);
+					}
+				});
+
+		return result;
+	}
+
 	@FXML
 	protected void validateDeck() {
-		Format.ValidationResult result = Context.get().deck.formatProperty().getValue().validate(Context.get().deck);
+		Format.ValidationResult result = updateDeckValidity();
 
 		if (result.deckErrors.isEmpty() && result.zoneErrors.values().stream().allMatch(Set::isEmpty) && result.cardErrors.values().stream().allMatch(Set::isEmpty)) {
 			information("Deck Validation", "Deck is valid.", "No validation errors were found!").showAndWait();

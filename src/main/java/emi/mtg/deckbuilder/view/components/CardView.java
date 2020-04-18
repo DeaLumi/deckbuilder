@@ -1191,7 +1191,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
 
 				if (futureImage.isDone()) {
-					EnumSet<CardState> states = Context.get().flagCard(ci, immutableModel.getValue());
+					EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
+
+					if (ci.flags.contains(CardInstance.Flags.Invalid)) {
+						states.add(CardState.Flagged);
+					}
+
+					if (ci.flags.contains(CardInstance.Flags.Full)) {
+						states.add(CardState.Full);
+					}
 
 					if (hoverCard == ci) {
 						states.add(CardState.Hover);

@@ -123,45 +123,6 @@ public class Context {
 		writer.close();
 	}
 
-	public EnumSet<CardView.CardState> flagCard(CardInstance ci, boolean countIsInfinite) {
-		EnumSet<CardView.CardState> states = EnumSet.noneOf(CardView.CardState.class);
-
-		if (deck != null && deck.format() != null) {
-			switch(ci.card().legality(deck.format())) {
-				case Legal:
-				case Restricted:
-					break;
-				default:
-					if (preferences.theFutureIsNow && ci.card().legality(Format.Future) == Card.Legality.Legal)
-						break;
-
-					states.add(CardView.CardState.Flagged);
-					break;
-			}
-
-			// TODO: libmtg should really have, like, card.quantityRule() or something.
-			Card.Face front = ci.card().face(Card.Face.Kind.Front);
-			if (front == null || (!front.type().supertypes().contains(Supertype.Basic) && !front.rules().contains("A deck can have any number of cards named"))) {
-				long zonedCount = deck.cards().values().stream()
-						.flatMap(Collection::stream)
-						.filter(inZone -> inZone.card().equals(ci.card()))
-						.count();
-
-				if (countIsInfinite) {
-					if (zonedCount >= deck.format().maxCopies) {
-						states.add(CardView.CardState.Full);
-					}
-				} else {
-					if (zonedCount > deck.format().maxCopies) {
-						states.add(CardView.CardState.Flagged);
-					}
-				}
-			}
-		}
-
-		return states;
-	}
-
 	public void saveAll() throws IOException {
 		savePreferences();
 		saveTags();

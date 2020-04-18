@@ -2,7 +2,6 @@ package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardType;
-import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
@@ -200,7 +199,7 @@ public class CardPane extends BorderPane {
 		CheckMenuItem findOtherCards = new CheckMenuItem("Show Nontraditional Cards");
 		findOtherCards.setSelected(false);
 
-		CheckMenuItem showIllegalCards = new CheckMenuItem("Show Illegal Cards");
+		CheckMenuItem showIllegalCards = new CheckMenuItem("Show Invalid Cards");
 		showIllegalCards.selectedProperty().bindBidirectional(this.showIllegalCards);
 
 		CheckMenuItem showVersionsSeparately = new CheckMenuItem("Show Versions Separately");
@@ -229,15 +228,7 @@ public class CardPane extends BorderPane {
 			}
 
 			if (!showIllegalCards.isSelected()) {
-				compositeFilter = compositeFilter.and(c -> {
-					switch(c.card().legality(Context.get().deck.formatProperty().getValue())) {
-						case Legal:
-						case Restricted:
-							return true;
-						default:
-							return Context.get().preferences.theFutureIsNow && c.card().legality(Format.Future) == Card.Legality.Legal;
-					}
-				});
+				compositeFilter = compositeFilter.and(c -> !c.flags.contains(CardInstance.Flags.Invalid));
 			}
 
 			if (!showVersionsSeparately.isSelected()) {
