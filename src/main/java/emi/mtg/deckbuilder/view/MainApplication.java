@@ -1,0 +1,245 @@
+package emi.mtg.deckbuilder.view;
+
+import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.controller.Updater;
+import emi.mtg.deckbuilder.model.DeckList;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.scene.control.*;
+import javafx.stage.Stage;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+
+public class MainApplication extends Application {
+	static final ClassLoader PLUGIN_CLASS_LOADER;
+
+	private final HashSet<MainWindow> mainWindows = new HashSet<>();
+
+	static {
+		ClassLoader tmp;
+		try {
+			List<URL> urls = new ArrayList<>();
+			for (Path path : Files.newDirectoryStream(Paths.get("plugins/"), "*.jar")) {
+				urls.add(path.toUri().toURL());
+			}
+			tmp = new URLClassLoader(urls.toArray(new URL[urls.size()]), MainWindow.class.getClassLoader());
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+			System.err.println("Warning: Unable to load any plugins...");
+			tmp = new URLClassLoader(new URL[0], MainWindow.class.getClassLoader());
+		}
+		PLUGIN_CLASS_LOADER = tmp;
+	}
+
+	private final Updater updater;
+	private Stage hostStage;
+
+	public void closeAllWindows() {
+		for (MainWindow child : mainWindows) {
+			child.close();
+		}
+	}
+
+	public void quit() {
+		hostStage.close();
+	}
+
+	public static void main(String[] args) {
+		launch(args);
+	}
+
+	public MainApplication() {
+		updater = new Updater();
+	}
+
+	void registerMainWindow(MainWindow window) {
+		mainWindows.add(window);
+	}
+
+	void deregisterMainWindow(MainWindow window) {
+		mainWindows.remove(window);
+		if (mainWindows.isEmpty()) {
+			System.out.println("All children closed. Closing host stage.");
+			quit();
+		}
+	}
+
+	@Override
+	public void start(Stage primaryStage) throws Exception {
+		this.hostStage = primaryStage;
+
+		if (Context.get().preferences.autoUpdateProgram && updater.needsUpdate() && confirmation("Updater", "Program Update Available", "A new version of the deckbuilder is available -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+			doGraphicalUpdate();
+		}
+
+		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate() && confirmation("Updater", "Data Update Available","Data source seems stale -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+			doGraphicalDataUpdate();
+		}
+
+		new MainWindow(this, new DeckList("", Context.get().preferences.authorName, Context.get().preferences.defaultFormat, "", Collections.emptyMap())).show();
+	}
+
+	public void update() {
+		TextInputDialog uriInput = new TextInputDialog(Context.get().preferences.updateUri == null ? "" : Context.get().preferences.updateUri.toString());
+		uriInput.setTitle("Update Source");
+		uriInput.setHeaderText("Update Server URL");
+		uriInput.setContentText("URL:");
+		uriInput.getDialogPane().setExpanded(true);
+
+		ProgressBar progress = new ProgressBar(0.0);
+		uriInput.getDialogPane().setExpandableContent(progress);
+		uriInput.getDialogPane().setPrefWidth(512.0);
+
+		Button btnOk = (Button) uriInput.getDialogPane().lookupButton(ButtonType.OK);
+		Button btnCancel = (Button) uriInput.getDialogPane().lookupButton(ButtonType.CANCEL);
+		btnOk.addEventFilter(ActionEvent.ACTION, ae -> {
+			String newUri = uriInput.getEditor().getText();
+
+			try {
+				Context.get().preferences.updateUri = new URI(newUri);
+				Context.get().saveAll();
+
+				ForkJoinPool.commonPool().submit(() -> {
+					try {
+						updater.update(d -> Platform.runLater(() -> progress.setProgress(d)));
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				});
+			} catch (IOException | URISyntaxException e) {
+				uriInput.close();
+				throw new RuntimeException(e);
+			}
+
+			btnCancel.setDisable(true);
+			btnOk.setDisable(true);
+			ae.consume();
+		});
+
+		uriInput.initOwner(hostStage);
+		uriInput.showAndWait();
+	}
+
+	public void doGraphicalUpdate() {
+		Alert progressDialog = new Alert(Alert.AlertType.NONE, "Updating...", ButtonType.CLOSE);
+		progressDialog.setHeaderText("Updating...");
+		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
+
+		ProgressBar pbar = new ProgressBar(0.0);
+		progressDialog.getDialogPane().setContent(pbar);
+		progressDialog.getDialogPane().setPrefWidth(256.0);
+
+		progressDialog.initOwner(hostStage);
+		progressDialog.show();
+
+		ForkJoinPool.commonPool().submit(() -> {
+			try {
+				updater.update(d -> Platform.runLater(() -> pbar.setProgress(d)));
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			} finally {
+				Platform.runLater(progressDialog::close);
+			}
+		});
+	}
+
+	public void updateData() {
+		if (!Context.get().data.needsUpdate() && confirmation("Update Data", "Data is fresh.", "Data source seems fresh. Update anyway?")
+				.showAndWait()
+				.orElse(ButtonType.NO) != ButtonType.YES) {
+			return;
+		}
+
+		doGraphicalDataUpdate();
+	}
+
+	public void doGraphicalDataUpdate() {
+		Alert progressDialog = alert(Alert.AlertType.NONE, "Updating", "Updating...", "", ButtonType.CLOSE);
+		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
+
+		ProgressBar pbar = new ProgressBar(0.0);
+		progressDialog.getDialogPane().setContent(pbar);
+		progressDialog.getDialogPane().setPrefWidth(256.0);
+
+		progressDialog.show();
+
+		ForkJoinPool.commonPool().submit(() -> {
+			try {
+				Context.get().saveTags();
+				if (Context.get().data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
+					Platform.runLater(() -> {
+						progressDialog.close();
+
+						for (MainWindow child : mainWindows) {
+							child.remodel();
+						}
+
+						try {
+							Context.get().loadTags();
+						} catch (IOException ioe) {
+							throw new Error(ioe);
+						}
+
+						information("Update Complete", "Update completed.", "Live updates are a new feature; if anything acts hinky, please restart the program!")
+								.showAndWait();
+					});
+				}
+			} catch (Throwable e) {
+				Platform.runLater(() -> {
+					progressDialog.close();
+					throw new RuntimeException(e);
+				});
+			}
+		});
+	}
+
+	private Alert confirmation(String title, String headerText, String text) {
+		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, text, ButtonType.YES, ButtonType.NO);
+		confirm.setTitle(title);
+		confirm.setHeaderText(headerText);
+		confirm.initOwner(hostStage);
+		return confirm;
+	}
+
+	private Alert information(String title, String headerText, String text) {
+		return notification(Alert.AlertType.INFORMATION, title, headerText, text);
+	}
+
+	private Alert error(String title, String headerText, String text) {
+		return notification(Alert.AlertType.ERROR, title, headerText, text);
+	}
+
+	private Alert warning(String title, String headerText, String text) {
+		return notification(Alert.AlertType.WARNING, title, headerText, text);
+	}
+
+	private Alert notification(Alert.AlertType type, String title, String headerText, String text) {
+		Alert notification = new Alert(type, text, ButtonType.OK);
+		notification.setTitle(title);
+		notification.setHeaderText(headerText);
+		notification.initOwner(hostStage);
+		return notification;
+	}
+
+	private Alert alert(Alert.AlertType type, String title, String headerText, String text, ButtonType... buttons) {
+		Alert alert = new Alert(type, text, buttons);
+		alert.setTitle(title);
+		alert.setHeaderText(headerText);
+		alert.initOwner(hostStage);
+		return alert;
+	}
+
+}

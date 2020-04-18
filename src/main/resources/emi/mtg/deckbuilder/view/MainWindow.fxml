@@ -8,10 +8,7 @@
 
 <?import javafx.scene.input.KeyCodeCombination?>
 
-<BorderPane fx:id="root" xmlns:fx="http://javafx.com/fxml">
-    <stylesheets>
-        /emi/mtg/deckbuilder/view/MainWindow.css
-    </stylesheets>
+<fx:root type="BorderPane" fx:controller="emi.mtg.deckbuilder.view.MainWindow" xmlns:fx="http://javafx.com/fxml">
     <top>
         <MenuBar>
             <menus>
@@ -57,4 +54,4 @@
             <SplitPane fx:id="deckSplitter" AnchorPane.rightAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0"/>
         </SplitPane>
     </center>
-</BorderPane>
+</fx:root>

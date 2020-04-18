@@ -7,7 +7,6 @@ import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
-import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.Features;
 import emi.mtg.deckbuilder.controller.serdes.impl.Json;
@@ -18,13 +17,10 @@ import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
-import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -38,38 +34,131 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
-public class MainWindow extends Application {
-	public static void main(String[] args) {
-		launch(args);
+public class MainWindow extends Stage {
+	private BorderPane root;
+
+	@FXML
+	private SplitPane collectionSplitter;
+
+	@FXML
+	private Menu newDeckMenu;
+
+	@FXML
+	private SplitPane deckSplitter;
+
+	private DeckList deck;
+	private boolean deckModified;
+
+	private CardPane collection;
+	private CardView.ContextMenu collectionContextMenu;
+
+	private FileChooser primaryFileChooser;
+	private DeckImportExport primarySerdes;
+	private File currentDeckFile;
+
+	private Map<FileChooser.ExtensionFilter, DeckImportExport> deckSerdes;
+	private FileChooser serdesFileChooser;
+	private final MainApplication owner;
+
+	public MainWindow(MainApplication owner, DeckList deck) {
+		super();
+
+		this.owner = owner;
+		this.owner.registerMainWindow(this);
+
+		root = new BorderPane();
+		FXMLLoader loader = new FXMLLoader();
+		loader.setRoot(root);
+		loader.setControllerFactory(cls -> this);
+		try {
+			loader.load(getClass().getResourceAsStream(getClass().getSimpleName() + ".fxml"));
+		} catch (IOException ioe) {
+			throw new AssertionError(ioe);
+		}
+
+		setTitle("Deck Builder v0.0.0");
+		setScene(new Scene(root, 1024, 1024));
+
+		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
+			boolean deckSaved = true;
+
+			try {
+				primarySerdes.exportDeck(deck, new File("emergency-dump.json"));
+			} catch (Throwable t) {
+				e.addSuppressed(t);
+				deckSaved = false;
+			}
+
+			e.printStackTrace();
+			e.printStackTrace(new PrintWriter(System.out));
+
+			StringWriter stackTrace = new StringWriter();
+			e.printStackTrace(new PrintWriter(stackTrace));
+
+			Alert alert = new Alert(Alert.AlertType.ERROR);
+			alert.initOwner(this);
+
+			alert.setTitle("Uncaught Exception");
+			alert.setHeaderText("An internal error has occurred.");
+
+			alert.setContentText(
+					"Something went wrong!\n" +
+							"\n" +
+							"I have no idea if the application will be able to keep running.\n" +
+							(deckSaved ?
+									"Your deck has been emergency-saved to 'emergency-dump.json' in the deckbuilder directory.\n" :
+									"Something went even more wrong while we tried to save your deck. Sorry. D:\n"
+							) +
+							"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
+							"If you're the nerdy type, tech details follow.\n" +
+							"\n" +
+							"Thread: " + x.getName() + " / " + x.getId() + "\n" +
+							"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
+							"\n" +
+							"Full stack trace written to standard out and standard error (usually err.txt)."
+			);
+
+			alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
+
+			alert.showAndWait();
+		});
+
+		setOnCloseRequest(we -> {
+			if (!offerSaveIfModified()) {
+				we.consume();
+				return;
+			}
+
+			try {
+				Context.get().saveAll();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			owner.deregisterMainWindow(this);
+		});
+
+		setupUI();
+		setupImportExport();
+		setDeck(deck);
+
+		Alert loading = information("Loading", "Loading Card Data...", "Please wait a moment!");
+		loading.getButtonTypes().clear();
+		loading.show();
+		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
+		loading.getButtonTypes().add(ButtonType.OK);
+		loading.hide();
 	}
 
-	private static final ClassLoader pluginClassLoader;
-
-	static {
-		ClassLoader tmp;
-		try {
-			List<URL> urls = new ArrayList<>();
-			for (Path path : Files.newDirectoryStream(Paths.get("plugins/"), "*.jar")) {
-				urls.add(path.toUri().toURL());
-			}
-			tmp = new URLClassLoader(urls.toArray(new URL[urls.size()]), MainWindow.class.getClassLoader());
-		} catch (IOException ioe) {
-			ioe.printStackTrace();
-			System.err.println("Warning: Unable to load any plugins...");
-			tmp = new URLClassLoader(new URL[0], MainWindow.class.getClassLoader());
-		}
-		pluginClassLoader = tmp;
+	private CardPane deckPane(Zone zone) {
+		return deckSplitter.getItems().stream()
+				.map(pane -> (CardPane) pane)
+				.filter(pane -> pane.title().equals(zone.name()))
+				.findAny()
+				.orElseThrow(() -> new AssertionError("No zone " + zone.name() + " in deck!"));
 	}
 
 	private void flagCardLegality(CardInstance ci) {
@@ -100,141 +189,6 @@ public class MainWindow extends Application {
 				.peek(ci -> ci.flags.add(CardInstance.Flags.Unlimited))
 				.peek(this::flagCardLegality)
 				.collect(Collectors.toList()));
-	}
-
-	@FXML
-	private BorderPane root;
-
-	@FXML
-	private SplitPane collectionSplitter;
-
-	@FXML
-	private Menu newDeckMenu;
-
-	@FXML
-	private SplitPane deckSplitter;
-
-	private Updater updater;
-
-	private DeckList deck;
-	private boolean deckModified;
-
-	private CardPane collection;
-	private CardView.ContextMenu collectionContextMenu;
-
-	private FileChooser primaryFileChooser;
-	private DeckImportExport primarySerdes;
-	private File currentDeckFile;
-
-	private Map<FileChooser.ExtensionFilter, DeckImportExport> deckSerdes;
-	private FileChooser serdesFileChooser;
-
-	public MainWindow() {
-		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
-			boolean deckSaved = true;
-
-			try {
-				primarySerdes.exportDeck(deck, new File("emergency-dump.json"));
-			} catch (Throwable t) {
-				e.addSuppressed(t);
-				deckSaved = false;
-			}
-
-			e.printStackTrace();
-			e.printStackTrace(new PrintWriter(System.out));
-
-			StringWriter stackTrace = new StringWriter();
-			e.printStackTrace(new PrintWriter(stackTrace));
-
-			Alert alert = new Alert(Alert.AlertType.ERROR);
-			alert.initOwner(stage);
-
-			alert.setTitle("Uncaught Exception");
-			alert.setHeaderText("An internal error has occurred.");
-
-			alert.setContentText(
-					"Something went wrong!\n" +
-							"\n" +
-							"I have no idea if the application will be able to keep running.\n" +
-							(deckSaved ?
-									"Your deck has been emergency-saved to 'emergency-dump.json' in the deckbuilder directory.\n" :
-									"Something went even more wrong while we tried to save your deck. Sorry. D:\n"
-							) +
-							"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
-							"If you're the nerdy type, tech details follow.\n" +
-							"\n" +
-							"Thread: " + x.getName() + " / " + x.getId() + "\n" +
-							"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
-							"\n" +
-							"Full stack trace written to standard out and standard error (usually err.txt)."
-			);
-
-			alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
-
-			alert.showAndWait();
-		});
-	}
-
-	private Stage stage;
-
-	@Override
-	public void init() {
-		this.updater = new Updater();
-	}
-
-	@Override
-	public void start(Stage stage) throws Exception {
-		this.stage = stage;
-
-		this.stage.setOnCloseRequest(we -> {
-			if (!offerSaveIfModified()) {
-				we.consume();
-				return;
-			}
-
-			try {
-				Context.get().saveAll();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		});
-
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("MainWindow.fxml"));
-		loader.setController(this);
-		loader.load();
-
-		setupUI();
-		setupImportExport();
-		newDeck(Context.get().preferences.defaultFormat);
-
-		stage.setTitle("Deck Builder v0.0.0");
-
-		stage.setScene(new Scene(root, 1024, 1024));
-		stage.setMaximized(true);
-		stage.show();
-
-		if (Context.get().preferences.autoUpdateProgram && updater.needsUpdate() && confirmation("Updater", "Program Update Available", "A new version of the deckbuilder is available -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-			doGraphicalProgramUpdate();
-		}
-
-		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate() && confirmation("Updater", "Data Update Available","Data source seems stale -- update?").showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-			doGraphicalDataUpdate();
-		}
-
-		Alert loading = information("Loading", "Loading Card Data...", "Please wait a moment!");
-		loading.getButtonTypes().clear();
-		loading.show();
-		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
-		loading.getButtonTypes().add(ButtonType.OK);
-		loading.hide();
-	}
-
-	private CardPane deckPane(Zone zone) {
-		return deckSplitter.getItems().stream()
-				.map(pane -> (CardPane) pane)
-				.filter(pane -> pane.title().equals(zone.name()))
-				.findAny()
-				.orElseThrow(() -> new AssertionError("No zone " + zone.name() + " in deck!"));
 	}
 
 	private void createCollectionContextMenu() {
@@ -291,7 +245,7 @@ public class MainWindow extends Application {
 			this.newDeckMenu.getItems().add(item);
 		}
 
-		this.deckSerdes = Service.Loader.load(DeckImportExport.class, pluginClassLoader).stream()
+		this.deckSerdes = Service.Loader.load(DeckImportExport.class, MainApplication.PLUGIN_CLASS_LOADER).stream()
 				.collect(Collectors.toMap(
 						vies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", vies.string("name"), vies.string("extension")), String.format("*.%s", vies.string("extension"))),
 						vies -> vies.uncheckedInstance()
@@ -311,6 +265,15 @@ public class MainWindow extends Application {
 
 	private void setDeck(DeckList deck) {
 		this.deck = deck;
+		titleProperty().unbind();
+		titleProperty().bind(Bindings.createStringBinding(() -> {
+			if (deck.name() != null && !deck.name().isEmpty()) {
+				return String.format("Deck Builder v0.0.0 - %s", deck.name());
+			} else {
+				return "Deck Builder v0.0.0";
+			}
+		}, deck.nameProperty()));
+
 		deckModified = false;
 		updateCollectionValidity();
 		updateDeckValidity();
@@ -330,19 +293,8 @@ public class MainWindow extends Application {
 
 	private void newDeck(Format format) {
 		DeckList newDeck = new DeckList("", Context.get().preferences.authorName, format, "", Collections.emptyMap());
-		setDeck(newDeck);
-
-		currentDeckFile = null;
-	}
-
-	@FXML
-	protected void newDeck() {
-		if (!offerSaveIfModified()) {
-			return;
-		}
-
-		newDeck(Context.get().preferences.defaultFormat);
-		currentDeckFile = null;
+		MainWindow window = new MainWindow(this.owner, newDeck);
+		window.show();
 	}
 
 	@FXML
@@ -351,7 +303,7 @@ public class MainWindow extends Application {
 			return;
 		}
 
-		File from = primaryFileChooser.showOpenDialog(this.stage);
+		File from = primaryFileChooser.showOpenDialog(this);
 
 		if (from == null) {
 			return;
@@ -362,8 +314,14 @@ public class MainWindow extends Application {
 				return;
 			}
 
-			setDeck(primarySerdes.importDeck(from));
-			currentDeckFile = from;
+			DeckList list = primarySerdes.importDeck(from);
+			if (currentDeckFile == null && !deckModified) {
+				setDeck(list);
+			} else {
+				MainWindow window = new MainWindow(this.owner, primarySerdes.importDeck(from));
+				window.currentDeckFile = from;
+				window.show();
+			}
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			error("Open Error", "An error occurred while opening:", ioe.getMessage()).showAndWait();
@@ -384,7 +342,7 @@ public class MainWindow extends Application {
 		public List<Variant> variants;
 
 		public DeckList toDeckList(Variant var) {
-			return new DeckList(var != null && var.name != null && !var.name.isEmpty() ? var.name : this.name,
+			return new DeckList(this.name + (var != null && var.name != null && !var.name.isEmpty() ? var.name : ""),
 					this.author,
 					this.format,
 					var != null && var.description != null && !var.description.isEmpty() ? var.description : this.description,
@@ -400,32 +358,29 @@ public class MainWindow extends Application {
 			return false;
 		}
 
-		if (lwv.variants.size() <= 1) {
-			DeckListWithVariants.Variant var = lwv.variants.stream().findAny().orElse(null);
-			DeckList list = lwv.toDeckList(var);
-			setDeck(list);
+		if (lwv.variants.size() == 1 && currentDeckFile == null && !deckModified) {
+			DeckListWithVariants.Variant var = lwv.variants.iterator().next();
+			setDeck(lwv.toDeckList(var));
 			currentDeckFile = f;
 			return true;
 		}
 
-		Optional<ButtonType> response = confirmation("Format Mismatch",
-				"Old Format Detected",
-				"The file you're trying to open contains multiple deck-variants.\nThis feature is deprecated. Would you like to save all variants separately?").showAndWait();
+		int unnamed = 0;
+		for (DeckListWithVariants.Variant var : lwv.variants) {
+			MainWindow window = new MainWindow(this.owner, lwv.toDeckList(var));
+			String name = var.name == null || var.name.isEmpty() ? Integer.toString(++unnamed) : var.name;
+			window.currentDeckFile = new File(f.getParent(), String.format("%s-%s.json", f.getName().replace(".json", ""), name));
+			window.saveDeck();
+			window.show();
+		}
 
-		if (response.isPresent() && response.get() == ButtonType.YES) {
-			File parentDir = f.getParentFile();
-			File variantDir = new File(parentDir, (lwv.name != null && !lwv.name.isEmpty() ? lwv.name : f.getName()) + "-Variants");
-			if (!variantDir.isDirectory() && !variantDir.mkdir()) {
-				throw new IOException("Unable to create output directory for variants!");
-			}
-
-			for (int i = 0; i < lwv.variants.size(); ++i) {
-				DeckListWithVariants.Variant var = lwv.variants.get(i);
-				DeckList list = lwv.toDeckList(var);
-				primarySerdes.exportDeck(list, new File(variantDir, String.format("%d - %s.json", i, var.name != null && !var.name.isEmpty() ? var.name : "Unnamed")));
-			}
-
-			information("Success", "Variants Saved", "All variants were saved individually to " + variantDir.getAbsolutePath()).showAndWait();
+		if (lwv.variants.size() > 1) {
+			information("Information",
+					"Variants",
+					"A deck with variants has been opened.\n" +
+							"This feature has been deprecated.\n" +
+							"All variants have been opened as separate decks.\n" +
+							"They've been saved to the deck's directory.").show();
 		}
 
 		return true;
@@ -467,7 +422,7 @@ public class MainWindow extends Application {
 	}
 
 	protected boolean doSaveDeckAs() {
-		File to = primaryFileChooser.showSaveDialog(this.stage);
+		File to = primaryFileChooser.showSaveDialog(this);
 
 		if (to == null) {
 			return false;
@@ -519,7 +474,7 @@ public class MainWindow extends Application {
 	protected void showDeckInfoDialog() {
 		try {
 			DeckInfoDialog did = new DeckInfoDialog(deck);
-			did.initOwner(this.stage);
+			did.initOwner(this);
 
 			if(did.showAndWait().orElse(false)) {
 				setDeck(deck); // Reset the view.
@@ -531,7 +486,7 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void actionQuit() {
-		stage.close();
+		owner.closeAllWindows();
 	}
 
 	@FXML
@@ -608,7 +563,7 @@ public class MainWindow extends Application {
 	protected void showTagManagementDialog() {
 		try {
 			TagManagementDialog dlg = new TagManagementDialog();
-			dlg.initOwner(this.stage);
+			dlg.initOwner(this);
 			dlg.showAndWait();
 		} catch (IOException ioe) {
 			ioe.printStackTrace(); // TODO: Handle gracefully.
@@ -677,7 +632,7 @@ public class MainWindow extends Application {
 	protected void showPreferencesDialog() throws IOException {
 		try {
 			PreferencesDialog pd = new PreferencesDialog(Context.get().preferences);
-			pd.initOwner(this.stage);
+			pd.initOwner(this);
 
 			if(pd.showAndWait().orElse(false)) {
 				Context.get().savePreferences();
@@ -689,121 +644,20 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void updateDeckbuilder() throws IOException {
-		TextInputDialog uriInput = new TextInputDialog(Context.get().preferences.updateUri == null ? "" : Context.get().preferences.updateUri.toString());
-		uriInput.setTitle("Update Source");
-		uriInput.setHeaderText("Update Server URL");
-		uriInput.setContentText("URL:");
-		uriInput.getDialogPane().setExpanded(true);
-
-		ProgressBar progress = new ProgressBar(0.0);
-		uriInput.getDialogPane().setExpandableContent(progress);
-		uriInput.getDialogPane().setPrefWidth(512.0);
-
-		Button btnOk = (Button) uriInput.getDialogPane().lookupButton(ButtonType.OK);
-		Button btnCancel = (Button) uriInput.getDialogPane().lookupButton(ButtonType.CANCEL);
-		btnOk.addEventFilter(ActionEvent.ACTION, ae -> {
-			String newUri = uriInput.getEditor().getText();
-
-			try {
-				Context.get().preferences.updateUri = new URI(newUri);
-				Context.get().saveAll();
-
-				ForkJoinPool.commonPool().submit(() -> {
-					try {
-						updater.update(d -> Platform.runLater(() -> progress.setProgress(d)));
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				});
-			} catch (IOException | URISyntaxException e) {
-				uriInput.close();
-				throw new RuntimeException(e);
-			}
-
-			btnCancel.setDisable(true);
-			btnOk.setDisable(true);
-			ae.consume();
-		});
-
-		uriInput.initOwner(stage);
-		uriInput.showAndWait();
+		owner.update();
 	}
 
-	private void doGraphicalProgramUpdate() {
-		Alert progressDialog = new Alert(Alert.AlertType.NONE, "Updating...", ButtonType.CLOSE);
-		progressDialog.setHeaderText("Updating...");
-		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
-
-		ProgressBar pbar = new ProgressBar(0.0);
-		progressDialog.getDialogPane().setContent(pbar);
-		progressDialog.getDialogPane().setPrefWidth(256.0);
-
-		progressDialog.initOwner(stage);
-		progressDialog.show();
-
-		ForkJoinPool.commonPool().submit(() -> {
-			try {
-				updater.update(d -> Platform.runLater(() -> pbar.setProgress(d)));
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			} finally {
-				Platform.runLater(progressDialog::close);
-			}
-		});
+	@FXML
+	protected void updateData() throws IOException {
+		owner.updateData();
 	}
 
 	@FXML
 	protected void remodel() {
 		collection.view().model(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
-	}
-
-	@FXML
-	protected void updateData() throws IOException {
-		if (!Context.get().data.needsUpdate() && confirmation("Update Data", "Data is fresh.", "Data source seems fresh. Update anyway?")
-				.showAndWait()
-				.orElse(ButtonType.NO) != ButtonType.YES) {
-			return;
-		}
-
-		doGraphicalDataUpdate();
-	}
-
-	private void doGraphicalDataUpdate() {
-		Alert progressDialog = alert(Alert.AlertType.NONE, "Updating", "Updating...", "", ButtonType.CLOSE);
-		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
-
-		ProgressBar pbar = new ProgressBar(0.0);
-		progressDialog.getDialogPane().setContent(pbar);
-		progressDialog.getDialogPane().setPrefWidth(256.0);
-
-		progressDialog.show();
-
-		ForkJoinPool.commonPool().submit(() -> {
-			try {
-				Context.get().saveTags();
-				if (Context.get().data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
-					Platform.runLater(() -> {
-						progressDialog.close();
-
-						collection.view().model(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
-
-						try {
-							Context.get().loadTags();
-						} catch (IOException ioe) {
-							throw new Error(ioe);
-						}
-
-						information("Update Complete", "Update completed.", "Live updates are a new feature; if anything acts hinky, please restart the program!")
-								.showAndWait();
-					});
-				}
-			} catch (Throwable e) {
-				Platform.runLater(() -> {
-					progressDialog.close();
-					throw new RuntimeException(e);
-				});
-			}
-		});
+		updateCollectionValidity();
+		updateDeckValidity();
+		// TODO We actually need to rebuild the deck, here. Update all card instances to point to printings from the new data source.
 	}
 
 	@FXML
@@ -812,7 +666,7 @@ public class MainWindow extends Application {
 			return;
 		}
 
-		File f = serdesFileChooser.showOpenDialog(stage);
+		File f = serdesFileChooser.showOpenDialog(this);
 
 		if (f == null) {
 			return;
@@ -836,7 +690,7 @@ public class MainWindow extends Application {
 
 	@FXML
 	protected void exportDeck() {
-		File f = serdesFileChooser.showSaveDialog(stage);
+		File f = serdesFileChooser.showSaveDialog(this);
 
 		if (f == null) {
 			return;
@@ -862,7 +716,7 @@ public class MainWindow extends Application {
 		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, text, ButtonType.YES, ButtonType.NO);
 		confirm.setTitle(title);
 		confirm.setHeaderText(headerText);
-		confirm.initOwner(stage);
+		confirm.initOwner(this);
 		return confirm;
 	}
 
@@ -882,7 +736,7 @@ public class MainWindow extends Application {
 		Alert notification = new Alert(type, text, ButtonType.OK);
 		notification.setTitle(title);
 		notification.setHeaderText(headerText);
-		notification.initOwner(stage);
+		notification.initOwner(this);
 		return notification;
 	}
 
@@ -890,7 +744,7 @@ public class MainWindow extends Application {
 		Alert alert = new Alert(type, text, buttons);
 		alert.setTitle(title);
 		alert.setHeaderText(headerText);
-		alert.initOwner(stage);
+		alert.initOwner(this);
 		return alert;
 	}
 }
