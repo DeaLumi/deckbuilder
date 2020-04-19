@@ -228,8 +228,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		);
 	}
 
-	private static DataFormat DRAG_FORMAT = new DataFormat("application/x-deckbuilder-printing-uuid");
-
 	public class Group {
 		public final Bounds groupBounds, labelBounds;
 		public final Grouping.Group group;
@@ -251,17 +249,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		public final SimpleObjectProperty<CardView> view = new SimpleObjectProperty<>();
 	}
 
-	private volatile ObservableList<CardInstance> model;
-	private volatile FilteredList<CardInstance> filteredModel;
+	private final ObservableList<CardInstance> model;
+	private final FilteredList<CardInstance> filteredModel;
 	private volatile Group[] groupedModel;
 
 	private LayoutEngine engine;
 	private Comparator<CardInstance> sort;
-	private Predicate<CardInstance> filter;
 	private List<ActiveSorting> sortingElements;
 	private Grouping grouping;
 
-	private DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
+	private final DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
 
 	private enum DragMode {
 		None,
@@ -285,9 +282,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private Consumer<CardInstance> doubleClick;
 	private ContextMenu contextMenu;
 
-	private DoubleProperty cardScaleProperty;
-	private BooleanProperty showEmptyGroupsProperty;
-	private BooleanProperty immutableModel;
+	private final DoubleProperty cardScaleProperty;
+	private final BooleanProperty showEmptyGroupsProperty;
+	private final BooleanProperty immutableModel;
 
 	private static boolean dragModified = false;
 	private static CardView dragSource = null, dragTarget = null;
@@ -297,7 +294,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		setFocusTraversable(true);
 
-		this.filter = ci -> true;
+		Predicate<CardInstance> filter = ci -> true;
 		this.sortingElements = sorts;
 		this.sort = convertSorts(sorts);
 		this.grouping = grouping;
@@ -326,7 +323,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.contextMenu = null;
 
 		this.model = model;
-		this.filteredModel = model.filtered(this.filter);
+		this.filteredModel = model.filtered(filter);
 		this.groupedModel = Arrays.stream(grouping.groups())
 				.map(g -> new Group(g, this.filteredModel, this.sort))
 				.toArray(Group[]::new);
@@ -637,11 +634,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnMouseReleased(me -> {
 			switch (dragMode) {
 				case None:
-					break;
 				case DragAndDrop:
-					break;
 				case Panning:
-					break;
 				case Zooming:
 					break;
 				case Selecting:
@@ -927,14 +921,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return this.sortingElements;
 	}
 
-	public CardView doubleClick(Consumer<CardInstance> doubleClick) {
+	public void doubleClick(Consumer<CardInstance> doubleClick) {
 		this.doubleClick = doubleClick;
-		return this;
 	}
 
-	public CardView contextMenu(ContextMenu contextMenu) {
+	public void contextMenu(ContextMenu contextMenu) {
 		this.contextMenu = contextMenu;
-		return this;
 	}
 
 	public DoubleProperty cardScaleProperty() {
@@ -1090,7 +1082,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	class RenderStruct {
+	static class RenderStruct {
 		public final Image img;
 		public final EnumSet<CardState> state;
 
