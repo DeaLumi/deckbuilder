@@ -45,7 +45,7 @@
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
                             <classpathLayoutType>repository</classpathLayoutType>
-                            <mainClass>emi.mtg.deckbuilder.view.MainWindow</mainClass>
+                            <mainClass>emi.mtg.deckbuilder.view.MainApplication</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
