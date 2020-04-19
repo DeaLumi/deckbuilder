@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.Service;
 import emi.lib.mtg.Card;
+import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
@@ -71,7 +72,12 @@ public class TextFile implements DeckImportExport {
 			}
 		}
 
-		return new DeckList(name, "", null, "", cards);
+		Format fmt = Arrays.stream(Format.values())
+				.filter(f -> f.deckZones().equals(cards.keySet()))
+				.findAny()
+				.orElse(Context.get().preferences.defaultFormat);
+
+		return new DeckList(name, "", fmt, "", cards);
 	}
 
 	private static void writeList(List<CardInstance> list, Writer writer) throws IOException {

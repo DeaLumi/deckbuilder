@@ -59,17 +59,17 @@ public class MTGO implements DeckImportExport {
 			Boolean sb = Boolean.parseBoolean(element.getAttributes().getNamedItem("Sideboard").getNodeValue());
 			String name = element.getAttributes().getNamedItem("Name").getNodeValue();
 
-			Card.Printing printing = printingsCache.computeIfAbsent(catId, id -> {
+			Card.Printing printing = printingsCache.get(catId);
+			if (printing == null) {
 				for (Card.Printing pr : Context.get().data.printings()) {
 					if (catId.equals(pr.mtgoCatalogId())) {
-						return pr;
+						printing = pr;
+						break;
 					} else {
 						printingsCache.put(pr.mtgoCatalogId(), pr);
 					}
 				}
-
-				return null;
-			});
+			};
 
 			if (printing == null) {
 				Card card = Context.get().data.cards().stream().filter(c -> c.name().equals(name)).findAny().orElse(null);
@@ -91,7 +91,7 @@ public class MTGO implements DeckImportExport {
 		cards.put(Zone.Library, library);
 		cards.put(Zone.Sideboard, sideboard);
 
-		return new DeckList(from.getName().substring(0, from.getName().lastIndexOf('.')), "", null, "Imported from MTGO.", cards);
+		return new DeckList(from.getName().substring(0, from.getName().lastIndexOf('.')), "", Format.Freeform, "Imported from MTGO.", cards);
 	}
 
 	private static void appendZone(Document xml, Element deckEl, Collection<? extends Card.Printing> printings, boolean sideboard, Set<String> missingCards, Set<String> subbedCards) {
