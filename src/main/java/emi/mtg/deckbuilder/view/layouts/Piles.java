@@ -1,22 +1,28 @@
 package emi.mtg.deckbuilder.view.layouts;
 
-import emi.lib.Service;
 import emi.mtg.deckbuilder.view.components.CardView;
 
-@Service.Provider(CardView.LayoutEngine.class)
-@Service.Property.String(name="name", value="Piles")
 public class Piles implements CardView.LayoutEngine {
+	public static class Factory implements CardView.LayoutEngine.Factory {
+		public static final Factory INSTANCE = new Factory();
+
+		@Override
+		public CardView.LayoutEngine create(CardView parent) {
+			return new Piles(parent);
+		}
+
+		@Override
+		public String toString() {
+			return "Piles";
+		}
+	}
+
 	private final static double OVERLAP_FACTOR = 0.125;
 
 	private final CardView parent;
 
 	public Piles(CardView parent) {
 		this.parent = parent;
-	}
-
-	@Override
-	public String toString() {
-		return "Piles";
 	}
 
 	@Override

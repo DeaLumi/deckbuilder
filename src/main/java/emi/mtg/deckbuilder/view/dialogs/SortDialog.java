@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
-import com.sun.javafx.collections.ObservableListWrapper;
 import emi.mtg.deckbuilder.view.components.CardView;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonBar;
@@ -90,16 +90,16 @@ public class SortDialog extends Dialog<List<CardView.ActiveSorting>> {
 			throw new Error(e);
 		}
 
-		List<CardView.Sorting> source = new ArrayList<>(CardView.sortings().values());
+		List<CardView.Sorting> source = new ArrayList<>(CardView.SORTINGS);
 		source.removeAll(currentSorts.stream().map(s -> s.sorting).collect(Collectors.toSet()));
-		sourceList.setItems(new ObservableListWrapper<>(source));
+		sourceList.setItems(FXCollections.observableList(source));
 
 		List<CardView.ActiveSorting> model = new ArrayList<>();
 		for (CardView.ActiveSorting active : currentSorts) {
 			model.add(new CardView.ActiveSorting(active.sorting, active.descending.get()));
 		}
 
-		activeList.setItems(new ObservableListWrapper<>(model));
+		activeList.setItems(FXCollections.observableList(model));
 		activeList.setCellFactory(CheckBoxListCell.forListView(s -> s.descending));
 
 		setTitle("Sort");

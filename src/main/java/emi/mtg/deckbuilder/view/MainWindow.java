@@ -1,7 +1,5 @@
 package emi.mtg.deckbuilder.view;
 
-import com.sun.javafx.collections.ObservableListWrapper;
-import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
@@ -15,27 +13,28 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
+import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyListWrapper;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class MainWindow extends Stage {
 	private BorderPane root;
@@ -62,6 +61,11 @@ public class MainWindow extends Stage {
 	private Map<FileChooser.ExtensionFilter, DeckImportExport> deckSerdes;
 	private FileChooser serdesFileChooser;
 	private final MainApplication owner;
+
+	private final ListChangeListener<Object> deckListChangedListener = e -> {
+		updateCardStates();
+		deckModified = true;
+	};
 
 	public MainWindow(MainApplication owner, DeckList deck) {
 		super();
@@ -175,7 +179,7 @@ public class MainWindow extends Stage {
 	}
 
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
-		return new ObservableListWrapper<>(cs.printings().stream()
+		return FXCollections.observableList(cs.printings().stream()
 				.map(CardInstance::new)
 				.peek(ci -> ci.flags.add(CardInstance.Flags.Unlimited))
 				.peek(this::flagCardLegality)
@@ -210,7 +214,7 @@ public class MainWindow extends Stage {
 	private void setupUI() {
 		createCollectionContextMenu();
 
-		collection = new CardPane("Collection", new ObservableListWrapper<>(new ArrayList<>()), "Flow Grid", CardView.DEFAULT_COLLECTION_SORTING);
+		collection = new CardPane("Collection", FXCollections.observableArrayList(), FlowGrid.Factory.INSTANCE, CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.view().contextMenu(collectionContextMenu);
@@ -236,23 +240,15 @@ public class MainWindow extends Stage {
 			this.newDeckMenu.getItems().add(item);
 		}
 
-		this.deckSerdes = Service.Loader.load(DeckImportExport.class, MainApplication.PLUGIN_CLASS_LOADER).stream()
+		this.deckSerdes = StreamSupport.stream(ServiceLoader.load(DeckImportExport.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
 				.collect(Collectors.toMap(
-						vies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", vies.string("name"), vies.string("extension")), String.format("*.%s", vies.string("extension"))),
-						vies -> vies.uncheckedInstance()
+						vies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", vies.toString(), vies.extension()), String.format("*.%s", vies.extension())),
+						vies -> vies
 				));
 
 		this.serdesFileChooser = new FileChooser();
 		this.serdesFileChooser.getExtensionFilters().setAll(this.deckSerdes.keySet());
 	}
-
-	private final ListChangeListener<Object> deckListChangedListener = e -> {
-		updateCardStates();
-		deckModified = true;
-		for (Zone zone : deck.format().deckZones()) {
-			deckPane(zone).view().scheduleRender();
-		}
-	};
 
 	private void setDeck(DeckList deck) {
 		this.deck = deck;
@@ -273,10 +269,7 @@ public class MainWindow extends Stage {
 		deckSplitter.getItems().setAll(deck.format().deckZones().stream()
 				.map(z -> new CardPane(z.name(), deck.cards(z)))
 				.peek(pane -> pane.model().addListener(deckListChangedListener))
-				.peek(pane -> pane.view().doubleClick(ci -> {
-					pane.model().remove(ci);
-					collection.view().scheduleRender();
-				}))
+				.peek(pane -> pane.view().doubleClick(ci -> pane.model().remove(ci)))
 				.collect(Collectors.toList()));
 	}
 
@@ -629,6 +622,11 @@ public class MainWindow extends Stage {
 				})
 				.map(CardInstance::card)
 				.forEach(c -> histogram.computeIfAbsent(c, x -> new AtomicInteger(0)).incrementAndGet());
+		for (Node zonePane : deckSplitter.getItems()) {
+			if (zonePane instanceof CardPane) {
+				((CardPane) zonePane).view().scheduleRender();
+			}
+		}
 
 		histogram.entrySet().removeIf(e -> e.getValue().get() < deck.format().maxCopies);
 
@@ -643,6 +641,7 @@ public class MainWindow extends Stage {
 						ci.flags.remove(CardInstance.Flags.Full);
 					}
 				});
+		collection.view().scheduleRender();
 
 		return result;
 	}
@@ -706,7 +705,7 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void remodel() {
-		collection.view().model(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
+		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
 
 		// We need to fix all the card instances in the current deck. They're hooked to old objects.
 		deck.cards().values().stream()

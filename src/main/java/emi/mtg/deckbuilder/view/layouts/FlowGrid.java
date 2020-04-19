@@ -1,11 +1,22 @@
 package emi.mtg.deckbuilder.view.layouts;
 
-import emi.lib.Service;
 import emi.mtg.deckbuilder.view.components.CardView;
 
-@Service.Provider(CardView.LayoutEngine.class)
-@Service.Property.String(name="name", value="Flow Grid")
 public class FlowGrid implements CardView.LayoutEngine {
+	public static class Factory implements CardView.LayoutEngine.Factory {
+		public static final Factory INSTANCE = new Factory();
+
+		@Override
+		public CardView.LayoutEngine create(CardView parent) {
+			return new FlowGrid(parent);
+		}
+
+		@Override
+		public String toString() {
+			return "Flow Grid";
+		}
+	}
+
 	private final CardView parent;
 
 	public FlowGrid(CardView parent) {
@@ -16,11 +27,6 @@ public class FlowGrid implements CardView.LayoutEngine {
 		double p = parent.cardPadding();
 		double pwp = p + parent.cardWidth() + p;
 		return Math.max(1, (int) Math.floor(parent.getWidth() / pwp));
-	}
-
-	@Override
-	public String toString() {
-		return "FlowGrid Grid";
 	}
 
 	@Override

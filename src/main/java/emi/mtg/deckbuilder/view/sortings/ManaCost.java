@@ -1,12 +1,9 @@
 package emi.mtg.deckbuilder.view.sortings;
 
-import emi.lib.Service;
 import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
-@Service.Provider(CardView.Sorting.class)
-@Service.Property.String(name="name", value="Mana Cost")
 public class ManaCost implements CardView.Sorting {
 	@Override
 	public int compare(CardInstance c1, CardInstance c2) {

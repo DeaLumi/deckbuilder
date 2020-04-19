@@ -1,41 +1,46 @@
 package emi.mtg.deckbuilder.view.omnifilter.filters;
 
-import emi.lib.Service;
-import emi.lib.mtg.Card;
+import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
-@Service.Provider(Omnifilter.Subfilter.class)
-@Service.Property.String(name="key", value="cmc")
-public class ConvertedManaCost implements Omnifilter.FaceFilter {
-	private final Omnifilter.Operator operator;
-	private final double value;
+import java.util.function.Predicate;
 
-	public ConvertedManaCost(Omnifilter.Operator operator, String value) {
-		this.operator = operator;
-		this.value = Double.parseDouble(value);
+public class ConvertedManaCost implements Omnifilter.Subfilter {
+	@Override
+	public String key() {
+		return "cmc";
 	}
 
 	@Override
-	public boolean testFace(Card.Face face) {
-		double cmc = face.convertedManaCost();
+	public String shorthand() {
+		return null;
+	}
 
-		switch (operator) {
-			case DIRECT:
-			case EQUALS:
-				return cmc == value;
-			case NOT_EQUALS:
-				return cmc != value;
-			case LESS_OR_EQUALS:
-				return cmc <= value;
-			case LESS_THAN:
-				return cmc < value;
-			case GREATER_OR_EQUALS:
-				return cmc >= value;
-			case GREATER_THAN:
-				return cmc > value;
-			default:
-				assert false;
-				return false;
-		}
+	@Override
+	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
+		double doubleValue = Double.parseDouble(value);
+
+		return (Omnifilter.FaceFilter) face -> {
+			double cmc = face.convertedManaCost();
+
+			switch (operator) {
+				case DIRECT:
+				case EQUALS:
+					return cmc == doubleValue;
+				case NOT_EQUALS:
+					return cmc != doubleValue;
+				case LESS_OR_EQUALS:
+					return cmc <= doubleValue;
+				case LESS_THAN:
+					return cmc < doubleValue;
+				case GREATER_OR_EQUALS:
+					return cmc >= doubleValue;
+				case GREATER_THAN:
+					return cmc > doubleValue;
+				default:
+					assert false;
+					return false;
+			}
+		};
 	}
 }

@@ -1,13 +1,10 @@
 package emi.mtg.deckbuilder.view.sortings;
 
-import emi.lib.Service;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.util.Set;
 
-@Service.Provider(CardView.Sorting.class)
-@Service.Property.String(name="name", value="Color")
 public class Color implements CardView.Sorting {
 	@Override
 	public int compare(CardInstance o1, CardInstance o2) {
@@ -26,8 +23,8 @@ public class Color implements CardView.Sorting {
 			}
 		}
 
-		int ordinal1 = c1.parallelStream().filter(c -> !c2.contains(c)).mapToInt(c -> c.ordinal()).min().orElse(-1);
-		int ordinal2 = c2.parallelStream().filter(c -> !c1.contains(c)).mapToInt(c -> c.ordinal()).min().orElse(-1);
+		int ordinal1 = c1.parallelStream().filter(c -> !c2.contains(c)).mapToInt(Enum::ordinal).min().orElse(-1);
+		int ordinal2 = c2.parallelStream().filter(c -> !c1.contains(c)).mapToInt(Enum::ordinal).min().orElse(-1);
 
 		return ordinal1 - ordinal2;
 	}

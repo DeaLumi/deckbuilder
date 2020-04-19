@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.controller.serdes.impl;
 
-import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
@@ -18,13 +17,17 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Service.Provider(DeckImportExport.class)
-@Service.Property.String(name="name", value="Plain Text File")
-@Service.Property.String(name="extension", value="txt")
 public class TextFile implements DeckImportExport {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
 
-	public TextFile() {
+	@Override
+	public String extension() {
+		return "txt";
+	}
+
+	@Override
+	public String toString() {
+		return "Plain Text File";
 	}
 
 	@Override

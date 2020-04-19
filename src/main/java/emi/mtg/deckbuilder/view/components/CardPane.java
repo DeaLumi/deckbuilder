@@ -6,6 +6,7 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.SortDialog;
+import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
@@ -130,10 +131,10 @@ public class CardPane extends BorderPane {
 	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showVersionsSeparately = new SimpleBooleanProperty(true);
 
-	public CardPane(String title, ObservableList<CardInstance> model, String initEngine, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, List<CardView.ActiveSorting> sortings) {
 		super();
 
-		this.cardView = new CardView(model, initEngine, "CMC", sortings);
+		this.cardView = new CardView(model, initEngine, new ConvertedManaCost(), sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		MenuBar menuBar = new MenuBar();
@@ -142,13 +143,13 @@ public class CardPane extends BorderPane {
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
-		for (String grouping : CardView.groupings()) {
-			RadioMenuItem item = new RadioMenuItem(grouping);
+		for (CardView.Grouping grouping : CardView.GROUPINGS) {
+			RadioMenuItem item = new RadioMenuItem(grouping.toString());
 			item.setOnAction(ae -> {
 				this.cardView.group(grouping);
 				this.cardView.requestFocus();
 			});
-			item.setSelected("CMC".equals(grouping));
+			item.setSelected("CMC".equals(grouping.toString()));
 			item.setToggleGroup(groupingGroup);
 			groupingMenu.getItems().add(item);
 		}
@@ -160,13 +161,13 @@ public class CardPane extends BorderPane {
 
 		Menu displayMenu = new Menu("Display");
 		ToggleGroup displayGroup = new ToggleGroup();
-		for (String display : CardView.engineNames()) {
-			RadioMenuItem item = new RadioMenuItem(display);
+		for (CardView.LayoutEngine.Factory display : CardView.LAYOUT_ENGINES) {
+			RadioMenuItem item = new RadioMenuItem(display.toString());
 			item.setOnAction(ae -> {
 				this.cardView.layout(display);
 				this.cardView.requestFocus();
 			});
-			item.setSelected(initEngine.equals(display));
+			item.setSelected(initEngine.getClass().equals(display.getClass()));
 			item.setToggleGroup(displayGroup);
 			displayMenu.getItems().add(item);
 		}
@@ -235,7 +236,7 @@ public class CardPane extends BorderPane {
 				compositeFilter = compositeFilter.and(uniquenessPredicate());
 			}
 
-			this.cardView.filter(compositeFilter);
+			this.cardView.filteredModel().setPredicate(compositeFilter);
 			this.cardView.requestFocus();
 		};
 
@@ -326,12 +327,12 @@ public class CardPane extends BorderPane {
 		this.updateFilter.handle(null);
 	}
 
-	public CardPane(String title, ObservableList<CardInstance> model, String layoutEngine) {
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {
 		this(title, model, layoutEngine, CardView.DEFAULT_SORTING);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model) {
-		this(title, model, "Piles", CardView.DEFAULT_SORTING);
+		this(title, model, emi.mtg.deckbuilder.view.layouts.Piles.Factory.INSTANCE, CardView.DEFAULT_SORTING);
 	}
 
 	public ObservableList<CardInstance> model() {

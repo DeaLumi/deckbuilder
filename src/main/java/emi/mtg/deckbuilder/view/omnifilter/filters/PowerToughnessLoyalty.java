@@ -1,84 +1,81 @@
 package emi.mtg.deckbuilder.view.omnifilter.filters;
 
-import emi.lib.Service;
 import emi.lib.mtg.Card;
-import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
-public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 	private final Omnifilter.Operator operator;
 	private final boolean hasValue;
 	private final double value;
+	private final Function<Card.Face, String> characteristic;
+	private final Function<Card.Face, Double> convertedCharacteristic;
 
-	public PowerToughnessLoyalty(Omnifilter.Operator operator, String value) {
+	private PowerToughnessLoyalty(Omnifilter.Operator operator, String value, Function<Card.Face, String> characteristic, Function<Card.Face, Double> converted) {
 		this.operator = operator;
 		this.hasValue = !value.contains("*") && !value.contains("X");
 		this.value = hasValue ? Float.parseFloat(value.toLowerCase()) : -1;
+		this.characteristic = characteristic;
+		this.convertedCharacteristic = converted;
 	}
 
-	@Service.Provider(Omnifilter.Subfilter.class)
-	@Service.Property.String(name="key", value="power")
-	@Service.Property.String(name="shorthand", value="pow")
-	public static class Power extends PowerToughnessLoyalty {
-		public Power(Omnifilter.Operator operator, String value) {
-			super(operator, value);
+	public static class Power implements Omnifilter.Subfilter {
+		@Override
+		public String key() {
+			return "power";
 		}
 
 		@Override
-		protected String faceAttribute(Card.Face face) {
-			return face.power();
+		public String shorthand() {
+			return "pow";
 		}
 
 		@Override
-		protected double faceConvertedAttribute(Card.Face face) {
-			return face.convertedPower();
-		}
-	}
-
-	@Service.Provider(Omnifilter.Subfilter.class)
-	@Service.Property.String(name="key", value="toughness")
-	@Service.Property.String(name="shorthand", value="tough")
-	public static class Toughness extends PowerToughnessLoyalty {
-		public Toughness(Omnifilter.Operator operator, String value) {
-			super(operator, value);
-		}
-
-		@Override
-		protected String faceAttribute(Card.Face face) {
-			return face.toughness();
-		}
-
-		@Override
-		protected double faceConvertedAttribute(Card.Face face) {
-			return face.convertedToughness();
+		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
+			return new PowerToughnessLoyalty(operator, value, Card.Face::power, Card.Face::convertedPower);
 		}
 	}
 
-	@Service.Provider(Omnifilter.Subfilter.class)
-	@Service.Property.String(name="key", value="loyalty")
-	@Service.Property.String(name="shorthand", value="loy")
-	public static class Loyalty extends PowerToughnessLoyalty {
-		public Loyalty(Omnifilter.Operator operator, String value) {
-			super(operator, value);
+	public static class Toughness implements Omnifilter.Subfilter {
+		@Override
+		public String key() {
+			return "toughness";
 		}
 
 		@Override
-		protected String faceAttribute(Card.Face face) {
-			return face.loyalty();
+		public String shorthand() {
+			return "tough";
 		}
 
 		@Override
-		protected double faceConvertedAttribute(Card.Face face) {
-			return face.convertedLoyalty();
+		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
+			return new PowerToughnessLoyalty(operator, value, Card.Face::toughness, Card.Face::convertedToughness);
 		}
 	}
 
-	protected abstract String faceAttribute(Card.Face face);
-	protected abstract double faceConvertedAttribute(Card.Face face);
+	public static class Loyalty implements Omnifilter.Subfilter {
+		@Override
+		public String key() {
+			return "loyalty";
+		}
+
+		@Override
+		public String shorthand() {
+			return "loy";
+		}
+
+		@Override
+		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
+			return new PowerToughnessLoyalty(operator, value, Card.Face::loyalty, Card.Face::convertedLoyalty);
+		}
+	}
 
 	@Override
 	public boolean testFace(Card.Face face) {
-		double converted = faceConvertedAttribute(face);
+		double converted = convertedCharacteristic.apply(face);
 
 		if (Double.isNaN(converted)) {
 			return false;
@@ -87,7 +84,7 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 		switch (operator) {
 			case DIRECT:
 			case EQUALS:
-				return hasValue ? value == converted : faceAttribute(face).contains("*");
+				return hasValue ? value == converted : characteristic.apply(face).contains("*");
 			case LESS_OR_EQUALS:
 				return converted <= value;
 			case LESS_THAN:
@@ -97,7 +94,7 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 			case GREATER_OR_EQUALS:
 				return converted >= value;
 			case NOT_EQUALS:
-				return hasValue ? value != converted : !faceAttribute(face).contains("*");
+				return hasValue ? value != converted : !characteristic.apply(face).contains("*");
 			default:
 				assert false;
 				return false;

@@ -1,11 +1,8 @@
 package emi.mtg.deckbuilder.view.groupings;
 
-import emi.lib.Service;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
-@Service.Provider(CardView.Grouping.class)
-@Service.Property.String(name="name", value="None")
 public class None implements CardView.Grouping {
 	private static Group[] GROUPS = new Group[] {
 		new Group() {
@@ -31,10 +28,6 @@ public class None implements CardView.Grouping {
 		}
 	};
 
-	public None() {
-		/* do nothing */
-	}
-
 	@Override
 	public Group[] groups() {
 		return GROUPS;
@@ -43,5 +36,10 @@ public class None implements CardView.Grouping {
 	@Override
 	public boolean supportsModification() {
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		return "None";
 	}
 }

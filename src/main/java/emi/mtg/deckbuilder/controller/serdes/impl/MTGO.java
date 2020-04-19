@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.controller.serdes.impl;
 
-import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
@@ -27,11 +26,15 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service.Provider(DeckImportExport.class)
-@Service.Property.String(name="name", value="MTGO")
-@Service.Property.String(name="extension", value="dek")
 public class MTGO implements DeckImportExport {
-	public MTGO() {
+	@Override
+	public String extension() {
+		return "dek";
+	}
+
+	@Override
+	public String toString() {
+		return "Magic: the Gathering Online";
 	}
 
 	@Override

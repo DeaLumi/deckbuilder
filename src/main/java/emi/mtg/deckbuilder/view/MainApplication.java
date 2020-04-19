@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 
 public class MainApplication extends Application {
-	static final ClassLoader PLUGIN_CLASS_LOADER;
+	public static final ClassLoader PLUGIN_CLASS_LOADER;
 
 	private final HashSet<MainWindow> mainWindows = new HashSet<>();
 

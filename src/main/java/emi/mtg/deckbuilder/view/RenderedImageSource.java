@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view;
 
-import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.ImageSource;
 import javafx.application.Platform;
@@ -24,9 +23,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-@Service.Provider(ImageSource.class)
-@Service.Property.String(name="name", value="Cheap Card Renderer")
-@Service.Property.Number(name="priority", value=0.01)
 public class RenderedImageSource implements ImageSource {
 	private static Font fallback(FontWeight weight, FontPosture posture, double size, String... families) {
 		Font font;
@@ -258,6 +254,11 @@ public class RenderedImageSource implements ImageSource {
 			layoutFlavor(flavor, rules);
 			layoutPT(pt);
 		}
+	}
+
+	@Override
+	public int priority() {
+		return 0;
 	}
 
 	@Override

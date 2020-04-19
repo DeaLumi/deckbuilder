@@ -1,0 +1,12 @@
+emi.mtg.deckbuilder.view.omnifilter.filters.CardSet
+emi.mtg.deckbuilder.view.omnifilter.filters.CardType
+emi.mtg.deckbuilder.view.omnifilter.filters.ColorIdentity
+emi.mtg.deckbuilder.view.omnifilter.filters.Colors
+emi.mtg.deckbuilder.view.omnifilter.filters.ConvertedManaCost
+emi.mtg.deckbuilder.view.omnifilter.filters.PowerToughnessLoyalty$Toughness
+emi.mtg.deckbuilder.view.omnifilter.filters.PowerToughnessLoyalty$Loyalty
+emi.mtg.deckbuilder.view.omnifilter.filters.PowerToughnessLoyalty$Power
+emi.mtg.deckbuilder.view.omnifilter.filters.Rarity
+emi.mtg.deckbuilder.view.omnifilter.filters.Regex
+emi.mtg.deckbuilder.view.omnifilter.filters.RulesText
+emi.mtg.deckbuilder.view.omnifilter.filters.TagFilter

@@ -1,14 +1,10 @@
 package emi.mtg.deckbuilder.view.groupings;
 
-import emi.lib.Service;
 import emi.lib.mtg.characteristic.Color;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.util.*;
 
-@Service.Provider(CardView.Grouping.class)
-@Service.Property.String(name="name", value="Color")
 public class ColorGrouping extends CharacteristicGrouping {
 	private static final Map<Set<Color>, String> GROUPS = groupsMap();
 	private static final String[] GROUP_VALUES = GROUPS.values().toArray(new String[GROUPS.size()]);
@@ -57,10 +53,6 @@ public class ColorGrouping extends CharacteristicGrouping {
 		tmp.put(null, "???");
 
 		return Collections.unmodifiableMap(tmp);
-	}
-
-	public ColorGrouping() {
-		super();
 	}
 
 	@Override

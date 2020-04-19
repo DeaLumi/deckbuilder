@@ -1,9 +1,8 @@
 package emi.mtg.deckbuilder.view.omnifilter;
 
-import emi.lib.Service;
 import emi.lib.mtg.Card;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -45,13 +44,13 @@ public class Omnifilter {
 		}
 	}
 
-	@Service({Context.class, Operator.class, String.class})
-	@Service.Property.String(name="key")
-	@Service.Property.String(name="shorthand", required=false)
-	public interface Subfilter extends Predicate<CardInstance> {
+	public interface Subfilter {
+		String key();
+		String shorthand();
+		Predicate<CardInstance> create(Omnifilter.Operator operator, String value);
 	}
 
-	public interface FaceFilter extends Subfilter {
+	public interface FaceFilter extends Predicate<CardInstance> {
 		default boolean allFacesMustMatch() {
 			return false;
 		}
@@ -68,16 +67,16 @@ public class Omnifilter {
 		}
 	}
 
-	private static final Map<String, Service.Loader<Subfilter>.Stub> SUBFILTER_FACTORIES = subfilterFactories();
+	private static final Map<String, Subfilter> SUBFILTER_FACTORIES = subfilterFactories();
 
-	private static Map<String, Service.Loader<Subfilter>.Stub> subfilterFactories() {
-		Map<String, Service.Loader<Subfilter>.Stub> map = new HashMap<>();
+	private static Map<String, Subfilter> subfilterFactories() {
+		Map<String, Subfilter> map = new HashMap<>();
 
-		for (Service.Loader<Subfilter>.Stub stub : Service.Loader.load(Subfilter.class)) {
-			if (stub.has("shorthand")) {
-				map.putIfAbsent(stub.string("shorthand"), stub);
+		for (Subfilter factory : ServiceLoader.load(Subfilter.class, MainApplication.PLUGIN_CLASS_LOADER)) {
+			if (factory.shorthand() != null && !factory.shorthand().isEmpty()) {
+				map.putIfAbsent(factory.shorthand(), factory);
 			}
-			map.put(stub.string("key"), stub);
+			map.put(factory.key(), factory);
 		}
 
 		return Collections.unmodifiableMap(map);
@@ -104,14 +103,14 @@ public class Omnifilter {
 			if (key != null) {
 				Operator op = Operator.forString(m.group("op"));
 
-				Service.Loader<Subfilter>.Stub stub = SUBFILTER_FACTORIES.get(key);
+				Subfilter factory = SUBFILTER_FACTORIES.get(key);
 
-				if (stub == null) {
+				if (factory == null) {
 					// TODO: Report this somehow? Or just fail hard?
 					continue;
 				}
 
-				append = stub.uncheckedInstance(op, value);
+				append = factory.create(op, value);
 			} else {
 				append = ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())) || ci.card().fullName().toLowerCase().contains(value.toLowerCase());
 			}

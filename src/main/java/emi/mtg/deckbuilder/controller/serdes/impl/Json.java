@@ -12,9 +12,15 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
 
-// N.B. MainWindow uses this class directly, so we don't actually provide the DeckImportExport service.
 public class Json implements DeckImportExport {
-	public Json() {
+	@Override
+	public String extension() {
+		return "json";
+	}
+
+	@Override
+	public String toString() {
+		return "Deck Builder JSON";
 	}
 
 	@Override

@@ -1,12 +1,13 @@
 package emi.mtg.deckbuilder.view.components;
 
-import com.sun.javafx.collections.ObservableListWrapper;
-import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.Images;
+import emi.mtg.deckbuilder.view.MainApplication;
+import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -36,6 +37,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class CardView extends Canvas implements ListChangeListener<CardInstance> {
 	public static class MVec2d implements Comparable<MVec2d> {
@@ -124,17 +126,17 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	@Service(CardView.class)
-	@Service.Property.String(name="name")
 	public interface LayoutEngine {
+		interface Factory {
+			LayoutEngine create(CardView parent);
+		}
+
 		void layoutGroups(Group[] groups, boolean includeEmpty);
 
 		MVec2d coordinatesOf(int card, MVec2d buffer);
 		int cardAt(MVec2d point, int groupSize);
 	}
 
-	@Service(Context.class)
-	@Service.Property.String(name="name")
 	public interface Grouping {
 		interface Group {
 			void add(CardInstance ci);
@@ -147,8 +149,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		boolean supportsModification();
 	}
 
-	@Service
-	@Service.Property.String(name="name")
 	public interface Sorting extends Comparator<CardInstance> {
 		// nothing to do...
 	}
@@ -168,55 +168,67 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	private static final Map<String, Service.Loader<LayoutEngine>.Stub> engineMap = new HashMap<>();
-	private static final Map<String, Service.Loader<Grouping>.Stub> groupingsMap = new HashMap<>();
-	private static final Map<String, Sorting> sortings;
+	public static final List<LayoutEngine.Factory> LAYOUT_ENGINES;
+	public static final List<Grouping> GROUPINGS;
+	public static final List<Sorting> SORTINGS;
 
 	public static final List<ActiveSorting> DEFAULT_SORTING, DEFAULT_COLLECTION_SORTING;
 
 	static {
-		Service.Loader<LayoutEngine> loader = Service.Loader.load(LayoutEngine.class);
+		LAYOUT_ENGINES = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(LayoutEngine.Factory.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), true)
+				.collect(Collectors.toList()));
 
-		for (Service.Loader<LayoutEngine>.Stub stub : loader) {
-			engineMap.put(stub.string("name"), stub);
+		GROUPINGS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(Grouping.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), true)
+				.collect(Collectors.toList()));
+
+		Sorting color = null, cmc = null, manaCost = null, name = null, rarity = null;
+
+		SORTINGS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(Sorting.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
+				.collect(Collectors.toList()));
+
+		for (Sorting sorting : SORTINGS) {
+			switch (sorting.toString()) {
+				case "Color":
+					color = sorting;
+					break;
+				case "Converted Mana Cost":
+					cmc = sorting;
+					break;
+				case "Mana Cost":
+					manaCost = sorting;
+					break;
+				case "Name":
+					name = sorting;
+					break;
+				case "Rarity":
+					rarity = sorting;
+					break;
+			}
 		}
 
-		for (Service.Loader<Grouping>.Stub stub : Service.Loader.load(Grouping.class)) {
-			groupingsMap.put(stub.string("name"), stub);
-		}
+		assert color != null;
+		assert cmc != null;
+		assert manaCost != null;
+		assert name != null;
+		assert rarity != null;
 
-		sortings = Collections.unmodifiableMap(Service.Loader.load(Sorting.class).stream()
-				.collect(Collectors.toMap(g -> g.string("name"), g -> g.uncheckedInstance())));
+		DEFAULT_SORTING = Arrays.asList(
+				new ActiveSorting(color, false),
+				new ActiveSorting(cmc, false),
+				new ActiveSorting(manaCost, false),
+				new ActiveSorting(name, false)
+		);
 
-		DEFAULT_SORTING = Collections.unmodifiableList(Arrays.asList(
-				new ActiveSorting(sortings.get("Color"), false),
-				new ActiveSorting(sortings.get("Converted Mana Cost"), false),
-				new ActiveSorting(sortings.get("Mana Cost"), false),
-				new ActiveSorting(sortings.get("Name"), false)
-		));
-
-		DEFAULT_COLLECTION_SORTING = Collections.unmodifiableList(Arrays.asList(
-				new ActiveSorting(sortings.get("Rarity"), true),
-				new ActiveSorting(sortings.get("Color"), false),
-				new ActiveSorting(sortings.get("Converted Mana Cost"), false),
-				new ActiveSorting(sortings.get("Mana Cost"), false),
-				new ActiveSorting(sortings.get("Name"), false)
-		));
+		DEFAULT_COLLECTION_SORTING = Arrays.asList(
+				new ActiveSorting(rarity, true),
+				new ActiveSorting(color, false),
+				new ActiveSorting(cmc, false),
+				new ActiveSorting(manaCost, false),
+				new ActiveSorting(name, false)
+		);
 	}
 
 	private static DataFormat DRAG_FORMAT = new DataFormat("application/x-deckbuilder-printing-uuid");
-
-	public static Set<String> engineNames() {
-		return CardView.engineMap.keySet();
-	}
-
-	public static Set<String> groupings() {
-		return CardView.groupingsMap.keySet();
-	}
-
-	public static Map<String, Sorting> sortings() {
-		return CardView.sortings;
-	}
 
 	public class Group {
 		public final Bounds groupBounds, labelBounds;
@@ -280,7 +292,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private static boolean dragModified = false;
 	private static CardView dragSource = null, dragTarget = null;
 
-	public CardView(ObservableList<CardInstance> model, String engine, String grouping, List<ActiveSorting> sorts) {
+	public CardView(ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
@@ -288,7 +300,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.filter = ci -> true;
 		this.sortingElements = sorts;
 		this.sort = convertSorts(sorts);
-		this.grouping = groupingsMap.get(grouping).uncheckedInstance();
+		this.grouping = grouping;
 
 		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());
@@ -296,7 +308,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.showEmptyGroupsProperty = new SimpleBooleanProperty(false);
 		this.showEmptyGroupsProperty.addListener(ce -> layout());
 
-		this.engine = CardView.engineMap.containsKey(engine) ? CardView.engineMap.get(engine).uncheckedInstance(this) : null;
+		this.engine = null;
 
 		this.scrollMinX = new SimpleDoubleProperty(0.0);
 		this.scrollMinY = new SimpleDoubleProperty(0.0);
@@ -313,9 +325,15 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.doubleClick = ci -> {};
 		this.contextMenu = null;
 
-		model(model, true);
+		this.model = model;
+		this.filteredModel = model.filtered(this.filter);
+		this.groupedModel = Arrays.stream(grouping.groups())
+				.map(g -> new Group(g, this.filteredModel, this.sort))
+				.toArray(Group[]::new);
 
-		layout(engine);
+		this.filteredModel.addListener((InvalidationListener) e -> regroup());
+
+		layout(layout);
 
 		this.scrollX.addListener(e -> scheduleRender());
 		this.scrollY.addListener(e -> scheduleRender());
@@ -484,10 +502,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 					dlg.setTitle("Version Selector");
 
-					ObservableList<CardInstance> tmpModel = new ObservableListWrapper<>(hoverCard.card().printings().stream()
+					ObservableList<CardInstance> tmpModel = FXCollections.observableList(hoverCard.card().printings().stream()
 							.map(CardInstance::new)
 							.collect(Collectors.toList()));
-					CardPane prPane = new CardPane("Variations", tmpModel, "Flow Grid");
+					CardPane prPane = new CardPane("Variations", tmpModel, FlowGrid.Factory.INSTANCE);
 
 					final CardInstance modifyingCard = hoverCard;
 					prPane.view().doubleClick(ci -> {
@@ -504,7 +522,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							modifyingCard.printing(ci.printing());
 						}
 
-						filter(this.filter);
+						regroup();
 					});
 
 					prPane.view().immutableModelProperty().set(true);
@@ -840,86 +858,29 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return group.model.get(card);
 	}
 
-	public void layout(String engine) {
-		if (CardView.engineMap.containsKey(engine)) {
-			this.engine = CardView.engineMap.get(engine).uncheckedInstance(this);
-			layout();
-		}
+	public void layout(LayoutEngine.Factory factory) {
+		this.engine = factory.create(this);
+		layout();
 	}
 
-	// TODO: A lot of this shouldn't be changeable. Change to builder model?
-	// TODO: Clean all this bullshit up and use futures?
-
-	public synchronized void model(ObservableList<CardInstance> model, boolean sync) {
-		if (!sync) {
-			ForkJoinPool.commonPool().submit(() -> model(model, true));
-		} else {
-			if (this.model != null) {
-				this.model.removeListener(this);
-			}
-			this.model = model;
-			model.addListener(this);
-			this.filter(this.filter, true);
-		}
+	public void group(Grouping grouping) {
+		this.grouping = grouping;
+		this.groupedModel = Arrays.stream(this.grouping.groups())
+				.map(g -> new Group(g, this.filteredModel, this.sort))
+				.toArray(Group[]::new);
+		layout();
 	}
 
-	public void model(ObservableList<CardInstance> model) {
-		model(model, false);
+	public void regroup() {
+		group(this.grouping);
 	}
 
 	public ObservableList<CardInstance> model() {
 		return this.model;
 	}
 
-	public FilteredList<CardInstance> filteredModel() { return this.filteredModel; }
-
-	private synchronized void filter(Predicate<CardInstance> filter, boolean sync) {
-		if (!sync) {
-			ForkJoinPool.commonPool().submit(() -> filter(filter, true));
-		} else {
-			this.filter = filter;
-			this.filteredModel = this.model.filtered(this.filter);
-
-			this.group(this.grouping, true);
-		}
-	}
-
-	public void filter(Predicate<CardInstance> filter) {
-		filter(filter, false);
-	}
-
-	private synchronized void group(Grouping grouping, boolean sync) {
-		if (!sync) {
-			ForkJoinPool.commonPool().submit(() -> group(grouping, true));
-		} else {
-			this.grouping = grouping;
-
-			this.groupedModel = new Group[this.grouping.groups().length];
-			for (int i = 0; i < this.grouping.groups().length; ++i) {
-				this.groupedModel[i] = new Group(this.grouping.groups()[i], this.filteredModel, this.sort);
-			}
-
-			layout();
-		}
-	}
-
-	public void group(String grouping) {
-		if (CardView.groupingsMap.containsKey(grouping)) {
-			group(CardView.groupingsMap.get(grouping).uncheckedInstance(), false);
-		}
-	}
-
-	public void regroup() {
-		for (Map.Entry<String, Service.Loader<Grouping>.Stub> entry : CardView.groupingsMap.entrySet()) {
-			try {
-				if (entry.getValue().providerClass().getName().equals(grouping.getClass().getName())) {
-					group(entry.getKey());
-					return;
-				}
-			} catch (ClassNotFoundException cnfe) {
-				// do nothing
-			}
-		}
+	public FilteredList<CardInstance> filteredModel() {
+		return this.filteredModel;
 	}
 
 	private Comparator<CardInstance> convertSorts(List<ActiveSorting> sorts) {

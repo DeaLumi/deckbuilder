@@ -1,14 +1,11 @@
 package emi.mtg.deckbuilder.view.groupings;
 
-import emi.lib.Service;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.util.Set;
 
-@Service.Provider(CardView.Grouping.class)
-@Service.Property.String(name="name", value="Tags")
 public class Tags implements CardView.Grouping {
 	private class TagGroup implements CardView.Grouping.Group {
 		private final String tag;
@@ -84,5 +81,10 @@ public class Tags implements CardView.Grouping {
 	@Override
 	public boolean supportsModification() {
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "Tags";
 	}
 }

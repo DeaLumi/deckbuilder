@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view;
 
-import emi.lib.Service;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.ImageSource;
 import emi.lib.mtg.img.MtgAwtImageUtils;
@@ -14,15 +13,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class Images {
 	public static final double CARD_WIDTH = 220.0;
@@ -83,9 +80,8 @@ public class Images {
 	private static final List<ImageSource> sources;
 
 	static {
-		sources = Service.Loader.load(ImageSource.class).stream()
-				.sorted(Comparator.comparing(s -> -s.number("priority")))
-				.map(Service.Loader.Stub::uncheckedInstance)
+		sources = StreamSupport.stream(ServiceLoader.load(ImageSource.class).spliterator(), false)
+				.sorted(Comparator.comparing(s -> -s.priority()))
 				.collect(Collectors.toList());
 	}
 

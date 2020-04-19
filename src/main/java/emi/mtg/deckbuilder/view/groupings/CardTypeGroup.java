@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view.groupings;
 
-import emi.lib.Service;
 import emi.lib.mtg.characteristic.CardType;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
@@ -9,14 +8,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Service.Provider(CardView.Grouping.class)
-@Service.Property.String(name="name", value="Card Type")
 public class CardTypeGroup extends CharacteristicGrouping implements CardView.Grouping {
 	private CardType[] PRIORITIES = { CardType.Creature, CardType.Artifact };
-
-	public CardTypeGroup() {
-		super();
-	}
 
 	@Override
 	public String toString() {
