@@ -1,0 +1,3 @@
+emi.mtg.deckbuilder.controller.serdes.impl.MTGO
+emi.mtg.deckbuilder.controller.serdes.impl.TextFile
+# N.B. impl.Json is instantiated directly. That may change in the future.
