@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
@@ -254,15 +255,20 @@ public class CardPane extends BorderPane {
 
 				AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
 
-				for (CardInstance ci : cardView.filteredModel()) {
-					Card.Face front = ci.card().face(Card.Face.Kind.Front);
-					if (front != null && front.type().cardTypes().contains(CardType.Creature)) {
-						creature.incrementAndGet();
-					} else if (front != null && front.type().cardTypes().contains(CardType.Land)) {
-						land.incrementAndGet();
-					} else {
-						other.incrementAndGet();
+				try {
+					for (CardInstance ci : cardView.filteredModel()) {
+						Card.Face front = ci.card().face(Card.Face.Kind.Front);
+						if (front != null && front.type().cardTypes().contains(CardType.Creature)) {
+							creature.incrementAndGet();
+						} else if (front != null && front.type().cardTypes().contains(CardType.Land)) {
+							land.incrementAndGet();
+						} else {
+							other.incrementAndGet();
+						}
 					}
+				} catch (NoSuchElementException nsee) {
+					// Gross patch for concurrent modification
+					continue;
 				}
 
 				StringBuilder str = new StringBuilder();
