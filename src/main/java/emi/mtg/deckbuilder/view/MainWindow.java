@@ -270,8 +270,7 @@ public class MainWindow extends Stage {
 
 		collection.updateFilter();
 
-		deckSplitter.getItems().clear();
-		deckSplitter.getItems().addAll(deck.format().deckZones().stream()
+		deckSplitter.getItems().setAll(deck.format().deckZones().stream()
 				.map(z -> new CardPane(z.name(), deck.cards(z)))
 				.peek(pane -> pane.model().addListener(deckListChangedListener))
 				.peek(pane -> pane.view().doubleClick(ci -> {
@@ -283,8 +282,13 @@ public class MainWindow extends Stage {
 
 	private void newDeck(Format format) {
 		DeckList newDeck = new DeckList("", Context.get().preferences.authorName, format, "", Collections.emptyMap());
-		MainWindow window = new MainWindow(this.owner, newDeck);
-		window.show();
+
+		if (currentDeckFile == null && deckIsEmpty()) {
+			setDeck(newDeck);
+		} else {
+			MainWindow window = new MainWindow(this.owner, newDeck);
+			window.show();
+		}
 	}
 
 	@FXML
