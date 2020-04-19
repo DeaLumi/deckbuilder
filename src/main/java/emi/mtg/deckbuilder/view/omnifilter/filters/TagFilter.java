@@ -11,14 +11,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class TagFilter implements Omnifilter.Subfilter {
-	private final Omnifilter.Operator operator;
-	private final Set<String> tagSet;
-
-	public TagFilter(Omnifilter.Operator operator, String value) {
-		this.operator = operator;
-		this.tagSet = new HashSet<>(Arrays.asList(value.split(",")));
-	}
-
 	@Override
 	public String key() {
 		return "tagged";
@@ -31,6 +23,8 @@ public class TagFilter implements Omnifilter.Subfilter {
 
 	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
+		Set<String> tagSet = new HashSet<>(Arrays.asList(value.split(",")));
+
 		return ci -> {
 			Util.SetComparison compare = Util.compareStringSetsInsensitive(Context.get().tags.tags(ci.card()), tagSet);
 
