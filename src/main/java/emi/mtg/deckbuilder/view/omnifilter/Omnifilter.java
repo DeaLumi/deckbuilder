@@ -82,7 +82,7 @@ public class Omnifilter {
 		return Collections.unmodifiableMap(map);
 	}
 
-	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]*\"|[^\\s]*)");
+	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]+\"|[^\\s]+)");
 
 	public static Predicate<CardInstance> parse(String expression) {
 		Matcher m = PATTERN.matcher(expression);
