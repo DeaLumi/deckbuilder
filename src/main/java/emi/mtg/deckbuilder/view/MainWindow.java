@@ -37,8 +37,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class MainWindow extends Stage {
-	private BorderPane root;
-
 	@FXML
 	private SplitPane collectionSplitter;
 
@@ -73,7 +71,7 @@ public class MainWindow extends Stage {
 		this.owner = owner;
 		this.owner.registerMainWindow(this);
 
-		root = new BorderPane();
+		BorderPane root = new BorderPane();
 		FXMLLoader loader = new FXMLLoader();
 		loader.setRoot(root);
 		loader.setControllerFactory(cls -> this);
@@ -224,10 +222,6 @@ public class MainWindow extends Stage {
 		this.collectionSplitter.getItems().add(0, collection);
 	}
 
-	public CardPane collection() {
-		return collection;
-	}
-
 	private void setupImportExport() {
 		this.primarySerdes = new Json();
 
@@ -285,7 +279,7 @@ public class MainWindow extends Stage {
 	}
 
 	@FXML
-	protected void openDeck() throws IOException {
+	protected void openDeck() {
 		File from = primaryFileChooser.showOpenDialog(this);
 
 		if (from == null) {
@@ -373,10 +367,8 @@ public class MainWindow extends Stage {
 			}
 		}
 
-		int unnamed = 0;
 		for (DeckListWithVariants.Variant var : lwv.variants) {
 			MainWindow window = new MainWindow(this.owner, lwv.toDeckList(var));
-			String name = var.name == null || var.name.isEmpty() ? Integer.toString(++unnamed) : var.name;
 			window.deckModified = true;
 			window.show();
 		}
@@ -486,7 +478,7 @@ public class MainWindow extends Stage {
 				.headerText("Some information may be lost:")
 				.contentText(builder.toString())
 				.showAndWait()
-				.orElse(ButtonType.NO) == ButtonType.YES;
+				.orElse(ButtonType.NO) != ButtonType.YES;
 	}
 
 	@FXML
@@ -730,7 +722,7 @@ public class MainWindow extends Stage {
 		DeckImportExport importer = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
 		if (!importer.unsupportedFeatures().isEmpty()) {
-			if (!warnAboutSerdes(importer.unsupportedFeatures())) {
+			if (warnAboutSerdes(importer.unsupportedFeatures())) {
 				return;
 			}
 		}
@@ -764,7 +756,7 @@ public class MainWindow extends Stage {
 		DeckImportExport exporter = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
 		if (!exporter.unsupportedFeatures().isEmpty()) {
-			if (!warnAboutSerdes(exporter.unsupportedFeatures())) {
+			if (warnAboutSerdes(exporter.unsupportedFeatures())) {
 				return;
 			}
 		}
