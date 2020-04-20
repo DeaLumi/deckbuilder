@@ -7,12 +7,21 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
 public class ConvertedManaCost extends CharacteristicGrouping implements CardView.Grouping {
-	private static final String[] GROUPS = { "Land", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "1000000", "X" };
+	public static class Factory implements CardView.Grouping.Factory {
+		public static final Factory INSTANCE = new Factory();
 
-	@Override
-	public String toString() {
-		return "CMC";
+		@Override
+		public String name() {
+			return "Converted Mana Cost";
+		}
+
+		@Override
+		public CardView.Grouping create() {
+			return new ConvertedManaCost();
+		}
 	}
+
+	private static final String[] GROUPS = { "Land", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "1000000", "X" };
 
 	@Override
 	public String[] groupValues() {

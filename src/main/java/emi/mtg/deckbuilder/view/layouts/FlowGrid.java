@@ -12,7 +12,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 		}
 
 		@Override
-		public String toString() {
+		public String name() {
 			return "Flow Grid";
 		}
 	}

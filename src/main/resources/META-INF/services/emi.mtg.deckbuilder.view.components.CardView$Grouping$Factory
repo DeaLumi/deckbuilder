@@ -1,0 +1,6 @@
+emi.mtg.deckbuilder.view.groupings.CardTypeGroup$Factory
+emi.mtg.deckbuilder.view.groupings.ColorGrouping$Factory
+emi.mtg.deckbuilder.view.groupings.ConvertedManaCost$Factory
+emi.mtg.deckbuilder.view.groupings.None$Factory
+emi.mtg.deckbuilder.view.groupings.Rarity$Factory
+emi.mtg.deckbuilder.view.groupings.Tags$Factory

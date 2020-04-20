@@ -7,6 +7,19 @@ import emi.mtg.deckbuilder.view.components.CardView;
 import java.util.Set;
 
 public class Tags implements CardView.Grouping {
+	public static class Factory implements CardView.Grouping.Factory {
+		public static final Factory INSTANCE = new Factory();
+
+		@Override
+		public String name() {
+			return "Tags";
+		}
+
+		public Tags create() {
+			return new Tags();
+		}
+	}
+
 	private class TagGroup implements CardView.Grouping.Group {
 		private final String tag;
 
@@ -81,10 +94,5 @@ public class Tags implements CardView.Grouping {
 	@Override
 	public boolean supportsModification() {
 		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "Tags";
 	}
 }

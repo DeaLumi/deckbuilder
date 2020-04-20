@@ -135,7 +135,7 @@ public class CardPane extends BorderPane {
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, List<CardView.ActiveSorting> sortings) {
 		super();
 
-		this.cardView = new CardView(model, initEngine, new ConvertedManaCost(), sortings);
+		this.cardView = new CardView(model, initEngine, ConvertedManaCost.Factory.INSTANCE, sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		MenuBar menuBar = new MenuBar();
@@ -144,13 +144,13 @@ public class CardPane extends BorderPane {
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
-		for (CardView.Grouping grouping : CardView.GROUPINGS) {
-			RadioMenuItem item = new RadioMenuItem(grouping.toString());
+		for (CardView.Grouping.Factory grouping : CardView.GROUPINGS) {
+			RadioMenuItem item = new RadioMenuItem(grouping.name());
 			item.setOnAction(ae -> {
 				this.cardView.group(grouping);
 				this.cardView.requestFocus();
 			});
-			item.setSelected("CMC".equals(grouping.toString()));
+			item.setSelected(ConvertedManaCost.Factory.class.equals(grouping.getClass()));
 			item.setToggleGroup(groupingGroup);
 			groupingMenu.getItems().add(item);
 		}
@@ -163,7 +163,7 @@ public class CardPane extends BorderPane {
 		Menu displayMenu = new Menu("Display");
 		ToggleGroup displayGroup = new ToggleGroup();
 		for (CardView.LayoutEngine.Factory display : CardView.LAYOUT_ENGINES) {
-			RadioMenuItem item = new RadioMenuItem(display.toString());
+			RadioMenuItem item = new RadioMenuItem(display.name());
 			item.setOnAction(ae -> {
 				this.cardView.layout(display);
 				this.cardView.requestFocus();

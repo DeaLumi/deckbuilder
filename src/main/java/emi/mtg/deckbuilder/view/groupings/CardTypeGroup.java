@@ -9,12 +9,21 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CardTypeGroup extends CharacteristicGrouping implements CardView.Grouping {
-	private CardType[] PRIORITIES = { CardType.Creature, CardType.Artifact };
+	public static class Factory implements CardView.Grouping.Factory {
+		public static final Factory INSTANCE = new Factory();
 
-	@Override
-	public String toString() {
-		return "Card Type";
+		@Override
+		public String name() {
+			return "Card Type";
+		}
+
+		@Override
+		public CardView.Grouping create() {
+			return new CardTypeGroup();
+		}
 	}
+
+	private CardType[] PRIORITIES = { CardType.Creature, CardType.Artifact };
 
 	@Override
 	public String[] groupValues() {

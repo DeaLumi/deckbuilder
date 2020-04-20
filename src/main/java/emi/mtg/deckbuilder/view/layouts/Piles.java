@@ -12,7 +12,7 @@ public class Piles implements CardView.LayoutEngine {
 		}
 
 		@Override
-		public String toString() {
+		public String name() {
 			return "Piles";
 		}
 	}
