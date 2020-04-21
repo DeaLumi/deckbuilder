@@ -188,7 +188,7 @@ public class MTGO implements DeckImportExport {
 	}
 
 	@Override
-	public Set<Features> unsupportedFeatures() {
-		return EnumSet.complementOf(EnumSet.of(Features.CardArt));
+	public EnumSet<Features> supportedFeatures() {
+		return EnumSet.of(Features.CardArt, Features.Import, Features.Export);
 	}
 }

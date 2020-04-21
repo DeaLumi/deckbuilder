@@ -4,7 +4,7 @@ import emi.mtg.deckbuilder.model.DeckList;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Set;
+import java.util.EnumSet;
 
 public interface DeckImportExport {
 	String extension();
@@ -13,5 +13,5 @@ public interface DeckImportExport {
 
 	void exportDeck(DeckList deck, File to) throws IOException;
 
-	Set<Features> unsupportedFeatures();
+	EnumSet<Features> supportedFeatures();
 }

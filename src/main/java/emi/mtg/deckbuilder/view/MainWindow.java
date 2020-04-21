@@ -737,8 +737,9 @@ public class MainWindow extends Stage {
 
 		DeckImportExport importer = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
-		if (!importer.unsupportedFeatures().isEmpty()) {
-			if (warnAboutSerdes(importer.unsupportedFeatures())) {
+		EnumSet<Features> unsupported = EnumSet.complementOf(importer.supportedFeatures());
+		if (!unsupported.isEmpty()) {
+			if (warnAboutSerdes(unsupported)) {
 				return;
 			}
 		}
@@ -771,8 +772,9 @@ public class MainWindow extends Stage {
 
 		DeckImportExport exporter = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
-		if (!exporter.unsupportedFeatures().isEmpty()) {
-			if (warnAboutSerdes(exporter.unsupportedFeatures())) {
+		EnumSet<Features> unsupported = EnumSet.complementOf(exporter.supportedFeatures());
+		if (!unsupported.isEmpty()) {
+			if (warnAboutSerdes(unsupported)) {
 				return;
 			}
 		}

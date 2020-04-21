@@ -121,7 +121,7 @@ public class TextFile implements DeckImportExport {
 	}
 
 	@Override
-	public Set<Features> unsupportedFeatures() {
-		return EnumSet.of(Features.Author, Features.DeckName, Features.Description, Features.CardArt, Features.Format);
+	public EnumSet<Features> supportedFeatures() {
+		return EnumSet.of(Features.OtherZones, Features.Import, Features.Export);
 	}
 }

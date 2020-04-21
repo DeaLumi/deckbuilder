@@ -10,7 +10,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.EnumSet;
-import java.util.Set;
 
 public class Json implements DeckImportExport {
 	@Override
@@ -43,7 +42,7 @@ public class Json implements DeckImportExport {
 	}
 
 	@Override
-	public Set<Features> unsupportedFeatures() {
-		return EnumSet.noneOf(Features.class);
+	public EnumSet<Features> supportedFeatures() {
+		return EnumSet.allOf(Features.class);
 	}
 }

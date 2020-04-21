@@ -209,7 +209,7 @@ public class Cockatrice implements DeckImportExport {
 	}
 
 	@Override
-	public Set<Features> unsupportedFeatures() {
-		return EnumSet.of(Features.CardArt, Features.OtherZones, Features.Format);
+	public EnumSet<Features> supportedFeatures() {
+		return EnumSet.of(Features.DeckName, Features.Description, Features.Author, Features.Import, Features.Export);
 	}
 }
