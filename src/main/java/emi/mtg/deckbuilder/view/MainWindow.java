@@ -600,9 +600,13 @@ public class MainWindow extends Stage {
 	protected void showTagManagementDialog() {
 		owner.showTagManagementDialog();
 
-		collection.view().regroup();
+		if (collection.view().grouping() instanceof emi.mtg.deckbuilder.view.groupings.Tags) {
+			collection.view().regroup();
+		}
 		for (Zone zone : deck.format().deckZones()) {
-			deckPane(zone).view().regroup();
+			if (deckPane(zone).view().grouping() instanceof emi.mtg.deckbuilder.view.groupings.Tags) {
+				deckPane(zone).view().regroup();
+			}
 		}
 	}
 
