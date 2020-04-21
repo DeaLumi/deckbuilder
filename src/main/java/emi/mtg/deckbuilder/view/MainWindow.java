@@ -443,6 +443,7 @@ public class MainWindow extends Stage {
 		}
 
 		if (lwv.variants.size() > 1) {
+			this.requestFocus();
 			AlertBuilder.notify(this)
 					.title("Variants Opened")
 					.headerText("All variants have been opened.")
