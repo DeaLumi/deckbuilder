@@ -10,6 +10,7 @@ import emi.mtg.deckbuilder.model.EmptyDataSource;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.Images;
+import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -59,6 +60,7 @@ public class Context {
 
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
+				.registerTypeAdapter(CardView.Grouping.Factory.class, TypeAdapters.createCardViewGroupingFactoryAdapter())
 				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(this.data))
 				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter())
 				.registerTypeAdapter(Path.class, TypeAdapters.createPathTypeAdapter())

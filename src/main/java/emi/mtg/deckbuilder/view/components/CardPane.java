@@ -7,6 +7,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.SortDialog;
 import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
+import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
@@ -132,10 +133,10 @@ public class CardPane extends BorderPane {
 	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showVersionsSeparately = new SimpleBooleanProperty(true);
 
-	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping.Factory initGrouping, List<CardView.ActiveSorting> sortings) {
 		super();
 
-		this.cardView = new CardView(model, initEngine, ConvertedManaCost.Factory.INSTANCE, sortings);
+		this.cardView = new CardView(model, initEngine, initGrouping, sortings);
 		setCenter(new CardViewScrollPane(this.cardView));
 
 		MenuBar menuBar = new MenuBar();
@@ -150,7 +151,7 @@ public class CardPane extends BorderPane {
 				this.cardView.group(grouping);
 				this.cardView.requestFocus();
 			});
-			item.setSelected(ConvertedManaCost.Factory.class.equals(grouping.getClass()));
+			item.setSelected(initGrouping.getClass().equals(grouping.getClass()));
 			item.setToggleGroup(groupingGroup);
 			groupingMenu.getItems().add(item);
 		}
@@ -333,12 +334,16 @@ public class CardPane extends BorderPane {
 		this.updateFilter.handle(null);
 	}
 
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping.Factory grouping) {
+		this(title, model, layoutEngine, grouping, CardView.DEFAULT_SORTING);
+	}
+
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {
-		this(title, model, layoutEngine, CardView.DEFAULT_SORTING);
+		this(title, model, layoutEngine, ConvertedManaCost.Factory.INSTANCE);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model) {
-		this(title, model, emi.mtg.deckbuilder.view.layouts.Piles.Factory.INSTANCE, CardView.DEFAULT_SORTING);
+		this(title, model, Piles.Factory.INSTANCE);
 	}
 
 	public ObservableList<CardInstance> model() {

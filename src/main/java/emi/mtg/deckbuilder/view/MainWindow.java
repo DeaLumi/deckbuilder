@@ -13,7 +13,9 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
+import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
+import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyListWrapper;
@@ -215,7 +217,11 @@ public class MainWindow extends Stage {
 	private void setupUI() {
 		createCollectionContextMenu();
 
-		collection = new CardPane("Collection", FXCollections.observableArrayList(), FlowGrid.Factory.INSTANCE, CardView.DEFAULT_COLLECTION_SORTING);
+		collection = new CardPane("Collection",
+				FXCollections.observableArrayList(),
+				FlowGrid.Factory.INSTANCE,
+				Context.get().preferences.collectionGrouping,
+				CardView.DEFAULT_COLLECTION_SORTING);
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.view().contextMenu(collectionContextMenu);
@@ -264,7 +270,10 @@ public class MainWindow extends Stage {
 		collection.updateFilter();
 
 		deckSplitter.getItems().setAll(deck.format().deckZones().stream()
-				.map(z -> new CardPane(z.name(), deck.cards(z)))
+				.map(z -> new CardPane(z.name(),
+						deck.cards(z),
+						Piles.Factory.INSTANCE,
+						Context.get().preferences.zoneGroupings.getOrDefault(z, ConvertedManaCost.Factory.INSTANCE)))
 				.peek(pane -> pane.model().addListener(deckListChangedListener))
 				.peek(pane -> pane.view().doubleClick(ci -> pane.model().remove(ci)))
 				.collect(Collectors.toList()));

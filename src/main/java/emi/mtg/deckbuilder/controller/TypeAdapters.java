@@ -10,6 +10,8 @@ import com.google.gson.stream.JsonWriter;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
+import emi.mtg.deckbuilder.view.components.CardView;
+import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -48,6 +50,42 @@ public class TypeAdapters {
 					default:
 						return null;
 				}
+			}
+		};
+	}
+
+	public static TypeAdapter<CardView.Grouping.Factory> createCardViewGroupingFactoryAdapter() {
+		return new TypeAdapter<CardView.Grouping.Factory>() {
+			@Override
+			public void write(JsonWriter out, CardView.Grouping.Factory value) throws IOException {
+				if (value == null) {
+					out.nullValue();
+				} else {
+					out.value(value.name());
+				}
+			}
+
+			@Override
+			public CardView.Grouping.Factory read(JsonReader in) throws IOException {
+				String v;
+				switch (in.peek()) {
+					case NAME:
+						v = in.nextName();
+						break;
+					case STRING:
+						v = in.nextString();
+						break;
+					default:
+						return null;
+				}
+
+				return CardView.GROUPINGS.stream()
+						.filter(g -> g.name().equals(v))
+						.findAny()
+						.orElseGet(() -> {
+							System.err.println(String.format("Couldn't find grouping factory %s! Did a plugin go away? Defaulting to piles...", v));
+							return ConvertedManaCost.Factory.INSTANCE;
+						});
 			}
 		};
 	}
