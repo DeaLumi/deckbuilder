@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.view.util;
 
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
@@ -53,6 +54,11 @@ public class AlertBuilder {
 
 	public AlertBuilder contentText(String contentText) {
 		alert.setContentText(contentText);
+		return this;
+	}
+
+	public AlertBuilder contentNode(Node content) {
+		alert.getDialogPane().setContent(content);
 		return this;
 	}
 

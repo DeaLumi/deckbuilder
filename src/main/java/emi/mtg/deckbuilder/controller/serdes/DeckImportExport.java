@@ -14,6 +14,7 @@ public interface DeckImportExport {
 		Format("Intended deck format"),
 		CardArt("Specific card printings"),
 		OtherZones("Zones (beyond library & sideboard)"),
+		Tags("Deck-specific card tags"),
 		Export("Exporting"),
 		Import("Importing");
 

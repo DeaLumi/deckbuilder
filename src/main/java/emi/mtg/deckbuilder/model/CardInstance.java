@@ -6,6 +6,7 @@ import emi.mtg.deckbuilder.controller.Context;
 
 import java.io.Serializable;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,7 +17,8 @@ public class CardInstance implements Card.Printing, Serializable {
 		Invalid
 	}
 
-	public transient EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
+	public transient final EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
+	private final Set<String> tags = new HashSet<>();
 	private Card.Printing printing;
 
 	// Declare this so GSON doesn't nullify flags.
@@ -90,5 +92,9 @@ public class CardInstance implements Card.Printing, Serializable {
 		if (pr != null && pr != printing) {
 			printing = pr;
 		}
+	}
+
+	public Set<String> tags() {
+		return tags;
 	}
 }

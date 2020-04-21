@@ -872,6 +872,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		grouping(this.grouping);
 	}
 
+	public void refreshCardGrouping(Collection<CardInstance> modifiedCards) {
+		for (int i = 0; i < this.model.size(); ++i) {
+			if (modifiedCards.contains(this.model.get(i))) {
+				this.model.set(i, this.model.get(i)); // Refresh groupings
+			}
+		}
+	}
+
 	public ObservableList<CardInstance> model() {
 		return this.model;
 	}

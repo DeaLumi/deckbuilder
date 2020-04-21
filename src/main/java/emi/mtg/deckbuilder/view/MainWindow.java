@@ -252,6 +252,60 @@ public class MainWindow extends Stage {
 		this.serdesFileChooser.getExtensionFilters().setAll(this.deckSerdes.keySet());
 	}
 
+	private CardView.ContextMenu createDeckContextMenu(Zone zone) {
+		CardView.ContextMenu menu = new CardView.ContextMenu();
+
+		Menu tagsMenu = new Menu("Deck Tags");
+
+		menu.setOnShowing(e -> {
+			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
+			tagCBs.setAll(menu.view.get().model().stream()
+					.map(CardInstance::tags)
+					.flatMap(Set::stream)
+					.distinct()
+					.sorted()
+					.map(CheckMenuItem::new)
+					.peek(cmi -> cmi.setSelected(menu.cards.stream().allMatch(ci -> ci.tags().contains(cmi.getText()))))
+					.peek(cmi -> cmi.selectedProperty().addListener(x -> {
+						if (cmi.isSelected()) {
+							menu.cards.forEach(ci -> ci.tags().add(cmi.getText()));
+						} else {
+							menu.cards.forEach(ci -> ci.tags().remove(cmi.getText()));
+						}
+						menu.view.get().refreshCardGrouping(menu.cards);
+					}))
+					.collect(Collectors.toList())
+			);
+			tagCBs.add(new SeparatorMenuItem());
+
+			MenuItem newTagMenuItem = new MenuItem("Assign new tag...");
+			TextField newTagTextField = new TextField();
+			newTagTextField.setPromptText("Tag...");
+			newTagMenuItem.setOnAction(ae -> {
+				TextInputDialog dlg = new TextInputDialog();
+				dlg.setTitle("New Deck Tag");
+				dlg.setHeaderText("Enter the new tag:");
+				dlg.setContentText("Tag:");
+				dlg.getEditor().setPromptText("Tag...");
+				dlg.initOwner(MainWindow.this);
+
+				Optional<String> newTag = dlg.showAndWait();
+				if (newTag.isPresent()) {
+					menu.cards.forEach(ci -> ci.tags().add(newTag.get()));
+					menu.view.get().regroup();
+				}
+			});
+
+			tagCBs.add(newTagMenuItem);
+
+			tagsMenu.getItems().setAll(tagCBs);
+		});
+
+		menu.getItems().add(tagsMenu);
+
+		return menu;
+	}
+
 	private void setDeck(DeckList deck) {
 		this.deck = deck;
 		titleProperty().unbind();
@@ -269,12 +323,16 @@ public class MainWindow extends Stage {
 		collection.updateFilter();
 
 		deckSplitter.getItems().setAll(deck.format().deckZones().stream()
-				.map(z -> new CardPane(z.name(),
-						deck.cards(z),
-						Piles.Factory.INSTANCE,
-						Context.get().preferences.zoneGroupings.getOrDefault(z, ConvertedManaCost.INSTANCE)))
-				.peek(pane -> pane.model().addListener(deckListChangedListener))
-				.peek(pane -> pane.view().doubleClick(ci -> pane.model().remove(ci)))
+				.map(z -> {
+					CardPane pane = new CardPane(z.name(),
+							deck.cards(z),
+							Piles.Factory.INSTANCE,
+							Context.get().preferences.zoneGroupings.getOrDefault(z, ConvertedManaCost.INSTANCE));
+					pane.model().addListener(deckListChangedListener);
+					pane.view().doubleClick(ci -> pane.model().remove(ci));
+					pane.view().contextMenu(createDeckContextMenu(z));
+					return pane;
+				})
 				.collect(Collectors.toList()));
 	}
 
