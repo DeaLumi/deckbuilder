@@ -273,7 +273,7 @@ public class MainWindow extends Stage {
 				.map(z -> new CardPane(z.name(),
 						deck.cards(z),
 						Piles.Factory.INSTANCE,
-						Context.get().preferences.zoneGroupings.getOrDefault(z, ConvertedManaCost.Factory.INSTANCE)))
+						Context.get().preferences.zoneGroupings.getOrDefault(z, ConvertedManaCost.INSTANCE)))
 				.peek(pane -> pane.model().addListener(deckListChangedListener))
 				.peek(pane -> pane.view().doubleClick(ci -> pane.model().remove(ci)))
 				.collect(Collectors.toList()));

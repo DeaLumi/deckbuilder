@@ -133,7 +133,7 @@ public class CardPane extends BorderPane {
 	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showVersionsSeparately = new SimpleBooleanProperty(true);
 
-	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping.Factory initGrouping, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
 		super();
 
 		this.cardView = new CardView(model, initEngine, initGrouping, sortings);
@@ -145,10 +145,10 @@ public class CardPane extends BorderPane {
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
-		for (CardView.Grouping.Factory grouping : CardView.GROUPINGS) {
+		for (CardView.Grouping grouping : CardView.GROUPINGS) {
 			RadioMenuItem item = new RadioMenuItem(grouping.name());
 			item.setOnAction(ae -> {
-				this.cardView.group(grouping);
+				this.cardView.grouping(grouping);
 				this.cardView.requestFocus();
 			});
 			item.setSelected(initGrouping.getClass().equals(grouping.getClass()));
@@ -334,12 +334,12 @@ public class CardPane extends BorderPane {
 		this.updateFilter.handle(null);
 	}
 
-	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping.Factory grouping) {
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping grouping) {
 		this(title, model, layoutEngine, grouping, CardView.DEFAULT_SORTING);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {
-		this(title, model, layoutEngine, ConvertedManaCost.Factory.INSTANCE);
+		this(title, model, layoutEngine, ConvertedManaCost.INSTANCE);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model) {

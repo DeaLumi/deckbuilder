@@ -139,20 +139,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public interface Grouping {
-		interface Factory {
-			String name();
-			Grouping create();
-		}
-
 		interface Group {
 			void add(CardInstance ci);
 			void remove(CardInstance ci);
 			boolean contains(CardInstance ci);
 		}
 
-		Group[] groups();
-
+		String name();
 		boolean supportsModification();
+
+		Group[] groups(CardView view);
 	}
 
 	public interface Sorting extends Comparator<CardInstance> {
@@ -175,7 +171,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	public static final List<LayoutEngine.Factory> LAYOUT_ENGINES;
-	public static final List<Grouping.Factory> GROUPINGS;
+	public static final List<Grouping> GROUPINGS;
 	public static final List<Sorting> SORTINGS;
 
 	public static final List<ActiveSorting> DEFAULT_SORTING, DEFAULT_COLLECTION_SORTING;
@@ -184,7 +180,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		LAYOUT_ENGINES = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(LayoutEngine.Factory.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), true)
 				.collect(Collectors.toList()));
 
-		GROUPINGS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(Grouping.Factory.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), true)
+		GROUPINGS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(Grouping.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), true)
 				.collect(Collectors.toList()));
 
 		Sorting color = null, cmc = null, manaCost = null, name = null, rarity = null;
@@ -262,7 +258,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private LayoutEngine engine;
 	private Comparator<CardInstance> sort;
 	private List<ActiveSorting> sortingElements;
-	private Grouping.Factory groupingFactory;
 	private Grouping grouping;
 
 	private final DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
@@ -296,16 +291,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private static boolean dragModified = false;
 	private static CardView dragSource = null, dragTarget = null;
 
-	public CardView(ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping.Factory grouping, List<ActiveSorting> sorts) {
+	public CardView(ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
-
-		Predicate<CardInstance> filter = ci -> true;
-		this.sortingElements = sorts;
-		this.sort = convertSorts(sorts);
-		this.groupingFactory = grouping;
-		this.grouping = grouping.create();
 
 		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());
@@ -330,14 +319,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.doubleClick = ci -> {};
 		this.contextMenu = null;
 
+		Predicate<CardInstance> filter = ci -> true;
+		this.sortingElements = sorts;
+		this.sort = convertSorts(sorts);
+		this.grouping = grouping;
+
 		this.model = model;
 		this.filteredModel = model.filtered(filter);
-		this.groupedModel = Arrays.stream(this.grouping.groups())
-				.map(g -> new Group(g, this.filteredModel, this.sort))
-				.toArray(Group[]::new);
-
 		this.filteredModel.addListener((InvalidationListener) e -> layout());
 
+		grouping(grouping);
 		layout(layout);
 
 		this.scrollX.addListener(e -> scheduleRender());
@@ -865,17 +856,20 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		layout();
 	}
 
-	public void group(Grouping.Factory grouping) {
-		this.groupingFactory = grouping;
-		this.grouping = grouping.create();
-		this.groupedModel = Arrays.stream(this.grouping.groups())
+	public void grouping(Grouping grouping) {
+		this.grouping = grouping;
+		this.groupedModel = Arrays.stream(this.grouping.groups(this))
 				.map(g -> new Group(g, this.filteredModel, this.sort))
 				.toArray(Group[]::new);
 		layout();
 	}
 
+	public Grouping grouping() {
+		return this.grouping;
+	}
+
 	public void regroup() {
-		group(this.groupingFactory);
+		grouping(this.grouping);
 	}
 
 	public ObservableList<CardInstance> model() {

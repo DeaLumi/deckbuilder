@@ -42,7 +42,7 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 	private Group[] groups;
 
 	@Override
-	public Group[] groups() {
+	public Group[] groups(CardView unused) {
 		if (groups == null) {
 			groups = new Group[groupValues().length];
 

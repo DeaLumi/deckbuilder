@@ -54,10 +54,10 @@ public class TypeAdapters {
 		};
 	}
 
-	public static TypeAdapter<CardView.Grouping.Factory> createCardViewGroupingFactoryAdapter() {
-		return new TypeAdapter<CardView.Grouping.Factory>() {
+	public static TypeAdapter<CardView.Grouping> createCardViewGroupingAdapter() {
+		return new TypeAdapter<CardView.Grouping>() {
 			@Override
-			public void write(JsonWriter out, CardView.Grouping.Factory value) throws IOException {
+			public void write(JsonWriter out, CardView.Grouping value) throws IOException {
 				if (value == null) {
 					out.nullValue();
 				} else {
@@ -66,7 +66,7 @@ public class TypeAdapters {
 			}
 
 			@Override
-			public CardView.Grouping.Factory read(JsonReader in) throws IOException {
+			public CardView.Grouping read(JsonReader in) throws IOException {
 				String v;
 				switch (in.peek()) {
 					case NAME:
@@ -83,8 +83,8 @@ public class TypeAdapters {
 						.filter(g -> g.name().equals(v))
 						.findAny()
 						.orElseGet(() -> {
-							System.err.println(String.format("Couldn't find grouping factory %s! Did a plugin go away? Defaulting to piles...", v));
-							return ConvertedManaCost.Factory.INSTANCE;
+							System.err.println(String.format("Couldn't find grouping factory %s! Did a plugin go away? Defaulting to CMC...", v));
+							return ConvertedManaCost.INSTANCE;
 						});
 			}
 		};

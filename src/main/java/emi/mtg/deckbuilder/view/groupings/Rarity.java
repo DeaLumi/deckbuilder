@@ -8,19 +8,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class Rarity extends CharacteristicGrouping implements CardView.Grouping {
-	public static class Factory implements CardView.Grouping.Factory {
-		public static final Factory INSTANCE = new Factory();
-
-		@Override
-		public String name() {
-			return "Rarity";
-		}
-
-		@Override
-		public CardView.Grouping create() {
-			return new Rarity();
-		}
-	}
+	public static final Rarity INSTANCE = new Rarity();
 
 	private static final String[] GROUPS;
 
@@ -29,6 +17,11 @@ public class Rarity extends CharacteristicGrouping implements CardView.Grouping 
 				.sorted(Comparator.comparingInt(CardRarity::ordinal).reversed())
 				.map(CardRarity::toString)
 				.toArray(String[]::new);
+	}
+
+	@Override
+	public String name() {
+		return "Rarity";
 	}
 
 	@Override

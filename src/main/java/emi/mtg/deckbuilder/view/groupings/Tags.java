@@ -7,20 +7,9 @@ import emi.mtg.deckbuilder.view.components.CardView;
 import java.util.Set;
 
 public class Tags implements CardView.Grouping {
-	public static class Factory implements CardView.Grouping.Factory {
-		public static final Factory INSTANCE = new Factory();
+	public static final Tags INSTANCE = new Tags();
 
-		@Override
-		public String name() {
-			return "Tags";
-		}
-
-		public Tags create() {
-			return new Tags();
-		}
-	}
-
-	private class TagGroup implements CardView.Grouping.Group {
+	private static class TagGroup implements CardView.Grouping.Group {
 		private final String tag;
 
 		public TagGroup(String tag) {
@@ -29,17 +18,17 @@ public class Tags implements CardView.Grouping {
 
 		@Override
 		public void add(CardInstance ci) {
-			Tags.this.tags.add(ci.card(), this.tag);
+			Context.get().tags.add(ci.card(), this.tag);
 		}
 
 		@Override
 		public void remove(CardInstance ci) {
-			Tags.this.tags.remove(ci.card(), this.tag);
+			Context.get().tags.remove(ci.card(), this.tag);
 		}
 
 		@Override
 		public boolean contains(CardInstance ci) {
-			return Tags.this.tags.cards(this.tag).contains(ci.card());
+			return Context.get().tags.cards(this.tag).contains(ci.card());
 		}
 
 		@Override
@@ -48,11 +37,11 @@ public class Tags implements CardView.Grouping {
 		}
 	}
 
-	private class Untagged implements CardView.Grouping.Group {
+	private static class Untagged implements CardView.Grouping.Group {
 
 		@Override
 		public void add(CardInstance ci) {
-			Tags.this.tags.tags(ci.card()).clear();
+			Context.get().tags.tags(ci.card()).clear();
 		}
 
 		@Override
@@ -62,7 +51,7 @@ public class Tags implements CardView.Grouping {
 
 		@Override
 		public boolean contains(CardInstance ci) {
-			return Tags.this.tags.tags(ci.card()).isEmpty();
+			return Context.get().tags.tags(ci.card()).isEmpty();
 		}
 
 		@Override
@@ -71,23 +60,21 @@ public class Tags implements CardView.Grouping {
 		}
 	}
 
-	private final emi.mtg.deckbuilder.controller.Tags tags;
-	private final Group[] groups;
-
-	public Tags() {
-		this.tags = Context.get().tags;
-
-		Set<String> allTags = this.tags.tags();
-		this.groups = new Group[allTags.size() + 1];
-		this.groups[0] = new Untagged();
-		int i = 0;
-		for (String tag : allTags) {
-			this.groups[++i] = new TagGroup(tag);
-		}
+	@Override
+	public String name() {
+		return "Tags";
 	}
 
 	@Override
-	public Group[] groups() {
+	public Group[] groups(CardView unused) {
+		Set<String> allTags = Context.get().tags.tags();
+		Group[] groups = new Group[allTags.size() + 1];
+		groups[0] = new Untagged();
+		int i = 0;
+		for (String tag : allTags) {
+			groups[++i] = new TagGroup(tag);
+		}
+
 		return groups;
 	}
 

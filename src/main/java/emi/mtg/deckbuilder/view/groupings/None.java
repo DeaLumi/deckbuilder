@@ -4,19 +4,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
 public class None implements CardView.Grouping {
-	public static class Factory implements CardView.Grouping.Factory {
-		public static final Factory INSTANCE = new Factory();
-
-		@Override
-		public String name() {
-			return "None";
-		}
-
-		@Override
-		public CardView.Grouping create() {
-			return new None();
-		}
-	}
+	public static final None INSTANCE = new None();
 
 	private static Group[] GROUPS = new Group[] {
 		new Group() {
@@ -43,7 +31,12 @@ public class None implements CardView.Grouping {
 	};
 
 	@Override
-	public Group[] groups() {
+	public String name() {
+		return "None";
+	}
+
+	@Override
+	public Group[] groups(CardView unused) {
 		return GROUPS;
 	}
 

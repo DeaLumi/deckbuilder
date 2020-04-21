@@ -2,24 +2,11 @@ package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.mtg.characteristic.Color;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.util.*;
 
 public class ColorGrouping extends CharacteristicGrouping {
-	public static class Factory implements CardView.Grouping.Factory {
-		public static final Factory INSTANCE = new Factory();
-
-		@Override
-		public String name() {
-			return "Color";
-		}
-
-		@Override
-		public CardView.Grouping create() {
-			return new ColorGrouping();
-		}
-	}
+	public static final ColorGrouping INSTANCE = new ColorGrouping();
 
 	private static final Map<Set<Color>, String> GROUPS = groupsMap();
 	private static final String[] GROUP_VALUES = GROUPS.values().toArray(new String[GROUPS.size()]);
@@ -68,6 +55,11 @@ public class ColorGrouping extends CharacteristicGrouping {
 		tmp.put(null, "???");
 
 		return Collections.unmodifiableMap(tmp);
+	}
+
+	@Override
+	public String name() {
+		return "Color";
 	}
 
 	@Override

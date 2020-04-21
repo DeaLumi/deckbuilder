@@ -24,6 +24,6 @@ public class Preferences {
 
 	public String authorName = "";
 
-	public CardView.Grouping.Factory collectionGrouping = Rarity.Factory.INSTANCE;
-	public Map<Zone, CardView.Grouping.Factory> zoneGroupings = Collections.singletonMap(Zone.Command, CardTypeGroup.Factory.INSTANCE);
+	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
+	public Map<Zone, CardView.Grouping> zoneGroupings = Collections.singletonMap(Zone.Command, CardTypeGroup.INSTANCE);
 }
