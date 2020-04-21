@@ -428,7 +428,18 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				}
 			} else if (CardView.dragSource != null) {
 				if (!immutableModel.get()) {
-					Set<CardInstance> newCards = dragSource.selectedCards.stream().map(CardInstance::printing).map(CardInstance::new).collect(Collectors.toSet());
+					Set<CardInstance> newCards = dragSource.selectedCards.stream()
+							.map(ci -> {
+								CardInstance clone = new CardInstance(ci.printing());
+								clone.tags().addAll(ci.tags());
+
+								if (this.grouping.supportsModification()) {
+									this.hoverGroup.group.add(clone);
+								}
+
+								return clone;
+							})
+							.collect(Collectors.toSet());
 					this.model.addAll(newCards);
 					this.selectedCards.clear();
 					this.selectedCards.addAll(newCards);
