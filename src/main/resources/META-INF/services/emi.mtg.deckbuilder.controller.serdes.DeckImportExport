@@ -1,3 +1,4 @@
 emi.mtg.deckbuilder.controller.serdes.impl.MTGO
 emi.mtg.deckbuilder.controller.serdes.impl.TextFile
+emi.mtg.deckbuilder.controller.serdes.impl.Cockatrice
 # N.B. impl.Json is instantiated directly. That may change in the future.
