@@ -17,7 +17,7 @@ public class Piles implements CardView.LayoutEngine {
 		}
 	}
 
-	private final static double OVERLAP_FACTOR = 0.125;
+	private final static double OVERLAP_FACTOR = 0.110;
 
 	private final CardView parent;
 
