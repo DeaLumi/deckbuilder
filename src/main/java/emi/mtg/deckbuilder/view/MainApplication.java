@@ -100,7 +100,7 @@ public class MainApplication extends Application {
 				.headerText("Loading card data...")
 				.contentText("Please wait a moment!")
 				.show();
-		Context.get();
+		Context.instantiate();
 		alert.getButtonTypes().setAll(ButtonType.CLOSE);
 		alert.hide();
 

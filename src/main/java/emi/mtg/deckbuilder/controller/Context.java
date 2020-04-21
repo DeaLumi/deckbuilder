@@ -26,18 +26,24 @@ public class Context {
 
 	private static Context instance;
 
+	public static void instantiate() throws IOException {
+		synchronized (Context.class) {
+			if (instance != null) {
+				throw new IllegalStateException("Attempt to reinitialize context!");
+			}
+
+			instance = new Context();
+		}
+	}
+
 	public static Context get() {
 		synchronized (Context.class) {
 			if (instance == null) {
-				try {
-					instance = new Context();
-				} catch (IOException e) {
-					throw new Error(e);
-				}
+				throw new IllegalStateException("Context hasn't been initialized!");
 			}
-		}
 
-		return instance;
+			return instance;
+		}
 	}
 
 	public final Gson gson;
