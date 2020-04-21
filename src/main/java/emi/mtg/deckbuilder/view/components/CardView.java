@@ -527,7 +527,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							modifyingCard.printing(ci.printing());
 						}
 
-						regroup();
+						filteredModel.setPredicate(filteredModel.getPredicate().and(t -> true));
 					});
 
 					prPane.view().immutableModelProperty().set(true);
