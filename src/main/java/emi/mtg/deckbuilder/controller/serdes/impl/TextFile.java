@@ -5,7 +5,6 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
-import emi.mtg.deckbuilder.controller.serdes.Features;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 
@@ -121,7 +120,7 @@ public class TextFile implements DeckImportExport {
 	}
 
 	@Override
-	public EnumSet<Features> supportedFeatures() {
-		return EnumSet.of(Features.OtherZones, Features.Import, Features.Export);
+	public EnumSet<Feature> supportedFeatures() {
+		return EnumSet.of(Feature.OtherZones, Feature.Import, Feature.Export);
 	}
 }

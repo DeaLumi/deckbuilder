@@ -6,7 +6,6 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
-import emi.mtg.deckbuilder.controller.serdes.Features;
 import emi.mtg.deckbuilder.controller.serdes.impl.Json;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -464,22 +463,22 @@ public class MainWindow extends Stage {
 		}
 	}
 
-	private boolean warnAboutSerdes(Set<Features> unsupportedFeatures) {
+	private boolean warnAboutSerdes(Set<DeckImportExport.Feature> unsupportedFeatures) {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append("The file format you selected doesn't support the following features:\n");
 
-		for (Features feature : unsupportedFeatures) {
-			if (feature == Features.Import || feature == Features.Export) {
+		for (DeckImportExport.Feature feature : unsupportedFeatures) {
+			if (feature == DeckImportExport.Feature.Import || feature == DeckImportExport.Feature.Export) {
 				continue;
 			}
 
 			builder.append(" \u2022 ").append(feature.toString()).append('\n');
 		}
 
-		if (unsupportedFeatures.contains(Features.Import)) {
+		if (unsupportedFeatures.contains(DeckImportExport.Feature.Import)) {
 			builder.append('\n').append("Additionally, you will not be able to re-import from this file.");
-		} else if (unsupportedFeatures.contains(Features.Export)) {
+		} else if (unsupportedFeatures.contains(DeckImportExport.Feature.Export)) {
 			builder.append('\n').append("Additionally, you will not be able to re-export to this file.");
 		}
 
@@ -737,7 +736,7 @@ public class MainWindow extends Stage {
 
 		DeckImportExport importer = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
-		EnumSet<Features> unsupported = EnumSet.complementOf(importer.supportedFeatures());
+		EnumSet<DeckImportExport.Feature> unsupported = EnumSet.complementOf(importer.supportedFeatures());
 		if (!unsupported.isEmpty()) {
 			if (warnAboutSerdes(unsupported)) {
 				return;
@@ -772,7 +771,7 @@ public class MainWindow extends Stage {
 
 		DeckImportExport exporter = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
-		EnumSet<Features> unsupported = EnumSet.complementOf(exporter.supportedFeatures());
+		EnumSet<DeckImportExport.Feature> unsupported = EnumSet.complementOf(exporter.supportedFeatures());
 		if (!unsupported.isEmpty()) {
 			if (warnAboutSerdes(unsupported)) {
 				return;

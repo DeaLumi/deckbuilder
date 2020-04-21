@@ -5,7 +5,6 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
-import emi.mtg.deckbuilder.controller.serdes.Features;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import org.w3c.dom.Document;
@@ -188,7 +187,7 @@ public class MTGO implements DeckImportExport {
 	}
 
 	@Override
-	public EnumSet<Features> supportedFeatures() {
-		return EnumSet.of(Features.CardArt, Features.Import, Features.Export);
+	public EnumSet<Feature> supportedFeatures() {
+		return EnumSet.of(Feature.CardArt, Feature.Import, Feature.Export);
 	}
 }

@@ -2,7 +2,6 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
-import emi.mtg.deckbuilder.controller.serdes.Features;
 import emi.mtg.deckbuilder.model.DeckList;
 
 import java.io.File;
@@ -42,7 +41,7 @@ public class Json implements DeckImportExport {
 	}
 
 	@Override
-	public EnumSet<Features> supportedFeatures() {
-		return EnumSet.allOf(Features.class);
+	public EnumSet<Feature> supportedFeatures() {
+		return EnumSet.allOf(Feature.class);
 	}
 }
