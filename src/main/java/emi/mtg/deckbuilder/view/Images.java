@@ -24,7 +24,7 @@ import java.util.stream.StreamSupport;
 public class Images {
 	public static final double CARD_WIDTH = 220.0;
 	public static final double CARD_HEIGHT = 308.0;
-	public static final double CARD_PADDING = CARD_WIDTH / 40.0;
+	public static final double CARD_PADDING = CARD_WIDTH / 100.0;
 
 	private static final String CACHE_EXTENSION = "png";
 
