@@ -82,6 +82,7 @@ public class ImageExporter implements DeckImportExport {
 					zone.getKey() == Zone.Command ? FlowGrid.Factory.INSTANCE : Piles.Factory.INSTANCE,
 					Context.get().preferences.zoneGroupings.getOrDefault(zone.getKey(), ConvertedManaCost.INSTANCE),
 					CardView.DEFAULT_SORTING);
+			view.showFlagsProperty().set(false);
 			view.cardScaleProperty().set(0.85);
 			view.resize(1800.0, 1800.0);
 			view.resize(view.prefWidth(-1), view.prefHeight(1800.0));

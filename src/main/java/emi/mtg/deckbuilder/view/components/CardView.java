@@ -288,6 +288,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private final DoubleProperty cardScaleProperty;
 	private final BooleanProperty showEmptyGroupsProperty;
 	private final BooleanProperty immutableModel;
+	private final BooleanProperty showFlags;
 
 	private static boolean dragModified = false;
 	private static CardView dragSource = null, dragTarget = null;
@@ -314,6 +315,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.scrollMaxY = new SimpleDoubleProperty(100.0);
 
 		this.immutableModel = new SimpleBooleanProperty(false);
+		this.showFlags = new SimpleBooleanProperty(true);
+		this.showFlags.addListener(ce -> scheduleRender());
 
 		this.hoverCard = null;
 		this.hoverGroup = null;
@@ -965,6 +968,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		return immutableModel;
 	}
 
+	public BooleanProperty showFlagsProperty() {
+		return showFlags;
+	}
+
 	public DoubleProperty scrollMinX() {
 		return scrollMinX;
 	}
@@ -1108,7 +1115,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		Full (Color.TRANSPARENT, Color.color(0.0f, 0.0f, 0.0f, 0.5f)),
 		Hover (Color.GREEN, Color.TRANSPARENT),
 		Selected (Color.DODGERBLUE, Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25)),
-		Flagged (Color.RED, Color.TRANSPARENT);
+		Flagged (Color.RED, Color.TRANSPARENT),
+		Warning (Color.ORANGE, Color.TRANSPARENT),
+		Notice (Color.LIGHTGREEN, Color.TRANSPARENT);
 
 		public final Color outlineColor, fillColor;
 
@@ -1278,12 +1287,22 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 				EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
 
-				if (ci.flags.contains(CardInstance.Flags.Invalid)) {
-					states.add(CardState.Flagged);
-				}
+				if (showFlags.get()) {
+					if (ci.flags.contains(CardInstance.Flags.Invalid)) {
+						states.add(CardState.Flagged);
+					}
 
-				if (ci.flags.contains(CardInstance.Flags.Full)) {
-					states.add(CardState.Full);
+					if (ci.flags.contains(CardInstance.Flags.Full)) {
+						states.add(CardState.Full);
+					}
+
+					if (ci.flags.contains(CardInstance.Flags.Warning)) {
+						states.add(CardState.Warning);
+					}
+
+					if (ci.flags.contains(CardInstance.Flags.Notice)) {
+						states.add(CardState.Notice);
+					}
 				}
 
 				if (hoverCard == ci) {

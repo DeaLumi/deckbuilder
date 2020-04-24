@@ -166,16 +166,24 @@ public class MainWindow extends Stage {
 				.orElseThrow(() -> new AssertionError("No zone " + zone.name() + " in deck!"));
 	}
 
-	private void flagCardLegality(CardInstance ci) {
+	private void flagCollectionCardLegality(CardInstance ci) {
+		ci.flags.clear();
+		ci.flags.add(CardInstance.Flags.Unlimited);
 		switch (ci.card().legality(deck.format())) {
 			case Legal:
 			case Restricted:
 				break;
-			default:
+			case Banned:
+				ci.flags.add(CardInstance.Flags.Invalid);
+				break;
+			case NotLegal:
 				if (Context.get().preferences.theFutureIsNow && ci.card().legality(Format.Future) == Card.Legality.Legal) {
 					break;
 				}
 				ci.flags.add(CardInstance.Flags.Invalid);
+				break;
+			case Unknown:
+				ci.flags.add(CardInstance.Flags.Warning);
 				break;
 		}
 	}
@@ -184,7 +192,7 @@ public class MainWindow extends Stage {
 		return FXCollections.observableList(cs.printings().stream()
 				.map(CardInstance::new)
 				.peek(ci -> ci.flags.add(CardInstance.Flags.Unlimited))
-				.peek(this::flagCardLegality)
+				.peek(this::flagCollectionCardLegality)
 				.collect(Collectors.toList()));
 	}
 
@@ -680,11 +688,27 @@ public class MainWindow extends Stage {
 		deck.cards().values().stream()
 				.flatMap(ObservableList::stream)
 				.peek(ci -> {
-					if (result.cardErrors.containsKey(ci)) {
-						ci.flags.add(CardInstance.Flags.Invalid);
-					} else {
+					Format.ValidationResult.CardResult cr = result.cards.get(ci);
+
+					if (cr == null) {
+						ci.flags.clear();
+						return;
+					};
+
+					if (cr.errors.isEmpty())
 						ci.flags.remove(CardInstance.Flags.Invalid);
-					}
+					else
+						ci.flags.add(CardInstance.Flags.Invalid);
+
+					if (cr.warnings.isEmpty())
+						ci.flags.remove(CardInstance.Flags.Warning);
+					else
+						ci.flags.add(CardInstance.Flags.Warning);
+
+					if (cr.notices.isEmpty())
+						ci.flags.remove(CardInstance.Flags.Notice);
+					else
+						ci.flags.add(CardInstance.Flags.Notice);
 				})
 				.map(CardInstance::card)
 				.forEach(c -> histogram.computeIfAbsent(c, x -> new AtomicInteger(0)).incrementAndGet());
@@ -698,9 +722,7 @@ public class MainWindow extends Stage {
 
 		collection.model()
 				.forEach(ci -> {
-					ci.flags.remove(CardInstance.Flags.Invalid);
-					ci.flags.remove(CardInstance.Flags.Full);
-					flagCardLegality(ci);
+					flagCollectionCardLegality(ci);
 					if (histogram.containsKey(ci.card())) {
 						ci.flags.add(CardInstance.Flags.Full);
 					} else {
@@ -716,11 +738,14 @@ public class MainWindow extends Stage {
 	protected void validateDeck() {
 		Format.ValidationResult result = updateCardStates();
 
-		if (result.deckErrors.isEmpty() && result.zoneErrors.values().stream().allMatch(Set::isEmpty) && result.cardErrors.values().stream().allMatch(Set::isEmpty)) {
+		if (result.deckErrors.isEmpty() &&
+				result.zoneErrors.values().stream().allMatch(Set::isEmpty) &&
+				result.cards.values().stream()
+						.allMatch(cr -> cr.errors.isEmpty() && cr.warnings.isEmpty() && cr.notices.isEmpty())) {
 			AlertBuilder.notify(this)
 					.title("Deck Validation")
 					.headerText("Deck is valid.")
-					.contentText("No validation errors were found!")
+					.contentText("No validation messages to report!")
 					.showAndWait();
 		} else {
 			StringBuilder msg = new StringBuilder();
@@ -737,7 +762,9 @@ public class MainWindow extends Stage {
 				}
 			}
 
-			Set<String> cardErrors = result.cardErrors.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
+			Set<String> cardErrors = result.cards.values().stream()
+					.flatMap(cr -> cr.errors.stream())
+					.collect(Collectors.toSet());
 			if (!cardErrors.isEmpty()) {
 				msg.append("\nCard errors:\n");
 				for (String err : cardErrors) {
@@ -745,10 +772,39 @@ public class MainWindow extends Stage {
 				}
 			}
 
+			Set<String> cardWarnings = result.cards.values().stream()
+					.flatMap(cr -> cr.warnings.stream())
+					.collect(Collectors.toSet());
+			if (!cardWarnings.isEmpty()) {
+				msg.append("\nCard warnings:\n");
+				for (String err : cardWarnings) {
+					msg.append("\u2022 ").append(err).append("\n");
+				}
+			}
+
+			Set<String> cardNotices = result.cards.values().stream()
+					.flatMap(cr -> cr.notices.stream())
+					.collect(Collectors.toSet());
+			if (!cardNotices.isEmpty()) {
+				msg.append("\nCard notices:\n");
+				for (String err : cardNotices) {
+					msg.append("\u2022 ").append(err).append("\n");
+				}
+			}
+
+			Alert.AlertType type;
+			if (!result.deckErrors.isEmpty() || !result.zoneErrors.isEmpty() || !cardErrors.isEmpty()) {
+				type = Alert.AlertType.ERROR;
+			} else if (!cardWarnings.isEmpty()) {
+				type = Alert.AlertType.WARNING;
+			} else {
+				type = Alert.AlertType.INFORMATION;
+			}
+
 			AlertBuilder.notify(this)
-					.type(Alert.AlertType.ERROR)
+					.type(type)
 					.title("Deck Validation")
-					.headerText("Deck has errors:")
+					.headerText("Validation messages:")
 					.contentText(msg.toString().trim())
 					.showAndWait();
 		}

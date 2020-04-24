@@ -14,7 +14,9 @@ public class CardInstance implements Card.Printing, Serializable {
 	public enum Flags {
 		Unlimited,
 		Full,
-		Invalid
+		Invalid,
+		Warning,
+		Notice
 	}
 
 	public transient final EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
