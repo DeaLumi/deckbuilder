@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -1046,8 +1047,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		layout();
 	}
 
-	public void scheduleRender() {
-		ForkJoinPool.commonPool().submit(this::render);
+	private transient ForkJoinTask<?> scheduledRender = null;
+
+	public synchronized void scheduleRender() {
+		if (scheduledRender != null) {
+			scheduledRender.cancel(false);
+		}
+
+		scheduledRender = ForkJoinPool.commonPool().submit(this::render);
 	}
 
 	public synchronized void layout() {
@@ -1115,6 +1122,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	protected synchronized void render() {
+		scheduledRender = null;
+
 		if (engine == null || grouping == null) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
@@ -1256,33 +1265,33 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
 
-				if (futureImage.isDone()) {
-					EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
-
-					if (ci.flags.contains(CardInstance.Flags.Invalid)) {
-						states.add(CardState.Flagged);
-					}
-
-					if (ci.flags.contains(CardInstance.Flags.Full)) {
-						states.add(CardState.Full);
-					}
-
-					if (hoverCard == ci) {
-						states.add(CardState.Hover);
-					}
-
-					if (selectedCards.contains(ci)) {
-						states.add(CardState.Selected);
-					} else if (dragMode == DragMode.Selecting) {
-						if (cardInBounds(loc, dragBoxX1, dragBoxY1, dragBoxX2, dragBoxY2)) {
-							states.add(CardState.Selected);
-						}
-					}
-
-					renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.UNAVAILABLE_CARD), states));
-				} else {
+				if (!futureImage.isDone()) {
 					futureImage.thenRun(this::scheduleRender);
 				}
+
+				EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
+
+				if (ci.flags.contains(CardInstance.Flags.Invalid)) {
+					states.add(CardState.Flagged);
+				}
+
+				if (ci.flags.contains(CardInstance.Flags.Full)) {
+					states.add(CardState.Full);
+				}
+
+				if (hoverCard == ci) {
+					states.add(CardState.Hover);
+				}
+
+				if (selectedCards.contains(ci)) {
+					states.add(CardState.Selected);
+				} else if (dragMode == DragMode.Selecting) {
+					if (cardInBounds(loc, dragBoxX1, dragBoxY1, dragBoxX2, dragBoxY2)) {
+						states.add(CardState.Selected);
+					}
+				}
+
+				renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.LOADING_CARD), states));
 			}
 		}
 		return renderMap;

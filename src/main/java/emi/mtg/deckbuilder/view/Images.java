@@ -85,8 +85,8 @@ public class Images {
 				.collect(Collectors.toList());
 	}
 
-	private final Map<Card.Printing.Face, SoftReference<Image>> faceCache = new HashMap<>();
-	private final Map<Card.Printing, SoftReference<Image>> frontCache = new HashMap<>();
+	private final Map<Card.Printing.Face, SoftReference<CompletableFuture<Image>>> faceCache = new HashMap<>();
+	private final Map<Card.Printing, SoftReference<CompletableFuture<Image>>> frontCache = new HashMap<>();
 
 	private static <T> File fileFor(T object) {
 		Card.Printing printing;
@@ -127,19 +127,20 @@ public class Images {
 		BufferedImage open(ImageSource source) throws IOException;
 	}
 
-	private static <T> CompletableFuture<Image> open(T key, Map<T, SoftReference<Image>> cache, ImageOpener getter, Function<BufferedImage, BufferedImage> transform) {
+	private static <T> CompletableFuture<Image> open(T key, Map<T, SoftReference<CompletableFuture<Image>>> cache, ImageOpener getter, Function<BufferedImage, BufferedImage> transform) {
 		synchronized(cache) {
-			if (!cache.containsKey(key) || cache.get(key) == null || cache.get(key).get() == null) {
-				cache.put(key, new SoftReference<>(LOADING_CARD));
-
+			SoftReference<CompletableFuture<Image>> ref = cache.get(key);
+			CompletableFuture<Image> cached = ref == null ? null : ref.get();
+			if (cached == null) {
 				CompletableFuture<Image> ret = new CompletableFuture<>();
+				cache.put(key, new SoftReference<>(ret));
+
 				IMAGE_LOAD_POOL.submit(() -> {
 					File f = fileFor(key);
 
 					try {
 						if (f.exists()) {
 							Image image = SwingFXUtils.toFXImage(ImageIO.read(f), null);
-							cache.put(key, new SoftReference<>(image));
 							ret.complete(image);
 							return;
 						} else {
@@ -150,7 +151,6 @@ public class Images {
 									if (imgSrc != null) {
 										imgSrc = transform.apply(imgSrc);
 										Image image = SwingFXUtils.toFXImage(imgSrc, null);
-										cache.put(key, new SoftReference<>(image));
 										ret.complete(image);
 
 										if (key instanceof Card.Printing || source.cacheable()) {
@@ -171,15 +171,14 @@ public class Images {
 						ioe.printStackTrace();
 					}
 
-					cache.put(key, new SoftReference<>(UNAVAILABLE_CARD));
 					ret.complete(UNAVAILABLE_CARD);
 				});
 
 				return ret;
 			}
-		}
 
-		return CompletableFuture.completedFuture(cache.get(key).get());
+			return cached;
+		}
 	}
 
 	public CompletableFuture<Image> getFace(Card.Printing.Face face) {
