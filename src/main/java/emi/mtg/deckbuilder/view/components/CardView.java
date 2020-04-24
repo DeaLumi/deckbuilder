@@ -296,6 +296,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		super(1024, 1024);
 
 		setFocusTraversable(true);
+		setManaged(true);
 
 		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());
@@ -1012,7 +1013,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	@Override
 	public double prefWidth(double height) {
-		return getWidth();
+		return Arrays.stream(groupedModel)
+				.mapToDouble(g -> Math.max(g.labelBounds.pos.x, g.groupBounds.pos.x) + Math.max(g.labelBounds.dim.x, g.groupBounds.dim.x))
+				.max()
+				.orElse(getWidth());
 	}
 
 	@Override
@@ -1027,7 +1031,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	@Override
 	public double prefHeight(double width) {
-		return getHeight();
+		return Arrays.stream(groupedModel)
+				.mapToDouble(g -> Math.max(g.labelBounds.pos.y, g.groupBounds.pos.y) + Math.max(g.labelBounds.dim.y, g.groupBounds.dim.y))
+				.max()
+				.orElse(getHeight());
 	}
 
 	@Override
@@ -1295,5 +1302,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			}
 		}
 		return renderMap;
+	}
+
+	public synchronized void renderNow() throws IllegalStateException {
+		if (!Platform.isFxApplicationThread()) {
+			throw new IllegalStateException("renderNow must be called from the FX Application thread!");
+		}
+
+		drawRenderMap(buildRenderMap());
 	}
 }
