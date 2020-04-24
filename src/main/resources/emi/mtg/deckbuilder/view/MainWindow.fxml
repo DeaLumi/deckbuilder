@@ -33,7 +33,6 @@
                     <SeparatorMenuItem/>
                     <MenuItem text="Update Deck Builder" onAction="#updateDeckbuilder"/>
                     <MenuItem text="Update Data" onAction="#updateData"/>
-                    <MenuItem text="Remodel" onAction="#remodel"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Quit" onAction="#actionQuit">
                         <accelerator>
@@ -45,6 +44,10 @@
                     <MenuItem text="Tips &amp; Tricks" onAction="#showTipsAndTricks"/>
                     <MenuItem text="Filter Syntax" onAction="#showFilterSyntax"/>
                     <MenuItem text="About" onAction="#showAboutDialog"/>
+                    <SeparatorMenuItem/>
+                    <Menu text="Debug">
+                        <MenuItem text="Remodel" onAction="#remodel"/>
+                    </Menu>
                 </Menu>
             </menus>
         </MenuBar>
