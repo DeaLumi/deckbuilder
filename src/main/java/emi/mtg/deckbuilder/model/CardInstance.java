@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.model;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardRarity;
+import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.Context;
 
 import java.io.Serializable;
@@ -20,6 +21,7 @@ public class CardInstance implements Card.Printing, Serializable {
 	}
 
 	public transient final EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
+	public transient Format.ValidationResult.CardResult lastValidation = null;
 	private final Set<String> tags = new HashSet<>();
 	private Card.Printing printing;
 

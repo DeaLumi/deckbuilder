@@ -689,6 +689,7 @@ public class MainWindow extends Stage {
 				.flatMap(ObservableList::stream)
 				.peek(ci -> {
 					Format.ValidationResult.CardResult cr = result.cards.get(ci);
+					ci.lastValidation = result.cards.get(ci);
 
 					if (cr == null) {
 						ci.flags.clear();

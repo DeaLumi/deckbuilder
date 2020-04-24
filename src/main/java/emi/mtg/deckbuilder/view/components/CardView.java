@@ -21,6 +21,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.input.*;
 import javafx.scene.paint.Color;
@@ -31,10 +32,7 @@ import javafx.stage.Screen;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -293,6 +291,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	private static boolean dragModified = false;
 	private static CardView dragSource = null, dragTarget = null;
 
+	private final Tooltip tooltip = new Tooltip();
+
 	public CardView(ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
@@ -340,7 +340,21 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.scrollY.addListener(e -> scheduleRender());
 
 		setOnMouseMoved(me -> {
+			CardInstance lastHoverCard = hoverCard;
+
 			mouseMoved(me.getX(), me.getY());
+
+			if (hoverCard != null && hoverCard.lastValidation != null) {
+				Tooltip.install(this, tooltip);
+				if (!tooltip.isShowing() || hoverCard != lastHoverCard) {
+					tooltip.setX(me.getScreenX());
+					tooltip.setY(me.getScreenY());
+					tooltip.setText(hoverCard.lastValidation.toString());
+				}
+			} else {
+				tooltip.hide();
+				Tooltip.uninstall(this, tooltip);
+			}
 
 			me.consume();
 		});
