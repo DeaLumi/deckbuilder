@@ -1050,7 +1050,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		ForkJoinPool.commonPool().submit(this::render);
 	}
 
-	protected synchronized void layout() {
+	public synchronized void layout() {
 		if (engine == null || grouping == null || model == null || groupedModel == null) {
 			return;
 		}
@@ -1145,6 +1145,84 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return; // TODO: What do we do here? Call layout manually...?
 		}
 
+		SortedMap<MVec2d, RenderStruct> renderMap = buildRenderMap();
+		Platform.runLater(() -> drawRenderMap(renderMap));
+	}
+
+	private void drawRenderMap(SortedMap<MVec2d, RenderStruct> renderMap) {
+		GraphicsContext gfx = getGraphicsContext2D();
+
+		gfx.setFill(Color.WHITE);
+		gfx.fillRect(0, 0, getWidth(), getHeight());
+
+		if (hoverGroup != null) {
+			gfx.setFill(Color.color(0.9, 0.9, 0.9));
+			gfx.fillRect(hoverGroup.groupBounds.pos.x - scrollX.get(), hoverGroup.groupBounds.pos.y - scrollY.get(),
+					hoverGroup.groupBounds.dim.x, hoverGroup.groupBounds.dim.y);
+		}
+
+		gfx.setFill(Color.BLACK);
+		gfx.setTextAlign(TextAlignment.CENTER);
+		gfx.setTextBaseline(VPos.CENTER);
+		for (int i = 0; i < groupedModel.length; ++i) {
+			if (groupedModel[i] == null || (!showEmptyGroupsProperty.get() && groupedModel[i].model.isEmpty())) {
+				continue;
+			}
+
+			String s = groupedModel[i].group.toString();
+
+			gfx.setFont(Font.font(groupedModel[i].labelBounds.dim.y));
+			gfx.fillText(String.format("%s (%d)", s, groupedModel[i].model.size()),
+					groupedModel[i].labelBounds.pos.x + groupedModel[i].labelBounds.dim.x / 2.0 - scrollX.get(),
+					groupedModel[i].labelBounds.pos.y + groupedModel[i].labelBounds.dim.y / 2.0 - scrollY.get(),
+					groupedModel[i].labelBounds.dim.x);
+		}
+
+		final double cw = cardWidth();
+		final double ch = cardHeight();
+
+		for (Map.Entry<MVec2d, RenderStruct> str : renderMap.entrySet()) {
+			gfx.drawImage(str.getValue().img, str.getKey().x, str.getKey().y, cw, ch);
+
+			boolean drewFill = false, drewOutline = false;
+
+			for (CardState state : CardState.values()) {
+				if (str.getValue().state.contains(state)) {
+					if (!drewFill && state.fillColor != Color.TRANSPARENT) {
+						drewFill = true;
+
+						gfx.setFill(state.fillColor);
+						gfx.fillRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 8.0, cw / 8.0);
+					}
+
+					if (!drewOutline && state.outlineColor != Color.TRANSPARENT) {
+						drewOutline = true;
+
+						gfx.setStroke(state.outlineColor);
+						gfx.setLineWidth(6.0);
+						gfx.strokeRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 12.0, cw / 12.0);
+					}
+				}
+			}
+		}
+
+		if (dragMode == DragMode.Selecting) {
+			double x = Math.min(dragStartX, lastDragX);
+			double y = Math.min(dragStartY, lastDragY);
+			double w = Math.max(dragStartX, lastDragX) - x;
+			double h = Math.max(dragStartY, lastDragY) - y;
+
+			gfx.setFill(Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25));
+			gfx.fillRect(x, y, w, h);
+
+			gfx.setStroke(Color.DODGERBLUE);
+			gfx.setFill(Color.TRANSPARENT);
+			gfx.setLineWidth(2.0);
+			gfx.strokeRect(x, y, w, h);
+		}
+	}
+
+	private SortedMap<MVec2d, RenderStruct> buildRenderMap() {
 		SortedMap<MVec2d, RenderStruct> renderMap = new TreeMap<>();
 		MVec2d loc = new MVec2d();
 
@@ -1207,78 +1285,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				}
 			}
 		}
-
-		Platform.runLater(() -> {
-			GraphicsContext gfx = getGraphicsContext2D();
-
-			gfx.setFill(Color.WHITE);
-			gfx.fillRect(0, 0, getWidth(), getHeight());
-
-			if (hoverGroup != null) {
-				gfx.setFill(Color.color(0.9, 0.9, 0.9));
-				gfx.fillRect(hoverGroup.groupBounds.pos.x - scrollX.get(), hoverGroup.groupBounds.pos.y - scrollY.get(),
-						hoverGroup.groupBounds.dim.x, hoverGroup.groupBounds.dim.y);
-			}
-
-			gfx.setFill(Color.BLACK);
-			gfx.setTextAlign(TextAlignment.CENTER);
-			gfx.setTextBaseline(VPos.CENTER);
-			for (int i = 0; i < groupedModel.length; ++i) {
-				if (groupedModel[i] == null || (!showEmptyGroupsProperty.get() && groupedModel[i].model.isEmpty())) {
-					continue;
-				}
-
-				String s = groupedModel[i].group.toString();
-
-				gfx.setFont(Font.font(groupedModel[i].labelBounds.dim.y));
-				gfx.fillText(String.format("%s (%d)", s, groupedModel[i].model.size()),
-						groupedModel[i].labelBounds.pos.x + groupedModel[i].labelBounds.dim.x / 2.0 - scrollX.get(),
-						groupedModel[i].labelBounds.pos.y + groupedModel[i].labelBounds.dim.y / 2.0 - scrollY.get(),
-						groupedModel[i].labelBounds.dim.x);
-			}
-
-			final double cw = cardWidth();
-			final double ch = cardHeight();
-
-			for (Map.Entry<MVec2d, RenderStruct> str : renderMap.entrySet()) {
-				gfx.drawImage(str.getValue().img, str.getKey().x, str.getKey().y, cw, ch);
-
-				boolean drewFill = false, drewOutline = false;
-
-				for (CardState state : CardState.values()) {
-					if (str.getValue().state.contains(state)) {
-						if (!drewFill && state.fillColor != Color.TRANSPARENT) {
-							drewFill = true;
-
-							gfx.setFill(state.fillColor);
-							gfx.fillRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 8.0, cw / 8.0);
-						}
-
-						if (!drewOutline && state.outlineColor != Color.TRANSPARENT) {
-							drewOutline = true;
-
-							gfx.setStroke(state.outlineColor);
-							gfx.setLineWidth(6.0);
-							gfx.strokeRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 12.0, cw / 12.0);
-						}
-					}
-				}
-			}
-
-			if (dragMode == DragMode.Selecting) {
-				double x = Math.min(dragStartX, lastDragX);
-				double y = Math.min(dragStartY, lastDragY);
-				double w = Math.max(dragStartX, lastDragX) - x;
-				double h = Math.max(dragStartY, lastDragY) - y;
-
-				gfx.setFill(Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25));
-				gfx.fillRect(x, y, w, h);
-
-				gfx.setStroke(Color.DODGERBLUE);
-				gfx.setFill(Color.TRANSPARENT);
-				gfx.setLineWidth(2.0);
-				gfx.strokeRect(x, y, w, h);
-			}
-		});
+		return renderMap;
 	}
 }
