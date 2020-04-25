@@ -22,17 +22,23 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Tooltip;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.input.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -252,6 +258,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private final ObservableList<CardInstance> model;
 	private final FilteredList<CardInstance> filteredModel;
+	private final FilteredList<CardInstance> collapsedModel;
+	private final HashMap<Card, AtomicInteger> collapseAccumulator;
 	private volatile Group[] groupedModel;
 
 	private LayoutEngine engine;
@@ -285,6 +293,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	private final DoubleProperty cardScaleProperty;
 	private final BooleanProperty showEmptyGroupsProperty;
+	private final BooleanProperty collapseDuplicatesProperty;
 	private final BooleanProperty immutableModel;
 	private final BooleanProperty showFlags;
 
@@ -301,6 +310,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());
+
+		// Collapsing duplicates might require regrouping for deck tags...
+		this.collapseDuplicatesProperty = new SimpleBooleanProperty(false);
 
 		this.showEmptyGroupsProperty = new SimpleBooleanProperty(false);
 		this.showEmptyGroupsProperty.addListener(ce -> layout());
@@ -329,9 +341,25 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.sort = convertSorts(sorts);
 		this.grouping = grouping;
 
+		this.collapseAccumulator = new HashMap<>();
 		this.model = model;
 		this.filteredModel = model.filtered(filter);
-		this.filteredModel.addListener((InvalidationListener) e -> layout());
+		this.collapsedModel = this.filteredModel.filtered(filter);
+		this.collapsedModel.addListener((InvalidationListener) e -> layout());
+
+		this.filteredModel.addListener((ListChangeListener<? super CardInstance>) e -> {
+			collapseAccumulator.clear();
+			this.collapsedModel.setPredicate(this.collapsedModel.getPredicate().and(ci -> true));
+		});
+
+		this.collapseDuplicatesProperty.addListener((prop, oldValue, newValue) -> {
+			collapseAccumulator.clear();
+			if (newValue) {
+				this.collapsedModel.setPredicate(ci -> collapseAccumulator.computeIfAbsent(ci.card(), x -> new AtomicInteger(0)).incrementAndGet() == 1);
+			} else {
+				this.collapsedModel.setPredicate(ci -> true);
+			}
+		});
 
 		grouping(grouping);
 		layout(layout);
@@ -519,7 +547,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					}
 
 					if (immutableModel.get()) {
-						if (filteredModel.stream().anyMatch(ci -> ci.card() == hoverCard.card() && ci.printing() != hoverCard.printing())) {
+						if (collapsedModel.stream().anyMatch(ci -> ci.card() == hoverCard.card() && ci.printing() != hoverCard.printing())) {
 							return; // Other versions are already represented. TODO: I hate this. Bind to CardPane's showVersionsSeparately?
 						}
 					}
@@ -533,7 +561,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							.collect(Collectors.toList()));
 					CardPane prPane = new CardPane("Variations", tmpModel, FlowGrid.Factory.INSTANCE);
 
-					final CardInstance modifyingCard = hoverCard;
+					final List<CardInstance> modifyingCards = hoverCards(hoverCard);
 					prPane.view().doubleClick(ci -> {
 						dlg.close();
 
@@ -545,9 +573,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 								throw new Error(ioe);
 							}
 						} else {
-							modifyingCard.printing(ci.printing());
+							modifyingCards.forEach(x -> x.printing(ci.printing()));
 						}
 
+						// TODO This is not great. I wish I could clone predicates, basically. Or trigger invalidation.
 						filteredModel.setPredicate(filteredModel.getPredicate().and(t -> true));
 					});
 
@@ -625,7 +654,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					if (!me.isControlDown()) {
 						selectedCards.clear();
 					}
-					selectedCards.add(hoverCard);
+					selectedCards.addAll(hoverCards(hoverCard));
 				}
 			} else if (me.getButton() == MouseButton.MIDDLE) {
 				if (hoverCard == null) {
@@ -689,6 +718,14 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			scheduleRender();
 		});
+	}
+
+	private List<CardInstance> hoverCards(CardInstance ci) {
+		if (!collapseDuplicatesProperty.get()) return Collections.singletonList(ci);
+
+		return filteredModel.stream()
+				.filter(x -> x.printing() == ci.printing())
+				.collect(Collectors.toList());
 	}
 
 	private void mouseMoved(double x, double y) {
@@ -812,7 +849,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				}
 
 				if (cardInBounds(loc, x1s, y1s, x2s, y2s)) {
-					selectedCards.add(groupedModel[i].model.get(j));
+					selectedCards.addAll(hoverCards(groupedModel[i].model.get(j)));
 				}
 			}
 		}
@@ -821,7 +858,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private MVec2d cardCoordinatesOf(double x, double y) {
-		if (this.engine == null || filteredModel.size() == 0) {
+		if (this.engine == null || collapsedModel.size() == 0) {
 			return null;
 		}
 
@@ -853,7 +890,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private CardInstance cardAt(double x, double y) {
-		if (this.engine == null || filteredModel.size() == 0) {
+		if (this.engine == null || collapsedModel.size() == 0) {
 			return null;
 		}
 
@@ -889,7 +926,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public void grouping(Grouping grouping) {
 		this.grouping = grouping;
 		this.groupedModel = Arrays.stream(this.grouping.groups(this))
-				.map(g -> new Group(g, this.filteredModel, this.sort))
+				.map(g -> new Group(g, this.collapsedModel, this.sort))
 				.toArray(Group[]::new);
 		layout();
 	}
@@ -972,6 +1009,10 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public DoubleProperty cardScaleProperty() {
 		return cardScaleProperty;
+	}
+
+	public BooleanProperty collapseDuplicatesProperty() {
+		return collapseDuplicatesProperty;
 	}
 
 	public BooleanProperty showEmptyGroupsProperty() {
@@ -1144,10 +1185,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	static class RenderStruct {
 		public final Image img;
 		public final EnumSet<CardState> state;
+		private final int count;
 
-		public RenderStruct(Image img, EnumSet<CardState> states) {
+		public RenderStruct(Image img, EnumSet<CardState> states, int count) {
 			this.img = img;
 			this.state = states;
+			this.count = count;
 		}
 	}
 
@@ -1167,7 +1210,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return;
 		}
 
-		if (filteredModel == null || filteredModel.isEmpty()) {
+		if (collapsedModel == null || collapsedModel.isEmpty()) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
 				gfx.setFill(Color.WHITE);
@@ -1242,6 +1285,18 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 						gfx.strokeRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 12.0, cw / 12.0);
 					}
 				}
+			}
+
+			if (str.getValue().count != 1) {
+				gfx.setTextAlign(TextAlignment.RIGHT);
+				gfx.setFill(Color.WHITE);
+				gfx.setEffect(new DropShadow(8.0, Color.BLACK));
+				gfx.setFont(Font.font(null, FontWeight.BOLD,null, ch / 12.0));
+				gfx.fillText(String.format("x%d", str.getValue().count),
+						str.getKey().x + cw * 0.95,
+						str.getKey().y + cw * 0.075,
+						cw);
+				gfx.setEffect(null);
 			}
 		}
 
@@ -1331,7 +1386,12 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					}
 				}
 
-				renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.LOADING_CARD), states));
+				int count = 1;
+				if (collapseDuplicatesProperty.get() && collapseAccumulator.containsKey(ci.card())) {
+					count = collapseAccumulator.get(ci.card()).get();
+				}
+
+				renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.LOADING_CARD), states, count));
 			}
 		}
 		return renderMap;

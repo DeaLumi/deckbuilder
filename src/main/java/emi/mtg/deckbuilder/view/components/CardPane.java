@@ -208,6 +208,9 @@ public class CardPane extends BorderPane {
 		CheckMenuItem showVersionsSeparately = new CheckMenuItem("Show Versions Separately");
 		showVersionsSeparately.selectedProperty().bindBidirectional(this.showVersionsSeparately);
 
+		CheckMenuItem collapseDuplicates = new CheckMenuItem("Collapse Duplicates");
+		collapseDuplicates.selectedProperty().bindBidirectional(cardView.collapseDuplicatesProperty());
+
 		deckMenu.getItems().add(groupingMenu);
 		deckMenu.getItems().add(displayMenu);
 		deckMenu.getItems().add(sortButton);
@@ -218,6 +221,7 @@ public class CardPane extends BorderPane {
 		deckMenu.getItems().add(showIllegalCards);
 		deckMenu.getItems().add(findOtherCards);
 		deckMenu.getItems().add(showVersionsSeparately);
+		deckMenu.getItems().add(collapseDuplicates);
 
 		final TextField filter = new TextField();
 		filter.setPromptText("Omnifilter...");
