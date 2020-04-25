@@ -15,6 +15,11 @@ public class FlowGrid implements CardView.LayoutEngine {
 		public String name() {
 			return "Flow Grid";
 		}
+
+		@Override
+		public String toString() {
+			return name();
+		}
 	}
 
 	private final CardView parent;

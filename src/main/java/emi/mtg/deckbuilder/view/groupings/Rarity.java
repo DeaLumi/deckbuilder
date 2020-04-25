@@ -25,6 +25,11 @@ public class Rarity extends CharacteristicGrouping implements CardView.Grouping 
 	}
 
 	@Override
+	public String toString() {
+		return name();
+	}
+
+	@Override
 	public String[] groupValues() {
 		return GROUPS;
 	}

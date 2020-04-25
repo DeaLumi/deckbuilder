@@ -69,6 +69,11 @@ public class DeckTagsGrouping implements CardView.Grouping {
 	}
 
 	@Override
+	public String toString() {
+		return name();
+	}
+
+	@Override
 	public Group[] groups(CardView view) {
 		Deque<Group> groups = view.model().stream()
 				.map(CardInstance::tags)

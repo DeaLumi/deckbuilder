@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<fx:root type="DialogPane" xmlns="http://javafx.com/javafx"
+         xmlns:fx="http://javafx.com/fxml"
+         fx:controller="emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter">
+    <content>
+        <GridPane vgap="8.0" hgap="8.0" fx:id="grid">
+            <Label GridPane.rowIndex="0" GridPane.columnIndex="0" text="Collapse Copies:" GridPane.halignment="RIGHT"/>
+            <CheckBox GridPane.rowIndex="0" GridPane.columnIndex="1" fx:id="collapseCopies" selected="true"/>
+
+            <Label GridPane.rowIndex="1" GridPane.columnIndex="0" text="Card Scale:" GridPane.halignment="RIGHT"/>
+            <Slider GridPane.rowIndex="1" GridPane.columnIndex="1" min="0.1" value="0.8" max="2.0" fx:id="cardScale"/>
+
+            <Label GridPane.rowIndex="2" GridPane.columnIndex="0" text="Size Hint:" GridPane.halignment="RIGHT"/>
+            <FlowPane GridPane.rowIndex="2" GridPane.columnIndex="1">
+                <Spinner amountToStepBy="50" min="100" max="10000" fx:id="widthHint"/>
+                <Text text=" x "/>
+                <Spinner amountToStepBy="50" min="100" max="10000" fx:id="heightHint"/>
+            </FlowPane>
+        </GridPane>
+    </content>
+</fx:root>

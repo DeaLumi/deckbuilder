@@ -15,6 +15,11 @@ public class Piles implements CardView.LayoutEngine {
 		public String name() {
 			return "Piles";
 		}
+
+		@Override
+		public String toString() {
+			return name();
+		}
 	}
 
 	private final static double OVERLAP_FACTOR = 0.110;

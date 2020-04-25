@@ -58,4 +58,9 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 	public boolean supportsModification() {
 		return false;
 	}
+
+	@Override
+	public String toString() {
+		return name();
+	}
 }

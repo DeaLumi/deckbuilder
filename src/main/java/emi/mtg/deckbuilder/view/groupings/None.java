@@ -36,6 +36,11 @@ public class None implements CardView.Grouping {
 	}
 
 	@Override
+	public String toString() {
+		return name();
+	}
+
+	@Override
 	public Group[] groups(CardView unused) {
 		return GROUPS;
 	}

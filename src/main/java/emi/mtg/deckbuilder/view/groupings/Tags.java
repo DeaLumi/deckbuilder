@@ -66,6 +66,11 @@ public class Tags implements CardView.Grouping {
 	}
 
 	@Override
+	public String toString() {
+		return name();
+	}
+
+	@Override
 	public Group[] groups(CardView unused) {
 		Set<String> allTags = Context.get().tags.tags();
 		Group[] groups = new Group[allTags.size() + 1];

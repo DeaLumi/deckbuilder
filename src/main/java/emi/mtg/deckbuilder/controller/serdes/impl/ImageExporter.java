@@ -9,15 +9,21 @@ import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.layouts.Piles;
+import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import emi.mtg.deckbuilder.view.util.FxUtils;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.fxml.FXML;
+import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -27,10 +33,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -52,6 +55,8 @@ public class ImageExporter implements DeckImportExport {
 
 	@Override
 	public void exportDeck(DeckList deck, File to) throws IOException {
+		if (!promptForOptions(deck.format().deckZones())) return;
+
 		// Prefetch all deck images.
 		CompletableFuture[] futures = deck.cards().values().stream()
 				.flatMap(List::stream)
@@ -79,13 +84,13 @@ public class ImageExporter implements DeckImportExport {
 			if (zone.getValue().isEmpty()) continue;
 
 			CardView view = new CardView(zone.getValue(),
-					zone.getKey() == Zone.Command ? FlowGrid.Factory.INSTANCE : Piles.Factory.INSTANCE,
-					Context.get().preferences.zoneGroupings.getOrDefault(zone.getKey(), ConvertedManaCost.INSTANCE),
+					zoneLayouts.get(zone.getKey()).getValue(),
+					zoneGroupings.get(zone.getKey()).getValue(),
 					CardView.DEFAULT_SORTING);
 			view.showFlagsProperty().set(false);
-			view.collapseDuplicatesProperty().set(true);
-			view.cardScaleProperty().set(0.85);
-			view.resize(1800.0, 1800.0);
+			view.collapseDuplicatesProperty().set(collapseCopies.isSelected());
+			view.cardScaleProperty().set(cardScale.getValue());
+			view.resize(widthHint.getValue().doubleValue(), heightHint.getValue().doubleValue());
 			view.resize(view.prefWidth(-1), view.prefHeight(1800.0));
 			view.layout();
 			view.renderNow();
@@ -124,5 +129,88 @@ public class ImageExporter implements DeckImportExport {
 	@Override
 	public EnumSet<Feature> supportedFeatures() {
 		return EnumSet.of(Feature.OtherZones, Feature.CardArt, Feature.Export);
+	}
+
+	private final Alert alert;
+
+	@FXML
+	protected CheckBox collapseCopies;
+
+	@FXML
+	protected Slider cardScale;
+
+	@FXML
+	protected Spinner<Integer> widthHint;
+
+	@FXML
+	protected Spinner<Integer> heightHint;
+
+	@FXML
+	protected GridPane grid;
+
+	private Map<Zone, Label> zoneLabels = new EnumMap<>(Zone.class);
+	private Map<Zone, FlowPane> zoneFlows = new EnumMap<>(Zone.class);
+	private Map<Zone, ComboBox<CardView.LayoutEngine.Factory>> zoneLayouts = new EnumMap<>(Zone.class);
+	private Map<Zone, ComboBox<CardView.Grouping>> zoneGroupings = new EnumMap<>(Zone.class);
+
+	public ImageExporter() {
+		alert = AlertBuilder.query(null)
+				.buttons(ButtonType.OK, ButtonType.CANCEL)
+				.title("Image Export Settings")
+				.headerText("Please enter image export settings.")
+				.get();
+
+		FxUtils.FXML(this, alert.getDialogPane());
+
+		widthHint.getValueFactory().setValue(4000);
+		heightHint.getValueFactory().setValue(4000);
+
+		int i = 3;
+		for (Zone zone : Zone.values()) {
+			Label label = new Label(String.format("%s:", zone.name()));
+			GridPane.setHalignment(label, HPos.RIGHT);
+			grid.add(label, 0, i);
+
+			Label layoutLabel = new Label("Layout:");
+			ComboBox<CardView.LayoutEngine.Factory> layout = new ComboBox<>(FXCollections.observableList(CardView.LAYOUT_ENGINES));
+			layout.getSelectionModel().select(zone == Zone.Command ? FlowGrid.Factory.INSTANCE : Piles.Factory.INSTANCE);
+
+			Label groupingLabel = new Label("Grouping:");
+			ComboBox<CardView.Grouping> grouping = new ComboBox<>(FXCollections.observableList(CardView.GROUPINGS));
+			grouping.getSelectionModel().select(Context.get().preferences.zoneGroupings.getOrDefault(zone, ConvertedManaCost.INSTANCE));
+
+			zoneLabels.put(zone, label);
+			zoneFlows.put(zone, new FlowPane(2.0, 0.0, layoutLabel, layout, groupingLabel, grouping));
+			zoneLayouts.put(zone, layout);
+			zoneGroupings.put(zone, grouping);
+
+			grid.add(zoneFlows.get(zone), 1, i);
+			++i;
+		}
+
+	}
+
+	private boolean promptForOptions(Collection<Zone> zones) {
+		int i = 3;
+		for (Zone zone : Zone.values()) {
+			if (zones.contains(zone)) {
+				GridPane.setRowIndex(zoneLabels.get(zone), i);
+				zoneLabels.get(zone).setManaged(true);
+				zoneLabels.get(zone).setVisible(true);
+				GridPane.setRowIndex(zoneFlows.get(zone), i);
+				zoneFlows.get(zone).setManaged(true);
+				zoneFlows.get(zone).setVisible(true);
+				++i;
+			} else {
+				GridPane.setRowIndex(zoneLabels.get(zone), 0);
+				zoneLabels.get(zone).setManaged(false);
+				zoneLabels.get(zone).setVisible(false);
+				GridPane.setRowIndex(zoneFlows.get(zone), 0);
+				zoneFlows.get(zone).setManaged(false);
+				zoneFlows.get(zone).setVisible(false);
+			}
+		}
+
+		return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
 	}
 }
