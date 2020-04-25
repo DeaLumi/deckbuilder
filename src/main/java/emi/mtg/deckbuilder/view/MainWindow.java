@@ -27,14 +27,11 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -88,50 +85,6 @@ public class MainWindow extends Stage {
 		setTitle("Deck Builder v0.0.0");
 		setScene(new Scene(root, 1024, 1024));
 
-		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
-			boolean deckSaved = true;
-
-			try {
-				primarySerdes.exportDeck(deck, new File("emergency-dump.json"));
-			} catch (Throwable t) {
-				e.addSuppressed(t);
-				deckSaved = false;
-			}
-
-			e.printStackTrace();
-			e.printStackTrace(new PrintWriter(System.out));
-
-			StringWriter stackTrace = new StringWriter();
-			e.printStackTrace(new PrintWriter(stackTrace));
-
-			Alert alert = new Alert(Alert.AlertType.ERROR);
-			alert.initOwner(this);
-
-			alert.setTitle("Uncaught Exception");
-			alert.setHeaderText("An internal error has occurred.");
-
-			alert.setContentText(
-					"Something went wrong!\n" +
-							"\n" +
-							"I have no idea if the application will be able to keep running.\n" +
-							(deckSaved ?
-									"Your deck has been emergency-saved to 'emergency-dump.json' in the deckbuilder directory.\n" :
-									"Something went even more wrong while we tried to save your deck. Sorry. D:\n"
-							) +
-							"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
-							"If you're the nerdy type, tech details follow.\n" +
-							"\n" +
-							"Thread: " + x.getName() + " / " + x.getId() + "\n" +
-							"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
-							"\n" +
-							"Full stack trace written to standard out and standard error (usually err.txt)."
-			);
-
-			alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
-
-			alert.showAndWait();
-		});
-
 		setOnCloseRequest(we -> {
 			if (!offerSaveIfModified()) {
 				we.consume();
@@ -156,6 +109,13 @@ public class MainWindow extends Stage {
 
 		alert.getButtonTypes().setAll(ButtonType.CLOSE);
 		alert.hide();
+	}
+
+	void emergencySave() throws IOException {
+		primarySerdes.exportDeck(deck,
+				currentDeckFile == null ?
+						File.createTempFile("emergency-save-", ".json", new File("null").getParentFile()) :
+						currentDeckFile);
 	}
 
 	private CardPane deckPane(Zone zone) {

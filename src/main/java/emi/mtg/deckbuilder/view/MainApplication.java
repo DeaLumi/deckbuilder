@@ -12,9 +12,12 @@ import javafx.event.ActionEvent;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -85,6 +88,52 @@ public class MainApplication extends Application {
 	public void start(Stage primaryStage) throws Exception {
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
+
+		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
+			boolean deckSaved = true;
+
+			for (MainWindow child : mainWindows) {
+				try {
+					child.emergencySave();
+				} catch (Throwable t) {
+					e.addSuppressed(t);
+					deckSaved = false;
+				}
+			}
+
+			e.printStackTrace();
+			e.printStackTrace(new PrintWriter(System.out));
+
+			StringWriter stackTrace = new StringWriter();
+			e.printStackTrace(new PrintWriter(stackTrace));
+
+			Alert alert = new Alert(Alert.AlertType.ERROR);
+			alert.initOwner(hostStage);
+
+			alert.setTitle("Uncaught Exception");
+			alert.setHeaderText("An internal error has occurred.");
+
+			alert.setContentText(
+					"Something went wrong!\n" +
+							"\n" +
+							"I have no idea if the application will be able to keep running.\n" +
+							(deckSaved ?
+									"Your decks have been emergency-saved to 'emergency-save-XXXXXXXX.json' in the deckbuilder directory.\n" :
+									"Something went even more wrong while we tried to save your decks. Sorry. D:\n"
+							) +
+							"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
+							"If you're the nerdy type, tech details follow.\n" +
+							"\n" +
+							"Thread: " + x.getName() + " / " + x.getId() + "\n" +
+							"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
+							"\n" +
+							"Full stack trace written to standard out and standard error (usually err.txt)."
+			);
+
+			alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
+
+			alert.showAndWait();
+		});
 
 		hostStage.setOnCloseRequest(ev -> {
 			try {
