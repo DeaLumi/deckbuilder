@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class MainWindow extends Stage {
 	@FXML
@@ -57,7 +56,7 @@ public class MainWindow extends Stage {
 	private DeckImportExport primarySerdes;
 	private File currentDeckFile;
 
-	private Map<FileChooser.ExtensionFilter, DeckImportExport> deckSerdes;
+	private Map<FileChooser.ExtensionFilter, DeckImportExport> importSerdes, exportSerdes;
 	private FileChooser serdesFileChooser;
 	private final MainApplication owner;
 
@@ -210,14 +209,20 @@ public class MainWindow extends Stage {
 			this.newDeckMenu.getItems().add(item);
 		}
 
-		this.deckSerdes = StreamSupport.stream(ServiceLoader.load(DeckImportExport.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
-				.collect(Collectors.toMap(
-						vies -> new FileChooser.ExtensionFilter(String.format("%s (*.%s)", vies.toString(), vies.extension()), String.format("*.%s", vies.extension())),
-						vies -> vies
-				));
-
 		this.serdesFileChooser = new FileChooser();
-		this.serdesFileChooser.getExtensionFilters().setAll(this.deckSerdes.keySet());
+		this.importSerdes = new HashMap<>();
+		this.exportSerdes = new HashMap<>();
+
+		Iterator<DeckImportExport> serdes = ServiceLoader.load(DeckImportExport.class, MainApplication.PLUGIN_CLASS_LOADER).iterator();
+		while (serdes.hasNext()) {
+			DeckImportExport s = serdes.next();
+			if (s.supportedFeatures().contains(DeckImportExport.Feature.Import)) {
+				this.importSerdes.put(new FileChooser.ExtensionFilter(s.toString(), "*." + s.extension()), s);
+			}
+			if (s.supportedFeatures().contains(DeckImportExport.Feature.Export)) {
+				this.exportSerdes.put(new FileChooser.ExtensionFilter(s.toString(), "*." + s.extension()), s);
+			}
+		}
 	}
 
 	private CardView.ContextMenu createDeckContextMenu(Zone zone) {
@@ -805,13 +810,14 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void importDeck() {
+		serdesFileChooser.getExtensionFilters().setAll(importSerdes.keySet());
 		File f = serdesFileChooser.showOpenDialog(this);
 
 		if (f == null) {
 			return;
 		}
 
-		DeckImportExport importer = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
+		DeckImportExport importer = importSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
 		EnumSet<DeckImportExport.Feature> unsupported = EnumSet.complementOf(importer.supportedFeatures());
 		if (!unsupported.isEmpty()) {
@@ -827,6 +833,7 @@ public class MainWindow extends Stage {
 			} else {
 				new MainWindow(this.owner, list).show();
 			}
+			serdesFileChooser.setInitialDirectory(f.getParentFile());
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			AlertBuilder.notify(this)
@@ -840,13 +847,14 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void exportDeck() {
+		serdesFileChooser.getExtensionFilters().setAll(exportSerdes.keySet());
 		File f = serdesFileChooser.showSaveDialog(this);
 
 		if (f == null) {
 			return;
 		}
 
-		DeckImportExport exporter = deckSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
+		DeckImportExport exporter = exportSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
 		EnumSet<DeckImportExport.Feature> unsupported = EnumSet.complementOf(exporter.supportedFeatures());
 		if (!unsupported.isEmpty()) {
@@ -857,6 +865,7 @@ public class MainWindow extends Stage {
 
 		try {
 			exporter.exportDeck(deck, f);
+			serdesFileChooser.setInitialDirectory(f.getParentFile());
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			AlertBuilder.notify(this)
