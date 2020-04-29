@@ -96,10 +96,11 @@ public class MainApplication extends Application {
 			"Check the plugins/ directory for a data source plugin.",
 			"At bare minimum, scryfall-0.0.0.jar should be provided!");
 
-	private static final String TOO_MANY_DATA_SOURCES = String.join("\n",
-			"Multiple data sources are available!",
-			"Currently, only one data source is allowed.",
-			"Please remove any extra data source plugins!");
+	private static final String STALE_DATA_LOAD_ERROR = String.join("\n",
+			"An error occurred while loading card data.",
+			"The data source reports that it may be out of date.",
+			"",
+			"Try updating card data?");
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
@@ -193,7 +194,20 @@ public class MainApplication extends Application {
 				.headerText("Loading card data...")
 				.contentText("Please wait a moment!")
 				.show();
-		Context.instantiate(data);
+		try {
+			Context.instantiate(data);
+		} catch (IOException ioe) {
+			if (data.needsUpdate() && AlertBuilder.query(hostStage)
+						.title("Data Load Error")
+						.headerText("Unable to load (possibly stale) data.")
+						.contentText(STALE_DATA_LOAD_ERROR)
+						.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+				doGraphicalDataUpdate(data);
+				Context.instantiate(data);
+			} else {
+				throw ioe;
+			}
+		}
 		alert.getButtonTypes().setAll(ButtonType.CLOSE);
 		alert.hide();
 
@@ -213,7 +227,7 @@ public class MainApplication extends Application {
 					.headerText("New card data may be available.")
 					.contentText("Would you like to update?")
 					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-				doGraphicalDataUpdate();
+				doGraphicalDataUpdate(null);
 			}
 		}
 
@@ -294,10 +308,10 @@ public class MainApplication extends Application {
 			return;
 		}
 
-		doGraphicalDataUpdate();
+		doGraphicalDataUpdate(null);
 	}
 
-	public void doGraphicalDataUpdate() {
+	public void doGraphicalDataUpdate(DataSource earlyData) {
 		Alert progressDialog = AlertBuilder.create()
 				.type(Alert.AlertType.NONE)
 				.title("Updating")
@@ -310,11 +324,13 @@ public class MainApplication extends Application {
 		progressDialog.getDialogPane().setContent(pbar);
 		progressDialog.getDialogPane().setPrefWidth(256.0);
 
+		DataSource data = earlyData == null ? Context.get().data : earlyData;
+
 		ForkJoinPool.commonPool().submit(() -> {
 			try {
-				Context.get().saveTags();
-				if (Context.get().data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
-					Context.get().data.loadData();
+				if (earlyData == null) Context.get().saveTags();
+				if (data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
+					data.loadData();
 					Platform.runLater(() -> {
 						progressDialog.close();
 
@@ -322,10 +338,12 @@ public class MainApplication extends Application {
 							child.remodel();
 						}
 
-						try {
-							Context.get().loadTags();
-						} catch (IOException ioe) {
-							throw new Error(ioe);
+						if (earlyData == null) {
+							try {
+								Context.get().loadTags();
+							} catch (IOException ioe) {
+								throw new Error(ioe);
+							}
 						}
 					});
 				}
