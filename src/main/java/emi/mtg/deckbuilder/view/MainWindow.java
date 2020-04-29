@@ -299,6 +299,7 @@ public class MainWindow extends Stage {
 					pane.model().addListener(deckListChangedListener);
 					pane.view().doubleClick(ci -> pane.model().remove(ci));
 					pane.view().contextMenu(createDeckContextMenu(z));
+					pane.view().collapseDuplicatesProperty().set(Context.get().preferences.collapseDuplicates);
 					return pane;
 				})
 				.collect(Collectors.toList()));

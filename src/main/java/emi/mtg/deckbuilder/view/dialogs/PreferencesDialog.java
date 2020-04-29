@@ -11,6 +11,9 @@ import java.net.URI;
 
 public class PreferencesDialog extends Dialog<Boolean> {
 	@FXML
+	private CheckBox collapseDuplicates;
+
+	@FXML
 	private TextField authorName;
 
 	@FXML
@@ -32,10 +35,11 @@ public class PreferencesDialog extends Dialog<Boolean> {
 		setTitle("Deck Builder Preferences");
 
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("PreferencesDialog.fxml"));
-		loader.setController(this);
+		loader.setControllerFactory(x -> this);
 		loader.setRoot(getDialogPane());
 		loader.load();
 
+		collapseDuplicates.setSelected(prefs.collapseDuplicates);
 		authorName.setText(prefs.authorName);
 		defaultFormat.getItems().setAll(Format.values());
 		defaultFormat.getSelectionModel().select(prefs.defaultFormat);
@@ -48,6 +52,7 @@ public class PreferencesDialog extends Dialog<Boolean> {
 
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
+				prefs.collapseDuplicates = collapseDuplicates.isSelected();
 				prefs.authorName = authorName.getText();
 				prefs.defaultFormat = defaultFormat.getValue();
 				prefs.theFutureIsNow = theFutureIsNow.isSelected();

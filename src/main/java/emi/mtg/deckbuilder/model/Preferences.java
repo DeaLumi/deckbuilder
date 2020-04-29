@@ -26,4 +26,6 @@ public class Preferences {
 
 	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
 	public Map<Zone, CardView.Grouping> zoneGroupings = Collections.singletonMap(Zone.Command, CardTypeGroup.INSTANCE);
+
+	public boolean collapseDuplicates = true;
 }
