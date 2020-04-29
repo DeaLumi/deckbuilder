@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.view;
 
+import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -25,16 +26,13 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class MainApplication extends Application {
 	public static final ClassLoader PLUGIN_CLASS_LOADER;
-
-	private final HashSet<MainWindow> mainWindows = new HashSet<>();
 
 	static {
 		ClassLoader tmp;
@@ -51,6 +49,15 @@ public class MainApplication extends Application {
 		}
 		PLUGIN_CLASS_LOADER = tmp;
 	}
+
+	public static final List<DataSource> DATA_SOURCES = findDataSources();
+	private static List<DataSource> findDataSources() {
+		return Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(DataSource.class, PLUGIN_CLASS_LOADER).spliterator(), true)
+				.sorted(Comparator.comparing(Object::toString))
+				.collect(Collectors.toList()));
+	}
+
+	private final HashSet<MainWindow> mainWindows = new HashSet<>();
 
 	private final Updater updater;
 	private Stage hostStage;
@@ -83,6 +90,16 @@ public class MainApplication extends Application {
 			quit();
 		}
 	}
+
+	private static final String NO_DATA_SOURCES = String.join("\n",
+			"No data sources are available!",
+			"Check the plugins/ directory for a data source plugin.",
+			"At bare minimum, scryfall-0.0.0.jar should be provided!");
+
+	private static final String TOO_MANY_DATA_SOURCES = String.join("\n",
+			"Multiple data sources are available!",
+			"Currently, only one data source is allowed.",
+			"Please remove any extra data source plugins!");
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
@@ -143,13 +160,40 @@ public class MainApplication extends Application {
 			}
 		});
 
+		DataSource data;
+		if (DATA_SOURCES.size() == 0) {
+			AlertBuilder.notify(hostStage)
+					.type(Alert.AlertType.ERROR)
+					.title("No Data Sources")
+					.headerText("No data source is available!")
+					.contentText(NO_DATA_SOURCES)
+					.showAndWait();
+
+			Platform.exit();
+			return;
+		} else if (DATA_SOURCES.size() > 1) {
+			ChoiceDialog<DataSource> dialog = new ChoiceDialog<>(DATA_SOURCES.get(0), DATA_SOURCES.toArray(new DataSource[0]));
+			dialog.initOwner(hostStage);
+			dialog.setTitle("Select Data Source");
+			dialog.setHeaderText("Multiple data sources available.");
+			dialog.setContentText("Please select a data source:");
+			data = dialog.showAndWait().orElse(null);
+
+			if (data == null) {
+				Platform.exit();
+				return;
+			}
+		} else {
+			data = DATA_SOURCES.get(0);
+		}
+
 		Alert alert = AlertBuilder.create()
 				.owner(hostStage)
 				.title("Loading")
 				.headerText("Loading card data...")
 				.contentText("Please wait a moment!")
 				.show();
-		Context.instantiate();
+		Context.instantiate(data);
 		alert.getButtonTypes().setAll(ButtonType.CLOSE);
 		alert.hide();
 
@@ -270,6 +314,7 @@ public class MainApplication extends Application {
 			try {
 				Context.get().saveTags();
 				if (Context.get().data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
+					Context.get().data.loadData();
 					Platform.runLater(() -> {
 						progressDialog.close();
 

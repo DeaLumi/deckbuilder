@@ -80,7 +80,7 @@ public class Images {
 	private static final List<ImageSource> sources;
 
 	static {
-		sources = StreamSupport.stream(ServiceLoader.load(ImageSource.class).spliterator(), false)
+		sources = StreamSupport.stream(ServiceLoader.load(ImageSource.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
 				.sorted(Comparator.comparing(s -> -s.priority()))
 				.collect(Collectors.toList());
 	}

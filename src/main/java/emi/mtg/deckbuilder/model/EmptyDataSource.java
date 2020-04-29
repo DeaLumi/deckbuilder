@@ -14,6 +14,16 @@ import java.util.function.DoubleConsumer;
  */
 public class EmptyDataSource implements DataSource {
 	@Override
+	public String toString() {
+		return "Dummy Data (Empty)";
+	}
+
+	@Override
+	public void loadData() throws IOException {
+		// No-op
+	}
+
+	@Override
 	public Set<? extends Card> cards() {
 		return Collections.emptySet();
 	}

@@ -5,8 +5,6 @@ import com.google.gson.GsonBuilder;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
-import emi.lib.mtg.scryfall.ScryfallDataSource;
-import emi.mtg.deckbuilder.model.EmptyDataSource;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.Images;
@@ -26,13 +24,13 @@ public class Context {
 
 	private static Context instance;
 
-	public static void instantiate() throws IOException {
+	public static void instantiate(DataSource data) throws IOException {
 		synchronized (Context.class) {
 			if (instance != null) {
 				throw new IllegalStateException("Attempt to reinitialize context!");
 			}
 
-			instance = new Context();
+			instance = new Context(data);
 		}
 	}
 
@@ -55,14 +53,9 @@ public class Context {
 	public final Preferences preferences;
 	public final State state;
 
-	public Context() throws IOException {
-		DataSource data;
-		try {
-			data = new ScryfallDataSource();
-		} catch (IOException ioe) {
-			data = new EmptyDataSource();
-		}
+	public Context(DataSource data) throws IOException {
 		this.data = data;
+		this.data.loadData();
 
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
