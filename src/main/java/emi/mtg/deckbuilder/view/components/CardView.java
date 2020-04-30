@@ -1253,8 +1253,18 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 			String s = groupedModel[i].group.toString();
 
+			int size;
+			if (collapseDuplicatesProperty.get()) {
+				size = 0;
+				for (CardInstance ci : groupedModel[i].model) {
+					size += filteredModel.stream().filter(x -> ci.card() == x.card()).count();
+				}
+			} else {
+				size = groupedModel[i].model.size();
+			}
+
 			gfx.setFont(Font.font(groupedModel[i].labelBounds.dim.y));
-			gfx.fillText(String.format("%s (%d)", s, groupedModel[i].model.size()),
+			gfx.fillText(String.format("%s (%d)", s, size),
 					groupedModel[i].labelBounds.pos.x + groupedModel[i].labelBounds.dim.x / 2.0 - scrollX.get(),
 					groupedModel[i].labelBounds.pos.y + groupedModel[i].labelBounds.dim.y / 2.0 - scrollY.get(),
 					groupedModel[i].labelBounds.dim.x);
