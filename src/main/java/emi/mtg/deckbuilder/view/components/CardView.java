@@ -721,6 +721,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	}
 
 	private List<CardInstance> hoverCards(CardInstance ci) {
+		if (ci == null) return Collections.emptyList();
 		if (!collapseDuplicatesProperty.get()) return Collections.singletonList(ci);
 
 		return filteredModel.stream()
