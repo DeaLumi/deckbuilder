@@ -60,6 +60,7 @@ public class Context {
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
 				.registerTypeAdapter(CardView.Grouping.class, TypeAdapters.createCardViewGroupingAdapter())
+				.registerTypeAdapter(CardView.ActiveSorting.class, TypeAdapters.createActiveSortingTypeAdapter())
 				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter(this.data))
 				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter())
 				.registerTypeAdapter(Path.class, TypeAdapters.createPathTypeAdapter())

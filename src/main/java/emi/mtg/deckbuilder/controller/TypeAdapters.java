@@ -134,6 +134,43 @@ public class TypeAdapters {
 		};
 	}
 
+	public static TypeAdapter<CardView.ActiveSorting> createActiveSortingTypeAdapter() {
+		return new TypeAdapter<CardView.ActiveSorting>() {
+			@Override
+			public void write(JsonWriter out, CardView.ActiveSorting value) throws IOException {
+				out.value(String.format("%s%s", value.descending.get() ? "+" : "-", value.toString()));
+			}
+
+			@Override
+			public CardView.ActiveSorting read(JsonReader in) throws IOException {
+				String val;
+				switch (in.peek()) {
+					case STRING:
+						val = in.nextString();
+						break;
+					case NAME:
+						val = in.nextName();
+						break;
+					default:
+						assert false;
+						return null;
+				}
+
+				boolean descending = val.startsWith("+");
+				CardView.Sorting sorting = CardView.SORTINGS.stream()
+						.filter(s -> val.substring(1).equals(s.toString()))
+						.findAny()
+						.orElse(null);
+
+				if (sorting == null) {
+					return null;
+				} else {
+					return new CardView.ActiveSorting(sorting, descending);
+				}
+			}
+		};
+	}
+
 	public static TypeAdapterFactory createPropertyTypeAdapterFactory() {
 		return new TypeAdapterFactory() {
 			@Override

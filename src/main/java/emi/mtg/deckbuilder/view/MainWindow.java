@@ -187,7 +187,7 @@ public class MainWindow extends Stage {
 				FXCollections.observableArrayList(),
 				FlowGrid.Factory.INSTANCE,
 				Context.get().preferences.collectionGrouping,
-				CardView.DEFAULT_COLLECTION_SORTING);
+				Context.get().preferences.collectionSorting);
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.view().contextMenu(collectionContextMenu);

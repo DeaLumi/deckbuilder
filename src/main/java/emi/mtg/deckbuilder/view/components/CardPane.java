@@ -177,6 +177,7 @@ public class CardPane extends BorderPane {
 		MenuItem sortButton = new MenuItem("Sort");
 		sortButton.setOnAction(ae -> {
 			SortDialog dlg = new SortDialog(this.cardView.sort());
+			dlg.initOwner(CardPane.this.getScene().getWindow());
 			dlg.showAndWait()
 					.ifPresent(s -> {
 						this.cardView.sort(s);

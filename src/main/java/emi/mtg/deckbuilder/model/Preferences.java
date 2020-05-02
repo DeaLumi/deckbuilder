@@ -7,10 +7,7 @@ import emi.mtg.deckbuilder.view.groupings.CardTypeGroup;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class Preferences {
 	public HashMap<String, UUID> preferredPrintings = new HashMap<>();
@@ -25,6 +22,7 @@ public class Preferences {
 	public String authorName = "";
 
 	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
+	public List<CardView.ActiveSorting> collectionSorting = CardView.DEFAULT_COLLECTION_SORTING;
 	public Map<Zone, CardView.Grouping> zoneGroupings = Collections.singletonMap(Zone.Command, CardTypeGroup.INSTANCE);
 
 	public boolean collapseDuplicates = true;

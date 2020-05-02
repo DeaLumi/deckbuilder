@@ -19,81 +19,141 @@
                       GridPane.rowIndex="0"
                       GridPane.columnIndex="1"/>
 
-            <Label text="Default Author:"
+            <Label text="Collection Grouping:"
                    GridPane.valignment="BASELINE"
                    GridPane.halignment="RIGHT"
                    GridPane.rowIndex="1"
+                   GridPane.columnIndex="0"/>
+            <ComboBox fx:id="collectionGrouping"
+                      GridPane.valignment="BASELINE"
+                      GridPane.halignment="LEFT"
+                      GridPane.rowIndex="1"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Collection Sorting:"
+                   GridPane.valignment="BASELINE"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="2"
+                   GridPane.columnIndex="0"/>
+            <Button onAction="#configureCollectionSorting"
+                    text="Configure"
+                    GridPane.valignment="BASELINE"
+                    GridPane.halignment="LEFT"
+                    GridPane.rowIndex="2"
+                    GridPane.columnIndex="1"/>
+
+            <Label text="Library Grouping:"
+                   GridPane.valignment="BASELINE"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="3"
+                   GridPane.columnIndex="0"/>
+            <ComboBox fx:id="libraryGrouping"
+                      GridPane.valignment="BASELINE"
+                      GridPane.halignment="LEFT"
+                      GridPane.rowIndex="3"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Sideboard Grouping:"
+                   GridPane.valignment="BASELINE"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="4"
+                   GridPane.columnIndex="0"/>
+            <ComboBox fx:id="sideboardGrouping"
+                      GridPane.valignment="BASELINE"
+                      GridPane.halignment="LEFT"
+                      GridPane.rowIndex="4"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Command Zone Grouping:"
+                   GridPane.valignment="BASELINE"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="5"
+                   GridPane.columnIndex="0"/>
+            <ComboBox fx:id="commandGrouping"
+                      GridPane.valignment="BASELINE"
+                      GridPane.halignment="LEFT"
+                      GridPane.rowIndex="5"
+                      GridPane.columnIndex="1"/>
+
+            <Separator GridPane.rowIndex="6"
+                       GridPane.columnIndex="0"
+                       GridPane.columnSpan="2"/>
+
+            <Label text="Default Author:"
+                   GridPane.valignment="BASELINE"
+                   GridPane.halignment="RIGHT"
+                   GridPane.rowIndex="7"
                    GridPane.columnIndex="0"/>
             <TextField fx:id="authorName"
                        prefColumnCount="40"
                        promptText="Default deck author name"
                        GridPane.valignment="BASELINE"
                        GridPane.halignment="LEFT"
-                       GridPane.rowIndex="1"
+                       GridPane.rowIndex="7"
                        GridPane.columnIndex="1"/>
 
             <Label text="Default Format:"
                    GridPane.valignment="BASELINE"
                    GridPane.halignment="RIGHT"
-                   GridPane.rowIndex="2"
+                   GridPane.rowIndex="8"
                    GridPane.columnIndex="0"/>
             <ComboBox fx:id="defaultFormat" promptText="Default format"
                       GridPane.valignment="BASELINE"
                       GridPane.halignment="LEFT"
-                      GridPane.rowIndex="2"
+                      GridPane.rowIndex="8"
                       GridPane.columnIndex="1"/>
 
             <Label text="The Future is Now:"
                    GridPane.valignment="TOP"
                    GridPane.halignment="RIGHT"
-                   GridPane.rowIndex="3"
+                   GridPane.rowIndex="9"
                    GridPane.columnIndex="0"/>
             <CheckBox fx:id="theFutureIsNow"
                       GridPane.valignment="TOP"
                       GridPane.halignment="LEFT"
-                      GridPane.rowIndex="3"
+                      GridPane.rowIndex="9"
                       GridPane.columnIndex="1">
                 <tooltip>
                     <Tooltip text="Always treat Future-legal cards as legal."/>
                 </tooltip>
             </CheckBox>
 
-            <Separator GridPane.rowIndex="4"
+            <Separator GridPane.rowIndex="10"
                        GridPane.columnSpan="2"
                        GridPane.columnIndex="0"/>
 
             <Label text="Auto-Update Data:"
                    GridPane.valignment="TOP"
                    GridPane.halignment="RIGHT"
-                   GridPane.rowIndex="5"
+                   GridPane.rowIndex="11"
                    GridPane.columnIndex="0"/>
             <CheckBox fx:id="autoUpdateData"
                       GridPane.valignment="TOP"
                       GridPane.halignment="LEFT"
-                      GridPane.rowIndex="5"
+                      GridPane.rowIndex="11"
                       GridPane.columnIndex="1"/>
 
             <Label text="Auto-Update Deckbuilder:"
                    GridPane.valignment="TOP"
                    GridPane.halignment="RIGHT"
-                   GridPane.rowIndex="6"
+                   GridPane.rowIndex="12"
                    GridPane.columnIndex="0"/>
             <CheckBox fx:id="autoUpdateProgram"
                       GridPane.valignment="TOP"
                       GridPane.halignment="LEFT"
-                      GridPane.rowIndex="6"
+                      GridPane.rowIndex="12"
                       GridPane.columnIndex="1"/>
 
             <Label text="Builder Update URL:"
                    GridPane.valignment="BASELINE"
                    GridPane.halignment="RIGHT"
-                   GridPane.rowIndex="7"
+                   GridPane.rowIndex="13"
                    GridPane.columnIndex="0"/>
             <TextField fx:id="updateUrlField" promptText="Update URL"
                        prefColumnCount="40"
                        GridPane.valignment="BASELINE"
                        GridPane.halignment="LEFT"
-                       GridPane.rowIndex="7"
+                       GridPane.rowIndex="13"
                        GridPane.columnIndex="1">
                 <font>
                     <Font name="Courier New"/>
