@@ -15,7 +15,7 @@ public class Preferences {
 	public URI updateUri = URI.create("http://emi.sly.io/deckbuilder-nodata.zip");
 
 	public boolean autoUpdateData = true;
-	public boolean autoUpdateProgram = false;
+	public boolean autoUpdateProgram = true;
 
 	public boolean theFutureIsNow = true;
 
