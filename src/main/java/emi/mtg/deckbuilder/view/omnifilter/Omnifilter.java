@@ -84,7 +84,7 @@ public class Omnifilter {
 
 	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]+\"|[^\\s]+)");
 
-	public static Predicate<CardInstance> parse(String expression) {
+	public static Predicate<CardInstance> parse(String expression) throws IllegalArgumentException {
 		Matcher m = PATTERN.matcher(expression);
 
 		Predicate<CardInstance> predicate = c -> true;
@@ -107,7 +107,7 @@ public class Omnifilter {
 
 				if (factory == null) {
 					// TODO: Report this somehow? Or just fail hard?
-					continue;
+					throw new IllegalArgumentException("Unrecognized filter " + key);
 				}
 
 				append = factory.create(op, value);

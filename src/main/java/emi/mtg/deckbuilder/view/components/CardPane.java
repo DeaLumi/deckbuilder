@@ -228,8 +228,23 @@ public class CardPane extends BorderPane {
 		filter.setPromptText("Omnifilter...");
 		filter.setPrefWidth(250.0);
 
+		final Tooltip filterErrorTooltip = new Tooltip();
+		filter.setTooltip(filterErrorTooltip);
+
 		this.updateFilter = ae -> {
-			Predicate<CardInstance> compositeFilter = Omnifilter.parse(filter.getText());
+			Predicate<CardInstance> compositeFilter;
+			try {
+				compositeFilter = Omnifilter.parse(filter.getText());
+			} catch (IllegalArgumentException iae) {
+				Tooltip.install(filter, filterErrorTooltip);
+				filter.getTooltip().setText(iae.getMessage());
+				filter.setStyle("-fx-control-inner-background: #ff8080;");
+				return;
+			}
+
+			Tooltip.uninstall(filter, filterErrorTooltip);
+			filter.getTooltip().setText("");
+			filter.setStyle("");
 
 			if (!findOtherCards.isSelected()) {
 				compositeFilter = compositeFilter.and(STANDARD_CARDS);
