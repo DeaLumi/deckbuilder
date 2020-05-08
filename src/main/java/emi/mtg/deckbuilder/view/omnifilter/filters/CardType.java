@@ -47,7 +47,8 @@ public class CardType implements Omnifilter.Subfilter {
 					.findAny()
 					.orElse(null);
 
-			if (ct != null) {
+			// The card type "Elemental" is problematic...
+			if (ct != null && ct != emi.lib.mtg.characteristic.CardType.Elemental) {
 				cardTypes.add(ct);
 				continue;
 			}
