@@ -22,7 +22,7 @@ public class CardSet implements Omnifilter.Subfilter {
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		Set set = Context.get().data.sets().stream()
 				.filter(s -> s.name().toLowerCase().equals(value.toLowerCase()) || s.code().toLowerCase().equals(value.toLowerCase()))
-				.findAny().orElse(null);
+				.findAny().orElseThrow(() -> new IllegalArgumentException("No such set " + value));
 
 		return ci -> {
 			if (value == null) {
