@@ -1336,6 +1336,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		double dragBoxX2 = Math.max(dragStartX, lastDragX);
 		double dragBoxY2 = Math.max(dragStartY, lastDragY);
 
+		Set<CompletableFuture<Image>> waiting = new HashSet<>();
+
 		for (int i = 0; i < groupedModel.length; ++i) {
 			if (groupedModel[i] == null) {
 				continue;
@@ -1362,7 +1364,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
 
 				if (!futureImage.isDone()) {
-					futureImage.thenRun(this::scheduleRender);
+					waiting.add(futureImage);
 				}
 
 				EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
@@ -1405,6 +1407,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.LOADING_CARD), states, count));
 			}
 		}
+
+		if (!waiting.isEmpty()) {
+			CompletableFuture.allOf(waiting.toArray(new CompletableFuture[0])).thenRun(this::scheduleRender);
+		}
+
 		return renderMap;
 	}
 
