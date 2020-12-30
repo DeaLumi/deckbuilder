@@ -100,8 +100,7 @@ public class TypeAdapters {
 			@Override
 			public Card.Printing read(JsonReader in) throws IOException {
 				UUID id = UUID.fromString(in.nextString());
-				Card.Printing pr = data.printing(id);
-				return pr;
+				return data.printing(id);
 			}
 		};
 	}

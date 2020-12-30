@@ -55,7 +55,6 @@ public class Context {
 
 	public Context(DataSource data) throws IOException {
 		this.data = data;
-		this.data.loadData();
 
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
@@ -86,7 +85,10 @@ public class Context {
 
 		this.images = new Images();
 		this.tags = new Tags(this);
+	}
 
+	public void loadData() throws IOException {
+		this.data.loadData();
 		loadTags();
 	}
 

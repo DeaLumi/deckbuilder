@@ -17,6 +17,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class Updater {
+	private static final boolean test = false;
+
 	// Script parameters:
 	// 1 - path of JRE's java executable
 	// 2 - path of this jar's parent directory
@@ -26,7 +28,7 @@ public class Updater {
 	private static final String WINDOWS_SCRIPT =
 			"@echo off\r\n" +
 			"ping -n 3 127.0.0.1 > nul\r\n" +
-			"xcopy /S /K /Y \"%4$s\" \"%2$s\"\r\n" +
+			(test ? "" : "xcopy /S /K /Y \"%4$s\" \"%2$s\"\r\n") +
 			"rmdir /S /Q \"%4$s\"\r\n" +
 			"start \"Deckbuilder\" /B \"%1$s\" -jar \"%3$s\"\r\n" +
 			"(goto) 2>nul & del \"%%~f0\"\r\n";
@@ -34,7 +36,7 @@ public class Updater {
 	private static final String BASH_SCRIPT =
 			"#!/bin/sh\n" +
 			"sleep 3\n" +
-			"cp -r \"%4$s/\" \"%2$s\"\n" +
+			(test ? "" : "cp -r \"%4$s/\" \"%2$s\"\n")+
 			"rm -rf \"%4$s\"\n" +
 			"rm \"$0\"\n" +
 			"nohup \"%1$s\" -jar \"%3$s\" &\n";
@@ -159,7 +161,7 @@ public class Updater {
 			throw new IOException(String.format("Error checking update server for update: %s", httpConn.getResponseMessage()));
 		}
 
-		return httpConn.getResponseCode() == 200;
+		return httpConn.getResponseCode() == 200 || test;
 	}
 
 	public void update(DoubleConsumer progress) throws IOException {

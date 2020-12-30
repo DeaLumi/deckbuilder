@@ -209,28 +209,7 @@ public class MainApplication extends Application {
 			data = DATA_SOURCES.get(0);
 		}
 
-		Alert alert = AlertBuilder.create()
-				.owner(hostStage)
-				.title("Loading")
-				.headerText("Loading card data...")
-				.contentText("Please wait a moment!")
-				.show();
-		try {
-			Context.instantiate(data);
-		} catch (IOException ioe) {
-			if (data.needsUpdate() && AlertBuilder.query(hostStage)
-						.title("Data Load Error")
-						.headerText("Unable to load (possibly stale) data.")
-						.contentText(STALE_DATA_LOAD_ERROR)
-						.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-				doGraphicalDataUpdate(data);
-				Context.instantiate(data);
-			} else {
-				throw ioe;
-			}
-		}
-		alert.getButtonTypes().setAll(ButtonType.CLOSE);
-		alert.hide();
+		Context.instantiate(data);
 
 		if (Context.get().preferences.autoUpdateProgram && updater.needsUpdate()) {
 			if (AlertBuilder.query(hostStage)
@@ -241,6 +220,29 @@ public class MainApplication extends Application {
 				doGraphicalUpdate();
 			}
 		}
+
+		Alert alert = AlertBuilder.create()
+				.owner(hostStage)
+				.title("Loading")
+				.headerText("Loading card data...")
+				.contentText("Please wait a moment!")
+				.show();
+		try {
+			Context.get().loadData();
+		} catch (IOException ioe) {
+			if (data.needsUpdate() && AlertBuilder.query(hostStage)
+						.title("Data Load Error")
+						.headerText("Unable to load (possibly stale) data.")
+						.contentText(STALE_DATA_LOAD_ERROR)
+						.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+				doGraphicalDataUpdate(data);
+				Context.get().loadData();
+			} else {
+				throw ioe;
+			}
+		}
+		alert.getButtonTypes().setAll(ButtonType.CLOSE);
+		alert.hide();
 
 		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate()) {
 			if (AlertBuilder.query(hostStage)
@@ -306,7 +308,6 @@ public class MainApplication extends Application {
 		progressDialog.getDialogPane().setPrefWidth(256.0);
 
 		progressDialog.initOwner(hostStage);
-		progressDialog.show();
 
 		ForkJoinPool.commonPool().submit(() -> {
 			try {
@@ -317,6 +318,8 @@ public class MainApplication extends Application {
 				Platform.runLater(progressDialog::close);
 			}
 		});
+
+		progressDialog.showAndWait();
 	}
 
 	public void updateData() {
@@ -351,7 +354,7 @@ public class MainApplication extends Application {
 			try {
 				if (earlyData == null) Context.get().saveTags();
 				if (data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
-					data.loadData();
+					Context.get().loadData();
 					Platform.runLater(() -> {
 						progressDialog.close();
 
