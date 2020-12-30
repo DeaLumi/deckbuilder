@@ -110,6 +110,7 @@ public class MainApplication extends Application {
 
 	public void quit() {
 		hostStage.close();
+		System.exit(0);
 	}
 
 	public static void main(String[] args) {
