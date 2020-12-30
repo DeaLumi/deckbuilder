@@ -87,6 +87,11 @@ public class CardInstance implements Card.Printing, Serializable {
 	}
 
 	@Override
+	public boolean promo() {
+		return printing.promo();
+	}
+
+	@Override
 	public UUID id() {
 		return printing.id();
 	}

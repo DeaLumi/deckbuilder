@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import emi.lib.mtg.characteristic.Color;
 import emi.lib.mtg.characteristic.ManaCost;
 import emi.lib.mtg.characteristic.ManaSymbol;
@@ -59,7 +58,8 @@ public class DeckStatsDialog extends Dialog<Void> {
 	private static class CardSummaryData {
 		public final HashMap<Integer, HashMap<Color, AtomicInteger>> byCmc;
 		public final HashMap<Color, AtomicInteger> byColor;
-		public final AtomicDouble totalCmc;
+		public volatile double totalCmc;
+		public final Object totalCmcLock;
 		public final AtomicInteger count;
 
 		public CardSummaryData() {
@@ -70,12 +70,13 @@ public class DeckStatsDialog extends Dialog<Void> {
 				byColor.put(color, new AtomicInteger());
 			}
 
-			totalCmc = new AtomicDouble();
+			totalCmc = 0.0;
+			totalCmcLock = new Object();
 			count = new AtomicInteger();
 		}
 
 		public double averageCmc() {
-			return totalCmc.get() / count.get();
+			return totalCmc / count.get();
 		}
 
 		static Collector<CardInstance, CardSummaryData, CardSummaryData> COLLECTOR = new Collector<CardInstance, CardSummaryData, CardSummaryData>() {
@@ -126,7 +127,9 @@ public class DeckStatsDialog extends Dialog<Void> {
 						csd.byColor.get(key).incrementAndGet();
 					}
 
-					csd.totalCmc.addAndGet(mc.convertedCost());
+					synchronized(csd.totalCmcLock) {
+						csd.totalCmc += mc.convertedCost();
+					}
 					csd.count.incrementAndGet();
 				};
 			}
@@ -135,7 +138,15 @@ public class DeckStatsDialog extends Dialog<Void> {
 			public BinaryOperator<CardSummaryData> combiner() {
 				return (csd1, csd2) -> {
 					CardSummaryData out = new CardSummaryData();
-					out.totalCmc.set(csd1.totalCmc.get() + csd2.totalCmc.get());
+
+					out.totalCmc = 0.0;
+					synchronized (csd1.totalCmcLock) {
+						out.totalCmc += csd1.totalCmc;
+					}
+					synchronized (csd2.totalCmcLock) {
+						out.totalCmc += csd1.totalCmc + csd2.totalCmc;
+					}
+
 					out.count.set(csd1.count.get() + csd2.count.get());
 
 					for (Color color : ALL_COLORS) {
