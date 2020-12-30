@@ -91,6 +91,18 @@ public class MainApplication extends Application {
 		}
 	}
 
+	private static final String LOW_MEMORY_LIMIT = String.join("\n",
+			"Your maximum memory limit is less than 4 GB! " +
+			"You may be running a 32-bit JRE or have configured a low memory limit. " +
+			"Between card data and images, Magic consumes a lot of RAM. " +
+			"This may cause unexpected issues, and is known to cause no cards to appear.",
+			"",
+			"If your computer has more than 4 GB of RAM, make sure that:",
+			" \u2022 A 64-bit JRE was used to launch the Deckbuilder.",
+			" \u2022 You're not running with weird command line parameters.",
+			"",
+			"From here on out, there be monsters...");
+
 	private static final String NO_DATA_SOURCES = String.join("\n",
 			"No data sources are available!",
 			"Check the plugins/ directory for a data source plugin.",
@@ -106,6 +118,15 @@ public class MainApplication extends Application {
 	public void start(Stage primaryStage) throws Exception {
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
+
+		if (Runtime.getRuntime().maxMemory() <= 4L*1024*1024*1024) {
+			AlertBuilder.notify(primaryStage)
+					.type(Alert.AlertType.WARNING)
+					.title("Memory Limit Warning")
+					.headerText("Low memory limit detected!")
+					.contentText(LOW_MEMORY_LIMIT)
+					.showAndWait();
+		}
 
 		Thread.setDefaultUncaughtExceptionHandler((x, e) -> {
 			boolean deckSaved = true;
