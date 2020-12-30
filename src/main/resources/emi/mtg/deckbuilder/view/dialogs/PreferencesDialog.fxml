@@ -135,7 +135,7 @@
                    GridPane.rowIndex="11"
                    GridPane.columnIndex="0"/>
             <TextField fx:id="authorName"
-                       prefColumnCount="40"
+                       prefColumnCount="30"
                        promptText="Default deck author name"
                        GridPane.valignment="BASELINE"
                        GridPane.halignment="LEFT"
@@ -200,7 +200,7 @@
                    GridPane.rowIndex="17"
                    GridPane.columnIndex="0"/>
             <TextField fx:id="updateUrlField" promptText="Update URL"
-                       prefColumnCount="40"
+                       prefColumnCount="30"
                        GridPane.valignment="BASELINE"
                        GridPane.halignment="LEFT"
                        GridPane.rowIndex="17"
