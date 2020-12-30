@@ -16,6 +16,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.DoubleConsumer;
 
 public class Context {
 	private static final Path PREFERENCES = Paths.get("preferences.json");
@@ -87,8 +88,8 @@ public class Context {
 		this.tags = new Tags(this);
 	}
 
-	public void loadData() throws IOException {
-		this.data.loadData();
+	public void loadData(DoubleConsumer progress) throws IOException {
+		this.data.loadData(progress);
 		loadTags();
 	}
 

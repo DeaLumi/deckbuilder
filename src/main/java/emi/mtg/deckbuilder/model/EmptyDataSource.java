@@ -19,7 +19,7 @@ public class EmptyDataSource implements DataSource {
 	}
 
 	@Override
-	public void loadData() throws IOException {
+	public void loadData(DoubleConsumer progress) throws IOException {
 		// No-op
 	}
 

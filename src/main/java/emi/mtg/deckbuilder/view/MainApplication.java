@@ -27,7 +27,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -224,28 +226,7 @@ public class MainApplication extends Application {
 			}
 		}
 
-		Alert alert = AlertBuilder.create()
-				.owner(hostStage)
-				.title("Loading")
-				.headerText("Loading card data...")
-				.contentText("Please wait a moment!")
-				.show();
-		try {
-			Context.get().loadData();
-		} catch (IOException ioe) {
-			if (data.needsUpdate() && AlertBuilder.query(hostStage)
-						.title("Data Load Error")
-						.headerText("Unable to load (possibly stale) data.")
-						.contentText(STALE_DATA_LOAD_ERROR)
-						.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-				doGraphicalDataUpdate(data);
-				Context.get().loadData();
-			} else {
-				throw ioe;
-			}
-		}
-		alert.getButtonTypes().setAll(ButtonType.CLOSE);
-		alert.hide();
+		doGraphicalLoadData();
 
 		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate()) {
 			if (AlertBuilder.query(hostStage)
@@ -258,6 +239,50 @@ public class MainApplication extends Application {
 		}
 
 		new MainWindow(this, new DeckList("", Context.get().preferences.authorName, Context.get().preferences.defaultFormat, "", Collections.emptyMap())).show();
+	}
+
+	public void doGraphicalLoadData() {
+		if (!Platform.isFxApplicationThread()) {
+			Platform.runLater(this::doGraphicalLoadData);
+			return;
+		}
+
+		ProgressBar progress = new ProgressBar(0.0);
+		progress.setPrefWidth(256.0);
+
+		Alert alert = AlertBuilder.create()
+				.owner(hostStage)
+				.title("Loading")
+				.headerText("Loading card data...")
+				.contentNode(progress)
+				.get();
+		ForkJoinTask<Boolean> future = ForkJoinPool.commonPool().submit(() -> {
+			try {
+				Context.get().loadData(d -> Platform.runLater(() -> progress.setProgress(d)));
+			} catch (IOException ioe) {
+				return false;
+			} finally {
+				Platform.runLater(() -> {
+					alert.getButtonTypes().setAll(ButtonType.CLOSE);
+					alert.hide();
+				});
+			}
+
+			return true;
+		});
+		alert.showAndWait();
+
+		try {
+			if (!future.get() && Context.get().data.needsUpdate() && AlertBuilder.query(hostStage)
+					.title("Data Load Error")
+					.headerText("Unable to load (possibly stale) data.")
+					.contentText(STALE_DATA_LOAD_ERROR)
+					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+				doGraphicalDataUpdate(Context.get().data);
+			}
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public void update() {
@@ -357,20 +382,13 @@ public class MainApplication extends Application {
 			try {
 				if (earlyData == null) Context.get().saveTags();
 				if (data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
-					Context.get().loadData();
 					Platform.runLater(() -> {
 						progressDialog.close();
 
+						doGraphicalLoadData();
+
 						for (MainWindow child : mainWindows) {
 							child.remodel();
-						}
-
-						if (earlyData == null) {
-							try {
-								Context.get().loadTags();
-							} catch (IOException ioe) {
-								throw new Error(ioe);
-							}
 						}
 					});
 				}
