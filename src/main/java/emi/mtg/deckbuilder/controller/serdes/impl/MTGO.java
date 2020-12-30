@@ -80,8 +80,9 @@ public class MTGO implements DeckImportExport {
 					throw new IOException("Couldn't find card " + name + " / " + catId);
 				}
 
-				printing = card.printings().iterator().next();
-				System.err.println("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name, using first printing. This won't export back to MTGO.");
+				printing = Context.get().preferences.preferredPrinting(card);
+				if (printing == null) printing = card.printings().iterator().next();
+				System.err.println("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name; using preferred printing. This won't export back to MTGO.");
 			}
 
 			for (int n = 0; n < qty; ++n) {

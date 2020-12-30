@@ -17,6 +17,18 @@ import java.util.Optional;
 
 public class PreferencesDialog extends Dialog<Boolean> {
 	@FXML
+	private ToggleButton preferOldest;
+
+	@FXML
+	private ToggleButton preferNewest;
+
+	@FXML
+	private CheckBox preferNotPromo;
+
+	@FXML
+	private CheckBox preferPhysical;
+
+	@FXML
 	private CheckBox collapseDuplicates;
 
 	@FXML
@@ -59,6 +71,11 @@ public class PreferencesDialog extends Dialog<Boolean> {
 		loader.setRoot(getDialogPane());
 		loader.load();
 
+		preferOldest.setSelected(prefs.preferAge == Preferences.PreferAge.Oldest);
+		preferNewest.setSelected(prefs.preferAge == Preferences.PreferAge.Newest);
+		preferNotPromo.setSelected(prefs.preferNotPromo);
+		preferPhysical.setSelected(prefs.preferPhysical);
+
 		collectionGrouping.getItems().setAll(CardView.GROUPINGS);
 		libraryGrouping.getItems().setAll(CardView.GROUPINGS);
 		sideboardGrouping.getItems().setAll(CardView.GROUPINGS);
@@ -82,6 +99,16 @@ public class PreferencesDialog extends Dialog<Boolean> {
 
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
+				if (preferOldest.isSelected()) {
+					prefs.preferAge = Preferences.PreferAge.Oldest;
+				} else if (preferNewest.isSelected()) {
+					prefs.preferAge = Preferences.PreferAge.Newest;
+				} else {
+					prefs.preferAge = Preferences.PreferAge.Any;
+				}
+				prefs.preferNotPromo = preferNotPromo.isSelected();
+				prefs.preferPhysical = preferPhysical.isSelected();
+
 				prefs.collapseDuplicates = collapseDuplicates.isSelected();
 				prefs.collectionGrouping = collectionGrouping.getValue();
 				prefs.collectionSorting = collectionSorting;

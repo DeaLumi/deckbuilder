@@ -358,17 +358,21 @@ public class MainApplication extends Application {
 		progressDialog.showAndWait();
 	}
 
-	public void showPreferences() {
+	public boolean showPreferences() {
 		try {
 			PreferencesDialog pd = new PreferencesDialog(Context.get().preferences);
 			pd.initOwner(hostStage);
 
 			if(pd.showAndWait().orElse(false)) {
 				Context.get().savePreferences();
+				return true;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw new AssertionError(e);
 		}
+
+		return false;
 	}
 
 	public void showTagManagementDialog() {

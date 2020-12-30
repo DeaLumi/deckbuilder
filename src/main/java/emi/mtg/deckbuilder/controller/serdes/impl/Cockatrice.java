@@ -132,7 +132,8 @@ public class Cockatrice implements DeckImportExport {
 					throw new IOException(String.format("The deck refers to an unknown card \"%s\"", cardName));
 				}
 
-				Card.Printing pr = card.printings().iterator().next();
+				Card.Printing pr = Context.get().preferences.preferredPrinting(card);
+				if (pr == null) pr = card.printings().iterator().next();
 				assert pr != null : String.format("Card %s has no printings!", cardName);
 
 				for (int k = 0; k < Integer.parseInt(cardEl.getAttribute("number")); ++k) {

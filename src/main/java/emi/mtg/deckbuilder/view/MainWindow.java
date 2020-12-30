@@ -779,7 +779,9 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void showPreferencesDialog() {
-		owner.showPreferences();
+		if (owner.showPreferences()) {
+			collection.updateFilter();
+		}
 	}
 
 	@FXML

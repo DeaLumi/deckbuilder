@@ -28,10 +28,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
@@ -111,15 +108,14 @@ public class CardPane extends BorderPane {
 	}
 
 	private static Predicate<CardInstance> uniquenessPredicate() {
-		Map<Card, String> prefPrintCache = new HashMap<>();
+		Map<Card, UUID> prefPrintCache = new HashMap<>();
 
 		return ci -> {
-			if (Context.get().preferences.preferredPrintings.containsKey(ci.card().fullName())) {
-				return ci.printing().id().equals(Context.get().preferences.preferredPrintings.get(ci.card().fullName()));
-			}
+			Card.Printing preferred = Context.get().preferences.preferredPrinting(ci.card());
+			if (preferred != null) return preferred.id().equals(ci.id());
 
 			synchronized(prefPrintCache) {
-				return ci.printing().id().toString().equals(prefPrintCache.computeIfAbsent(ci.card(), fn -> ci.card().printings().iterator().next().id().toString()));
+				return ci.id().equals(prefPrintCache.computeIfAbsent(ci.card(), fn -> ci.card().printings().iterator().next().id()));
 			}
 		};
 	}

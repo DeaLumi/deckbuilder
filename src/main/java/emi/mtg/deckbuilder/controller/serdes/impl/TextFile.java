@@ -67,8 +67,8 @@ public class TextFile implements DeckImportExport {
 				throw new IOException("Couldn't find card named \"" + cardName + "\"");
 			}
 
-			// TODO: Just take the first printing for now...
-			Card.Printing printing = card.printings().iterator().next();
+			Card.Printing printing = Context.get().preferences.preferredPrinting(card);
+			if (printing == null) printing = card.printings().iterator().next();
 			for (int i = 0; i < count; ++i) {
 				cards.computeIfAbsent(zone, z -> new ArrayList<>()).add(new CardInstance(printing));
 			}
