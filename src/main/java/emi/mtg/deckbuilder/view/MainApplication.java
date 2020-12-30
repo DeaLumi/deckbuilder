@@ -113,9 +113,9 @@ public class MainApplication extends Application {
 			"Check the plugins/ directory for a data source plugin.",
 			"At bare minimum, scryfall-0.0.0.jar should be provided!");
 
-	private static final String STALE_DATA_LOAD_ERROR = String.join("\n",
+	private static final String DATA_LOAD_ERROR = String.join("\n",
 			"An error occurred while loading card data.",
-			"The data source reports that it may be out of date.",
+			"Some or all cards may not have been loaded..",
 			"",
 			"Try updating card data?");
 
@@ -226,8 +226,6 @@ public class MainApplication extends Application {
 			}
 		}
 
-		doGraphicalLoadData();
-
 		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate()) {
 			if (AlertBuilder.query(hostStage)
 					.title("Auto-Update")
@@ -237,6 +235,8 @@ public class MainApplication extends Application {
 				doGraphicalDataUpdate(null);
 			}
 		}
+
+		doGraphicalLoadData();
 
 		new MainWindow(this, new DeckList("", Context.get().preferences.authorName, Context.get().preferences.defaultFormat, "", Collections.emptyMap())).show();
 	}
@@ -273,12 +273,16 @@ public class MainApplication extends Application {
 		alert.showAndWait();
 
 		try {
-			if (!future.get() && Context.get().data.needsUpdate() && AlertBuilder.query(hostStage)
-					.title("Data Load Error")
-					.headerText("Unable to load (possibly stale) data.")
-					.contentText(STALE_DATA_LOAD_ERROR)
-					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-				doGraphicalDataUpdate(Context.get().data);
+			if (!future.get()) {
+				if (AlertBuilder.query(hostStage)
+						.type(Alert.AlertType.ERROR)
+						.title("Data Load Error")
+						.headerText("An error occurred while loading data.")
+						.contentText(DATA_LOAD_ERROR)
+						.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+					doGraphicalDataUpdate(Context.get().data);
+					doGraphicalLoadData();
+				}
 			}
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
@@ -384,8 +388,6 @@ public class MainApplication extends Application {
 				if (data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
 					Platform.runLater(() -> {
 						progressDialog.close();
-
-						doGraphicalLoadData();
 
 						for (MainWindow child : mainWindows) {
 							child.remodel();
