@@ -92,14 +92,17 @@ public class MainApplication extends Application {
 	}
 
 	private static final String LOW_MEMORY_LIMIT = String.join("\n",
-			"Your maximum memory limit is less than 4 GB! " +
+			"Your maximum memory limit is less than 1 GB! " +
 			"You may be running a 32-bit JRE or have configured a low memory limit. " +
 			"Between card data and images, Magic consumes a lot of RAM. " +
 			"This may cause unexpected issues, and is known to cause no cards to appear.",
 			"",
-			"If your computer has more than 4 GB of RAM, make sure that:",
+			"If your computer has more than 1 GB of RAM, make sure that:",
 			" \u2022 A 64-bit JRE was used to launch the Deckbuilder.",
 			" \u2022 You're not running with weird command line parameters.",
+			"",
+			"You can increase the memory limit through the Java control panel, " +
+			"but explaining in-depth here would be a lot of text! I suggest Google. :)",
 			"",
 			"From here on out, there be monsters...");
 
@@ -119,7 +122,7 @@ public class MainApplication extends Application {
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
 
-		if (Runtime.getRuntime().maxMemory() <= 4L*1024*1024*1024) {
+		if (Runtime.getRuntime().maxMemory() <= 1024*1024*1024) {
 			AlertBuilder.notify(primaryStage)
 					.type(Alert.AlertType.WARNING)
 					.title("Memory Limit Warning")
