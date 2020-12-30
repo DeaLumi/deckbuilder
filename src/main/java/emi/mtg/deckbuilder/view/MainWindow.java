@@ -16,6 +16,7 @@ import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.FXCollections;
@@ -98,16 +99,20 @@ public class MainWindow extends Stage {
 				.title("Initializing UI")
 				.headerText("Getting things ready...")
 				.contentText("Please wait a moment!")
-				.show();
+				.get();
 
-		setupUI();
-		setupImportExport();
-		setDeck(deck);
+		Platform.runLater(() -> {
+			setupUI();
+			setupImportExport();
+			setDeck(deck);
 
-		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
+			collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
 
-		alert.getButtonTypes().setAll(ButtonType.CLOSE);
-		alert.hide();
+			alert.getButtonTypes().setAll(ButtonType.CLOSE);
+			alert.hide();
+		});
+
+		alert.showAndWait();
 	}
 
 	void emergencySave() throws IOException {
