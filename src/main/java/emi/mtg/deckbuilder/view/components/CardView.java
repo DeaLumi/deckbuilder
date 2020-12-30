@@ -5,7 +5,7 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.MainApplication;
-import emi.mtg.deckbuilder.view.layouts.FlowGrid;
+import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.*;
@@ -19,8 +19,6 @@ import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
@@ -29,7 +27,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
-import javafx.stage.Modality;
 import javafx.stage.Screen;
 
 import java.io.IOException;
@@ -542,54 +539,33 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		setOnMouseClicked(me -> {
 			if (me.getButton() == MouseButton.PRIMARY) {
 				if (me.isAltDown()) {
-					if (hoverCard == null || hoverCard.card().printings().size() == 1) {
+					final CardInstance card = hoverCard;
+					if (card == null || card.card().printings().size() == 1) {
 						return;
 					}
 
 					if (immutableModel.get()) {
-						if (collapsedModel.stream().anyMatch(ci -> ci.card() == hoverCard.card() && ci.printing() != hoverCard.printing())) {
+						if (collapsedModel.stream().anyMatch(ci -> ci.card() == card.card() && ci.printing() != card.printing())) {
 							return; // Other versions are already represented. TODO: I hate this. Bind to CardPane's showVersionsSeparately?
 						}
 					}
 
-					Dialog<Void> dlg = new Dialog<>();
-
-					dlg.setTitle("Version Selector");
-
-					ObservableList<CardInstance> tmpModel = FXCollections.observableList(hoverCard.card().printings().stream()
-							.map(CardInstance::new)
-							.collect(Collectors.toList()));
-					CardPane prPane = new CardPane("Variations", tmpModel, FlowGrid.Factory.INSTANCE);
-
-					final List<CardInstance> modifyingCards = hoverCards(hoverCard);
-					prPane.view().doubleClick(ci -> {
-						dlg.close();
-
+					final List<CardInstance> modifyingCards = hoverCards(card);
+					PrintingSelectorDialog.show(getScene(), card.card()).ifPresent(pr -> {
 						if (immutableModel.get()) {
-							Context.get().preferences.preferredPrintings.put(ci.card().fullName(), ci.printing().id());
+							Context.get().preferences.preferredPrintings.put(card.card().fullName(), pr.id());
 							try {
 								Context.get().savePreferences();
 							} catch (IOException ioe) {
 								throw new Error(ioe);
 							}
 						} else {
-							modifyingCards.forEach(x -> x.printing(ci.printing()));
+							modifyingCards.forEach(x -> x.printing(pr));
 						}
 
 						// TODO This is not great. I wish I could clone predicates, basically. Or trigger invalidation.
 						filteredModel.setPredicate(filteredModel.getPredicate().and(t -> true));
 					});
-
-					prPane.view().immutableModelProperty().set(true);
-					prPane.showVersionsSeparately.set(true);
-					prPane.setPrefHeight(this.getScene().getHeight() / 1.5);
-					prPane.setPrefWidth(this.getScene().getWidth() / 1.5);
-
-					dlg.getDialogPane().setContent(prPane);
-					dlg.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
-					dlg.initModality(Modality.WINDOW_MODAL);
-					dlg.initOwner(this.getScene().getWindow());
-					dlg.show();
 				} else if (me.getClickCount() % 2 == 0) {
 					CardInstance ci = cardAt(me.getX(), me.getY());
 

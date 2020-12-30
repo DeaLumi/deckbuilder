@@ -12,6 +12,7 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
+import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.layouts.Piles;
@@ -163,6 +164,36 @@ public class MainWindow extends Stage {
 	private void createCollectionContextMenu() {
 		collectionContextMenu = new CardView.ContextMenu();
 
+		MenuItem changePrintingMenuItem = new MenuItem("Choose Preferred Printing");
+		changePrintingMenuItem.visibleProperty().bind(collection.showVersionsSeparately.not()
+				.and(collectionContextMenu.cards.sizeProperty().isEqualTo(1)));
+		changePrintingMenuItem.setOnAction(ae -> {
+			if (collection.showVersionsSeparately.get()) {
+				return; // TODO Make this menu item disabled or hidden.
+			}
+
+			if (collectionContextMenu.cards.isEmpty()) {
+				return;
+			}
+
+			Set<Card> cards = collectionContextMenu.cards.stream().map(CardInstance::card).collect(Collectors.toSet());
+			if (cards.size() != 1) {
+				return;
+			}
+
+			final Card card = cards.iterator().next();
+			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
+				Context.get().preferences.preferredPrintings.put(card.fullName(), pr.id());
+				try {
+					Context.get().savePreferences();
+				} catch (IOException ioe) {
+					throw new Error(ioe);
+				}
+
+				collection.updateFilter();
+			});
+		});
+
 		Menu fillMenu = new Menu("Fill");
 		fillMenu.visibleProperty().bind(collectionContextMenu.cards.emptyProperty().not());
 
@@ -182,12 +213,10 @@ public class MainWindow extends Stage {
 			fillMenu.getItems().add(fillZoneMenuItem);
 		}
 
-		collectionContextMenu.getItems().addAll(fillMenu);
+		collectionContextMenu.getItems().addAll(changePrintingMenuItem, fillMenu);
 	}
 
 	private void setupUI() {
-		createCollectionContextMenu();
-
 		collection = new CardPane("Collection",
 				FXCollections.observableArrayList(),
 				FlowGrid.Factory.INSTANCE,
@@ -195,7 +224,10 @@ public class MainWindow extends Stage {
 				Context.get().preferences.collectionSorting);
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
+
+		createCollectionContextMenu();
 		collection.view().contextMenu(collectionContextMenu);
+
 		collection.showIllegalCards.set(false);
 		collection.showVersionsSeparately.set(false);
 
@@ -230,12 +262,33 @@ public class MainWindow extends Stage {
 		}
 	}
 
-	private CardView.ContextMenu createDeckContextMenu(Zone zone) {
+	private CardView.ContextMenu createDeckContextMenu(CardPane pane, Zone zone) {
 		CardView.ContextMenu menu = new CardView.ContextMenu();
+
+		MenuItem changePrintingMenuItem = new MenuItem("Choose Printing");
+		changePrintingMenuItem.setOnAction(ae -> {
+			if (menu.cards.isEmpty()) {
+				return;
+			}
+
+			Set<Card> cards = menu.cards.stream().map(CardInstance::card).collect(Collectors.toSet());
+			if (cards.size() != 1) {
+				return;
+			}
+
+			final Card card = cards.iterator().next();
+			final Set<CardInstance> modify = new HashSet<>(menu.cards.get());
+			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
+				modify.forEach(ci -> ci.printing(pr));
+				pane.view().scheduleRender();
+			});
+		});
 
 		Menu tagsMenu = new Menu("Deck Tags");
 
 		menu.setOnShowing(e -> {
+			changePrintingMenuItem.setVisible(menu.cards.stream().map(CardInstance::card).distinct().count() == 1);
+
 			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
 			tagCBs.setAll(menu.view.get().model().stream()
 					.map(CardInstance::tags)
@@ -279,7 +332,7 @@ public class MainWindow extends Stage {
 			tagsMenu.getItems().setAll(tagCBs);
 		});
 
-		menu.getItems().add(tagsMenu);
+		menu.getItems().addAll(changePrintingMenuItem, tagsMenu);
 
 		return menu;
 	}
@@ -308,7 +361,7 @@ public class MainWindow extends Stage {
 							Context.get().preferences.zoneGroupings.getOrDefault(z, ConvertedManaCost.INSTANCE));
 					pane.model().addListener(deckListChangedListener);
 					pane.view().doubleClick(ci -> pane.model().remove(ci));
-					pane.view().contextMenu(createDeckContextMenu(z));
+					pane.view().contextMenu(createDeckContextMenu(pane, z));
 					pane.view().collapseDuplicatesProperty().set(Context.get().preferences.collapseDuplicates);
 					return pane;
 				})
