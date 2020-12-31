@@ -10,9 +10,12 @@ import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.geometry.HPos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
@@ -26,6 +29,8 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -434,5 +439,95 @@ public class MainApplication extends Application {
 		} catch (IOException ioe) {
 			ioe.printStackTrace(); // TODO: Handle gracefully
 		}
+	}
+
+	public void trimImageDiskCache() {
+		GridPane grid = new GridPane();
+		grid.setHgap(8.0);
+		grid.setVgap(8.0);
+
+		Label unusedLabel = new Label("Max Days w/o Loading:");
+		Spinner<Integer> unusedDays = new Spinner<>(1, 365, 180);
+		unusedDays.setMaxWidth(Double.MAX_VALUE);
+
+		Label sizeFactorLabel = new Label("Min % of Median Size:");
+		Slider sizeFactor = new Slider(0.10, 0.85, 0.50);
+		sizeFactor.setMaxWidth(Double.MAX_VALUE);
+		Label sizeFactorIndicator = new Label();
+		sizeFactorIndicator.textProperty().bind(sizeFactor.valueProperty().multiply(100).asString("%.0f%%"));
+		FlowPane sizeFactorFlow = new FlowPane(sizeFactor, sizeFactorIndicator);
+		sizeFactorFlow.setMaxWidth(Double.MAX_VALUE);
+		sizeFactorFlow.setPrefWidth(512.0);
+
+		grid.addRow(0, unusedLabel, unusedDays);
+		grid.addRow(1, sizeFactorLabel, sizeFactorFlow);
+		GridPane.setHalignment(unusedLabel, HPos.RIGHT);
+		GridPane.setHalignment(sizeFactorFlow, HPos.RIGHT);
+
+		ProgressBar progress = new ProgressBar(0.0);
+		progress.setMaxWidth(Double.MAX_VALUE);
+		grid.add(progress, 0, 2, 2, 1);
+
+		Alert dlg = AlertBuilder.query(hostStage)
+				.type(Alert.AlertType.CONFIRMATION)
+				.title("Clean Disk Cache")
+				.headerText("Enter cleanup parameters:")
+				.contentNode(grid)
+				.buttons(ButtonType.OK, ButtonType.CANCEL)
+				.get();
+
+		Button ok = (Button) dlg.getDialogPane().lookupButton(ButtonType.OK);
+		Button cancel = (Button) dlg.getDialogPane().lookupButton(ButtonType.CANCEL);
+		ok.addEventFilter(ActionEvent.ACTION, event -> {
+			ForkJoinPool.commonPool().submit(() -> {
+				IOException tmpThrown;
+				Images.CacheCleanupResults tmpResults;
+				try {
+					tmpResults = Context.get().images.cleanCache(
+							Instant.now().minus(unusedDays.getValue(), ChronoUnit.DAYS),
+							sizeFactor.getValue(),
+							d -> Platform.runLater(() -> progress.setProgress(d))
+					);
+					tmpThrown = null;
+				} catch (IOException e) {
+					tmpResults = null;
+					tmpThrown = e;
+				}
+
+				final IOException thrown = tmpThrown;
+				final Images.CacheCleanupResults results = tmpResults;
+				Platform.runLater(() -> {
+					if (results != null) {
+						AlertBuilder.notify(hostStage)
+								.title("Cache Cleanup")
+								.headerText("Cleanup successful!")
+								.contentText(String.format("%d files deleted totalling %d MB!", results.filesDeleted, results.deletedBytes / (1024 * 1024)))
+								.showAndWait();
+					} else if (thrown != null) {
+						AlertBuilder.notify(hostStage)
+								.type(Alert.AlertType.ERROR)
+								.title("Cache Cleanup")
+								.headerText("Error During Cleanup")
+								.contentText("An error occurred while cleaning the cache: " + thrown.getMessage() + "\n")
+								.showAndWait();
+					} else {
+						AlertBuilder.notify(hostStage)
+								.type(Alert.AlertType.ERROR)
+								.title("Cache Cleanup")
+								.headerText("????")
+								.contentText("Something very strange happened. Sorry...")
+								.showAndWait();
+					}
+
+					dlg.close();
+				});
+			});
+
+			ok.setDisable(true);
+			cancel.setDisable(true);
+			event.consume();
+		});
+
+		dlg.show();
 	}
 }

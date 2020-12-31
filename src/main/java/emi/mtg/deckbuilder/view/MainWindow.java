@@ -936,4 +936,9 @@ public class MainWindow extends Stage {
 					.showAndWait();
 		}
 	}
+
+	@FXML
+	protected void trimImageDiskCache() {
+		owner.trimImageDiskCache();
+	}
 }

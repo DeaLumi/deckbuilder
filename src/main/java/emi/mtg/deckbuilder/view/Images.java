@@ -13,10 +13,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -187,5 +193,83 @@ public class Images {
 
 	public CompletableFuture<Image> getThumbnail(Card.Printing printing) {
 		return open(printing, frontCache, source -> source.open(printing), img -> MtgAwtImageUtils.scaled(MtgAwtImageUtils.clearCorners(img), CARD_WIDTH, CARD_HEIGHT, true));
+	}
+
+	public static class CacheCleanupResults {
+		public final long filesDeleted;
+		public final long deletedBytes;
+
+		public CacheCleanupResults(long filesDeleted, long deletedBytes) {
+			this.filesDeleted = filesDeleted;
+			this.deletedBytes = deletedBytes;
+		}
+	}
+
+	/**
+	 * Cleans up unused images in the disk caches. Slightly tunable. Might overshoot. Better sorry than safe!
+	 *
+	 * @param accessedBefore Any images that were last accessed prior to this instant will be deleted.
+	 * @param medianFraction Any image below this percentage of the median size of images will be deleted.
+	 * @param progress An optional callback to report cache purge progress.
+	 * @return The list of sizes of files that were deleted.
+	 */
+	public CacheCleanupResults cleanCache(Instant accessedBefore, double medianFraction, DoubleConsumer progress) throws IOException {
+		long deletedFiles = 0, deletedBytes = 0;
+
+		Set<Path> allImages = new HashSet<>();
+		for (Path subdir : Files.newDirectoryStream(FACES.toPath(), p -> Files.isDirectory(p))) {
+			for (Path image : Files.newDirectoryStream(subdir, "*.png")) {
+				allImages.add(image);
+			}
+		}
+
+		for (Path subdir : Files.newDirectoryStream(FRONTS.toPath(), p -> Files.isDirectory(p))) {
+			for (Path image : Files.newDirectoryStream(subdir, "*.png")) {
+				allImages.add(image);
+			}
+		}
+
+		NavigableMap<Long, Set<Path>> sizeMap = new ConcurrentSkipListMap<>();
+
+		long mask = allImages.size() / 100;
+		mask = 1 << (63 - Long.numberOfLeadingZeros(mask));
+
+		long i = 0;
+		for (Path p : allImages) {
+			BasicFileAttributes attrs = Files.readAttributes(p,BasicFileAttributes.class);
+
+			if (attrs.lastAccessTime().toInstant().isBefore(accessedBefore)) {
+				Files.delete(p);
+				++deletedFiles;
+				deletedBytes += attrs.size();
+			} else {
+				sizeMap.computeIfAbsent(attrs.size(), s -> new HashSet<>()).add(p);
+			}
+
+			if (progress != null) {
+				++i;
+
+				if ((i & mask) == 0) {
+					progress.accept((double) i / (double) allImages.size());
+				}
+			}
+		}
+
+		i = 0;
+		Long size = sizeMap.firstKey();
+		while (i < sizeMap.size() / 2) {
+			++i;
+			size = sizeMap.higherKey(size);
+		}
+
+		for (Map.Entry<Long, Set<Path>> paths : sizeMap.headMap((long) (size * medianFraction)).entrySet()) {
+			for (Path path : paths.getValue()) {
+				Files.delete(path);
+				++deletedFiles;
+				deletedBytes += paths.getKey();
+			}
+		}
+
+		return new CacheCleanupResults(deletedFiles, deletedBytes);
 	}
 }
