@@ -4,11 +4,13 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.view.components.CardView;
-import emi.mtg.deckbuilder.view.groupings.CardTypeGroup;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
 
 import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 public class Preferences {
@@ -24,7 +26,7 @@ public class Preferences {
 
 	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
 	public List<CardView.ActiveSorting> collectionSorting = CardView.DEFAULT_COLLECTION_SORTING;
-	public Map<Zone, CardView.Grouping> zoneGroupings = Collections.singletonMap(Zone.Command, CardTypeGroup.INSTANCE);
+	public Map<Zone, CardView.Grouping> zoneGroupings = new HashMap<>();
 
 	public boolean collapseDuplicates = true;
 
