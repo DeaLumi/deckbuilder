@@ -23,6 +23,32 @@ public class ColorIdentity implements Omnifilter.Subfilter {
 
 	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
+		try {
+			int count = Integer.parseInt(value);
+			return (Omnifilter.FaceFilter) face -> {
+				switch (operator) {
+					case EQUALS:
+					case DIRECT:
+						return face.colorIdentity().size() == count;
+					case NOT_EQUALS:
+						return face.colorIdentity().size() != count;
+					case LESS_THAN:
+						return face.colorIdentity().size() < count;
+					case GREATER_THAN:
+						return face.colorIdentity().size() > count;
+					case LESS_OR_EQUALS:
+						return face.colorIdentity().size() <= count;
+					case GREATER_OR_EQUALS:
+						return face.colorIdentity().size() >= count;
+					default:
+						assert false;
+						return false;
+				}
+			};
+		} catch (NumberFormatException nfe) {
+			// pass
+		}
+
 		Set<Color> colors = colorsIn(value);
 		return ci -> {
 			Util.SetComparison ciComp = Util.compareSets(ci.card().colorIdentity(), colors);

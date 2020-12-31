@@ -25,7 +25,7 @@ public class CardSet implements Omnifilter.Subfilter {
 				.findAny().orElseThrow(() -> new IllegalArgumentException("No such set " + value));
 
 		return ci -> {
-			if (value == null) {
+			if (set == null) {
 				return false;
 			}
 

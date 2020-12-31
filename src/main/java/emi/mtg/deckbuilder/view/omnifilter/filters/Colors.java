@@ -34,7 +34,34 @@ public class Colors implements Omnifilter.Subfilter {
 
 	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
+		try {
+			int count = Integer.parseInt(value);
+			return (Omnifilter.FaceFilter) face -> {
+				switch (operator) {
+					case EQUALS:
+					case DIRECT:
+						return face.color().size() == count;
+					case NOT_EQUALS:
+						return face.color().size() != count;
+					case LESS_THAN:
+						return face.color().size() < count;
+					case GREATER_THAN:
+						return face.color().size() > count;
+					case LESS_OR_EQUALS:
+						return face.color().size() <= count;
+					case GREATER_OR_EQUALS:
+						return face.color().size() >= count;
+					default:
+						assert false;
+						return false;
+				}
+			};
+		} catch (NumberFormatException nfe) {
+			// pass
+		}
+
 		Set<Color> colors = colorsIn(value);
+
 		return (Omnifilter.FaceFilter) face -> {
 			Util.SetComparison ciComp = Util.compareSets(face.color(), colors);
 

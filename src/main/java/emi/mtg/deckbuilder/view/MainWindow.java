@@ -603,8 +603,7 @@ public class MainWindow extends Stage {
 	}
 
 	private static final String TIPS_AND_TRICKS = String.join("\n",
-			"The UI of this program is really dense! Here are some bits on some subtle",
-			"but powerful features!",
+			"The UI of this program is really dense! Here are some bits on some subtle but powerful features!",
 			"",
 			"Card versions:",
 			"\u2022 Alt+Click on cards to show all printings.",
@@ -617,6 +616,11 @@ public class MainWindow extends Stage {
 			"\u2022 While grouped by tags, drag cards to their tag groups to assign tags!",
 			"\u2022 You can even Control+Drag to assign multiple tags to a card!",
 			"\u2022 Search for cards by tag with the 'tag' filter: \"tag:wrath\"",
+			"",
+			"Deck Tags:",
+			"\u2022 Just like tags, but saved within the deck.",
+			"\u2022 Great for organizing complicated decks!",
+			"\u2022 Right click on a card in a deck to get started!",
 			"",
 			"I never claimed to be good at UI design! :^)");
 
@@ -633,6 +637,7 @@ public class MainWindow extends Stage {
 			"General:",
 			"\u2022 Separate search terms with a space.",
 			"\u2022 Search terms that don't start with a key and operator search card names.",
+			"\u2022 Prefix a term with '!' or '-' to negate.",
 			"",
 			"Operators:",
 			"\u2022 ':' \u2014 Meaning varies.",
@@ -646,9 +651,14 @@ public class MainWindow extends Stage {
 			"Search keys:",
 			"\u2022 'type' or 't' \u2014 Supertype/type/subtype. (Use ':' or '>='.)",
 			"\u2022 'text' or 'o' \u2014 Rules text. (Use ':' or '>='.)",
-			"\u2022 'identity' or 'ci' \u2014 Color identity. (':' means '<='.)",
-			"\u2022 'color' or 'c' \u2014 Color. (':' means '<=')",
-			"\u2022 'cmc' \u2014 Converted mana cost. (':' means '==').",
+			"\u2022 'identity' or 'ci' \u2014 Color identity. (':' means '<='.) Can use a number!",
+			"\u2022 'color' or 'c' \u2014 Color. (':' means '<=') Can use a number!",
+			"\u2022 'cmc' \u2014 Converted mana cost. (':' means '=').",
+			"\u2022 'tag' and 'decktag' \u2014 See Tips & Tricks!",
+			"\u2022 'rarity' or 'r' \u2014 Printing rarity.",
+			"\u2022 'set' or 's' \u2014 Set the card appears in. Use '=' to be exact!",
+			"\u2022 're' \u2014 Search rules text with regular expressions!",
+			"\u2022 'power'/'pow', 'toughness'/'tough', 'loyalty'/'loy'",
 			"",
 			"Examples:",
 			"\u2022 'color=rug t:legendary' \u2014 Finds all RUG commanders.",
@@ -656,8 +666,9 @@ public class MainWindow extends Stage {
 			"\u2022 'o:when o:\"enters the battlefield\" t:creature' \u2014 Finds creatures with ETB effects.",
 			"",
 			"Upcoming features:",
-			"\u2022 Logic \u2014 And, or, not, and parenthetical grouping.",
-			"\u2022 More keys \u2014 e.g. Mana cost.");
+			"\u2022 Complex Logic \u2014 And, or, and parenthetical grouping.",
+			"\u2022 More keys \u2014 e.g. Mana cost including color.",
+			"\u2022 Full expressions \u2014 Power > toughness, for example.");
 
 	@FXML
 	protected void showFilterSyntax() {
