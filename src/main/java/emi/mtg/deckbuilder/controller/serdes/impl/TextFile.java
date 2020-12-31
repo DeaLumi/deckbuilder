@@ -4,7 +4,6 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
-import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 
@@ -16,7 +15,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TextFile implements DeckImportExport {
+public class TextFile extends NameOnlyImporter {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
 
 	@Override
@@ -33,9 +32,11 @@ public class TextFile implements DeckImportExport {
 	public DeckList importDeck(File from) throws IOException {
 		Scanner scanner = new Scanner(from);
 
-		final String name = from.getName().substring(0, from.getName().lastIndexOf('.'));
+		name(from.getName().substring(0, from.getName().lastIndexOf('.')));
+		author(Context.get().preferences.authorName);
+		description("");
 
-		Zone zone = Zone.Library;
+		beginZone(Zone.Library);
 		Map<Zone, List<CardInstance>> cards = new HashMap<>();
 
 		while (scanner.hasNextLine()) {
@@ -49,7 +50,11 @@ public class TextFile implements DeckImportExport {
 
 			if (!m.matches()) {
 				try {
-					zone = Zone.valueOf(line.trim().substring(0, line.trim().length() - 1));
+					String nextZoneName = line.trim().substring(0, line.trim().length() - 1);
+					if ("SB".equals(nextZoneName)) nextZoneName = "Sideboard";
+					Zone nextZone = Zone.valueOf(nextZoneName);
+					endZone();
+					beginZone(nextZone);
 					continue;
 				} catch (IllegalArgumentException iae) {
 					// do nothing
@@ -61,25 +66,15 @@ public class TextFile implements DeckImportExport {
 			int count = Integer.parseInt(m.group("preCount") != null ? m.group("preCount") : m.group("postCount"));
 			String cardName = m.group("preCardName") != null ? m.group("preCardName") : m.group("postCardName");
 
-			Card card = Context.get().data.cards().stream().filter(c -> c.name().equals(cardName)).findAny().orElse(null);
-
-			if (card == null) {
-				throw new IOException("Couldn't find card named \"" + cardName + "\"");
-			}
-
-			Card.Printing printing = Context.get().preferences.preferredPrinting(card);
-			if (printing == null) printing = card.printings().iterator().next();
-			for (int i = 0; i < count; ++i) {
-				cards.computeIfAbsent(zone, z -> new ArrayList<>()).add(new CardInstance(printing));
-			}
+			addCard(cardName, count);
 		}
 
-		Format fmt = Arrays.stream(Format.values())
-				.filter(f -> f.deckZones().equals(cards.keySet()))
+		format(Arrays.stream(Format.values())
+				.filter(f -> f.deckZones().equals(deckCards.keySet()))
 				.findAny()
-				.orElse(Context.get().preferences.defaultFormat);
+				.orElse(Context.get().preferences.defaultFormat));
 
-		return new DeckList(name, "", fmt, "", cards);
+		return completeImport();
 	}
 
 	private static void writeList(List<CardInstance> list, Writer writer) throws IOException {

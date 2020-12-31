@@ -56,4 +56,11 @@ public class Preferences {
 
 		return stream.findFirst().orElse(null);
 	}
+
+	public Card.Printing anyPrinting(Card card) {
+		Card.Printing preferred = preferredPrinting(card);
+		if (preferred == null) preferred = card.printings().iterator().next();
+
+		return preferred;
+	}
 }

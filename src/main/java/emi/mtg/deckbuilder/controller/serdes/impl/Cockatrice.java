@@ -1,11 +1,8 @@
 package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
-import emi.lib.mtg.DataSource;
-import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
-import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import org.w3c.dom.Document;
@@ -24,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class Cockatrice implements DeckImportExport {
+public class Cockatrice extends NameOnlyImporter {
 
 	private static final Map<String, Zone> COCKATRICE_ZONE_MAP = cockatriceZoneMap();
 	private static Map<String, Zone> cockatriceZoneMap() {
@@ -43,33 +40,6 @@ public class Cockatrice implements DeckImportExport {
 		return Collections.unmodifiableMap(tmp);
 	}
 
-	private static Card findCard(DataSource data, Map<String, Card> cache, Map<String, Card> frontCache, String name) {
-		Card card = cache.get(name);
-		if (card == null) {
-			card = frontCache.get(name);
-		}
-
-		if (card == null) {
-			for (Card candidate : data.cards()) {
-				if (cache.containsKey(candidate.name())) {
-					continue;
-				}
-
-				cache.put(candidate.name(), candidate);
-				if (candidate.face(Card.Face.Kind.Front) != null) {
-					frontCache.put(candidate.face(Card.Face.Kind.Front).name(), candidate);
-				}
-
-				if (candidate.name().equals(name) || (candidate.face(Card.Face.Kind.Front) != null && candidate.face(Card.Face.Kind.Front).name().equals(name))) {
-					card = candidate;
-					break;
-				}
-			}
-		}
-
-		return card;
-	}
-
 	@Override
 	public String extension() {
 		return "cod";
@@ -83,7 +53,8 @@ public class Cockatrice implements DeckImportExport {
 	@Override
 	public DeckList importDeck(File from) throws IOException {
 		Document xml;
-		DataSource data = Context.get().data;
+
+		beginImport();
 
 		try {
 			xml = DocumentBuilderFactory.newInstance()
@@ -93,10 +64,11 @@ public class Cockatrice implements DeckImportExport {
 			throw new IOException(e);
 		}
 
-		String deckName = from.getName().replace(".cod", "");
 		Node deckNameEl = xml.getDocumentElement().getElementsByTagName("deckname").item(0);
 		if (deckNameEl != null && !deckNameEl.getTextContent().isEmpty()) {
-			deckName = deckNameEl.getTextContent();
+			name(deckNameEl.getTextContent());
+		} else {
+			name(from.getName().replace(".cod", ""));
 		}
 
 		String deckComments = "";
@@ -104,6 +76,7 @@ public class Cockatrice implements DeckImportExport {
 		if (deckCommentsEl != null && !deckCommentsEl.getTextContent().isEmpty()) {
 			deckComments = deckCommentsEl.getTextContent();
 		}
+		description(deckComments);
 
 		String deckAuthor;
 		if (deckComments.startsWith("Author: ")) {
@@ -113,6 +86,7 @@ public class Cockatrice implements DeckImportExport {
 		} else {
 			deckAuthor = Context.get().preferences.authorName;
 		}
+		author(deckAuthor);
 
 		HashMap<Zone, List<CardInstance>> deckCards = new HashMap<>();
 		HashMap<String, Card> cardCache = new HashMap<>();
@@ -120,31 +94,21 @@ public class Cockatrice implements DeckImportExport {
 		NodeList zones = xml.getDocumentElement().getElementsByTagName("zone");
 		for (int i = 0; i < zones.getLength(); ++i) {
 			Element zone = (Element) zones.item(i);
-			ArrayList<CardInstance> cardsInZone = new ArrayList<>();
+
+			beginZone(COCKATRICE_ZONE_MAP.get(zone.getAttribute("name")));
 
 			NodeList cards = zone.getElementsByTagName("card");
 			for (int j = 0; j < cards.getLength(); ++j) {
 				Element cardEl = (Element) cards.item(j);
 				String cardName = cardEl.getAttribute("name");
 
-				Card card = findCard(data, cardCache, cardCacheByFront, cardName);
-				if (card == null) {
-					throw new IOException(String.format("The deck refers to an unknown card \"%s\"", cardName));
-				}
-
-				Card.Printing pr = Context.get().preferences.preferredPrinting(card);
-				if (pr == null) pr = card.printings().iterator().next();
-				assert pr != null : String.format("Card %s has no printings!", cardName);
-
-				for (int k = 0; k < Integer.parseInt(cardEl.getAttribute("number")); ++k) {
-					cardsInZone.add(new CardInstance(pr));
-				}
+				addCard(cardEl.getAttribute("name"), Integer.parseInt(cardEl.getAttribute("number")));
 			}
 
-			deckCards.put(COCKATRICE_ZONE_MAP.get(zone.getAttribute("name")), cardsInZone);
+			endZone();
 		}
 
-		return new DeckList(deckName, deckAuthor, Format.Freeform, deckComments, deckCards);
+		return completeImport();
 	}
 
 	@Override
