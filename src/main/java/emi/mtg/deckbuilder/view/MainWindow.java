@@ -870,7 +870,10 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void importDeck() {
-		serdesFileChooser.getExtensionFilters().setAll(importSerdes.keySet());
+		serdesFileChooser.getExtensionFilters().setAll(importSerdes.entrySet().stream()
+				.sorted(Comparator.comparing(e -> e.getValue().toString()))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toList()));
 		File f = serdesFileChooser.showOpenDialog(this);
 
 		if (f == null) {
@@ -907,7 +910,10 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void exportDeck() {
-		serdesFileChooser.getExtensionFilters().setAll(exportSerdes.keySet());
+		serdesFileChooser.getExtensionFilters().setAll(exportSerdes.entrySet().stream()
+				.sorted(Comparator.comparing(e -> e.getValue().toString()))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toList()));
 		File f = serdesFileChooser.showSaveDialog(this);
 
 		if (f == null) {
