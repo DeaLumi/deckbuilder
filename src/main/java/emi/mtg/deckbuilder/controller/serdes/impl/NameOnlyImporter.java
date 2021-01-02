@@ -49,6 +49,10 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 		this.fullCache = new HashMap<>();
 		this.deckCards = new EnumMap<>(Zone.class);
 		this.zone = Zone.Library;
+		this.name = "";
+		this.author = "";
+		this.description = "";
+		this.format = null;
 	}
 
 	protected void name(String name) {
@@ -73,7 +77,7 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 		this.name = "";
 		this.author = "";
 		this.description = "";
-		this.format = Format.Freeform;
+		this.format = null;
 	}
 
 	protected void beginZone(Zone zone) {
@@ -103,6 +107,28 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 	}
 
 	protected DeckList completeImport() {
-		return new DeckList(name, author, format, description, this.deckCards);
+		DeckList deck = new DeckList(name, author, format != null ? format : Format.Freeform, description, this.deckCards);
+
+		if (format == null) {
+			Format best = Format.Freeform;
+			float bestErrors = Integer.MAX_VALUE;
+			for (Format candidate : Format.values()) {
+				if (!candidate.deckZones().containsAll(deckCards.keySet())) continue;
+
+				Format.ValidationResult res = candidate.validate(deck);
+				int errors = res.deckErrors.size() +
+						res.zoneErrors.values().stream().mapToInt(Set::size).sum() +
+						res.cards.values().stream().mapToInt(cr -> cr.errors.size()).sum();
+
+				if (errors < bestErrors) {
+					best = candidate;
+					bestErrors = errors;
+				}
+			}
+
+			deck.formatProperty().setValue(best);
+		}
+
+		return deck;
 	}
 }

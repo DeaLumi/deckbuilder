@@ -1,7 +1,6 @@
 package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
-import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
@@ -17,6 +16,7 @@ import java.util.regex.Pattern;
 
 public class TextFile extends NameOnlyImporter {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
+	private static final Pattern ZONE_PATTERN = Pattern.compile("^(?:// )?(?<zoneName>[A-Za-z ]+):?$");
 
 	@Override
 	public String extension() {
@@ -37,7 +37,6 @@ public class TextFile extends NameOnlyImporter {
 		description("");
 
 		beginZone(Zone.Library);
-		Map<Zone, List<CardInstance>> cards = new HashMap<>();
 
 		while (scanner.hasNextLine()) {
 			String line = scanner.nextLine();
@@ -49,18 +48,22 @@ public class TextFile extends NameOnlyImporter {
 			Matcher m = LINE_PATTERN.matcher(line);
 
 			if (!m.matches()) {
+				Matcher zm = ZONE_PATTERN.matcher(line);
+				if (!zm.matches()) {
+					throw new IOException("Malformed line: \"" + line + "\"");
+				}
+
+				String nextZoneName = zm.group("zoneName");
+				if ("SB".equals(nextZoneName) || "Outside the Game".equals(nextZoneName)) nextZoneName = "Sideboard";
+
 				try {
-					String nextZoneName = line.trim().substring(0, line.trim().length() - 1);
-					if ("SB".equals(nextZoneName)) nextZoneName = "Sideboard";
 					Zone nextZone = Zone.valueOf(nextZoneName);
 					endZone();
 					beginZone(nextZone);
 					continue;
 				} catch (IllegalArgumentException iae) {
-					// do nothing
+					throw new IOException("Unknown zone " + nextZoneName);
 				}
-
-				throw new IOException("Malformed line " + line);
 			}
 
 			int count = Integer.parseInt(m.group("preCount") != null ? m.group("preCount") : m.group("postCount"));
@@ -68,11 +71,6 @@ public class TextFile extends NameOnlyImporter {
 
 			addCard(cardName, count);
 		}
-
-		format(Arrays.stream(Format.values())
-				.filter(f -> f.deckZones().equals(deckCards.keySet()))
-				.findAny()
-				.orElse(Context.get().preferences.defaultFormat));
 
 		return completeImport();
 	}

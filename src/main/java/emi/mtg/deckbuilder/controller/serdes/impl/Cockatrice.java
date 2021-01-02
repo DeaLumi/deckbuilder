@@ -3,7 +3,6 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
-import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -76,7 +75,6 @@ public class Cockatrice extends NameOnlyImporter {
 		if (deckCommentsEl != null && !deckCommentsEl.getTextContent().isEmpty()) {
 			deckComments = deckCommentsEl.getTextContent();
 		}
-		description(deckComments);
 
 		String deckAuthor;
 		if (deckComments.startsWith("Author: ")) {
@@ -86,11 +84,10 @@ public class Cockatrice extends NameOnlyImporter {
 		} else {
 			deckAuthor = Context.get().preferences.authorName;
 		}
+
+		description(deckComments);
 		author(deckAuthor);
 
-		HashMap<Zone, List<CardInstance>> deckCards = new HashMap<>();
-		HashMap<String, Card> cardCache = new HashMap<>();
-		HashMap<String, Card> cardCacheByFront = new HashMap<>();
 		NodeList zones = xml.getDocumentElement().getElementsByTagName("zone");
 		for (int i = 0; i < zones.getLength(); ++i) {
 			Element zone = (Element) zones.item(i);
@@ -100,8 +97,6 @@ public class Cockatrice extends NameOnlyImporter {
 			NodeList cards = zone.getElementsByTagName("card");
 			for (int j = 0; j < cards.getLength(); ++j) {
 				Element cardEl = (Element) cards.item(j);
-				String cardName = cardEl.getAttribute("name");
-
 				addCard(cardEl.getAttribute("name"), Integer.parseInt(cardEl.getAttribute("number")));
 			}
 
@@ -131,7 +126,7 @@ public class Cockatrice extends NameOnlyImporter {
 
 		Element commentsEl = xml.createElement("comments");
 		StringBuilder comments = new StringBuilder();
-		if (!deck.author().isEmpty()) comments.append(deck.author());
+		if (!deck.author().isEmpty()) comments.append("Author: ").append(deck.author());
 		if (!deck.author().isEmpty() && !deck.description().isEmpty()) comments.append('\n').append('\n');
 		if (!deck.description().isEmpty()) comments.append(deck.description());
 		commentsEl.setTextContent(comments.toString());
