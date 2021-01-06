@@ -670,6 +670,10 @@ public class MainWindow extends Stage {
 	private static final String TIPS_AND_TRICKS = String.join("\n",
 			"The UI of this program is really dense! Here are some bits on some subtle but powerful features!",
 			"",
+			"General stuff:",
+			"\u2022 Toggle on 'Auto' mode to immediately add any single-result searches to the deck.",
+			"\u2022 You can paste card lists into the Omnibar over a zone to add those cards/quantities.",
+			"",
 			"Card versions:",
 			"\u2022 Alt+Click on cards to show all printings.",
 			"\u2022 Double-click a printing to change the version of the card you clicked on.",
@@ -684,8 +688,8 @@ public class MainWindow extends Stage {
 			"",
 			"Deck Tags:",
 			"\u2022 Just like tags, but saved within the deck.",
-			"\u2022 Great for organizing complicated decks!",
-			"\u2022 Right click on a card in a deck to get started!",
+			"\u2022 Can be used as a grouping to organize complex decks.",
+			"\u2022 Right click on a card in a deck to get started.",
 			"",
 			"I never claimed to be good at UI design! :^)");
 
