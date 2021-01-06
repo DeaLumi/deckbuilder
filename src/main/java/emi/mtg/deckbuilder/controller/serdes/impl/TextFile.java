@@ -11,6 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +27,28 @@ public class TextFile extends NameOnlyImporter {
 	@Override
 	public String toString() {
 		return "Plain Text File";
+	}
+
+	public static boolean parseLine(String line, BiConsumer<Card.Printing, Integer> handler) {
+		Matcher m = LINE_PATTERN.matcher(line.trim());
+
+		if (!m.matches()) return false;
+
+		int count;
+		if (m.group("preCount") != null) {
+			count = Integer.parseInt(m.group("preCount"));
+		} else if (m.group("postCount") != null) {
+			count = Integer.parseInt(m.group("postCount"));
+		} else {
+			count = 1;
+		}
+
+		Card.Printing pr = NameOnlyImporter.findPrinting(m.group("cardName"));
+
+		if (pr == null) return false;
+
+		handler.accept(pr, count);
+		return true;
 	}
 
 	@Override
@@ -45,12 +68,10 @@ public class TextFile extends NameOnlyImporter {
 				continue;
 			}
 
-			Matcher m = LINE_PATTERN.matcher(line);
-
-			if (!m.matches()) {
-				Matcher zm = ZONE_PATTERN.matcher(line);
+			if (!parseLine(line, this::addCard)) {
+				Matcher zm = ZONE_PATTERN.matcher(line.trim());
 				if (!zm.matches()) {
-					throw new IOException("Malformed line: \"" + line + "\"");
+					throw new IOException("Malformed line or unrecognized card: \"" + line + "\"");
 				}
 
 				String nextZoneName = zm.group("zoneName");
@@ -61,22 +82,10 @@ public class TextFile extends NameOnlyImporter {
 					Zone nextZone = Zone.valueOf(nextZoneName);
 					endZone();
 					beginZone(nextZone);
-					continue;
 				} catch (IllegalArgumentException iae) {
 					throw new IOException("Unknown zone " + nextZoneName);
 				}
 			}
-
-			int count;
-			if (m.group("preCount") != null) {
-				count = Integer.parseInt(m.group("preCount"));
-			} else if (m.group("postCount") != null) {
-				count = Integer.parseInt(m.group("postCount"));
-			} else {
-				count = 1;
-			}
-
-			addCard(m.group("cardName"), count);
 		}
 		endZone();
 

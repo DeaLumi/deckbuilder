@@ -1,7 +1,6 @@
 package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
-import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
@@ -13,14 +12,16 @@ import java.io.IOException;
 import java.util.*;
 
 public abstract class NameOnlyImporter implements DeckImportExport {
-	protected static Card findCard(DataSource data, Map<String, Card> cache, Map<String, Card> fullCache, String name) {
+	private final static Map<String, Card> cache = new HashMap<>(), fullCache = new HashMap<>();
+
+	public static Card findCard(String name) {
 		Card card = cache.get(name);
 		if (card == null) {
 			card = fullCache.get(name);
 		}
 
 		if (card == null) {
-			for (Card candidate : data.cards()) {
+			for (Card candidate : Context.get().data.cards()) {
 				if (cache.containsKey(candidate.name())) {
 					continue;
 				}
@@ -38,15 +39,22 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 		return card;
 	}
 
-	private final Map<String, Card> cache, fullCache;
+	public static Card.Printing findPrinting(String name) {
+		Card card = findCard(name);
+
+		if (card == null) {
+			return null;
+		}
+
+		return Context.get().preferences.anyPrinting(card);
+	}
+
 	protected final Map<Zone, List<CardInstance>> deckCards;
 	protected Zone zone;
 	protected String name, author, description;
 	protected Format format;
 
 	protected NameOnlyImporter() {
-		this.cache = new HashMap<>();
-		this.fullCache = new HashMap<>();
 		this.deckCards = new EnumMap<>(Zone.class);
 		this.zone = Zone.Library;
 		this.name = "";
@@ -85,20 +93,19 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 		this.deckCards.put(zone, new ArrayList<>());
 	}
 
-	protected void addCard(String name) throws IOException {
-		addCard(name, 1);
-	}
-
 	protected void addCard(String name, int quantity) throws IOException {
-		Card card = findCard(Context.get().data, cache, fullCache, name);
+		Card.Printing pr = findPrinting(name);
 
-		if (card == null) {
+		if (pr == null) {
 			throw new IOException(String.format("The deck refers to an unidentifiable card \"%s\"", name));
 		}
 
-		Card.Printing pr = Context.get().preferences.anyPrinting(card);
+		addCard(pr, quantity);
+	}
+
+	protected void addCard(Card.Printing printing, int quantity) {
 		for (int k = 0; k < quantity; ++k) {
-			deckCards.get(zone).add(new CardInstance(pr));
+			deckCards.get(zone).add(new CardInstance(printing));
 		}
 	}
 
