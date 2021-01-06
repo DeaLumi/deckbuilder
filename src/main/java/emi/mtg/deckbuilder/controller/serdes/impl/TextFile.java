@@ -15,7 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TextFile extends NameOnlyImporter {
-	private static final Pattern LINE_PATTERN = Pattern.compile("^(?:(?<preCount>\\d+)x? (?<preCardName>.+)|(?<postCardName>.+) x?(?<postCount>\\d+))$");
+	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>[^/]+)(?: x?(?<postCount>\\d+))?(?![:])$");
 	private static final Pattern ZONE_PATTERN = Pattern.compile("^(?:// )?(?<zoneName>[A-Za-z ]+):?$");
 
 	@Override
@@ -55,6 +55,7 @@ public class TextFile extends NameOnlyImporter {
 
 				String nextZoneName = zm.group("zoneName");
 				if ("SB".equals(nextZoneName) || "Outside the Game".equals(nextZoneName)) nextZoneName = "Sideboard";
+				if ("Commander".equals(nextZoneName)) nextZoneName = "Command";
 
 				try {
 					Zone nextZone = Zone.valueOf(nextZoneName);
@@ -66,11 +67,18 @@ public class TextFile extends NameOnlyImporter {
 				}
 			}
 
-			int count = Integer.parseInt(m.group("preCount") != null ? m.group("preCount") : m.group("postCount"));
-			String cardName = m.group("preCardName") != null ? m.group("preCardName") : m.group("postCardName");
+			int count;
+			if (m.group("preCount") != null) {
+				count = Integer.parseInt(m.group("preCount"));
+			} else if (m.group("postCount") != null) {
+				count = Integer.parseInt(m.group("postCount"));
+			} else {
+				count = 1;
+			}
 
-			addCard(cardName, count);
+			addCard(m.group("cardName"), count);
 		}
+		endZone();
 
 		return completeImport();
 	}

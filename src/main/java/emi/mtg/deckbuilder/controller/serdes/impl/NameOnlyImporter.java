@@ -103,7 +103,9 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 	}
 
 	protected void endZone() {
-		// No-op at the moment. Might be used later, so call it appropriately!
+		if (deckCards.get(zone).isEmpty()) {
+			deckCards.remove(zone);
+		}
 	}
 
 	protected DeckList completeImport() {
