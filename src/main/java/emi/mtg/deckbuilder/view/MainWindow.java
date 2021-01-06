@@ -288,6 +288,24 @@ public class MainWindow extends Stage {
 			});
 		});
 
+		MenuItem removeAllMenuItem = new MenuItem("Remove All");
+		removeAllMenuItem.setOnAction(ae -> deck.cards(zone).removeAll(menu.cards));
+
+		Menu moveMenu = new Menu("Move To");
+
+		for (Zone other : deck.format().deckZones()) {
+			if (other == zone) continue;
+
+			MenuItem moveItem = new MenuItem(other.toString());
+			moveItem.setOnAction(ae -> {
+				final List<CardInstance> cards = new ArrayList<>(menu.cards);
+				deck.cards(zone).removeAll(cards);
+				deck.cards(other).addAll(cards);
+			});
+
+			moveMenu.getItems().add(moveItem);
+		}
+
 		Menu tagsMenu = new Menu("Deck Tags");
 
 		menu.setOnShowing(e -> {
@@ -337,6 +355,16 @@ public class MainWindow extends Stage {
 		});
 
 		menu.getItems().addAll(changePrintingMenuItem, tagsMenu);
+
+		if (moveMenu.getItems().size() == 1) {
+			MenuItem item = moveMenu.getItems().get(0);
+			item.setText("Move to " + item.getText());
+			menu.getItems().add(item);
+		} else if (!moveMenu.getItems().isEmpty()) {
+			menu.getItems().add(moveMenu);
+		}
+
+		menu.getItems().add(removeAllMenuItem);
 
 		return menu;
 	}
