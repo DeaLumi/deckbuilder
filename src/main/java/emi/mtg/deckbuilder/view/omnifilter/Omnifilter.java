@@ -106,7 +106,6 @@ public class Omnifilter {
 				Subfilter factory = SUBFILTER_FACTORIES.get(key);
 
 				if (factory == null) {
-					// TODO: Report this somehow? Or just fail hard?
 					throw new IllegalArgumentException("Unrecognized filter " + key);
 				}
 

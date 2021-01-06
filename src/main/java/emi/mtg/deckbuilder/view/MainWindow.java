@@ -172,7 +172,7 @@ public class MainWindow extends Stage {
 				.and(collectionContextMenu.cards.sizeProperty().isEqualTo(1)));
 		changePrintingMenuItem.setOnAction(ae -> {
 			if (collection.showVersionsSeparately.get()) {
-				return; // TODO Make this menu item disabled or hidden.
+				return;
 			}
 
 			if (collectionContextMenu.cards.isEmpty()) {
