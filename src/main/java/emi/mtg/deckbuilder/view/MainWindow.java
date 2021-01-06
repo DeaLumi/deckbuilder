@@ -7,6 +7,7 @@ import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.Json;
+import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardPane;
@@ -366,6 +367,33 @@ public class MainWindow extends Stage {
 					pane.view().doubleClick(ci -> pane.model().remove(ci));
 					pane.view().contextMenu(createDeckContextMenu(pane, z));
 					pane.view().collapseDuplicatesProperty().set(Context.get().preferences.collapseDuplicates);
+					pane.listPasteAction.set(list -> {
+						String[] lines = list.split("\r?\n");
+						List<CardInstance> addAll = new ArrayList<>();
+						Set<String> unrecognized = new HashSet<>();
+
+						for (String line : lines) {
+							if (!TextFile.parseLine(line, (pr, count) -> {
+								for (int i = 0; i < count; ++i) {
+									addAll.add(new CardInstance(pr));
+								}
+							})) {
+								unrecognized.add(line);
+							}
+						}
+
+						pane.model().addAll(addAll);
+
+						if (!unrecognized.isEmpty()) {
+							AlertBuilder.notify(MainWindow.this)
+									.title("Unrecognized Cards")
+									.type(Alert.AlertType.WARNING)
+									.headerText("Some cards weren't found.")
+									.contentText("The following cards couldn't be found:\n\u2022 " + unrecognized.stream().collect(Collectors.joining("\n\u2022 ")))
+									.modal(Modality.WINDOW_MODAL)
+									.show();
+						}
+					});
 					return pane;
 				})
 				.collect(Collectors.toList()));
