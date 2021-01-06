@@ -224,6 +224,7 @@ public class MainWindow extends Stage {
 				Context.get().preferences.collectionSorting);
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
+		collection.autoAction.set(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
 
 		createCollectionContextMenu();
 		collection.view().contextMenu(collectionContextMenu);

@@ -38,6 +38,13 @@ public class PrintingSelectorDialog extends Dialog<Card.Printing> {
 			close();
 		});
 
+		pane.autoAction.set(ci -> {
+			setResult(ci.printing());
+			close();
+		});
+
+		pane.autoEnabled.set(true);
+
 		pane.view().immutableModelProperty().set(true);
 		pane.showVersionsSeparately.set(true);
 		pane.setPrefHeight(scene.getHeight() / 1.5);
@@ -47,5 +54,7 @@ public class PrintingSelectorDialog extends Dialog<Card.Printing> {
 		getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
 		initModality(Modality.WINDOW_MODAL);
 		initOwner(scene.getWindow());
+
+		setOnShown(de -> pane.filter().requestFocus());
 	}
 }

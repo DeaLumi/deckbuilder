@@ -11,9 +11,7 @@ import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.*;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -30,6 +28,7 @@ import javafx.scene.shape.Rectangle;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class CardPane extends BorderPane {
@@ -125,7 +124,10 @@ public class CardPane extends BorderPane {
 	private final Menu deckMenu;
 	private final EventHandler<ActionEvent> updateFilter;
 	private final CardView cardView;
+	private final TextField filter;
 
+	public final ObjectProperty<Consumer<CardInstance>> autoAction = new SimpleObjectProperty<>(null);
+	public final BooleanProperty autoEnabled = new SimpleBooleanProperty(true);
 	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showVersionsSeparately = new SimpleBooleanProperty(true);
 
@@ -220,12 +222,16 @@ public class CardPane extends BorderPane {
 		deckMenu.getItems().add(showVersionsSeparately);
 		deckMenu.getItems().add(collapseDuplicates);
 
-		final TextField filter = new TextField();
+		filter = new TextField();
 		filter.setPromptText("Omnifilter...");
 		filter.setPrefWidth(250.0);
 
 		final Tooltip filterErrorTooltip = new Tooltip();
 		filter.setTooltip(filterErrorTooltip);
+
+		final ToggleButton autoToggle = new ToggleButton("Auto");
+		autoToggle.visibleProperty().bind(autoAction.isNotNull());
+		autoEnabled.bindBidirectional(autoToggle.selectedProperty());
 
 		this.updateFilter = ae -> {
 			Predicate<CardInstance> compositeFilter;
@@ -255,7 +261,14 @@ public class CardPane extends BorderPane {
 			}
 
 			this.cardView.filteredModel().setPredicate(compositeFilter);
-			this.cardView.requestFocus();
+
+			if (autoAction.get() != null && this.cardView.filteredModel().size() == 1 && autoToggle.isSelected()) {
+				autoAction.get().accept(this.cardView.filteredModel().get(0));
+				filter.setText("");
+				filter.requestFocus();
+			} else {
+				this.cardView.requestFocus();
+			}
 		};
 
 		findOtherCards.setOnAction(updateFilter);
@@ -321,6 +334,14 @@ public class CardPane extends BorderPane {
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
 
+		autoAction.addListener(action -> {
+			if (action == null) {
+				controlBar.getChildren().remove(autoToggle);
+			} else {
+				controlBar.getChildren().add(2, autoToggle);
+			}
+		});
+
 		updateFilter();
 	}
 
@@ -368,5 +389,9 @@ public class CardPane extends BorderPane {
 
 	public CardView view() {
 		return this.cardView;
+	}
+
+	public TextField filter() {
+		return filter;
 	}
 }
