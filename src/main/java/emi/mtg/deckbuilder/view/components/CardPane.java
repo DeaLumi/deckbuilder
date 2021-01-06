@@ -12,6 +12,7 @@ import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.*;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -28,6 +29,7 @@ import javafx.scene.shape.Rectangle;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -126,6 +128,7 @@ public class CardPane extends BorderPane {
 	private final EventHandler<ActionEvent> updateFilter;
 	private final CardView cardView;
 	private final TextField filter;
+	private final Label deckStats;
 
 	public final ObjectProperty<Consumer<CardInstance>> autoAction = new SimpleObjectProperty<>(null);
 	public final ObjectProperty<Consumer<String>> listPasteAction = new SimpleObjectProperty<>(null);
@@ -298,52 +301,8 @@ public class CardPane extends BorderPane {
 		showVersionsSeparately.setOnAction(updateFilter);
 		filter.setOnAction(updateFilter);
 
-		Label deckStats = new Label("");
-
-		// TODO: EW. EW. EW. EW. EW.
-		Thread statRefreshThread = new Thread(() -> {
-			while (!Thread.interrupted()) {
-				final long total = cardView.filteredModel().size();
-
-				AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
-
-				try {
-					for (CardInstance ci : cardView.filteredModel()) {
-						Card.Face front = ci.card().face(Card.Face.Kind.Front);
-						if (front != null && front.type().cardTypes().contains(CardType.Creature)) {
-							creature.incrementAndGet();
-						} else if (front != null && front.type().cardTypes().contains(CardType.Land)) {
-							land.incrementAndGet();
-						} else {
-							other.incrementAndGet();
-						}
-					}
-				} catch (NoSuchElementException nsee) {
-					// Gross patch for concurrent modification
-					continue;
-				}
-
-				StringBuilder str = new StringBuilder();
-
-				if (total != 0) {
-					str.append(total).append(" Card").append(total == 1 ? "" : "s").append(": ");
-
-					boolean comma = append(str, false, land, "Land");
-					comma = append(str, comma, creature, "Creature");
-					append(str, comma, other, "Other");
-				}
-
-				Platform.runLater(() -> deckStats.setText(str.toString()));
-
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException ie) {
-					break;
-				}
-			}
-		}, "Stat Refresh Thread");
-		statRefreshThread.setDaemon(true);
-		statRefreshThread.start();
+		deckStats = new Label("");
+		model.addListener((ListChangeListener<CardInstance>) lce -> ForkJoinPool.commonPool().submit(this::updateStats));
 
 		HBox controlBar = new HBox(8.0);
 		controlBar.setPadding(new Insets(8.0));
@@ -365,10 +324,43 @@ public class CardPane extends BorderPane {
 		});
 
 		updateFilter();
+		ForkJoinPool.commonPool().submit(this::updateStats);
 	}
 
 	public String title() {
 		return deckMenu.getText();
+	}
+
+	private synchronized void updateStats() {
+		final long total = cardView.filteredModel().size();
+		AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
+
+		try {
+			for (CardInstance ci : cardView.filteredModel()) {
+				Card.Face front = ci.card().face(Card.Face.Kind.Front);
+				if (front != null && front.type().cardTypes().contains(CardType.Creature)) {
+					creature.incrementAndGet();
+				} else if (front != null && front.type().cardTypes().contains(CardType.Land)) {
+					land.incrementAndGet();
+				} else {
+					other.incrementAndGet();
+				}
+			}
+		} catch (NoSuchElementException | ConcurrentModificationException e) {
+			return;
+		}
+
+		StringBuilder str = new StringBuilder();
+
+		if (total != 0) {
+			str.append(total).append(" Card").append(total == 1 ? "" : "s").append(": ");
+
+			boolean comma = append(str, false, land, "Land");
+			comma = append(str, comma, creature, "Creature");
+			append(str, comma, other, "Other");
+		}
+
+		Platform.runLater(() -> deckStats.setText(str.toString()));
 	}
 
 	private static boolean append(StringBuilder str, boolean comma, AtomicLong qty, String qtyName) {
