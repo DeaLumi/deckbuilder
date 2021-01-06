@@ -17,6 +17,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Text;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -135,6 +136,7 @@ public class MainApplication extends Application {
 					.title("Memory Limit Warning")
 					.headerText("Low memory limit detected!")
 					.contentText(LOW_MEMORY_LIMIT)
+					.modal(Modality.APPLICATION_MODAL)
 					.showAndWait();
 		}
 
@@ -199,6 +201,7 @@ public class MainApplication extends Application {
 					.title("No Data Sources")
 					.headerText("No data source is available!")
 					.contentText(NO_DATA_SOURCES)
+					.modal(Modality.APPLICATION_MODAL)
 					.showAndWait();
 
 			Platform.exit();
@@ -226,6 +229,7 @@ public class MainApplication extends Application {
 					.title("Auto-Update")
 					.headerText("A program update is available.")
 					.contentText("Would you like to update?")
+					.modal(Modality.APPLICATION_MODAL)
 					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 				doGraphicalUpdate();
 			}
@@ -236,6 +240,7 @@ public class MainApplication extends Application {
 					.title("Auto-Update")
 					.headerText("New card data may be available.")
 					.contentText("Would you like to update?")
+					.modal(Modality.APPLICATION_MODAL)
 					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 				doGraphicalDataUpdate(null);
 			}
@@ -260,6 +265,7 @@ public class MainApplication extends Application {
 				.title("Loading")
 				.headerText("Loading card data...")
 				.contentNode(progress)
+				.modal(Modality.APPLICATION_MODAL)
 				.get();
 		ForkJoinTask<Boolean> future = ForkJoinPool.commonPool().submit(() -> {
 			try {
@@ -284,6 +290,7 @@ public class MainApplication extends Application {
 						.title("Data Load Error")
 						.headerText("An error occurred while loading data.")
 						.contentText(DATA_LOAD_ERROR)
+						.modal(Modality.APPLICATION_MODAL)
 						.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 					doGraphicalDataUpdate(Context.get().data);
 					doGraphicalLoadData();
@@ -364,6 +371,7 @@ public class MainApplication extends Application {
 				.title("Update Data")
 				.headerText("Data is fresh.")
 				.contentText("Data source seems fresh. Update anyway?")
+				.modal(Modality.APPLICATION_MODAL)
 				.showAndWait()
 				.orElse(ButtonType.NO) != ButtonType.YES) {
 			return;
@@ -378,6 +386,7 @@ public class MainApplication extends Application {
 				.title("Updating")
 				.headerText("Updating...")
 				.contentText("")
+				.modal(Modality.APPLICATION_MODAL)
 				.buttons(ButtonType.CLOSE).get();
 		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
 
@@ -474,6 +483,7 @@ public class MainApplication extends Application {
 				.headerText("Enter cleanup parameters:")
 				.contentNode(grid)
 				.buttons(ButtonType.OK, ButtonType.CANCEL)
+				.modal(Modality.APPLICATION_MODAL)
 				.get();
 
 		Button ok = (Button) dlg.getDialogPane().lookupButton(ButtonType.OK);
@@ -502,21 +512,24 @@ public class MainApplication extends Application {
 								.title("Cache Cleanup")
 								.headerText("Cleanup successful!")
 								.contentText(String.format("%d files deleted totalling %d MB!", results.filesDeleted, results.deletedBytes / (1024 * 1024)))
-								.showAndWait();
+								.modal(Modality.APPLICATION_MODAL)
+								.show();
 					} else if (thrown != null) {
 						AlertBuilder.notify(hostStage)
 								.type(Alert.AlertType.ERROR)
 								.title("Cache Cleanup")
 								.headerText("Error During Cleanup")
 								.contentText("An error occurred while cleaning the cache: " + thrown.getMessage() + "\n")
-								.showAndWait();
+								.modal(Modality.APPLICATION_MODAL)
+								.show();
 					} else {
 						AlertBuilder.notify(hostStage)
 								.type(Alert.AlertType.ERROR)
 								.title("Cache Cleanup")
 								.headerText("????")
 								.contentText("Something very strange happened. Sorry...")
-								.showAndWait();
+								.modal(Modality.APPLICATION_MODAL)
+								.show();
 					}
 
 					dlg.close();

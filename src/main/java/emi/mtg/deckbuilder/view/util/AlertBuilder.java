@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.util;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.util.Optional;
@@ -64,6 +65,11 @@ public class AlertBuilder {
 
 	public AlertBuilder buttons(ButtonType... buttons) {
 		alert.getButtonTypes().setAll(buttons);
+		return this;
+	}
+
+	public AlertBuilder modal(Modality modality) {
+		alert.initModality(modality);
 		return this;
 	}
 

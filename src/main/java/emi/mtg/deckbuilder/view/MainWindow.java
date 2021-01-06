@@ -30,6 +30,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.File;
@@ -95,11 +96,12 @@ public class MainWindow extends Stage {
 			owner.deregisterMainWindow(this);
 		});
 
-		Alert alert = AlertBuilder.create()
-				.owner(this)
+		Alert alert = AlertBuilder.notify(this)
+				.buttons()
 				.title("Initializing UI")
 				.headerText("Getting things ready...")
 				.contentText("Please wait a moment!")
+				.modal(Modality.WINDOW_MODAL)
 				.get();
 
 		Platform.runLater(() -> {
@@ -409,7 +411,8 @@ public class MainWindow extends Stage {
 					.title("Open Error")
 					.headerText("An error occurred while opening:")
 					.contentText(ioe.getMessage())
-					.showAndWait();
+					.modal(Modality.WINDOW_MODAL)
+					.show();
 		}
 	}
 
@@ -462,6 +465,7 @@ public class MainWindow extends Stage {
 					.title("Variants")
 					.headerText("A deck with variants was opened.")
 					.contentText(VARIANTS_QUERY)
+					.modal(Modality.WINDOW_MODAL)
 					.showAndWait().orElse(ButtonType.NO);
 
 			if (result != ButtonType.YES) {
@@ -481,6 +485,7 @@ public class MainWindow extends Stage {
 					.title("Variants Opened")
 					.headerText("All variants have been opened.")
 					.contentText(VARIANTS_OPENED)
+					.modal(Modality.WINDOW_MODAL)
 					.show();
 		}
 
@@ -495,6 +500,7 @@ public class MainWindow extends Stage {
 					.headerText("Deck has been modified.")
 					.contentText("Would you like to save this deck?")
 					.buttons(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL)
+					.modal(Modality.WINDOW_MODAL)
 					.showAndWait().orElse(ButtonType.CANCEL);
 
 			if (type == ButtonType.CANCEL) {
@@ -550,6 +556,7 @@ public class MainWindow extends Stage {
 					.title("Save Error")
 					.headerText("An error occurred while saving:")
 					.contentText(ioe.getMessage())
+					.modal(Modality.WINDOW_MODAL)
 					.showAndWait();
 			return false;
 		}
@@ -580,6 +587,7 @@ public class MainWindow extends Stage {
 				.title("Warning")
 				.headerText("Some information may be lost:")
 				.contentText(builder.toString())
+				.modal(Modality.WINDOW_MODAL)
 				.showAndWait()
 				.orElse(ButtonType.NO) != ButtonType.YES;
 	}
@@ -695,6 +703,7 @@ public class MainWindow extends Stage {
 				.title("About Deck Builder")
 				.headerText("Deck Builder v0.0.0")
 				.contentText(ABOUT_TEXT)
+				.modal(Modality.WINDOW_MODAL)
 				.showAndWait();
 	}
 
@@ -783,7 +792,8 @@ public class MainWindow extends Stage {
 					.title("Deck Validation")
 					.headerText("Deck is valid.")
 					.contentText("No validation messages to report!")
-					.showAndWait();
+					.modal(Modality.WINDOW_MODAL)
+					.show();
 		} else {
 			StringBuilder msg = new StringBuilder();
 			for (String err : result.deckErrors) {
@@ -843,7 +853,8 @@ public class MainWindow extends Stage {
 					.title("Deck Validation")
 					.headerText("Validation messages:")
 					.contentText(msg.toString().trim())
-					.showAndWait();
+					.modal(Modality.WINDOW_MODAL)
+					.show();
 		}
 	}
 
@@ -916,7 +927,8 @@ public class MainWindow extends Stage {
 					.title("Import Error")
 					.headerText("An error occurred while importing:")
 					.contentText(ioe.getMessage())
-					.showAndWait();
+					.modal(Modality.WINDOW_MODAL)
+					.show();
 		}
 	}
 
@@ -951,6 +963,7 @@ public class MainWindow extends Stage {
 					.title("Export Error")
 					.headerText("An error occurred while exporting:")
 					.contentText(ioe.getMessage())
+					.modal(Modality.WINDOW_MODAL)
 					.showAndWait();
 		}
 	}

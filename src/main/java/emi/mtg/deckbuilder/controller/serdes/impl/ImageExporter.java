@@ -27,6 +27,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Modality;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -209,6 +210,8 @@ public class ImageExporter implements DeckImportExport {
 				zoneFlows.get(zone).setVisible(false);
 			}
 		}
+
+		alert.initModality(Modality.APPLICATION_MODAL);
 
 		return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
 	}
