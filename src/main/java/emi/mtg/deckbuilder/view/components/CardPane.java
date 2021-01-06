@@ -19,6 +19,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -127,6 +128,7 @@ public class CardPane extends BorderPane {
 	private final TextField filter;
 
 	public final ObjectProperty<Consumer<CardInstance>> autoAction = new SimpleObjectProperty<>(null);
+	public final ObjectProperty<Consumer<String>> listPasteAction = new SimpleObjectProperty<>(null);
 	public final BooleanProperty autoEnabled = new SimpleBooleanProperty(true);
 	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showVersionsSeparately = new SimpleBooleanProperty(true);
@@ -222,8 +224,28 @@ public class CardPane extends BorderPane {
 		deckMenu.getItems().add(showVersionsSeparately);
 		deckMenu.getItems().add(collapseDuplicates);
 
-		filter = new TextField();
-		filter.setPromptText("Omnifilter...");
+		filter = new TextField() {
+			@Override
+			public void paste() {
+				if (listPasteAction.get() == null) {
+					super.paste();
+					return;
+				}
+
+				final Clipboard clipboard = Clipboard.getSystemClipboard();
+				if (clipboard.hasString()) {
+					final String text = clipboard.getString();
+					if (text != null) {
+						if (text.contains("\n")) {
+							listPasteAction.get().accept(text);
+						} else {
+							super.paste();
+						}
+					}
+				}
+			}
+		};
+		filter.setPromptText("Omnibar...");
 		filter.setPrefWidth(250.0);
 
 		final Tooltip filterErrorTooltip = new Tooltip();
