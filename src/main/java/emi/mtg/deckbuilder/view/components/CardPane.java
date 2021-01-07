@@ -294,6 +294,8 @@ public class CardPane extends BorderPane {
 			} else {
 				this.cardView.requestFocus();
 			}
+
+			ForkJoinPool.commonPool().submit(this::updateStats);
 		};
 
 		findOtherCards.setOnAction(updateFilter);
@@ -324,7 +326,6 @@ public class CardPane extends BorderPane {
 		});
 
 		updateFilter();
-		ForkJoinPool.commonPool().submit(this::updateStats);
 	}
 
 	public String title() {
