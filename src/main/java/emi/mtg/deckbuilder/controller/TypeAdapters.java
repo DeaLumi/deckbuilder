@@ -38,17 +38,22 @@ public class TypeAdapters {
 
 			@Override
 			public Format read(JsonReader in) throws IOException {
+				String v;
 				switch (in.peek()) {
 					case STRING:
-						String v = in.nextString();
-						if ("EDH".equals(v)) v = "Commander"; // Quick hack for continuity.
-						try {
-							return Format.valueOf(v);
-						} catch (IllegalArgumentException iae) {
-							return Format.Freeform;
-						}
+						v = in.nextString();
+						break;
+					case NAME:
+						v = in.nextName();
+						break;
 					default:
 						return null;
+				}
+				if ("EDH".equals(v)) v = "Commander"; // Quick hack for continuity.
+				try {
+					return Format.valueOf(v);
+				} catch (IllegalArgumentException iae) {
+					return Format.Freeform;
 				}
 			}
 		};
@@ -99,8 +104,18 @@ public class TypeAdapters {
 
 			@Override
 			public Card.Printing read(JsonReader in) throws IOException {
-				UUID id = UUID.fromString(in.nextString());
-				return data.printing(id);
+				String v;
+				switch (in.peek()) {
+					case STRING:
+						v = in.nextString();
+						break;
+					case NAME:
+						v = in.nextName();
+						break;
+					default:
+						return null;
+				}
+				return data.printing(UUID.fromString(v));
 			}
 		};
 	}
