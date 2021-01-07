@@ -256,6 +256,7 @@ public class CardPane extends BorderPane {
 
 		final ToggleButton autoToggle = new ToggleButton("Auto");
 		autoToggle.visibleProperty().bind(autoAction.isNotNull());
+		autoToggle.managedProperty().bind(autoToggle.visibleProperty());
 		autoEnabled.bindBidirectional(autoToggle.selectedProperty());
 
 		this.updateFilter = ae -> {
@@ -287,9 +288,12 @@ public class CardPane extends BorderPane {
 
 			this.cardView.filteredModel().setPredicate(compositeFilter);
 
-			if (autoAction.get() != null && this.cardView.filteredModel().size() == 1 && autoToggle.isSelected()) {
-				autoAction.get().accept(this.cardView.filteredModel().get(0));
-				filter.setText("");
+			if (autoAction.get() != null && this.cardView.filteredModel().size() <= 1 && autoToggle.isSelected()) {
+				if (!this.cardView.filteredModel().isEmpty()) {
+					autoAction.get().accept(this.cardView.filteredModel().get(0));
+					filter.setText("");
+				}
+
 				filter.requestFocus();
 			} else {
 				this.cardView.requestFocus();
@@ -311,19 +315,12 @@ public class CardPane extends BorderPane {
 		controlBar.setAlignment(Pos.CENTER_LEFT);
 		controlBar.getChildren().add(menuBar);
 		controlBar.getChildren().add(filter);
+		controlBar.getChildren().add(autoToggle);
 		controlBar.getChildren().add(deckStats);
 		HBox.setHgrow(menuBar, Priority.NEVER);
 		HBox.setHgrow(filter, Priority.SOMETIMES);
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
-
-		autoAction.addListener((observable, oldValue, newValue) -> {
-			if (newValue == null) {
-				controlBar.getChildren().remove(autoToggle);
-			} else {
-				controlBar.getChildren().add(2, autoToggle);
-			}
-		});
 
 		updateFilter();
 	}
