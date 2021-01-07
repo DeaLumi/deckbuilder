@@ -1,12 +1,11 @@
 package emi.mtg.deckbuilder.controller;
 
-import emi.mtg.deckbuilder.view.MainWindow;
+import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.net.HttpURLConnection;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.*;
@@ -154,7 +153,7 @@ public class Updater {
 
 		HttpURLConnection httpConn = (HttpURLConnection) connection;
 
-		httpConn.setIfModifiedSince(Files.getLastModifiedTime(getJarPath()).toMillis());
+		httpConn.setIfModifiedSince(Files.getLastModifiedTime(MainApplication.getJarPath()).toMillis());
 		httpConn.setRequestMethod("HEAD");
 
 		if (httpConn.getResponseCode() >= 400) {
@@ -196,8 +195,7 @@ public class Updater {
 
 		Path java = Paths.get(System.getProperty("java.home"), "bin", "java").toAbsolutePath();
 
-		URL jarUrl = MainWindow.class.getProtectionDomain().getCodeSource().getLocation();
-		Path jarPath = getJarPath();
+		Path jarPath = MainApplication.getJarPath();
 		Path jarDir = jarPath.getParent();
 
 		scriptWriter.append(String.format(SCRIPT, java.toString(), jarDir.toString(), jarPath.toString(), updateDir.toString()));
@@ -217,18 +215,6 @@ public class Updater {
 				.start();
 
 		System.exit(0);
-	}
-
-	private static Path getJarPath() {
-		URL jarUrl = MainWindow.class.getProtectionDomain().getCodeSource().getLocation();
-		Path jarPath;
-		try {
-			jarPath = Paths.get(jarUrl.toURI()).toAbsolutePath();
-		} catch (URISyntaxException urise) {
-			jarPath = Paths.get(jarUrl.getPath()).toAbsolutePath();
-		}
-
-		return jarPath;
 	}
 
 }

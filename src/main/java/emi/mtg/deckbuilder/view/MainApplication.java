@@ -39,20 +39,42 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class MainApplication extends Application {
+	public static Path getJarPath() {
+		URL jarUrl = MainApplication.class.getProtectionDomain().getCodeSource().getLocation();
+		Path jarPath;
+		try {
+			jarPath = Paths.get(jarUrl.toURI()).toAbsolutePath();
+		} catch (URISyntaxException urise) {
+			jarPath = Paths.get(jarUrl.getPath()).toAbsolutePath();
+		}
+
+		return jarPath;
+	}
+
 	public static final ClassLoader PLUGIN_CLASS_LOADER;
 
 	static {
 		ClassLoader tmp;
 		try {
 			List<URL> urls = new ArrayList<>();
-			for (Path path : Files.newDirectoryStream(Paths.get("plugins/"), "*.jar")) {
-				urls.add(path.toUri().toURL());
+
+			if (Files.isDirectory(Paths.get("plugins/"))) {
+				for (Path path : Files.newDirectoryStream(Paths.get("plugins/"), "*.jar")) {
+					urls.add(path.toUri().toURL());
+				}
 			}
-			tmp = new URLClassLoader(urls.toArray(new URL[urls.size()]), MainWindow.class.getClassLoader());
+
+			if (Files.isDirectory(getJarPath().resolveSibling("plugins/"))) {
+				for (Path path : Files.newDirectoryStream(getJarPath().resolveSibling("plugins/"), "*.jar")) {
+					urls.add(path.toUri().toURL());
+				}
+			}
+
+			tmp = new URLClassLoader(urls.toArray(new URL[0]), MainApplication.class.getClassLoader());
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
-			System.err.println("Warning: Unable to load any plugins...");
-			tmp = new URLClassLoader(new URL[0], MainWindow.class.getClassLoader());
+			System.err.println("Warning: An IO error occurred while loading plugins...");
+			tmp = MainApplication.class.getClassLoader();
 		}
 		PLUGIN_CLASS_LOADER = tmp;
 	}
