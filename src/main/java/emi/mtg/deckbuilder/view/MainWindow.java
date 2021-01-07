@@ -5,6 +5,7 @@ import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.controller.Tags;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.Json;
 import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
@@ -54,7 +55,6 @@ public class MainWindow extends Stage {
 	private boolean deckModified;
 
 	private CardPane collection;
-	private CardView.ContextMenu collectionContextMenu;
 
 	private FileChooser primaryFileChooser;
 	private DeckImportExport primarySerdes;
@@ -164,22 +164,22 @@ public class MainWindow extends Stage {
 				.collect(Collectors.toList()));
 	}
 
-	private void createCollectionContextMenu() {
-		collectionContextMenu = new CardView.ContextMenu();
+	private CardView.ContextMenu createCollectionContextMenu() {
+		CardView.ContextMenu menu = new CardView.ContextMenu();
 
-		MenuItem changePrintingMenuItem = new MenuItem("Choose Preferred Printing");
+		MenuItem changePrintingMenuItem = new MenuItem("Prefer Printing");
 		changePrintingMenuItem.visibleProperty().bind(collection.showVersionsSeparately.not()
-				.and(collectionContextMenu.cards.sizeProperty().isEqualTo(1)));
+				.and(menu.cards.sizeProperty().isEqualTo(1)));
 		changePrintingMenuItem.setOnAction(ae -> {
 			if (collection.showVersionsSeparately.get()) {
 				return;
 			}
 
-			if (collectionContextMenu.cards.isEmpty()) {
+			if (menu.cards.isEmpty()) {
 				return;
 			}
 
-			Set<Card> cards = collectionContextMenu.cards.stream().map(CardInstance::card).collect(Collectors.toSet());
+			Set<Card> cards = menu.cards.stream().map(CardInstance::card).collect(Collectors.toSet());
 			if (cards.size() != 1) {
 				return;
 			}
@@ -197,14 +197,59 @@ public class MainWindow extends Stage {
 			});
 		});
 
+		Menu tagsMenu = new Menu("Tags");
+
+		menu.showingProperty().addListener(showing -> {
+			final Tags tags = Context.get().tags;
+			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
+			tagCBs.setAll(tags.tags().stream()
+					.map(CheckMenuItem::new)
+					.peek(cmi -> cmi.setSelected(menu.cards.stream().allMatch(ci -> tags.tags(ci.card()).contains(cmi.getText()))))
+					.peek(cmi -> cmi.selectedProperty().addListener((cmiObj, wasSelected, isSelected) -> {
+						if (isSelected) {
+							menu.cards.forEach(ci -> tags.add(ci.card(), cmi.getText()));
+						} else {
+							menu.cards.forEach(ci -> tags.remove(ci.card(), cmi.getText()));
+
+							if (tags.cards(cmi.getText()) == null || tags.cards(cmi.getText()).isEmpty()) {
+								tags.tags().remove(cmi.getText());
+							}
+						}
+						collection.view().refreshCardGrouping(menu.cards);
+					}))
+					.collect(Collectors.toList())
+			);
+			tagCBs.add(new SeparatorMenuItem());
+
+			TextField newTagField = new TextField();
+			CustomMenuItem newTagMenuItem = new CustomMenuItem(newTagField);
+			newTagMenuItem.setHideOnClick(false);
+			newTagField.setPromptText("New tag...");
+			newTagField.setOnAction(ae -> {
+				if (newTagField.getText().isEmpty()) {
+					ae.consume();
+					return;
+				}
+
+				tags.add(newTagField.getText());
+				menu.cards.forEach(ci -> tags.add(ci.card(), newTagField.getText()));
+				collection.view().regroup();
+				menu.hide();
+			});
+
+			tagCBs.add(newTagMenuItem);
+
+			tagsMenu.getItems().setAll(tagCBs);
+		});
+
 		Menu fillMenu = new Menu("Fill");
-		fillMenu.visibleProperty().bind(collectionContextMenu.cards.emptyProperty().not());
+		fillMenu.visibleProperty().bind(menu.cards.emptyProperty().not());
 
 		for (Zone zone : Zone.values()) {
 			MenuItem fillZoneMenuItem = new MenuItem(zone.name());
-			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> deck != null && deck.format().deckZones().contains(zone), collectionContextMenu.showingProperty()));
+			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> deck != null && deck.format().deckZones().contains(zone), menu.showingProperty()));
 			fillZoneMenuItem.setOnAction(ae -> {
-				for (CardInstance source : collectionContextMenu.cards) {
+				for (CardInstance source : menu.cards) {
 					ObservableList<CardInstance> zoneModel = deckPane(zone).model();
 
 					long count = deck.format().maxCopies - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
@@ -216,7 +261,9 @@ public class MainWindow extends Stage {
 			fillMenu.getItems().add(fillZoneMenuItem);
 		}
 
-		collectionContextMenu.getItems().addAll(changePrintingMenuItem, fillMenu);
+		menu.getItems().addAll(changePrintingMenuItem, tagsMenu, fillMenu);
+
+		return menu;
 	}
 
 	private void setupUI() {
@@ -229,8 +276,7 @@ public class MainWindow extends Stage {
 		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.autoAction.set(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
 
-		createCollectionContextMenu();
-		collection.view().contextMenu(collectionContextMenu);
+		collection.view().contextMenu(createCollectionContextMenu());
 
 		collection.showIllegalCards.set(false);
 		collection.showVersionsSeparately.set(false);
@@ -677,7 +723,7 @@ public class MainWindow extends Stage {
 			"\u2022 Application -> Save Preferences to remember chosen versions in the Collection.",
 			"",
 			"Tags:",
-			"\u2022 Application -> Manage Tags to define categories for cards.",
+			"\u2022 Right click collection cards to assign tags.",
 			"\u2022 Change any view to Grouping -> Tags to group cards by their tags.",
 			"\u2022 While grouped by tags, drag cards to their tag groups to assign tags!",
 			"\u2022 You can even Control+Drag to assign multiple tags to a card!",
@@ -762,25 +808,6 @@ public class MainWindow extends Stage {
 				.contentText(ABOUT_TEXT)
 				.modal(Modality.WINDOW_MODAL)
 				.showAndWait();
-	}
-
-	@FXML
-	protected void showTagManagementDialog() {
-		owner.showTagManagementDialog();
-
-		if (collection.view().grouping() instanceof emi.mtg.deckbuilder.view.groupings.Tags) {
-			collection.view().regroup();
-		}
-		for (Zone zone : deck.format().deckZones()) {
-			if (deckPane(zone).view().grouping() instanceof emi.mtg.deckbuilder.view.groupings.Tags) {
-				deckPane(zone).view().regroup();
-			}
-		}
-	}
-
-	@FXML
-	protected void saveTags() {
-		owner.saveTags();
 	}
 
 	private Format.ValidationResult updateCardStates() {

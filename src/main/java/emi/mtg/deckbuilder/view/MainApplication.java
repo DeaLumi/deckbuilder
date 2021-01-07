@@ -5,7 +5,6 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
-import emi.mtg.deckbuilder.view.dialogs.TagManagementDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -432,20 +431,6 @@ public class MainApplication extends Application {
 		}
 
 		return false;
-	}
-
-	public void showTagManagementDialog() {
-		TagManagementDialog dlg = new TagManagementDialog();
-		dlg.initOwner(hostStage);
-		dlg.showAndWait();
-	}
-
-	public void saveTags() {
-		try {
-			Context.get().saveTags(); // TODO: Move this to controller?
-		} catch (IOException ioe) {
-			ioe.printStackTrace(); // TODO: Handle gracefully
-		}
 	}
 
 	public void trimImageDiskCache() {
