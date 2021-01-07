@@ -331,22 +331,19 @@ public class MainWindow extends Stage {
 			);
 			tagCBs.add(new SeparatorMenuItem());
 
-			MenuItem newTagMenuItem = new MenuItem("Assign new tag...");
-			TextField newTagTextField = new TextField();
-			newTagTextField.setPromptText("Tag...");
-			newTagMenuItem.setOnAction(ae -> {
-				TextInputDialog dlg = new TextInputDialog();
-				dlg.setTitle("New Deck Tag");
-				dlg.setHeaderText("Enter the new tag:");
-				dlg.setContentText("Tag:");
-				dlg.getEditor().setPromptText("Tag...");
-				dlg.initOwner(MainWindow.this);
-
-				Optional<String> newTag = dlg.showAndWait();
-				if (newTag.isPresent()) {
-					menu.cards.forEach(ci -> ci.tags().add(newTag.get()));
-					menu.view.get().regroup();
+			TextField newTagField = new TextField();
+			CustomMenuItem newTagMenuItem = new CustomMenuItem(newTagField);
+			newTagMenuItem.setHideOnClick(false);
+			newTagField.setPromptText("New tag...");
+			newTagField.setOnAction(ae -> {
+				if (newTagField.getText().isEmpty()) {
+					ae.consume();
+					return;
 				}
+
+				menu.cards.forEach(ci -> ci.tags().add(newTagField.getText()));
+				menu.view.get().regroup();
+				menu.hide();
 			});
 
 			tagCBs.add(newTagMenuItem);
