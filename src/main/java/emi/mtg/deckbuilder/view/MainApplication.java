@@ -95,7 +95,13 @@ public class MainApplication extends Application {
 	void deregisterMainWindow(MainWindow window) {
 		mainWindows.remove(window);
 		if (mainWindows.isEmpty()) {
-			quit();
+			try {
+				Context.get().saveAll();
+			} catch (IOException ioe) {
+				throw new RuntimeException(ioe);
+			} finally {
+				quit();
+			}
 		}
 	}
 
@@ -184,14 +190,6 @@ public class MainApplication extends Application {
 			alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
 
 			alert.showAndWait();
-		});
-
-		hostStage.setOnCloseRequest(ev -> {
-			try {
-				Context.get().saveAll();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
 		});
 
 		DataSource data;
