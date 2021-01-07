@@ -317,8 +317,8 @@ public class CardPane extends BorderPane {
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
 
-		autoAction.addListener(action -> {
-			if (action == null) {
+		autoAction.addListener((observable, oldValue, newValue) -> {
+			if (newValue == null) {
 				controlBar.getChildren().remove(autoToggle);
 			} else {
 				controlBar.getChildren().add(2, autoToggle);
