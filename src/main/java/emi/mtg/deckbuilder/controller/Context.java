@@ -1,16 +1,15 @@
 package emi.mtg.deckbuilder.controller;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
-import emi.lib.mtg.game.Format;
-import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.Images;
-import emi.mtg.deckbuilder.view.components.CardView;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -57,16 +56,9 @@ public class Context {
 	public Context(DataSource data) throws IOException {
 		this.data = data;
 
-		this.gson = new GsonBuilder()
-				.setPrettyPrinting()
-				.registerTypeAdapter(CardView.Grouping.class, TypeAdapters.createCardViewGroupingAdapter())
-				.registerTypeAdapter(CardView.ActiveSorting.class, TypeAdapters.createActiveSortingTypeAdapter())
-				.registerTypeAdapter(Card.class,TypeAdapters.createCardAdapter())
-				.registerTypeAdapter(Card.Printing.class, TypeAdapters.createCardPrintingAdapter())
-				.registerTypeAdapter(Format.class, TypeAdapters.createFormatAdapter())
-				.registerTypeAdapter(Path.class, TypeAdapters.createPathTypeAdapter())
-				.registerTypeAdapterFactory(TypeAdapters.createPropertyTypeAdapterFactory())
-				.registerTypeAdapterFactory(TypeAdapters.createObservableListTypeAdapterFactory())
+		this.gson = Serialization.GSON.newBuilder()
+				.registerTypeAdapter(Card.class, Serialization.createCardAdapter())
+				.registerTypeAdapter(Card.Printing.class, Serialization.createCardPrintingAdapter())
 				.create();
 
 		if (Files.exists(PREFERENCES)) {

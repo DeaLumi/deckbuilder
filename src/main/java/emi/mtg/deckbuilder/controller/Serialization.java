@@ -1,8 +1,6 @@
 package emi.mtg.deckbuilder.controller;
 
-import com.google.gson.Gson;
-import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -25,7 +23,18 @@ import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.function.Function;
 
-public class TypeAdapters {
+public class Serialization {
+	public static final Gson GSON = new GsonBuilder()
+			.setPrettyPrinting()
+			.setExclusionStrategies()
+			.registerTypeAdapter(CardView.Grouping.class, Serialization.createCardViewGroupingAdapter())
+			.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
+			.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
+			.registerTypeAdapter(Path.class, Serialization.createPathTypeAdapter())
+			.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
+			.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
+			.create();
+
 	private static class StringTypeAdapter<T> extends TypeAdapter<T> {
 		protected final Function<T, String> toString;
 		protected final Function<String, T> fromString;
