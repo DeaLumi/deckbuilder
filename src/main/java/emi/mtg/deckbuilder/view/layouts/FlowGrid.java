@@ -45,7 +45,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 
 		double y = 0;
 		for (int i = 0; i < groups.length; ++i) {
-			if (!showEmpty && groups[i].model.isEmpty()) {
+			if (!showEmpty && groups[i].model().isEmpty()) {
 				groups[i].labelBounds.pos.x = groups[i].labelBounds.pos.y = 0;
 				groups[i].labelBounds.dim.x = groups[i].labelBounds.dim.y = 0;
 				groups[i].groupBounds.pos.x = groups[i].groupBounds.pos.y = 0;
@@ -62,7 +62,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 			groups[i].groupBounds.pos.x = 0;
 			groups[i].groupBounds.pos.y = y;
 
-			int gs = Math.min(stride, groups[i].model.size());
+			int gs = Math.min(stride, groups[i].model().size());
 			if (gs > maxStride) {
 				maxStride = gs;
 				for (int j = 0; j < i; ++j) {
@@ -72,7 +72,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 
 			groups[i].labelBounds.dim.x = groups[i].groupBounds.dim.x = maxStride * pwp;
 
-			groups[i].groupBounds.dim.y = Math.max(pwp, Math.ceil((double) groups[i].model.size() / (double) maxStride) * php);
+			groups[i].groupBounds.dim.y = Math.max(pwp, Math.ceil((double) groups[i].model().size() / (double) maxStride) * php);
 			y += groups[i].groupBounds.dim.y;
 		}
 	}

@@ -235,15 +235,25 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 	public class Group {
 		public final Bounds groupBounds, labelBounds;
 		public final Grouping.Group group;
-		public SortedList<CardInstance> model;
+		private final ReadOnlyListWrapper<CardInstance> model;
 
 		public Group(Grouping.Group group, ObservableList<CardInstance> modelSource, Comparator<CardInstance> initialSort) {
 			this.group = group;
 			this.groupBounds = new Bounds();
 			this.labelBounds = new Bounds();
-			this.model = modelSource.filtered(group::contains).sorted(initialSort);
 
-			this.model.addListener(CardView.this);
+			final SortedList<CardInstance> modelProper = modelSource.filtered(group::contains).sorted(initialSort);
+			this.model = new ReadOnlyListWrapper<>(modelProper);
+			modelProper.addListener((ListChangeListener<CardInstance>) x -> CardView.this.layout());
+		}
+
+		public ObservableList<CardInstance> model() {
+			return model.getReadOnlyProperty().get();
+		}
+
+		public void setSort(Comparator<CardInstance> sort) {
+			assert model.get() instanceof SortedList;
+			((SortedList<CardInstance>) model.get()).setComparator(sort);
 		}
 	}
 
@@ -955,7 +965,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 				this.sort = convertSorts(sorts);
 
 				for (Group g : groupedModel) {
-					g.model.setComparator(this.sort);
+					g.setSort(this.sort);
 				}
 
 				scheduleRender();
