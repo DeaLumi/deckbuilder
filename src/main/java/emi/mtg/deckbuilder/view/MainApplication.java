@@ -187,32 +187,35 @@ public class MainApplication extends Application {
 			StringWriter stackTrace = new StringWriter();
 			e.printStackTrace(new PrintWriter(stackTrace));
 
-			Alert alert = new Alert(Alert.AlertType.ERROR);
-			alert.initOwner(hostStage);
+			final boolean ds = deckSaved;
+			Platform.runLater(() -> {
+				Alert alert = new Alert(Alert.AlertType.ERROR);
+				alert.initOwner(hostStage);
 
-			alert.setTitle("Uncaught Exception");
-			alert.setHeaderText("An internal error has occurred.");
+				alert.setTitle("Uncaught Exception");
+				alert.setHeaderText("An internal error has occurred.");
 
-			alert.setContentText(
-					"Something went wrong!\n" +
-							"\n" +
-							"I have no idea if the application will be able to keep running.\n" +
-							(deckSaved ?
-									"Your decks have been emergency-saved to 'emergency-save-XXXXXXXX.json' in the deckbuilder directory.\n" :
-									"Something went even more wrong while we tried to save your decks. Sorry. D:\n"
-							) +
-							"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
-							"If you're the nerdy type, tech details follow.\n" +
-							"\n" +
-							"Thread: " + x.getName() + " / " + x.getId() + "\n" +
-							"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
-							"\n" +
-							"Full stack trace written to standard out and standard error (usually err.txt)."
-			);
+				alert.setContentText(
+						"Something went wrong!\n" +
+								"\n" +
+								"I have no idea if the application will be able to keep running.\n" +
+								(ds ?
+										"Your decks have been emergency-saved to 'emergency-save-XXXXXXXX.json' in the deckbuilder directory.\n" :
+										"Something went even more wrong while we tried to save your decks. Sorry. D:\n"
+								) +
+								"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
+								"If you're the nerdy type, tech details follow.\n" +
+								"\n" +
+								"Thread: " + x.getName() + " / " + x.getId() + "\n" +
+								"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
+								"\n" +
+								"Full stack trace written to standard out and standard error (usually err.txt)."
+				);
 
-			alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
+				alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
 
-			alert.showAndWait();
+				alert.show();
+			});
 		});
 
 		Preferences prefs = Preferences.instantiate();
