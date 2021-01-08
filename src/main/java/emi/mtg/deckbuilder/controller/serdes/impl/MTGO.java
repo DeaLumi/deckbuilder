@@ -7,6 +7,7 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.Preferences;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -80,7 +81,7 @@ public class MTGO implements DeckImportExport {
 					throw new IOException("Couldn't find card " + name + " / " + catId);
 				}
 
-				printing = Context.get().preferences.preferredPrinting(card);
+				printing = Preferences.get().preferredPrinting(card);
 				if (printing == null) printing = card.printings().iterator().next();
 				System.err.println("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name; using preferred printing. This won't export back to MTGO.");
 			}

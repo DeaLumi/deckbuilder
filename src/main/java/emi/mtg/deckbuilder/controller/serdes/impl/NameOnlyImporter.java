@@ -7,6 +7,7 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.Preferences;
 
 import java.io.IOException;
 import java.util.*;
@@ -46,7 +47,7 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 			return null;
 		}
 
-		return Context.get().preferences.anyPrinting(card);
+		return Preferences.get().anyPrinting(card);
 	}
 
 	protected final Map<Zone, List<CardInstance>> deckCards;

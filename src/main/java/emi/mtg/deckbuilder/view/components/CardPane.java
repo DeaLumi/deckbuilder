@@ -2,8 +2,8 @@ package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardType;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.SortDialog;
 import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
@@ -113,7 +113,7 @@ public class CardPane extends BorderPane {
 		Map<Card, UUID> prefPrintCache = new HashMap<>();
 
 		return ci -> {
-			Card.Printing preferred = Context.get().preferences.preferredPrinting(ci.card());
+			Card.Printing preferred = Preferences.get().preferredPrinting(ci.card());
 			if (preferred != null) return preferred.id().equals(ci.id());
 
 			synchronized(prefPrintCache) {

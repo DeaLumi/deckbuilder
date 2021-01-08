@@ -2,9 +2,9 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.Preferences;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -56,7 +56,7 @@ public class TextFile extends NameOnlyImporter {
 		Scanner scanner = new Scanner(from);
 
 		name(from.getName().substring(0, from.getName().lastIndexOf('.')));
-		author(Context.get().preferences.authorName);
+		author(Preferences.get().authorName);
 		description("");
 
 		beginZone(Zone.Library);

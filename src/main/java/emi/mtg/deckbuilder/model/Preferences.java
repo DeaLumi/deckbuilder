@@ -3,10 +3,17 @@ package emi.mtg.deckbuilder.model;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.Serialization;
+import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +21,39 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public class Preferences {
+	private static final Path PATH = MainApplication.getJarPath().resolveSibling("preferences.json");
+	private static Preferences instance = null;
+
+	public static synchronized Preferences instantiate() throws IOException {
+		if (instance == null) {
+			if (Files.exists(PATH)) {
+				Reader reader = Files.newBufferedReader(PATH);
+				instance = Serialization.GSON.fromJson(reader, Preferences.class);
+				reader.close();
+			} else {
+				instance = new Preferences();
+			}
+		} else {
+			throw new IllegalStateException("Preferences have already been initialized!");
+		}
+
+		return instance;
+	}
+
+	public static synchronized Preferences get() {
+		if (instance == null) {
+			throw new IllegalStateException("Preferences haven't been loaded yet!");
+		}
+
+		return instance;
+	}
+
+	public static void save() throws IOException {
+		Writer writer = Files.newBufferedWriter(PATH);
+		Serialization.GSON.toJson(get(), writer);
+		writer.close();
+	}
+
 	public Format defaultFormat = Format.Standard;
 	public URI updateUri = URI.create("http://emi.sly.io/deckbuilder-nodata.zip");
 

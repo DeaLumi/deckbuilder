@@ -11,6 +11,7 @@ import emi.mtg.deckbuilder.controller.serdes.impl.Json;
 import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
@@ -145,7 +146,7 @@ public class MainWindow extends Stage {
 				ci.flags.add(CardInstance.Flags.Invalid);
 				break;
 			case NotLegal:
-				if (Context.get().preferences.theFutureIsNow && ci.card().legality(Format.Future) == Card.Legality.Legal) {
+				if (Preferences.get().theFutureIsNow && ci.card().legality(Format.Future) == Card.Legality.Legal) {
 					break;
 				}
 				ci.flags.add(CardInstance.Flags.Invalid);
@@ -186,13 +187,7 @@ public class MainWindow extends Stage {
 
 			final Card card = cards.iterator().next();
 			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
-				Context.get().preferences.preferredPrintings.put(card.fullName(), pr.id());
-				try {
-					Context.get().savePreferences();
-				} catch (IOException ioe) {
-					throw new Error(ioe);
-				}
-
+				Preferences.get().preferredPrintings.put(card.fullName(), pr.id());
 				collection.updateFilter();
 			});
 		});
@@ -270,8 +265,8 @@ public class MainWindow extends Stage {
 		collection = new CardPane("Collection",
 				FXCollections.observableArrayList(),
 				FlowGrid.Factory.INSTANCE,
-				Context.get().preferences.collectionGrouping,
-				Context.get().preferences.collectionSorting);
+				Preferences.get().collectionGrouping,
+				Preferences.get().collectionSorting);
 		collection.view().immutableModelProperty().set(true);
 		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
 		collection.autoAction.set(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
@@ -433,11 +428,11 @@ public class MainWindow extends Stage {
 					CardPane pane = new CardPane(z.name(),
 							deck.cards(z),
 							Piles.Factory.INSTANCE,
-							Context.get().preferences.zoneGroupings.getOrDefault(z, ConvertedManaCost.INSTANCE));
+							Preferences.get().zoneGroupings.getOrDefault(z, ConvertedManaCost.INSTANCE));
 					pane.model().addListener(deckListChangedListener);
 					pane.view().doubleClick(ci -> pane.model().remove(ci));
 					pane.view().contextMenu(createDeckContextMenu(pane, z));
-					pane.view().collapseDuplicatesProperty().set(Context.get().preferences.collapseDuplicates);
+					pane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
 					pane.listPasteAction.set(list -> {
 						String[] lines = list.split("\r?\n");
 						List<CardInstance> addAll = new ArrayList<>();
@@ -471,7 +466,7 @@ public class MainWindow extends Stage {
 	}
 
 	private void newDeck(Format format) {
-		DeckList newDeck = new DeckList("", Context.get().preferences.authorName, format, "", Collections.emptyMap());
+		DeckList newDeck = new DeckList("", Preferences.get().authorName, format, "", Collections.emptyMap());
 
 		if (currentDeckFile == null && deckIsEmpty()) {
 			setDeck(newDeck);

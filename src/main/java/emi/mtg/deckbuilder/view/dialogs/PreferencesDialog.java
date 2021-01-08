@@ -63,13 +63,15 @@ public class PreferencesDialog extends Dialog<Boolean> {
 	@FXML
 	private TextField updateUrlField;
 
-	public PreferencesDialog(Preferences prefs) throws IOException {
+	public PreferencesDialog() throws IOException {
 		setTitle("Deck Builder Preferences");
 
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("PreferencesDialog.fxml"));
 		loader.setControllerFactory(x -> this);
 		loader.setRoot(getDialogPane());
 		loader.load();
+
+		Preferences prefs = Preferences.get();
 
 		preferOldest.setSelected(prefs.preferAge == Preferences.PreferAge.Oldest);
 		preferNewest.setSelected(prefs.preferAge == Preferences.PreferAge.Newest);
@@ -122,6 +124,12 @@ public class PreferencesDialog extends Dialog<Boolean> {
 				prefs.autoUpdateData = autoUpdateData.isSelected();
 				prefs.autoUpdateProgram = autoUpdateProgram.isSelected();
 				prefs.updateUri = URI.create(updateUrlField.getText());
+
+				try {
+					Preferences.save();
+				} catch (IOException ioe) {
+					throw new RuntimeException(ioe);
+				}
 
 				return true;
 			} else {

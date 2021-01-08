@@ -2,8 +2,8 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.Preferences;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -82,7 +82,7 @@ public class Cockatrice extends NameOnlyImporter {
 			deckAuthor = parts[0].substring("Author: ".length());
 			deckComments = parts.length > 1 ? parts[1] : "";
 		} else {
-			deckAuthor = Context.get().preferences.authorName;
+			deckAuthor = Preferences.get().authorName;
 		}
 
 		description(deckComments);

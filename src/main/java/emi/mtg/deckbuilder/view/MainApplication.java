@@ -4,6 +4,7 @@ import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Application;
@@ -117,6 +118,7 @@ public class MainApplication extends Application {
 		mainWindows.remove(window);
 		if (mainWindows.isEmpty()) {
 			try {
+				Preferences.save();
 				Context.get().saveAll();
 			} catch (IOException ioe) {
 				throw new RuntimeException(ioe);
@@ -213,6 +215,19 @@ public class MainApplication extends Application {
 			alert.showAndWait();
 		});
 
+		Preferences prefs = Preferences.instantiate();
+
+		if (prefs.autoUpdateProgram && updater.needsUpdate()) {
+			if (AlertBuilder.query(hostStage)
+					.title("Auto-Update")
+					.headerText("A program update is available.")
+					.contentText("Would you like to update?")
+					.modal(Modality.APPLICATION_MODAL)
+					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+				doGraphicalUpdate();
+			}
+		}
+
 		DataSource data;
 		if (DATA_SOURCES.size() == 0) {
 			AlertBuilder.notify(hostStage)
@@ -243,18 +258,7 @@ public class MainApplication extends Application {
 
 		Context.instantiate(data);
 
-		if (Context.get().preferences.autoUpdateProgram && updater.needsUpdate()) {
-			if (AlertBuilder.query(hostStage)
-					.title("Auto-Update")
-					.headerText("A program update is available.")
-					.contentText("Would you like to update?")
-					.modal(Modality.APPLICATION_MODAL)
-					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-				doGraphicalUpdate();
-			}
-		}
-
-		if (Context.get().preferences.autoUpdateData && Context.get().data.needsUpdate()) {
+		if (prefs.autoUpdateData && Context.get().data.needsUpdate()) {
 			if (AlertBuilder.query(hostStage)
 					.title("Auto-Update")
 					.headerText("New card data may be available.")
@@ -267,7 +271,7 @@ public class MainApplication extends Application {
 
 		doGraphicalLoadData();
 
-		new MainWindow(this, new DeckList("", Context.get().preferences.authorName, Context.get().preferences.defaultFormat, "", Collections.emptyMap())).show();
+		new MainWindow(this, new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap())).show();
 	}
 
 	public void doGraphicalLoadData() {
@@ -321,7 +325,7 @@ public class MainApplication extends Application {
 	}
 
 	public void update() {
-		TextInputDialog uriInput = new TextInputDialog(Context.get().preferences.updateUri == null ? "" : Context.get().preferences.updateUri.toString());
+		TextInputDialog uriInput = new TextInputDialog(Preferences.get().updateUri == null ? "" : Preferences.get().updateUri.toString());
 		uriInput.setTitle("Update Source");
 		uriInput.setHeaderText("Update Server URL");
 		uriInput.setContentText("URL:");
@@ -337,8 +341,8 @@ public class MainApplication extends Application {
 			String newUri = uriInput.getEditor().getText();
 
 			try {
-				Context.get().preferences.updateUri = new URI(newUri);
-				Context.get().saveAll();
+				Preferences.get().updateUri = new URI(newUri);
+				Preferences.save();
 
 				ForkJoinPool.commonPool().submit(() -> {
 					try {
@@ -440,19 +444,14 @@ public class MainApplication extends Application {
 
 	public boolean showPreferences() {
 		try {
-			PreferencesDialog pd = new PreferencesDialog(Context.get().preferences);
+			PreferencesDialog pd = new PreferencesDialog();
 			pd.initOwner(hostStage);
 
-			if(pd.showAndWait().orElse(false)) {
-				Context.get().savePreferences();
-				return true;
-			}
+			return pd.showAndWait().orElse(false);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new AssertionError(e);
 		}
-
-		return false;
 	}
 
 	public void trimImageDiskCache() {

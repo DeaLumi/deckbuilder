@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.controller;
 
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.io.IOException;
@@ -140,11 +141,11 @@ public class Updater {
 	}
 
 	public boolean needsUpdate() throws IOException {
-		if (Context.get().preferences.updateUri == null) {
+		if (Preferences.get().updateUri == null) {
 			return false; // If there is no update URI, live off the grid.
 		}
 
-		URLConnection connection = Context.get().preferences.updateUri.toURL().openConnection();
+		URLConnection connection = Preferences.get().updateUri.toURL().openConnection();
 
 		if (!(connection instanceof HttpURLConnection)) {
 			System.err.println("Can't check for updates -- not an HTTP connection...");
@@ -164,13 +165,13 @@ public class Updater {
 	}
 
 	public void update(DoubleConsumer progress) throws IOException {
-		if (Context.get().preferences.updateUri == null) {
+		if (Preferences.get().updateUri == null) {
 			return;
 		}
 
 		Path updateDir = Files.createDirectories(Paths.get(".update"));
 
-		try (InputStream input = new Downloader(Context.get().preferences.updateUri.toURL(), progress)) {
+		try (InputStream input = new Downloader(Preferences.get().updateUri.toURL(), progress)) {
 			ZipInputStream zin = new ZipInputStream(input);
 
 			ZipEntry entry = zin.getNextEntry();

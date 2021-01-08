@@ -18,7 +18,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoubleConsumer;
 
 public class Context {
-	private static final Path PREFERENCES = Paths.get("preferences.json");
 	private static final Path STATE = Paths.get("state.json");
 	private static final Path TAGS = Paths.get("tags.json");
 
@@ -50,7 +49,6 @@ public class Context {
 	public final Images images;
 	public final Tags tags;
 
-	public final Preferences preferences;
 	public final State state;
 
 	public Context(DataSource data) throws IOException {
@@ -60,14 +58,6 @@ public class Context {
 				.registerTypeAdapter(Card.class, Serialization.createCardAdapter())
 				.registerTypeAdapter(Card.Printing.class, Serialization.createCardPrintingAdapter())
 				.create();
-
-		if (Files.exists(PREFERENCES)) {
-			Reader reader = Files.newBufferedReader(PREFERENCES);
-			this.preferences = gson.fromJson(reader, Preferences.class);
-			reader.close();
-		} else {
-			this.preferences = new Preferences();
-		}
 
 		if (Files.exists(STATE)) {
 			Reader reader = Files.newBufferedReader(STATE);
@@ -84,12 +74,6 @@ public class Context {
 	public void loadData(DoubleConsumer progress) throws IOException {
 		this.data.loadData(progress);
 		loadTags();
-	}
-
-	public void savePreferences() throws IOException {
-		Writer writer = Files.newBufferedWriter(PREFERENCES);
-		gson.toJson(this.preferences, writer);
-		writer.close();
 	}
 
 	public void loadTags() throws IOException {
@@ -116,7 +100,6 @@ public class Context {
 	}
 
 	public void saveAll() throws IOException {
-		savePreferences();
 		saveTags();
 		saveState();
 	}

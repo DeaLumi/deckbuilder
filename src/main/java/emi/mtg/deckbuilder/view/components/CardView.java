@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.components;
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
@@ -29,7 +30,6 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Screen;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -553,12 +553,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 					final List<CardInstance> modifyingCards = hoverCards(card);
 					PrintingSelectorDialog.show(getScene(), card.card()).ifPresent(pr -> {
 						if (immutableModel.get()) {
-							Context.get().preferences.preferredPrintings.put(card.card().fullName(), pr.id());
-							try {
-								Context.get().savePreferences();
-							} catch (IOException ioe) {
-								throw new Error(ioe);
-							}
+							Preferences.get().preferredPrintings.put(card.card().fullName(), pr.id());
 						} else {
 							modifyingCards.forEach(x -> x.printing(pr));
 						}
