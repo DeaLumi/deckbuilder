@@ -1085,19 +1085,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		layout();
 	}
 
-	@Override
-	public void onChanged(Change<? extends CardInstance> c) {
-		layout();
-	}
-
-	private transient ForkJoinTask<?> scheduledRender = null;
+	private volatile long renderGeneration = 0;
 
 	public synchronized void scheduleRender() {
-		if (scheduledRender != null) {
-			scheduledRender.cancel(false);
-		}
-
-		scheduledRender = ForkJoinPool.commonPool().submit(this::render);
+		final long nextGen = ++renderGeneration;
+		ForkJoinPool.commonPool().submit(() -> this.render(nextGen));
 	}
 
 	public synchronized void layout() {
@@ -1168,8 +1160,9 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	protected synchronized void render() {
-		scheduledRender = null;
+	@SuppressWarnings("DuplicateCondition")
+	protected synchronized void render(long generation) {
+		if (generation < renderGeneration) return;
 
 		if (engine == null || grouping == null) {
 			Platform.runLater(() -> {
@@ -1201,11 +1194,16 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			return; // TODO: What do we do here? Call layout manually...?
 		}
 
+		if (generation < renderGeneration) return;
 		SortedMap<MVec2d, RenderStruct> renderMap = buildRenderMap();
-		Platform.runLater(() -> drawRenderMap(renderMap));
+
+		if (generation < renderGeneration) return;
+		Platform.runLater(() -> drawRenderMap(generation, renderMap));
 	}
 
-	private void drawRenderMap(SortedMap<MVec2d, RenderStruct> renderMap) {
+	private void drawRenderMap(long generation, SortedMap<MVec2d, RenderStruct> renderMap) {
+		if (generation < renderGeneration) return;
+
 		GraphicsContext gfx = getGraphicsContext2D();
 
 		gfx.setFill(Color.WHITE);
@@ -1297,6 +1295,11 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			gfx.setFill(Color.TRANSPARENT);
 			gfx.setLineWidth(2.0);
 			gfx.strokeRect(x, y, w, h);
+		}
+
+		// This should never happen.
+		if (generation >= Long.MAX_VALUE / 2 && generation == renderGeneration) {
+			renderGeneration = 0;
 		}
 	}
 
@@ -1393,6 +1396,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 			throw new IllegalStateException("renderNow must be called from the FX Application thread!");
 		}
 
-		drawRenderMap(buildRenderMap());
+		drawRenderMap(-1, buildRenderMap());
 	}
 }
