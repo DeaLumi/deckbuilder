@@ -447,7 +447,12 @@ public class MainApplication extends Application {
 			PreferencesDialog pd = new PreferencesDialog();
 			pd.initOwner(hostStage);
 
-			return pd.showAndWait().orElse(false);
+			if (pd.showAndWait().orElse(false)) {
+				this.mainWindows.parallelStream().forEach(MainWindow::preferencesChanged);
+				return true;
+			} else {
+				return false;
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new AssertionError(e);

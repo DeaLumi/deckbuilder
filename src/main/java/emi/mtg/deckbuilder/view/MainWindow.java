@@ -31,6 +31,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
@@ -288,6 +291,12 @@ public class MainWindow extends Stage {
 		for (Format format : Format.values()) {
 			MenuItem item = new MenuItem(format.name());
 			item.setOnAction(ae -> newDeck(format));
+			item.setUserData(format);
+
+			if (format == Preferences.get().defaultFormat) {
+				item.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN));
+			}
+
 			this.newDeckMenu.getItems().add(item);
 		}
 
@@ -939,8 +948,17 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void showPreferencesDialog() {
-		if (owner.showPreferences()) {
-			collection.updateFilter();
+		owner.showPreferences();
+	}
+
+	void preferencesChanged() {
+		collection.updateFilter();
+		for (MenuItem mi : newDeckMenu.getItems()) {
+			if (mi.getUserData() == Preferences.get().defaultFormat) {
+				mi.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN));
+			} else {
+				mi.setAccelerator(null);
+			}
 		}
 	}
 

@@ -13,7 +13,7 @@
         <MenuBar>
             <menus>
                 <Menu text="Deck">
-                    <Menu text="New..." fx:id="newDeckMenu" accelerator="Shortcut+N"/> <!-- Children are populated by controller. -->
+                    <Menu text="New..." fx:id="newDeckMenu"/> <!-- Children are populated by controller. -->
                     <MenuItem text="Open" onAction="#openDeck" accelerator="Shortcut+O"/>
                     <MenuItem text="Save" fx:id="saveDeckMenuItem" onAction="#saveDeck" accelerator="Shortcut+S"/>
                     <MenuItem text="Save As" fx:id="saveDeckAsMenuItem" onAction="#saveDeckAs" accelerator="Shift+Shortcut+S"/>
