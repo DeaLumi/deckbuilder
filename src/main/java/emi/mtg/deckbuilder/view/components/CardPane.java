@@ -197,7 +197,7 @@ public class CardPane extends BorderPane {
 		MenuItem statisticsButton = new MenuItem("Statistics");
 		statisticsButton.setOnAction(ae -> {
 			try {
-				new DeckStatsDialog(this.cardView.filteredModel()).show();
+				new DeckStatsDialog(this.cardView.filteredModel).show();
 			} catch (IOException e) {
 				throw new RuntimeException(e); // TODO: Handle gracefully
 			}
@@ -330,11 +330,11 @@ public class CardPane extends BorderPane {
 	}
 
 	private synchronized void updateStats() {
-		final long total = cardView.filteredModel().size();
+		final long total = cardView.filteredModel.size();
 		AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
 
 		try {
-			for (CardInstance ci : cardView.filteredModel()) {
+			for (CardInstance ci : cardView.filteredModel) {
 				Card.Face front = ci.card().face(Card.Face.Kind.Front);
 				if (front != null && front.type().cardTypes().contains(CardType.Creature)) {
 					creature.incrementAndGet();
@@ -395,12 +395,14 @@ public class CardPane extends BorderPane {
 		this(title, model, Piles.Factory.INSTANCE);
 	}
 
-	public ObservableList<CardInstance> model() {
-		return this.cardView.model();
-	}
-
 	public CardView view() {
 		return this.cardView;
+	}
+
+	public void changeModel(Consumer<ObservableList<CardInstance>> mutator) {
+		synchronized(this.cardView.model) {
+			mutator.accept(this.cardView.model);
+		}
 	}
 
 	public TextField filter() {

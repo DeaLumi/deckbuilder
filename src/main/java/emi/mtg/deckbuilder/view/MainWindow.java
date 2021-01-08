@@ -22,7 +22,6 @@ import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -114,7 +113,7 @@ public class MainWindow extends Stage {
 			setupImportExport();
 			setDeck(deck);
 
-			collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
+			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
 
 			alert.getButtonTypes().setAll(ButtonType.CLOSE);
 			alert.hide();
@@ -247,14 +246,14 @@ public class MainWindow extends Stage {
 			MenuItem fillZoneMenuItem = new MenuItem(zone.name());
 			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> deck != null && deck.format().deckZones().contains(zone), menu.showingProperty()));
 			fillZoneMenuItem.setOnAction(ae -> {
-				for (CardInstance source : menu.cards) {
-					ObservableList<CardInstance> zoneModel = deckPane(zone).model();
-
-					long count = deck.format().maxCopies - zoneModel.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
-					for (int i = 0; i < count; ++i) {
-						zoneModel.add(new CardInstance(source.printing()));
+				deckPane(zone).changeModel(model -> {
+					for (CardInstance source : menu.cards) {
+						long count = deck.format().maxCopies - model.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
+						for (int i = 0; i < count; ++i) {
+							model.add(new CardInstance(source.printing()));
+						}
 					}
-				}
+				});
 			});
 			fillMenu.getItems().add(fillZoneMenuItem);
 		}
@@ -271,8 +270,8 @@ public class MainWindow extends Stage {
 				Preferences.get().collectionGrouping,
 				Preferences.get().collectionSorting);
 		collection.view().immutableModelProperty().set(true);
-		collection.view().doubleClick(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
-		collection.autoAction.set(ci -> deckPane(Zone.Library).model().add(new CardInstance(ci.printing())));
+		collection.view().doubleClick(ci -> deckPane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci.printing()))));
+		collection.autoAction.set(ci -> deckPane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci.printing()))));
 
 		collection.view().contextMenu(createCollectionContextMenu());
 
@@ -362,7 +361,7 @@ public class MainWindow extends Stage {
 			changePrintingMenuItem.setVisible(menu.cards.stream().map(CardInstance::card).distinct().count() == 1);
 
 			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
-			tagCBs.setAll(menu.view.get().model().stream()
+			tagCBs.setAll(deck.cards(zone).stream()
 					.map(CardInstance::tags)
 					.flatMap(Set::stream)
 					.distinct()
@@ -438,8 +437,8 @@ public class MainWindow extends Stage {
 							deck.cards(z),
 							Piles.Factory.INSTANCE,
 							Preferences.get().zoneGroupings.getOrDefault(z, ConvertedManaCost.INSTANCE));
-					pane.model().addListener(deckListChangedListener);
-					pane.view().doubleClick(ci -> pane.model().remove(ci));
+					deck.cards(z).addListener(deckListChangedListener);
+					pane.view().doubleClick(ci -> pane.changeModel(x -> x.remove(ci)));
 					pane.view().contextMenu(createDeckContextMenu(pane, z));
 					pane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
 					pane.listPasteAction.set(list -> {
@@ -457,7 +456,7 @@ public class MainWindow extends Stage {
 							}
 						}
 
-						pane.model().addAll(addAll);
+						pane.changeModel(x -> x.addAll(addAll));
 
 						if (!unrecognized.isEmpty()) {
 							AlertBuilder.notify(MainWindow.this)
@@ -854,15 +853,14 @@ public class MainWindow extends Stage {
 
 		histogram.entrySet().removeIf(e -> e.getValue().get() < deck.format().maxCopies);
 
-		collection.model()
-				.forEach(ci -> {
-					flagCollectionCardLegality(ci);
-					if (histogram.containsKey(ci.card())) {
-						ci.flags.add(CardInstance.Flags.Full);
-					} else {
-						ci.flags.remove(CardInstance.Flags.Full);
-					}
-				});
+		collection.changeModel(x -> x.forEach(ci -> {
+			flagCollectionCardLegality(ci);
+			if (histogram.containsKey(ci.card())) {
+				ci.flags.add(CardInstance.Flags.Full);
+			} else {
+				ci.flags.remove(CardInstance.Flags.Full);
+			}
+		}));
 		collection.view().scheduleRender();
 
 		return result;
@@ -974,7 +972,7 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void remodel() {
-		collection.model().setAll(new ReadOnlyListWrapper<>(collectionModel(Context.get().data)));
+		collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
 
 		// We need to fix all the card instances in the current deck. They're hooked to old objects.
 		deck.cards().values().stream()

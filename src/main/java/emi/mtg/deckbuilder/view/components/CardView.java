@@ -929,14 +929,6 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		}
 	}
 
-	public ObservableList<CardInstance> model() {
-		return this.model;
-	}
-
-	public FilteredList<CardInstance> filteredModel() {
-		return this.filteredModel;
-	}
-
 	private Comparator<CardInstance> convertSorts(List<ActiveSorting> sorts) {
 		List<ActiveSorting> s = sorts;
 		if (s == null) {
