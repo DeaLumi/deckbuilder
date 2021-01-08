@@ -5,6 +5,7 @@ import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -74,8 +75,8 @@ public class DeckTagsGrouping implements CardView.Grouping {
 	}
 
 	@Override
-	public Group[] groups(CardView view) {
-		Deque<Group> groups = view.model().stream()
+	public Group[] groups(List<CardInstance> model) {
+		Deque<Group> groups = model.stream()
 				.map(CardInstance::tags)
 				.flatMap(Set::stream)
 				.distinct()

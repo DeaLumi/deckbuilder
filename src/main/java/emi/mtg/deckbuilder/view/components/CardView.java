@@ -150,7 +150,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		String name();
 		boolean supportsModification();
 
-		Group[] groups(CardView view);
+		Group[] groups(List<CardInstance> model);
 	}
 
 	public interface Sorting extends Comparator<CardInstance> {
@@ -253,8 +253,8 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		public final SimpleObjectProperty<CardView> view = new SimpleObjectProperty<>();
 	}
 
-	private final ObservableList<CardInstance> model;
-	private final FilteredList<CardInstance> filteredModel;
+	final ObservableList<CardInstance> model;
+	final FilteredList<CardInstance> filteredModel;
 	private final FilteredList<CardInstance> collapsedModel;
 	private final HashMap<Card, AtomicInteger> collapseAccumulator;
 	private volatile Group[] groupedModel;
@@ -897,7 +897,7 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 
 	public void grouping(Grouping grouping) {
 		this.grouping = grouping;
-		this.groupedModel = Arrays.stream(this.grouping.groups(this))
+		this.groupedModel = Arrays.stream(this.grouping.groups(this.model))
 				.map(g -> new Group(g, this.collapsedModel, this.sort))
 				.toArray(Group[]::new);
 		layout();

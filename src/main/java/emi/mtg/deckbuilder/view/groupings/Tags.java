@@ -4,6 +4,7 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
+import java.util.List;
 import java.util.Set;
 
 public class Tags implements CardView.Grouping {
@@ -71,7 +72,7 @@ public class Tags implements CardView.Grouping {
 	}
 
 	@Override
-	public Group[] groups(CardView unused) {
+	public Group[] groups(List<CardInstance> unused) {
 		Set<String> allTags = Context.get().tags.tags();
 		Group[] groups = new Group[allTags.size() + 1];
 		groups[0] = new Untagged();
