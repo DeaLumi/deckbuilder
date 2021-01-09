@@ -234,14 +234,12 @@ public class MainApplication extends Application {
 		Preferences prefs = Preferences.instantiate();
 
 		if (prefs.autoUpdateProgram && updater.needsUpdate()) {
-			if (AlertBuilder.query(hostStage)
+			AlertBuilder.query(hostStage)
 					.title("Auto-Update")
 					.headerText("A program update is available.")
 					.contentText("Would you like to update?")
-					.modal(Modality.APPLICATION_MODAL)
-					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-				doGraphicalUpdate();
-			}
+					.longRunning(ButtonType.YES, updater::update)
+					.showAndWait();
 		}
 
 		DataSource data;
@@ -379,30 +377,6 @@ public class MainApplication extends Application {
 
 		uriInput.initOwner(hostStage);
 		uriInput.showAndWait();
-	}
-
-	public void doGraphicalUpdate() {
-		Alert progressDialog = new Alert(Alert.AlertType.NONE, "Updating...", ButtonType.CLOSE);
-		progressDialog.setHeaderText("Updating...");
-		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
-
-		ProgressBar pbar = new ProgressBar(0.0);
-		progressDialog.getDialogPane().setContent(pbar);
-		progressDialog.getDialogPane().setPrefWidth(256.0);
-
-		progressDialog.initOwner(hostStage);
-
-		ForkJoinPool.commonPool().submit(() -> {
-			try {
-				updater.update(d -> Platform.runLater(() -> pbar.setProgress(d)));
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			} finally {
-				Platform.runLater(progressDialog::close);
-			}
-		});
-
-		progressDialog.showAndWait();
 	}
 
 	public void updateData() {
