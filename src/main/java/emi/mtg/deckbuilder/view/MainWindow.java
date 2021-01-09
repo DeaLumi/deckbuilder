@@ -40,6 +40,7 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,11 +124,15 @@ public class MainWindow extends Stage {
 		alert.showAndWait();
 	}
 
+	@FXML
+	protected void createEmergency() {
+		throw new RuntimeException("Pattern Analysis: Blood Type = Blue!");
+	}
+
 	void emergencySave() throws IOException {
-		primarySerdes.exportDeck(deck,
-				currentDeckFile == null ?
-						File.createTempFile("emergency-save-", ".json", new File("null").getParentFile()) :
-						currentDeckFile);
+		primarySerdes.exportDeck(deck, Files.createTempFile(
+				MainApplication.getJarPath().getParent(),
+				String.format("emergency-save-%s-", deck.name()), ".json").toFile());
 	}
 
 	private CardPane deckPane(Zone zone) {

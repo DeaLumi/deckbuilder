@@ -46,6 +46,7 @@
                     <SeparatorMenuItem/>
                     <Menu text="Debug">
                         <MenuItem text="Remodel" onAction="#remodel"/>
+                        <MenuItem text="Create Emergency" onAction="#createEmergency"/>
                     </Menu>
                 </Menu>
             </menus>

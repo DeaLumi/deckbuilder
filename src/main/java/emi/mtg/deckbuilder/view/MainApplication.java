@@ -187,6 +187,15 @@ public class MainApplication extends Application {
 			StringWriter stackTrace = new StringWriter();
 			e.printStackTrace(new PrintWriter(stackTrace));
 
+			StringBuilder condensedTrace = new StringBuilder(String.format("Exception: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
+			for (Throwable t = e.getCause(); t != null; t = t.getCause()) {
+				condensedTrace.append(String.format("\nCaused by: %s: %s", t.getClass().getSimpleName(), t.getMessage()));
+
+				for (Throwable s : t.getSuppressed()) {
+					condensedTrace.append(String.format("\n\tSuppressing: %s: %s", s.getClass().getSimpleName(), s.getMessage()));
+				}
+			}
+
 			final boolean ds = deckSaved;
 			Platform.runLater(() -> {
 				Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -195,24 +204,28 @@ public class MainApplication extends Application {
 				alert.setTitle("Uncaught Exception");
 				alert.setHeaderText("An internal error has occurred.");
 
-				alert.setContentText(
-						"Something went wrong!\n" +
-								"\n" +
-								"I have no idea if the application will be able to keep running.\n" +
+				alert.setContentText(String.join("\n",
+						"Something went wrong!",
+						"",
+						"I have no idea if the application will be able to keep running. " +
 								(ds ?
-										"Your decks have been emergency-saved to 'emergency-save-XXXXXXXX.json' in the deckbuilder directory.\n" :
-										"Something went even more wrong while we tried to save your decks. Sorry. D:\n"
-								) +
-								"If this keeps happening, message me on Twitter @DeaLuminis!\n" +
-								"If you're the nerdy type, tech details follow.\n" +
-								"\n" +
-								"Thread: " + x.getName() + " / " + x.getId() + "\n" +
-								"Exception: " + e.getClass().getSimpleName() + ": " + e.getMessage() + "\n" +
-								"\n" +
-								"Full stack trace written to standard out and standard error (usually err.txt)."
-				);
+										"Your decks have been emergency-saved to 'emergency-save-XXXXXXXX.json' in the deckbuilder directory." :
+										"One or more of your decks couldn't even be emergency-saved. They may be gone. Sorry. D:"
+								),
+						"",
+						"If this keeps happening, message me on Twitter @DeaLuminis!",
+						"",
+						"If you're the nerdy type, tech details follow.",
+						"",
+						"Thread: " + x.getName() + " / " + x.getId(),
+						condensedTrace,
+						"",
+						"Full stack trace follows and was written to standard out and standard error."
+				));
 
-				alert.getDialogPane().setExpandableContent(new ScrollPane(new Text(stackTrace.toString())));
+				ScrollPane scroller = new ScrollPane(new Text(stackTrace.toString()));
+				scroller.setPrefViewportHeight(350.0);
+				alert.getDialogPane().setExpandableContent(scroller);
 
 				alert.show();
 			});
