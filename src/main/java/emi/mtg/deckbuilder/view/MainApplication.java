@@ -451,7 +451,7 @@ public class MainApplication extends Application {
 			pd.initOwner(hostStage);
 
 			if (pd.showAndWait().orElse(false)) {
-				this.mainWindows.parallelStream().forEach(MainWindow::preferencesChanged);
+				this.mainWindows.forEach(MainWindow::preferencesChanged);
 				return true;
 			} else {
 				return false;

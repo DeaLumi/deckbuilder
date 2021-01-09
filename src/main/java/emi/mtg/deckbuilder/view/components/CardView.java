@@ -8,7 +8,6 @@ import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -34,14 +33,14 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class CardView extends Canvas implements ListChangeListener<CardInstance> {
+public class CardView extends Canvas {
 	public static class MVec2d implements Comparable<MVec2d> {
 		public double x, y;
 
@@ -343,30 +342,40 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 		this.doubleClick = ci -> {};
 		this.contextMenu = null;
 
-		Predicate<CardInstance> filter = ci -> true;
+		this.collapseAccumulator = new HashMap<>();
+		// N.B. can NOT be a lambda due to JavaFX identity checks!
+		final Supplier<Predicate<CardInstance>> freshTruePredicate = () -> new Predicate<CardInstance>() {
+			@Override
+			public boolean test(CardInstance cardInstance) {
+				return true;
+			}
+		};
+		final Supplier<Predicate<CardInstance>> freshCollapsePredicate = () -> new Predicate<CardInstance>() {
+			{
+				collapseAccumulator.clear();
+			}
+
+			@Override
+			public boolean test(CardInstance ci) {
+				return collapseAccumulator.computeIfAbsent(ci.card(), x -> new AtomicInteger()).incrementAndGet() == 1;
+			}
+		};
+
 		this.sortingElements = sorts;
 		this.sort = convertSorts(sorts);
 		this.grouping = grouping;
 
-		this.collapseAccumulator = new HashMap<>();
 		this.model = model;
-		this.filteredModel = model.filtered(filter);
-		this.collapsedModel = this.filteredModel.filtered(filter);
-		this.collapsedModel.addListener((InvalidationListener) e -> layout());
+		this.filteredModel = model.filtered(freshTruePredicate.get());
+		this.collapsedModel = this.filteredModel.filtered(freshTruePredicate.get());
 
-		this.filteredModel.addListener((ListChangeListener<? super CardInstance>) e -> {
-			collapseAccumulator.clear();
-			this.collapsedModel.setPredicate(this.collapsedModel.getPredicate().and(ci -> true));
-		});
-
-		this.collapseDuplicatesProperty.addListener((prop, oldValue, newValue) -> {
-			collapseAccumulator.clear();
-			if (newValue) {
-				this.collapsedModel.setPredicate(ci -> collapseAccumulator.computeIfAbsent(ci.card(), x -> new AtomicInteger(0)).incrementAndGet() == 1);
-			} else {
-				this.collapsedModel.setPredicate(ci -> true);
+		final Runnable invalidateCollapsedModel = () -> {
+			synchronized(this.model) {
+				this.collapsedModel.setPredicate((collapseDuplicatesProperty.get() ? freshCollapsePredicate : freshTruePredicate).get());
 			}
-		});
+		};
+		this.filteredModel.addListener((ListChangeListener<CardInstance>) lce -> invalidateCollapsedModel.run());
+		this.collapseDuplicatesProperty.addListener((a, b, c) -> invalidateCollapsedModel.run());
 
 		grouping(grouping);
 		layout(layout);
@@ -568,15 +577,13 @@ public class CardView extends Canvas implements ListChangeListener<CardInstance>
 							modifyingCards.forEach(x -> x.printing(pr));
 						}
 
-						// TODO This is not great. I wish I could clone predicates, basically. Or trigger invalidation.
-						filteredModel.setPredicate(filteredModel.getPredicate().and(t -> true));
+						invalidateCollapsedModel.run();
 					});
 				} else if (me.getClickCount() % 2 == 0) {
 					CardInstance ci = cardAt(me.getX(), me.getY());
 
 					if (ci != null) {
 						this.doubleClick.accept(ci);
-						layout();
 					}
 				}
 			} else if (me.getButton() == MouseButton.SECONDARY) {

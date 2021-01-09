@@ -41,6 +41,7 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -171,10 +172,10 @@ public class MainWindow extends Stage {
 		CardView.ContextMenu menu = new CardView.ContextMenu();
 
 		MenuItem changePrintingMenuItem = new MenuItem("Prefer Printing");
-		changePrintingMenuItem.visibleProperty().bind(collection.showVersionsSeparately.not()
+		changePrintingMenuItem.visibleProperty().bind(collection.showingVersionsSeparately.not()
 				.and(menu.cards.sizeProperty().isEqualTo(1)));
 		changePrintingMenuItem.setOnAction(ae -> {
-			if (collection.showVersionsSeparately.get()) {
+			if (collection.showingVersionsSeparately.get()) {
 				return;
 			}
 
@@ -190,7 +191,7 @@ public class MainWindow extends Stage {
 			final Card card = cards.iterator().next();
 			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
 				Preferences.get().preferredPrintings.put(card.fullName(), pr.id());
-				collection.updateFilter();
+				ForkJoinPool.commonPool().submit(collection::updateFilter);
 			});
 		});
 
@@ -275,8 +276,8 @@ public class MainWindow extends Stage {
 
 		collection.view().contextMenu(createCollectionContextMenu());
 
-		collection.showIllegalCards.set(false);
-		collection.showVersionsSeparately.set(false);
+		collection.showingIllegalCards.set(false);
+		collection.showingVersionsSeparately.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
 	}
@@ -429,7 +430,7 @@ public class MainWindow extends Stage {
 		deckModified = false;
 		updateCardStates();
 
-		collection.updateFilter();
+		ForkJoinPool.commonPool().submit(collection::updateFilter);
 
 		deckSplitter.getItems().setAll(deck.format().deckZones().stream()
 				.map(z -> {
@@ -463,7 +464,7 @@ public class MainWindow extends Stage {
 									.title("Unrecognized Cards")
 									.type(Alert.AlertType.WARNING)
 									.headerText("Some cards weren't found.")
-									.contentText("The following cards couldn't be found:\n\u2022 " + unrecognized.stream().collect(Collectors.joining("\n\u2022 ")))
+									.contentText("The following cards couldn't be found:\n\u2022 " + String.join("\n\u2022 ", unrecognized))
 									.modal(Modality.WINDOW_MODAL)
 									.show();
 						}
@@ -950,7 +951,8 @@ public class MainWindow extends Stage {
 	}
 
 	void preferencesChanged() {
-		collection.updateFilter();
+		ForkJoinPool.commonPool().submit(collection::updateFilter);
+
 		for (MenuItem mi : newDeckMenu.getItems()) {
 			if (mi.getUserData() == Preferences.get().defaultFormat) {
 				mi.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN));

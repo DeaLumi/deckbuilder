@@ -15,10 +15,10 @@ import javafx.beans.property.*;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.layout.BorderPane;
@@ -125,16 +125,21 @@ public class CardPane extends BorderPane {
 	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().allMatch(f -> CardType.CONSTRUCTED_TYPES.containsAll(f.type().cardTypes()));
 
 	private final Menu deckMenu;
-	private final EventHandler<ActionEvent> updateFilter;
-	private final CardView cardView;
 	private final TextField filter;
+	private final Tooltip filterErrorTooltip;
+	private final CardView cardView;
 	private final Label deckStats;
+	private final CheckMenuItem showIllegalCards;
+	private final CheckMenuItem showVersionsSeparately;
+	private final CheckMenuItem collapseDuplicates;
+	private final CheckMenuItem findOtherCards;
+	private final ToggleButton autoToggle;
 
 	public final ObjectProperty<Consumer<CardInstance>> autoAction = new SimpleObjectProperty<>(null);
 	public final ObjectProperty<Consumer<String>> listPasteAction = new SimpleObjectProperty<>(null);
 	public final BooleanProperty autoEnabled = new SimpleBooleanProperty(true);
-	public final BooleanProperty showIllegalCards = new SimpleBooleanProperty(true);
-	public final BooleanProperty showVersionsSeparately = new SimpleBooleanProperty(true);
+	public final BooleanProperty showingIllegalCards = new SimpleBooleanProperty(true);
+	public final BooleanProperty showingVersionsSeparately = new SimpleBooleanProperty(true);
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
 		super();
@@ -203,16 +208,16 @@ public class CardPane extends BorderPane {
 			}
 		});
 
-		CheckMenuItem findOtherCards = new CheckMenuItem("Show Nontraditional Cards");
+		findOtherCards = new CheckMenuItem("Show Nontraditional Cards");
 		findOtherCards.setSelected(false);
 
-		CheckMenuItem showIllegalCards = new CheckMenuItem("Show Invalid Cards");
-		showIllegalCards.selectedProperty().bindBidirectional(this.showIllegalCards);
+		showIllegalCards = new CheckMenuItem("Show Invalid Cards");
+		showIllegalCards.selectedProperty().bindBidirectional(this.showingIllegalCards);
 
-		CheckMenuItem showVersionsSeparately = new CheckMenuItem("Show Versions Separately");
-		showVersionsSeparately.selectedProperty().bindBidirectional(this.showVersionsSeparately);
+		showVersionsSeparately = new CheckMenuItem("Show Versions Separately");
+		showVersionsSeparately.selectedProperty().bindBidirectional(this.showingVersionsSeparately);
 
-		CheckMenuItem collapseDuplicates = new CheckMenuItem("Collapse Duplicates");
+		collapseDuplicates = new CheckMenuItem("Collapse Duplicates");
 		collapseDuplicates.selectedProperty().bindBidirectional(cardView.collapseDuplicatesProperty());
 
 		deckMenu.getItems().add(groupingMenu);
@@ -251,61 +256,18 @@ public class CardPane extends BorderPane {
 		filter.setPromptText("Omnibar...");
 		filter.setPrefWidth(250.0);
 
-		final Tooltip filterErrorTooltip = new Tooltip();
+		filterErrorTooltip = new Tooltip();
 		filter.setTooltip(filterErrorTooltip);
 
-		final ToggleButton autoToggle = new ToggleButton("Auto");
+		autoToggle = new ToggleButton("Auto");
 		autoToggle.visibleProperty().bind(autoAction.isNotNull());
 		autoToggle.managedProperty().bind(autoToggle.visibleProperty());
 		autoEnabled.bindBidirectional(autoToggle.selectedProperty());
 
-		this.updateFilter = ae -> {
-			Predicate<CardInstance> compositeFilter;
-			try {
-				compositeFilter = Omnifilter.parse(filter.getText());
-			} catch (IllegalArgumentException iae) {
-				Tooltip.install(filter, filterErrorTooltip);
-				filter.getTooltip().setText(iae.getMessage());
-				filter.setStyle("-fx-control-inner-background: #ff8080;");
-				return;
-			}
-
-			Tooltip.uninstall(filter, filterErrorTooltip);
-			filter.getTooltip().setText("");
-			filter.setStyle("");
-
-			if (!findOtherCards.isSelected()) {
-				compositeFilter = compositeFilter.and(STANDARD_CARDS);
-			}
-
-			if (!showIllegalCards.isSelected()) {
-				compositeFilter = compositeFilter.and(c -> !c.flags.contains(CardInstance.Flags.Invalid));
-			}
-
-			if (!showVersionsSeparately.isSelected()) {
-				compositeFilter = compositeFilter.and(uniquenessPredicate());
-			}
-
-			this.cardView.filteredModel().setPredicate(compositeFilter);
-
-			if (autoAction.get() != null && this.cardView.filteredModel().size() <= 1 && autoToggle.isSelected()) {
-				if (!this.cardView.filteredModel().isEmpty()) {
-					autoAction.get().accept(this.cardView.filteredModel().get(0));
-					filter.setText("");
-				}
-
-				filter.requestFocus();
-			} else {
-				this.cardView.requestFocus();
-			}
-
-			ForkJoinPool.commonPool().submit(this::updateStats);
-		};
-
-		findOtherCards.setOnAction(updateFilter);
-		showIllegalCards.setOnAction(updateFilter);
-		showVersionsSeparately.setOnAction(updateFilter);
-		filter.setOnAction(updateFilter);
+		findOtherCards.setOnAction(this::updateFilterFx);
+		showIllegalCards.setOnAction(this::updateFilterFx);
+		showVersionsSeparately.setOnAction(this::updateFilterFx);
+		filter.setOnAction(this::updateFilterFx);
 
 		deckStats = new Label("");
 		model.addListener((ListChangeListener<CardInstance>) lce -> ForkJoinPool.commonPool().submit(this::updateStats));
@@ -322,7 +284,7 @@ public class CardPane extends BorderPane {
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
 
-		updateFilter();
+		updateFilterFx(null);
 	}
 
 	public String title() {
@@ -379,8 +341,73 @@ public class CardPane extends BorderPane {
 		}
 	}
 
+	private void updateFilterFx(ActionEvent ae) {
+		if (!Platform.isFxApplicationThread()) {
+			throw new IllegalStateException("updateFilterFx must only be called from the FX Application thread!");
+		}
+
+		ForkJoinPool.commonPool().submit(this::updateFilter);
+	}
+
 	public void updateFilter() {
-		this.updateFilter.handle(null);
+		if (Platform.isFxApplicationThread()) {
+			new IllegalStateException("updateFilter() called from FX application thread!").printStackTrace(System.err);
+			ForkJoinPool.commonPool().submit(this::updateFilter);
+			return;
+		}
+
+		Predicate<CardInstance> compositeFilter;
+		try {
+			compositeFilter = Omnifilter.parse(filter.getText());
+		} catch (IllegalArgumentException iae) {
+			Tooltip.install(filter, filterErrorTooltip);
+			filter.getTooltip().setText(iae.getMessage());
+			filter.setStyle("-fx-control-inner-background: #ff8080;");
+			return;
+		}
+
+		Tooltip.uninstall(filter, filterErrorTooltip);
+		filter.getTooltip().setText("");
+		filter.setStyle("");
+
+		if (!findOtherCards.isSelected()) {
+			compositeFilter = compositeFilter.and(STANDARD_CARDS);
+		}
+
+		if (!showIllegalCards.isSelected()) {
+			compositeFilter = compositeFilter.and(c -> !c.flags.contains(CardInstance.Flags.Invalid));
+		}
+
+		if (!showVersionsSeparately.isSelected()) {
+			compositeFilter = compositeFilter.and(uniquenessPredicate());
+		}
+
+		final Predicate<CardInstance> finalFilter = compositeFilter;
+		changeModel(x -> this.cardView.filteredModel.setPredicate(finalFilter));
+
+		final boolean clear;
+		final Node focusTarget;
+
+		if (autoAction.get() != null && this.cardView.filteredModel.size() <= 1 && autoToggle.isSelected()) {
+			if (!this.cardView.filteredModel.isEmpty()) {
+				autoAction.get().accept(this.cardView.filteredModel.get(0));
+				clear = true;
+			} else {
+				clear = false;
+			}
+
+			focusTarget = filter;
+		} else {
+			clear = false;
+			focusTarget = cardView;
+		}
+
+		Platform.runLater(() -> {
+			if (clear) filter.setText("");
+			focusTarget.requestFocus();
+		});
+
+		updateStats();
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping grouping) {

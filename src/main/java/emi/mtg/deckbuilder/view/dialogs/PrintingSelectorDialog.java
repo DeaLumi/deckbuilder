@@ -4,6 +4,7 @@ import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
@@ -40,13 +41,13 @@ public class PrintingSelectorDialog extends Dialog<Card.Printing> {
 
 		pane.autoAction.set(ci -> {
 			setResult(ci.printing());
-			close();
+			Platform.runLater(PrintingSelectorDialog.this::close);
 		});
 
 		pane.autoEnabled.set(true);
 
 		pane.view().immutableModelProperty().set(true);
-		pane.showVersionsSeparately.set(true);
+		pane.showingVersionsSeparately.set(true);
 		pane.setPrefHeight(scene.getHeight() / 1.5);
 		pane.setPrefWidth(scene.getWidth() / 1.5);
 
