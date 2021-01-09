@@ -4,19 +4,19 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Modality;
-import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.util.Optional;
 
 public class AlertBuilder {
-	public static AlertBuilder notify(Stage owner) {
+	public static AlertBuilder notify(Window owner) {
 		return new AlertBuilder()
 				.owner(owner)
 				.type(Alert.AlertType.INFORMATION)
 				.buttons(ButtonType.OK);
 	}
 
-	public static AlertBuilder query(Stage owner) {
+	public static AlertBuilder query(Window owner) {
 		return new AlertBuilder()
 				.owner(owner)
 				.type(Alert.AlertType.CONFIRMATION)
@@ -33,7 +33,7 @@ public class AlertBuilder {
 		alert = new Alert(Alert.AlertType.NONE);
 	}
 
-	public AlertBuilder owner(Stage owner) {
+	public AlertBuilder owner(Window owner) {
 		alert.initOwner(owner);
 		return this;
 	}
