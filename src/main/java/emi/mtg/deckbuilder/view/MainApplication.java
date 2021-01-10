@@ -19,7 +19,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -152,7 +151,7 @@ public class MainApplication extends Application {
 			"At bare minimum, scryfall-0.0.0.jar should be provided!");
 
 	private static final String DATA_LOAD_ERROR = String.join("\n",
-			"An error occurred while loading card data. " +
+			"An error occurred while loading card data.",
 			"Some or all cards may not have been loaded..",
 			"",
 			"Try updating card data?");
@@ -241,7 +240,7 @@ public class MainApplication extends Application {
 					.title("Auto-Update")
 					.headerText("A program update is available.")
 					.contentText("Would you like to update?")
-					.longRunning(ButtonType.YES, null, updater::update, null)
+					.longRunning(updater::update, AlertBuilder.Exceptions.Throw)
 					.showAndWait();
 		}
 
@@ -292,7 +291,7 @@ public class MainApplication extends Application {
 										.title("Auto-Update")
 										.headerText("New card data available.")
 										.contentText("Would you like to update?")
-										.longRunning(ButtonType.YES, null, data::update, null)
+										.longRunning(data::update)
 										.showAndWait();
 							}
 
@@ -305,7 +304,7 @@ public class MainApplication extends Application {
 						},
 						prg -> { Context.get().loadData(prg); return true; },
 						dlg -> {
-							if (Preferences.get().autoUpdateData && Context.get().data.needsUpdate()) {
+							if (Preferences.get().autoUpdateData) {
 								if(AlertBuilder.create()
 										.owner(hostStage)
 										.type(Alert.AlertType.ERROR)
@@ -313,12 +312,15 @@ public class MainApplication extends Application {
 										.title("Data Load Error")
 										.headerText("An error occurred while loading data.")
 										.contentText(DATA_LOAD_ERROR)
-										.longRunning(ButtonType.YES, null, Context.get().data::update, null)
+										.longRunning(Context.get().data::update)
 										.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) {
 									dlg.close();
+								} else {
+									dlg.getDialogPane().lookupButton(ButtonType.OK).executeAccessibleAction(AccessibleAction.FIRE);
 								}
 							}
-						})
+						},
+						AlertBuilder.Exceptions.Throw)
 				.get();
 
 		if(DATA_SOURCES.size() == 1) {
@@ -392,7 +394,7 @@ public class MainApplication extends Application {
 				.title("Update Data")
 				.headerText(data.needsUpdate() ? "New card data available." : "Data appears fresh.")
 				.contentText(data.needsUpdate() ? "Would you like to update?" : "Would you like to update anyway?")
-				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), data::update, null)
+				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), data::update, null, AlertBuilder.Exceptions.Defer)
 				.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 
 			wrapIOE(Context.get()::loadTags).run();

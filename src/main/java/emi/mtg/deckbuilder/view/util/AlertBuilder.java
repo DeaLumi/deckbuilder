@@ -7,6 +7,7 @@ import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
@@ -243,7 +244,29 @@ public class AlertBuilder {
 		final ButtonType btn = button;
 		final DialogPane pane = alert.getDialogPane();
 		final ProgressBar progress = new ProgressBar(0.0);
-		pane.setExpandableContent(progress);
+		progress.setMaxWidth(Double.MAX_VALUE);
+		progress.setMaxHeight(Double.MAX_VALUE);
+		progress.setManaged(false);
+
+		VBox box;
+		if (pane.getContent() != null) {
+			if (pane.getContent() instanceof VBox) {
+				box = (VBox) pane.getContent();
+				box.getChildren().add(progress);
+			} else {
+				box = new VBox(pane.getContent(), progress);
+				box.setSpacing(10.0);
+			}
+		} else {
+			Label label = new Label(pane.getContentText());
+			label.setMaxWidth(Double.MAX_VALUE);
+			label.setMaxHeight(Double.MAX_VALUE);
+			label.setWrapText(true);
+			label.getStyleClass().add("content");
+			box = new VBox(10.0, label, progress);
+		}
+		box.setFillWidth(true);
+		pane.setContent(box);
 
 		if (!alert.getButtonTypes().contains(ButtonType.CANCEL)) {
 			alert.getButtonTypes().add(ButtonType.CANCEL);
@@ -252,7 +275,8 @@ public class AlertBuilder {
 
 		button(btn).addEventFilter(ActionEvent.ACTION, event -> {
 			event.consume();
-			pane.setExpanded(true);
+			progress.setManaged(true);
+			pane.getScene().getWindow().sizeToScene();
 
 			// Disable buttons except cancel button.
 			final Button cancel = button(ButtonType.CANCEL);
