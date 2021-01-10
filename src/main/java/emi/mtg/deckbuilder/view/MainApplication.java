@@ -404,20 +404,11 @@ public class MainApplication extends Application {
 		}
 	}
 
-	public boolean showPreferences() {
-		try {
-			PreferencesDialog pd = new PreferencesDialog();
-			pd.initOwner(hostStage);
+	public void showPreferences() {
+		PreferencesDialog pd = new PreferencesDialog(hostStage);
 
-			if (pd.showAndWait().orElse(false)) {
-				this.mainWindows.forEach(MainWindow::preferencesChanged);
-				return true;
-			} else {
-				return false;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new AssertionError(e);
+		if (pd.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+			this.mainWindows.forEach(MainWindow::preferencesChanged);
 		}
 	}
 

@@ -4,149 +4,376 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardView;
-import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
+import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import javafx.event.ActionEvent;
+import javafx.geometry.HPos;
+import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
+import javafx.geometry.VPos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.text.Font;
+import javafx.stage.Modality;
+import javafx.stage.Window;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.*;
+import java.util.stream.Collectors;
 
-public class PreferencesDialog extends Dialog<Boolean> {
-	@FXML
-	private ToggleButton preferOldest;
+public class PreferencesDialog extends Alert {
+	private static abstract class PrefEntry {
+		abstract void installGui(GridPane grid, int row);
+	}
 
-	@FXML
-	private ToggleButton preferNewest;
+	private static class PrefSeparator extends PrefEntry {
+		private final Separator separator;
 
-	@FXML
-	private CheckBox preferNotPromo;
+		public PrefSeparator() {
+			this.separator = new Separator(Orientation.HORIZONTAL);
+		}
 
-	@FXML
-	private CheckBox preferPhysical;
+		void installGui(GridPane grid, int row) {
+			grid.add(separator,0,row,2,1);
+		}
+	}
 
-	@FXML
-	private CheckBox collapseDuplicates;
+	private static abstract class Preference<T> extends PrefEntry {
+		public final String label;
+		private final Label labelNode;
+		private final Supplier<T> fromPrefs;
+		private final Predicate<T> validate;
+		private final Consumer<T> toPrefs;
 
-	@FXML
-	private ComboBox<CardView.Grouping> collectionGrouping;
+		public Preference(String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
+			this.label = label;
+			this.labelNode = new Label(label + ":");
+			this.fromPrefs = () -> fromPrefs.apply(Preferences.get());
+			this.validate = validate;
+			this.toPrefs = v -> toPrefs.accept(Preferences.get(), v);
+		}
 
-	private List<CardView.ActiveSorting> collectionSorting;
+		void installGui(GridPane grid, int row) {
+			final Node gui = gui();
+			grid.addRow(row, labelNode, gui);
+			GridPane.setHalignment(labelNode, HPos.RIGHT);
+			GridPane.setValignment(labelNode, VPos.BASELINE);
+			GridPane.setHalignment(gui, HPos.LEFT);
+			GridPane.setValignment(gui, VPos.BASELINE);
+		}
 
-	@FXML
-	private ComboBox<CardView.Grouping> libraryGrouping;
+		abstract Node gui();
 
-	@FXML
-	private ComboBox<CardView.Grouping> sideboardGrouping;
+		abstract void toGui(T value);
 
-	@FXML
-	private ComboBox<CardView.Grouping> commandGrouping;
+		abstract T fromGui();
 
-	@FXML
-	private TextField authorName;
+		public void init() {
+			toGui(fromPrefs.get());
+		}
 
-	@FXML
-	private ComboBox<Format> defaultFormat;
+		public boolean validate() {
+			return validate.test(fromGui());
+		}
 
-	@FXML
-	private CheckBox theFutureIsNow;
+		public void save() {
+			toPrefs.accept(fromGui());
+		}
+	}
 
-	@FXML
-	private CheckBox autoUpdateData;
+	private static class PreferAgePreference extends Preference<Preferences.PreferAge> {
+		private final ToggleGroup toggleGroup;
+		private final ToggleButton oldest, newest;
+		private final HBox box;
 
-	@FXML
-	private CheckBox autoUpdateProgram;
+		public PreferAgePreference(String label, Function<Preferences, Preferences.PreferAge> fromPrefs, Predicate<Preferences.PreferAge> validate, BiConsumer<Preferences, Preferences.PreferAge> toPrefs) {
+			super(label, fromPrefs, validate, toPrefs);
 
-	@FXML
-	private TextField updateUrlField;
+			this.toggleGroup = new ToggleGroup();
+			this.oldest = new ToggleButton("Oldest");
+			this.oldest.setToggleGroup(this.toggleGroup);
+			this.oldest.setMaxWidth(Double.MAX_VALUE);
+			this.newest = new ToggleButton("Newest");
+			this.newest.setToggleGroup(this.toggleGroup);
+			this.newest.setMaxWidth(Double.MAX_VALUE);
+			this.box = new HBox(8.0, this.oldest, this.newest);
+			this.box.setAlignment(Pos.BASELINE_CENTER);
+			HBox.setHgrow(this.oldest, Priority.ALWAYS);
+			HBox.setHgrow(this.newest, Priority.ALWAYS);
+		}
 
-	public PreferencesDialog() throws IOException {
+		@Override
+		Node gui() {
+			return box;
+		}
+
+		@Override
+		void toGui(Preferences.PreferAge value) {
+			oldest.setSelected(value == Preferences.PreferAge.Oldest);
+			newest.setSelected(value == Preferences.PreferAge.Newest);
+		}
+
+		@Override
+		Preferences.PreferAge fromGui() {
+			if (oldest.isSelected()) {
+				return Preferences.PreferAge.Oldest;
+			} else if (newest.isSelected()) {
+				return Preferences.PreferAge.Newest;
+			} else {
+				return Preferences.PreferAge.Any;
+			}
+		}
+	}
+
+	private static abstract class OneControlPreference<T, C extends Node> extends Preference<T> {
+		private final C gui;
+		private final BiConsumer<C, T> set;
+		private final Function<C, T> get;
+
+		public OneControlPreference(Supplier<C> guiFactory, Function<C, T> get, BiConsumer<C, T> set, String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
+			super(label, fromPrefs, validate, toPrefs);
+
+			this.gui = guiFactory.get();
+			this.set = set;
+			this.get = get;
+		}
+
+		@Override
+		public C gui() {
+			return gui;
+		}
+
+		@Override
+		void toGui(T value) {
+			set.accept(gui, value);
+		}
+
+		@Override
+		T fromGui() {
+			return get.apply(gui);
+		}
+	}
+
+	private static class BooleanPreference extends OneControlPreference<Boolean, CheckBox> {
+		public BooleanPreference(String label, Function<Preferences, Boolean> fromPrefs, Predicate<Boolean> validate, BiConsumer<Preferences, Boolean> toPrefs) {
+			super(CheckBox::new, CheckBox::isSelected, CheckBox::setSelected, label, fromPrefs, validate, toPrefs);
+		}
+	}
+
+	private static class StringLikePreference<T> extends OneControlPreference<T, TextField> {
+		public StringLikePreference(Consumer<TextField> modifier, Function<String, T> fromString, Function<T, String> toString, String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
+			super(
+					() -> {
+						TextField f = new TextField();
+						f.setPrefColumnCount(30);
+						if (modifier != null) modifier.accept(f);
+						return f;
+					},
+					tf -> fromString.apply(tf.getText()),
+					(tf, v) -> tf.setText(toString.apply(v)),
+					label,
+					fromPrefs,
+					validate,
+					toPrefs
+			);
+		}
+	}
+
+	private static class StringPreference extends StringLikePreference<String> {
+		public StringPreference(String label, Function<Preferences, String> fromPrefs, Predicate<String> validate, BiConsumer<Preferences, String> toPrefs) {
+			super(null, s -> s, s -> s, label, fromPrefs, validate, toPrefs);
+		}
+	}
+
+	private static class URIPreference extends StringLikePreference<URI> {
+		public URIPreference(String label, Function<Preferences, URI> fromPrefs, Predicate<URI> validate, BiConsumer<Preferences, URI> toPrefs) {
+			super(f -> f.setFont(Font.font("Courier New")), URI::create, URI::toString, label, fromPrefs, validate, toPrefs);
+		}
+	}
+
+	private static class ComboBoxPreference<T> extends OneControlPreference<T, ComboBox<T>> {
+		private ComboBoxPreference(Consumer<ComboBox<T>> setAll, String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
+			super(
+					() -> {
+						ComboBox<T> box = new ComboBox<>();
+						setAll.accept(box);
+						return box;
+					},
+					c -> c.getSelectionModel().getSelectedItem(), (c, v) -> c.getSelectionModel().select(v),
+					label,
+					fromPrefs,
+					validate,
+					toPrefs);
+		}
+
+		public ComboBoxPreference(List<T> options, String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
+			this(c -> c.getItems().setAll(options), label, fromPrefs, validate, toPrefs);
+		}
+
+		public ComboBoxPreference(T[] options, String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
+			this(c -> c.getItems().setAll(options), label, fromPrefs, validate, toPrefs);
+		}
+	}
+
+	private static class GroupingPreference extends ComboBoxPreference<CardView.Grouping> {
+		public GroupingPreference(String label, Function<Preferences, CardView.Grouping> fromPrefs, Predicate<CardView.Grouping> validate, BiConsumer<Preferences, CardView.Grouping> toPrefs) {
+			super(CardView.GROUPINGS, label, fromPrefs, validate, toPrefs);
+		}
+	}
+
+	private static class FormatPreference extends ComboBoxPreference<Format> {
+		public FormatPreference(String label, Function<Preferences, Format> fromPrefs, Predicate<Format> validate, BiConsumer<Preferences, Format> toPrefs) {
+			super(Format.values(), label, fromPrefs, validate, toPrefs);
+		}
+	}
+
+	private static class SortingPreference extends OneControlPreference<List<CardView.ActiveSorting>, Button> {
+		public SortingPreference(String label, Function<Preferences, List<CardView.ActiveSorting>> fromPrefs, Predicate<List<CardView.ActiveSorting>> validate, BiConsumer<Preferences, List<CardView.ActiveSorting>> toPrefs) {
+			super(
+					() -> {
+						Button btn = new Button("Configure");
+						btn.setOnAction(ae -> {
+							SortDialog dlg = new SortDialog((List<CardView.ActiveSorting>) btn.getUserData());
+							dlg.initModality(Modality.APPLICATION_MODAL);
+							dlg.showAndWait().ifPresent(btn::setUserData);
+						});
+						return btn;
+					},
+					c -> (List<CardView.ActiveSorting>) c.getUserData(),
+					Button::setUserData,
+					label,
+					fromPrefs,
+					validate,
+					toPrefs
+			);
+		}
+	}
+
+	@FunctionalInterface
+	private interface TypicalConstructor<T, P extends Preference<T>> {
+		P create(String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs);
+	}
+
+	private static <T, P extends Preference<T>> P reflectField(TypicalConstructor<T, P> constructor, String label, String fieldName, Predicate<T> validate) {
+		Field f;
+		try {
+			f = Preferences.class.getDeclaredField(fieldName);
+		} catch (NoSuchFieldException nsfe) {
+			throw new AssertionError(nsfe);
+		}
+
+		f.setAccessible(true);
+		return constructor.create(
+				label,
+				prefs -> {
+					try {
+						return (T) f.get(prefs);
+					} catch (IllegalAccessException iae) {
+						throw new AssertionError(iae);
+					}
+				},
+				validate,
+				(prefs, val) -> {
+					try {
+						f.set(prefs, val);
+					} catch (IllegalAccessException iae) {
+						throw new AssertionError(iae);
+					}
+				});
+	}
+
+	private static GroupingPreference zoneGroupingPreference(Zone zone) {
+		return new GroupingPreference(
+				String.format("%s Grouping", zone.name()),
+				prefs -> prefs.zoneGroupings.get(zone),
+				x -> true,
+				(prefs, g) -> prefs.zoneGroupings.put(zone, g)
+		);
+	}
+
+	private final PrefEntry[] PREFERENCE_FIELDS = {
+			reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
+			reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
+			reflectField(BooleanPreference::new, "Prefer Physical Versions","preferPhysical", x -> true),
+			new PrefSeparator(),
+			reflectField(BooleanPreference::new, "The Future is Now", "theFutureIsNow", x -> true),
+			reflectField(BooleanPreference::new, "Collapse Duplicates", "collapseDuplicates", x -> true),
+			reflectField(GroupingPreference::new, "Collection Grouping", "collectionGrouping", x -> true),
+			reflectField(SortingPreference::new, "Collection Sorting", "collectionSorting", x -> true),
+			zoneGroupingPreference(Zone.Library),
+			zoneGroupingPreference(Zone.Sideboard),
+			zoneGroupingPreference(Zone.Command),
+			new PrefSeparator(),
+			reflectField(StringPreference::new, "Default Author", "authorName", x -> true),
+			reflectField(FormatPreference::new, "Default Format", "defaultFormat", x -> true),
+			new PrefSeparator(),
+			reflectField(BooleanPreference::new, "Auto-Update Data", "autoUpdateData", x -> true),
+			reflectField(BooleanPreference::new, "Auto-Update Deckbuilder", "autoUpdateProgram", x -> true),
+			reflectField(URIPreference::new, "Update URL", "updateUri", x -> true)
+	};
+
+	public PreferencesDialog(Window owner) {
+		super(AlertType.CONFIRMATION);
+		initOwner(owner);
 		setTitle("Deck Builder Preferences");
+		setHeaderText("Update Preferences");
 
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("PreferencesDialog.fxml"));
-		loader.setControllerFactory(x -> this);
-		loader.setRoot(getDialogPane());
-		loader.load();
+		GridPane grid = new GridPane();
+		grid.setHgap(10.0);
+		grid.setVgap(10.0);
 
-		Preferences prefs = Preferences.get();
+		int i = -1;
+		for (PrefEntry entry : PREFERENCE_FIELDS) {
+			entry.installGui(grid, ++i);
 
-		preferOldest.setSelected(prefs.preferAge == Preferences.PreferAge.Oldest);
-		preferNewest.setSelected(prefs.preferAge == Preferences.PreferAge.Newest);
-		preferNotPromo.setSelected(prefs.preferNotPromo);
-		preferPhysical.setSelected(prefs.preferPhysical);
+			if (entry instanceof Preference) {
+				((Preference<?>) entry).init();
+			}
+		}
 
-		collectionGrouping.getItems().setAll(CardView.GROUPINGS);
-		libraryGrouping.getItems().setAll(CardView.GROUPINGS);
-		sideboardGrouping.getItems().setAll(CardView.GROUPINGS);
-		commandGrouping.getItems().setAll(CardView.GROUPINGS);
+		getDialogPane().setContent(grid);
 
-		collapseDuplicates.setSelected(prefs.collapseDuplicates);
-		collectionGrouping.getSelectionModel().select(prefs.collectionGrouping);
-		collectionSorting = new ArrayList<>(prefs.collectionSorting);
-		libraryGrouping.getSelectionModel().select(prefs.zoneGroupings.getOrDefault(Zone.Library, ConvertedManaCost.INSTANCE));
-		sideboardGrouping.getSelectionModel().select(prefs.zoneGroupings.getOrDefault(Zone.Sideboard, ConvertedManaCost.INSTANCE));
-		commandGrouping.getSelectionModel().select(prefs.zoneGroupings.getOrDefault(Zone.Command, ConvertedManaCost.INSTANCE));
-		authorName.setText(prefs.authorName);
-		defaultFormat.getItems().setAll(Format.values());
-		defaultFormat.getSelectionModel().select(prefs.defaultFormat);
-		theFutureIsNow.setSelected(prefs.theFutureIsNow);
+		getDialogPane().lookupButton(ButtonType.OK).addEventFilter(ActionEvent.ACTION, ae -> {
+			List<String> invalidPrefs = Arrays.stream(PREFERENCE_FIELDS)
+					.filter(f -> f instanceof Preference)
+					.map(f -> (Preference<?>) f)
+					.filter(f -> !f.validate())
+					.map(f -> f.label)
+					.collect(Collectors.toList());
 
-		autoUpdateData.setSelected(prefs.autoUpdateData);
-		autoUpdateProgram.setSelected(prefs.autoUpdateProgram);
-		updateUrlField.setText(prefs.updateUri.toString());
-		updateUrlField.disableProperty().bind(autoUpdateProgram.selectedProperty().not());
+			if (!invalidPrefs.isEmpty()) {
+				ae.consume();
+
+				AlertBuilder.notify(this.getDialogPane().getScene().getWindow())
+						.type(AlertType.ERROR)
+						.title("Validation Error")
+						.headerText("Some preferences are invalid.")
+						.contentText("Please adjust the following: " + String.join(", ", invalidPrefs))
+						.showAndWait();
+			}
+		});
 
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
-				if (preferOldest.isSelected()) {
-					prefs.preferAge = Preferences.PreferAge.Oldest;
-				} else if (preferNewest.isSelected()) {
-					prefs.preferAge = Preferences.PreferAge.Newest;
-				} else {
-					prefs.preferAge = Preferences.PreferAge.Any;
-				}
-				prefs.preferNotPromo = preferNotPromo.isSelected();
-				prefs.preferPhysical = preferPhysical.isSelected();
-
-				prefs.collapseDuplicates = collapseDuplicates.isSelected();
-				prefs.collectionGrouping = collectionGrouping.getValue();
-				prefs.collectionSorting = collectionSorting;
-				prefs.zoneGroupings.put(Zone.Library, libraryGrouping.getValue());
-				prefs.zoneGroupings.put(Zone.Sideboard, sideboardGrouping.getValue());
-				prefs.zoneGroupings.put(Zone.Command, commandGrouping.getValue());
-				prefs.authorName = authorName.getText();
-				prefs.defaultFormat = defaultFormat.getValue();
-				prefs.theFutureIsNow = theFutureIsNow.isSelected();
-
-				prefs.autoUpdateData = autoUpdateData.isSelected();
-				prefs.autoUpdateProgram = autoUpdateProgram.isSelected();
-				prefs.updateUri = URI.create(updateUrlField.getText());
+				Arrays.stream(PREFERENCE_FIELDS)
+						.filter(f -> f instanceof Preference)
+						.map(f -> (Preference<?>) f)
+						.forEach(Preference::save);
 
 				try {
 					Preferences.save();
 				} catch (IOException ioe) {
 					throw new RuntimeException(ioe);
 				}
-
-				return true;
-			} else {
-				return false;
 			}
+
+			return bt;
 		});
-	}
-
-	@FXML
-	protected void configureCollectionSorting() {
-		SortDialog sort = new SortDialog(collectionSorting);
-		sort.initOwner(this.getOwner());
-		Optional<List<CardView.ActiveSorting>> result = sort.showAndWait();
-
-		if (result.isPresent()) {
-			collectionSorting.clear();
-			collectionSorting.addAll(result.get());
-		}
 	}
 }
