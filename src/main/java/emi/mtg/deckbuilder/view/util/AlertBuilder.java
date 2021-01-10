@@ -12,12 +12,23 @@ import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
 import java.lang.reflect.Field;
+import java.util.Hashtable;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
+import java.util.function.Function;
 
 public class AlertBuilder {
+	private static final Hashtable<String, CompletionException> EXCEPTION_INDEX = new Hashtable<>();
+
+	private static final Function<CompletionException, ButtonType> EXCEPTION_BUTTON = exc -> {
+		final String key = Integer.toString(exc.hashCode());
+		EXCEPTION_INDEX.put(key, exc);
+		return new ButtonType(key, ButtonBar.ButtonData.BIG_GAP);
+	};
+
 	public static AlertBuilder notify(Window owner) {
 		return new AlertBuilder(Alert.AlertType.INFORMATION)
 				.owner(owner);
@@ -145,7 +156,59 @@ public class AlertBuilder {
 		boolean execute(DoubleConsumer progress) throws Exception;
 	}
 
-	public AlertBuilder longRunning(ButtonType button, Runnable preExec, LongRunningOperation operation, Consumer<Alert> onFail) {
+	public enum Exceptions {
+		/**
+		 * Exceptions thrown from long-running operations will be thrown from AlertBuilder.showAndWait. Note that if you
+		 * don't call AlertBuilder.showAndWait -- for instance, because you want to do some unusual alterations to the
+		 * alert after it's fully ready, or want to forcibly fire the dialog immediately.
+		 */
+		Defer,
+
+		/**
+		 * Exceptions thrown from long-running operations will be wrapped as RuntimeExceptions and re-thrown. This will
+		 * usually hit the deckbuilder's default uncaught exception handler (popping up that ugly exception dialog).
+		 * Note that an exception being thrown counts as a failure of the long-running operation, so onFail will be
+		 * invoked and the dialog's buttons will be reset for reattempt.
+		 */
+		Throw,
+
+		/**
+		 * Exceptions thrown from long-running operations will be translated to a failure of the operation. The
+		 * exception itself will be ignored, so use this with care!
+		 */
+		Fail
+	}
+
+	private static final ButtonBar.ButtonData[] EXEC_BUTTON_PREFERENCE = {
+			ButtonBar.ButtonData.APPLY,
+			ButtonBar.ButtonData.OK_DONE,
+			ButtonBar.ButtonData.FINISH,
+			ButtonBar.ButtonData.YES,
+			ButtonBar.ButtonData.NEXT_FORWARD
+	};
+
+	/**
+	 * This is really complicated, so I'm adding some javadoc for ya. Basically, if you call this, the dialog will be
+	 * set up for performing a progress-reporting operation on a separate thread. A progress bar will be added, a thread
+	 * created, and started.
+	 *
+	 * @param button Which button should fire this event. If null, an internal list of preferences (above) will be tried
+	 *               and the first matching button will be used.
+	 * @param preExec A pre-execution hook. This will be called from the JavaFX application thread immediately before
+	 *                the worker thread is started. Use this if you need to perform any validation before the thread
+	 *                is started.
+	 * @param operation The actual long-running code to execute. This will be called from a new thread. It can report
+	 *                  progress through the provided DoubleConsumer. If it returns false, the dialog will not be
+	 *                  closed.
+	 * @param onFail A hook to be called if the long-running code returns false or throws an exception. This will be
+	 *               called from the JavaFX event thread immediately after the dialog's buttons are reenabled. The hook
+	 *               is passed a reference to the alert, since you can't access it from AlertBuilder.get() or whatever
+	 *               while chaining calls.
+	 * @param exceptions Prescribes how exceptions thrown from the long-running code should be handled. See the enum
+	 *                   values for details.
+	 * @return this AlertBuilder, for call chaining.
+	 */
+	public AlertBuilder longRunning(ButtonType button, Runnable preExec, LongRunningOperation operation, Consumer<Alert> onFail, Exceptions exceptions) {
 		if (!this.buttonsSet) {
 			throw new IllegalStateException("Buttons haven't been settled!");
 		}
@@ -154,10 +217,30 @@ public class AlertBuilder {
 			throw new IllegalStateException("Only one button customization, please!");
 		}
 
+		if (button == null) {
+			int best = EXEC_BUTTON_PREFERENCE.length;
+			ButtonType bestBtn = null;
+			for (ButtonType bt : alert.getButtonTypes()) {
+				for (int i = 0; i < EXEC_BUTTON_PREFERENCE.length; ++i) {
+					if (EXEC_BUTTON_PREFERENCE[i].equals(bt.getButtonData()) && i < best) {
+						bestBtn = bt;
+						best = i;
+					}
+				}
+			}
+
+			if (bestBtn == null) {
+				throw new IllegalStateException("Unable to find a button to hook!");
+			}
+
+			button = bestBtn;
+		}
+
 		if (button.getButtonData().isCancelButton()) {
 			throw new IllegalArgumentException("No long-running ops on cancel buttons! Technical reasons!");
 		}
 
+		final ButtonType btn = button;
 		final DialogPane pane = alert.getDialogPane();
 		final ProgressBar progress = new ProgressBar(0.0);
 		pane.setExpandableContent(progress);
@@ -167,7 +250,7 @@ public class AlertBuilder {
 			button(ButtonType.CANCEL).setDisable(true);
 		}
 
-		button(button).addEventFilter(ActionEvent.ACTION, event -> {
+		button(btn).addEventFilter(ActionEvent.ACTION, event -> {
 			event.consume();
 			pane.setExpanded(true);
 
@@ -186,10 +269,9 @@ public class AlertBuilder {
 					exc = null;
 
 					Platform.runLater(() -> {
-						alert.setResult(button);
+						alert.setResult(btn);
 						alert.close();
 					});
-
 				} catch (Exception e) {
 					result = false;
 					exc = e;
@@ -203,11 +285,21 @@ public class AlertBuilder {
 					});
 				}
 
-				if (exc != null) {
-					throw new RuntimeException(exc);
+				if (exceptions != Exceptions.Fail && exc != null) {
+					throw new CompletionException(exc);
 				}
 			}, String.format("%s long-running thread", this.toString()));
 			lrThread.setDaemon(true);
+
+			if (exceptions == Exceptions.Defer) {
+				lrThread.setUncaughtExceptionHandler((t, exc) -> {
+					if (exc instanceof CompletionException) {
+						Platform.runLater(() -> {
+							alert.setResult(EXCEPTION_BUTTON.apply((CompletionException) exc));
+						});
+					}
+				});
+			}
 
 			EventHandler<Event> handleCancel = new EventHandler<Event>() {
 				@Override
@@ -237,13 +329,28 @@ public class AlertBuilder {
 		return this;
 	}
 
+	public AlertBuilder longRunning(LongRunningOperation op, Exceptions exceptions) {
+		return longRunning(null, null, op, null, exceptions);
+	}
+
+	public AlertBuilder longRunning(LongRunningOperation op) {
+		return longRunning(op, Exceptions.Defer);
+	}
+
 	public Alert show() {
 		alert.show();
 		return alert;
 	}
 
 	public Optional<ButtonType> showAndWait() {
-		return alert.showAndWait();
+		Optional<ButtonType> bt = alert.showAndWait();
+
+		if (bt.isPresent() && bt.get().getButtonData().equals(ButtonBar.ButtonData.BIG_GAP)) {
+			CompletionException exc = EXCEPTION_INDEX.remove(bt.get().getText());
+			if (exc != null) throw exc;
+		}
+
+		return bt;
 	}
 
 	public Alert get() {
