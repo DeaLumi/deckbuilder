@@ -164,9 +164,9 @@ public class Updater {
 		return httpConn.getResponseCode() == 200 || test;
 	}
 
-	public void update(DoubleConsumer progress) throws IOException {
+	public boolean update(DoubleConsumer progress) throws IOException {
 		if (Preferences.get().updateUri == null) {
-			return;
+			return false;
 		}
 
 		Path updateDir = Files.createDirectories(Paths.get(".update"));
@@ -216,6 +216,7 @@ public class Updater {
 				.start();
 
 		System.exit(0);
+		return true; // This is unreachable.
 	}
 
 }

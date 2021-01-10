@@ -14,8 +14,8 @@ import javafx.stage.WindowEvent;
 import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-import java.util.function.Function;
 
 public class AlertBuilder {
 	public static AlertBuilder notify(Window owner) {
@@ -51,7 +51,6 @@ public class AlertBuilder {
 	}
 
 	private final Alert alert;
-	private ProgressBar progress;
 	private boolean buttonsSet, buttonsCustomized;
 
 	private AlertBuilder() {
@@ -66,7 +65,6 @@ public class AlertBuilder {
 		alert = new Alert(alertType, contentText, buttons);
 		this.buttonsSet = buttons != null && buttons.length > 0;
 		this.buttonsCustomized = false;
-		this.progress = null;
 	}
 
 	public AlertBuilder owner(Window owner) {
@@ -143,22 +141,11 @@ public class AlertBuilder {
 	}
 
 	@FunctionalInterface
-	public interface NoFailOperation {
-		void perform(DoubleConsumer progress) throws Exception;
+	public interface LongRunningOperation {
+		boolean execute(DoubleConsumer progress) throws Exception;
 	}
 
-	public AlertBuilder longRunning(ButtonType button, NoFailOperation operation) {
-		return this.longRunning(button, progress -> {
-			try {
-				operation.perform(progress);
-				return true;
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		});
-	}
-
-	public AlertBuilder longRunning(ButtonType button, Function<DoubleConsumer, Boolean> operation) {
+	public AlertBuilder longRunning(ButtonType button, Runnable preExec, LongRunningOperation operation, Consumer<Alert> onFail) {
 		if (!this.buttonsSet) {
 			throw new IllegalStateException("Buttons haven't been settled!");
 		}
@@ -171,8 +158,9 @@ public class AlertBuilder {
 			throw new IllegalArgumentException("No long-running ops on cancel buttons! Technical reasons!");
 		}
 
-		this.progress = new ProgressBar(0.0);
-		alert.getDialogPane().setExpandableContent(this.progress);
+		final DialogPane pane = alert.getDialogPane();
+		final ProgressBar progress = new ProgressBar(0.0);
+		pane.setExpandableContent(progress);
 
 		if (!alert.getButtonTypes().contains(ButtonType.CANCEL)) {
 			alert.getButtonTypes().add(ButtonType.CANCEL);
@@ -181,23 +169,42 @@ public class AlertBuilder {
 
 		button(button).addEventFilter(ActionEvent.ACTION, event -> {
 			event.consume();
-			alert.getDialogPane().setExpanded(true);
+			pane.setExpanded(true);
 
 			// Disable buttons except cancel button.
 			final Button cancel = button(ButtonType.CANCEL);
-			final Window window = alert.getDialogPane().getScene().getWindow();
+			final Window window = pane.getScene().getWindow();
 
 			final boolean cancelDisabled = cancel.isDisabled();
 			alert.getButtonTypes().forEach(x -> button(x).setDisable(x != ButtonType.CANCEL));
 
 			Thread lrThread = new Thread(() -> {
-				if (operation.apply(d -> Platform.runLater(() -> this.progress.setProgress(d)))) {
+				boolean result;
+				Exception exc;
+				try {
+					result = operation.execute(d -> Platform.runLater(() -> progress.setProgress(d)));
+					exc = null;
+
 					Platform.runLater(() -> {
 						alert.setResult(button);
 						alert.close();
 					});
-				} else {
-					Platform.runLater(() -> alert.getButtonTypes().forEach(x -> button(x).setDisable(x == ButtonType.CANCEL && cancelDisabled)));
+
+				} catch (Exception e) {
+					result = false;
+					exc = e;
+				}
+
+				if (!result) {
+					Platform.runLater(() -> {
+						alert.getButtonTypes().forEach(x -> button(x).setDisable(x == ButtonType.CANCEL && cancelDisabled));
+						progress.setProgress(0.0);
+						if (onFail != null) onFail.accept(alert);
+					});
+				}
+
+				if (exc != null) {
+					throw new RuntimeException(exc);
 				}
 			}, String.format("%s long-running thread", this.toString()));
 			lrThread.setDaemon(true);
@@ -221,6 +228,7 @@ public class AlertBuilder {
 			// Don't use setOnCloseRequest here since that can clobber other effects.
 			window.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, handleCancel);
 
+			if (preExec != null) preExec.run();
 			lrThread.start();
 		});
 

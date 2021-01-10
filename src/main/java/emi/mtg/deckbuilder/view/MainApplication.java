@@ -9,13 +9,17 @@ import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.geometry.HPos;
+import javafx.scene.AccessibleAction;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -33,9 +37,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -145,11 +147,12 @@ public class MainApplication extends Application {
 
 	private static final String NO_DATA_SOURCES = String.join("\n",
 			"No data sources are available!",
-			"Check the plugins/ directory for a data source plugin.",
+			"",
+			"Check the plugins/ directory for a data source plugin. " +
 			"At bare minimum, scryfall-0.0.0.jar should be provided!");
 
 	private static final String DATA_LOAD_ERROR = String.join("\n",
-			"An error occurred while loading card data.",
+			"An error occurred while loading card data. " +
 			"Some or all cards may not have been loaded..",
 			"",
 			"Try updating card data?");
@@ -238,11 +241,10 @@ public class MainApplication extends Application {
 					.title("Auto-Update")
 					.headerText("A program update is available.")
 					.contentText("Would you like to update?")
-					.longRunning(ButtonType.YES, updater::update)
+					.longRunning(ButtonType.YES, null, updater::update, null)
 					.showAndWait();
 		}
 
-		DataSource data;
 		if (DATA_SOURCES.size() == 0) {
 			AlertBuilder.notify(hostStage)
 					.type(Alert.AlertType.ERROR)
@@ -254,87 +256,77 @@ public class MainApplication extends Application {
 
 			Platform.exit();
 			return;
-		} else if (DATA_SOURCES.size() > 1) {
-			ChoiceDialog<DataSource> dialog = new ChoiceDialog<>(DATA_SOURCES.get(0), DATA_SOURCES.toArray(new DataSource[0]));
-			dialog.initOwner(hostStage);
-			dialog.setTitle("Select Data Source");
-			dialog.setHeaderText("Multiple data sources available.");
-			dialog.setContentText("Please select a data source:");
-			data = dialog.showAndWait().orElse(null);
-
-			if (data == null) {
-				Platform.exit();
-				return;
-			}
-		} else {
-			data = DATA_SOURCES.get(0);
 		}
 
-		Context.instantiate(data);
-
-		if (prefs.autoUpdateData && Context.get().data.needsUpdate()) {
-			if (AlertBuilder.query(hostStage)
-					.title("Auto-Update")
-					.headerText("New card data may be available.")
-					.contentText("Would you like to update?")
-					.modal(Modality.APPLICATION_MODAL)
-					.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-				doGraphicalDataUpdate(null);
-			}
-		}
-
-		doGraphicalLoadData();
+		selectDataSource();
 
 		new MainWindow(this, new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap())).show();
 	}
 
-	public void doGraphicalLoadData() {
-		if (!Platform.isFxApplicationThread()) {
-			Platform.runLater(this::doGraphicalLoadData);
-			return;
+	private void selectDataSource() {
+		Label label = new Label("Please select a data source:");
+		ComboBox<DataSource> combo = new ComboBox<>(FXCollections.observableArrayList(DATA_SOURCES.toArray(new DataSource[0])));
+		GridPane grid = new GridPane();
+		grid.setHgap(10.0);
+		grid.setMaxWidth(Double.MAX_VALUE);
+		combo.setMaxWidth(Double.MAX_VALUE);
+		GridPane.setHgrow(combo, Priority.ALWAYS);
+		GridPane.setFillWidth(combo, true);
+		grid.add(label, 0, 0);
+		grid.add(combo, 1, 0);
+		combo.getSelectionModel().selectFirst();
+
+		Alert alert = AlertBuilder.query(hostStage)
+				.buttons(ButtonType.OK, ButtonType.CANCEL)
+				.title("Select Data Source")
+				.headerText("Select a data source to use.")
+				.contentNode(grid)
+				.longRunning(ButtonType.OK,
+						() -> {
+							if (Context.instantiated()) return;
+
+							DataSource data = combo.getSelectionModel().getSelectedItem();
+
+							if (Preferences.get().autoUpdateData && data.needsUpdate()) {
+								AlertBuilder.query(hostStage)
+										.title("Auto-Update")
+										.headerText("New card data available.")
+										.contentText("Would you like to update?")
+										.longRunning(ButtonType.YES, null, data::update, null)
+										.showAndWait();
+							}
+
+							try {
+								Context.instantiate(data);
+								combo.setDisable(true);
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+						},
+						prg -> { Context.get().loadData(prg); return true; },
+						dlg -> {
+							if (Preferences.get().autoUpdateData && Context.get().data.needsUpdate()) {
+								if(AlertBuilder.create()
+										.owner(hostStage)
+										.type(Alert.AlertType.ERROR)
+										.buttons(ButtonType.YES, ButtonType.NO)
+										.title("Data Load Error")
+										.headerText("An error occurred while loading data.")
+										.contentText(DATA_LOAD_ERROR)
+										.longRunning(ButtonType.YES, null, Context.get().data::update, null)
+										.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) {
+									dlg.close();
+								}
+							}
+						})
+				.get();
+
+		if(DATA_SOURCES.size() == 1) {
+			Platform.runLater(() -> alert.getDialogPane().lookupButton(ButtonType.OK).executeAccessibleAction(AccessibleAction.FIRE));
 		}
 
-		ProgressBar progress = new ProgressBar(0.0);
-		progress.setPrefWidth(256.0);
-
-		Alert alert = AlertBuilder.create()
-				.owner(hostStage)
-				.title("Loading")
-				.headerText("Loading card data...")
-				.contentNode(progress)
-				.modal(Modality.APPLICATION_MODAL)
-				.get();
-		ForkJoinTask<Boolean> future = ForkJoinPool.commonPool().submit(() -> {
-			try {
-				Context.get().loadData(d -> Platform.runLater(() -> progress.setProgress(d)));
-			} catch (IOException ioe) {
-				return false;
-			} finally {
-				Platform.runLater(() -> {
-					alert.getButtonTypes().setAll(ButtonType.CLOSE);
-					alert.hide();
-				});
-			}
-
-			return true;
-		});
-		alert.showAndWait();
-
-		try {
-			if (!future.get()) {
-				if (AlertBuilder.query(hostStage)
-						.type(Alert.AlertType.ERROR)
-						.title("Data Load Error")
-						.headerText("An error occurred while loading data.")
-						.contentText(DATA_LOAD_ERROR)
-						.modal(Modality.APPLICATION_MODAL)
-						.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-					doGraphicalDataUpdate(Context.get().data);
-					doGraphicalLoadData();
-				}
-			}
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
+		if (alert.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+			System.exit(1);
 		}
 	}
 
@@ -379,57 +371,35 @@ public class MainApplication extends Application {
 		uriInput.showAndWait();
 	}
 
-	public void updateData() {
-		if (!Context.get().data.needsUpdate() && AlertBuilder.query(hostStage)
-				.title("Update Data")
-				.headerText("Data is fresh.")
-				.contentText("Data source seems fresh. Update anyway?")
-				.modal(Modality.APPLICATION_MODAL)
-				.showAndWait()
-				.orElse(ButtonType.NO) != ButtonType.YES) {
-			return;
-		}
-
-		doGraphicalDataUpdate(null);
+	@FunctionalInterface
+	interface RunnableWithIOE {
+		void run() throws IOException;
 	}
 
-	public void doGraphicalDataUpdate(DataSource earlyData) {
-		Alert progressDialog = AlertBuilder.create()
-				.type(Alert.AlertType.NONE)
-				.title("Updating")
-				.headerText("Updating...")
-				.contentText("")
-				.modal(Modality.APPLICATION_MODAL)
-				.buttons(ButtonType.CLOSE).get();
-		progressDialog.getDialogPane().lookupButton(ButtonType.CLOSE).setDisable(true);
-
-		ProgressBar pbar = new ProgressBar(0.0);
-		progressDialog.getDialogPane().setContent(pbar);
-		progressDialog.getDialogPane().setPrefWidth(256.0);
-
-		DataSource data = earlyData == null ? Context.get().data : earlyData;
-
-		ForkJoinPool.commonPool().submit(() -> {
+	private static Runnable wrapIOE(RunnableWithIOE wrioe) {
+		return () -> {
 			try {
-				if (earlyData == null) Context.get().saveTags();
-				if (data.update(d -> Platform.runLater(() -> pbar.setProgress(d)))) {
-					Platform.runLater(() -> {
-						progressDialog.close();
-
-						for (MainWindow child : mainWindows) {
-							child.remodel();
-						}
-					});
-				}
-			} catch (Throwable e) {
-				Platform.runLater(() -> {
-					progressDialog.close();
-					throw new RuntimeException(e);
-				});
+				wrioe.run();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
 			}
-		});
+		};
+	}
 
-		progressDialog.showAndWait();
+	public void updateData() {
+		final DataSource data = Context.get().data;
+		if(AlertBuilder.query(hostStage)
+				.title("Update Data")
+				.headerText(data.needsUpdate() ? "New card data available." : "Data appears fresh.")
+				.contentText(data.needsUpdate() ? "Would you like to update?" : "Would you like to update anyway?")
+				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), data::update, null)
+				.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+
+			wrapIOE(Context.get()::loadTags).run();
+			for (MainWindow child : mainWindows) {
+				child.remodel();
+			}
+		}
 	}
 
 	public boolean showPreferences() {

@@ -43,6 +43,10 @@ public class Context {
 		}
 	}
 
+	public static boolean instantiated() {
+		return instance != null;
+	}
+
 	public final Gson gson;
 
 	public final DataSource data;
