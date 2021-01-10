@@ -1319,8 +1319,6 @@ public class CardView extends Canvas {
 		double dragBoxX2 = Math.max(dragStartX, lastDragX);
 		double dragBoxY2 = Math.max(dragStartY, lastDragY);
 
-		Set<CompletableFuture<Image>> waiting = new HashSet<>();
-
 		for (int i = 0; i < groupedModel.length; ++i) {
 			if (groupedModel[i] == null) {
 				continue;
@@ -1347,7 +1345,7 @@ public class CardView extends Canvas {
 				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
 
 				if (!futureImage.isDone()) {
-					waiting.add(futureImage);
+					futureImage.thenRun(this::scheduleRender);
 				}
 
 				EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
@@ -1389,10 +1387,6 @@ public class CardView extends Canvas {
 
 				renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.LOADING_CARD), states, count));
 			}
-		}
-
-		if (!waiting.isEmpty()) {
-			CompletableFuture.allOf(waiting.toArray(new CompletableFuture[0])).thenRun(this::scheduleRender);
 		}
 
 		return renderMap;
