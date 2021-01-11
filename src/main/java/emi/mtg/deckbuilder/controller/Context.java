@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.controller;
 import com.google.gson.Gson;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.Images;
 
@@ -71,7 +72,7 @@ public class Context {
 			this.state = new State();
 		}
 
-		this.images = new Images();
+		this.images = new Images(Preferences.get().imagesPath);
 		this.tags = new Tags(this);
 	}
 

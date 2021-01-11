@@ -9,9 +9,9 @@ import javafx.scene.image.WritableImage;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.ref.SoftReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,13 +34,9 @@ public class Images {
 
 	private static final String CACHE_EXTENSION = "png";
 
-	private static final File IMAGES = new File("images");
-	private static final File FRONTS = new File(IMAGES, "fronts");
-	private static final File FACES = new File(IMAGES, "faces");
-
 	public static final Image UNAVAILABLE_CARD, UNAVAILABLE_CARD_LARGE, LOADING_CARD, LOADING_CARD_LARGE;
 
-	static Image loadImage(String path, int w, int h, int blank) {
+	static Image loadResourceImage(String path, int w, int h, int blank) {
 		try {
 			InputStream input = Images.class.getResourceAsStream(path);
 			Image img = new Image(input);
@@ -58,22 +54,10 @@ public class Images {
 	}
 
 	static {
-		if (!IMAGES.exists() && !IMAGES.mkdirs()) {
-			throw new Error("Unable to create directory for card images...");
-		}
-
-		if (!FRONTS.exists() && !FRONTS.mkdirs()) {
-			throw new Error("Unable to create directory for card front-side images...");
-		}
-
-		if (!FACES.exists() && !FACES.mkdirs()) {
-			throw new Error("Unable to create directory for card face images...");
-		}
-
-		UNAVAILABLE_CARD_LARGE = loadImage("/META-INF/unavailable.png", 2 * (int) CARD_WIDTH, 2 * (int) CARD_HEIGHT, 0xff000000);
-		UNAVAILABLE_CARD = loadImage("/META-INF/unavailable-small.png", (int) CARD_WIDTH, (int) CARD_HEIGHT, 0xff000000);
-		LOADING_CARD_LARGE = loadImage("/META-INF/loading.png", 2 * (int) CARD_WIDTH, 2 * (int) CARD_HEIGHT, 0xffff0000);
-		LOADING_CARD = loadImage("/META-INF/loading-small.png", (int) CARD_WIDTH, (int) CARD_HEIGHT, 0xffff0000);
+		UNAVAILABLE_CARD_LARGE = loadResourceImage("/META-INF/unavailable.png", 2 * (int) CARD_WIDTH, 2 * (int) CARD_HEIGHT, 0xff000000);
+		UNAVAILABLE_CARD = loadResourceImage("/META-INF/unavailable-small.png", (int) CARD_WIDTH, (int) CARD_HEIGHT, 0xff000000);
+		LOADING_CARD_LARGE = loadResourceImage("/META-INF/loading.png", 2 * (int) CARD_WIDTH, 2 * (int) CARD_HEIGHT, 0xffff0000);
+		LOADING_CARD = loadResourceImage("/META-INF/loading-small.png", (int) CARD_WIDTH, (int) CARD_HEIGHT, 0xffff0000);
 	}
 
 	private static final ExecutorService IMAGE_LOAD_POOL = Executors.newCachedThreadPool(r -> {
@@ -94,7 +78,26 @@ public class Images {
 	private final Map<Card.Printing.Face, SoftReference<CompletableFuture<Image>>> faceCache = new HashMap<>();
 	private final Map<Card.Printing, SoftReference<CompletableFuture<Image>>> frontCache = new HashMap<>();
 
-	private static <T> File fileFor(T object) {
+	private final Path fronts, faces;
+
+	public Images(Path images) throws IOException {
+		if (!Files.exists(images)) {
+			Files.createDirectories(images);
+		}
+
+		this.fronts = images.resolve("fronts/");
+		this.faces = images.resolve("faces/");
+
+		if (!Files.exists(this.fronts)) {
+			Files.createDirectories(this.fronts);
+		}
+
+		if (!Files.exists(this.faces)) {
+			Files.createDirectories(this.faces);
+		}
+	}
+
+	private <T> Path pathTo(T object) {
 		Card.Printing printing;
 		Card.Printing.Face face;
 
@@ -125,7 +128,7 @@ public class Images {
 
 		file += '.' + CACHE_EXTENSION;
 
-		return new File(new File(object instanceof Card.Printing ? FRONTS : FACES, parent), file);
+		return (object instanceof Card.Printing ? this.fronts : this.faces).resolve(parent).resolve(file);
 	}
 
 	@FunctionalInterface
@@ -133,7 +136,7 @@ public class Images {
 		BufferedImage open(ImageSource source) throws IOException;
 	}
 
-	private static <T> CompletableFuture<Image> open(T key, Map<T, SoftReference<CompletableFuture<Image>>> cache, ImageOpener getter, Function<BufferedImage, BufferedImage> transform) {
+	private <T> CompletableFuture<Image> open(T key, Map<T, SoftReference<CompletableFuture<Image>>> cache, ImageOpener getter, Function<BufferedImage, BufferedImage> transform) {
 		synchronized(cache) {
 			SoftReference<CompletableFuture<Image>> ref = cache.get(key);
 			CompletableFuture<Image> cached = ref == null ? null : ref.get();
@@ -142,11 +145,13 @@ public class Images {
 				cache.put(key, new SoftReference<>(ret));
 
 				IMAGE_LOAD_POOL.submit(() -> {
-					File f = fileFor(key);
+					Path p = pathTo(key);
 
 					try {
-						if (f.exists()) {
-							Image image = SwingFXUtils.toFXImage(ImageIO.read(f), null);
+						if (Files.exists(p)) {
+							InputStream s = Files.newInputStream(p);
+							Image image = SwingFXUtils.toFXImage(ImageIO.read(s), null);
+							s.close();
 							ret.complete(image);
 							return;
 						} else {
@@ -160,10 +165,12 @@ public class Images {
 										ret.complete(image);
 
 										if (key instanceof Card.Printing || source.cacheable()) {
-											if ((!f.getParentFile().exists() || !f.getParentFile().isDirectory()) && !f.getParentFile().mkdirs()) {
-												throw new IOException();
+											if (!Files.exists(p.getParent())) {
+												Files.createDirectories(p.getParent());
 											}
-											ImageIO.write(imgSrc, CACHE_EXTENSION, f);
+											OutputStream s = Files.newOutputStream(p);
+											ImageIO.write(imgSrc, CACHE_EXTENSION, s);
+											s.close();
 										}
 
 										return;
@@ -217,13 +224,13 @@ public class Images {
 		long deletedFiles = 0, deletedBytes = 0;
 
 		Set<Path> allImages = new HashSet<>();
-		for (Path subdir : Files.newDirectoryStream(FACES.toPath(), p -> Files.isDirectory(p))) {
+		for (Path subdir : Files.newDirectoryStream(this.faces, p -> Files.isDirectory(p))) {
 			for (Path image : Files.newDirectoryStream(subdir, "*.png")) {
 				allImages.add(image);
 			}
 		}
 
-		for (Path subdir : Files.newDirectoryStream(FRONTS.toPath(), p -> Files.isDirectory(p))) {
+		for (Path subdir : Files.newDirectoryStream(this.fronts, p -> Files.isDirectory(p))) {
 			for (Path image : Files.newDirectoryStream(subdir, "*.png")) {
 				allImages.add(image);
 			}

@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.dialogs;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.event.ActionEvent;
@@ -16,12 +17,17 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Window;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.*;
@@ -197,6 +203,53 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class PathPreference extends Preference<Path> {
+		private final TextField textField;
+		private final Button chooseBtn;
+		private final HBox box;
+
+		public PathPreference(String label, Function<Preferences, Path> fromPrefs, Predicate<Path> validate, BiConsumer<Preferences, Path> toPrefs) {
+			super(label, fromPrefs, validate, toPrefs);
+
+			this.textField = new TextField();
+			this.textField.setFont(Font.font("Courier New"));
+			this.textField.setMaxWidth(Double.MAX_VALUE);
+			this.textField.setPrefColumnCount(30);
+			this.chooseBtn = new Button("Choose");
+			this.box = new HBox(8.0, textField, chooseBtn);
+			this.box.setAlignment(Pos.BASELINE_LEFT);
+			HBox.setHgrow(textField,Priority.ALWAYS);
+			HBox.setHgrow(chooseBtn, Priority.SOMETIMES);
+
+			chooseBtn.setOnAction(ae -> {
+				DirectoryChooser chooser = new DirectoryChooser();
+				Path path = fromGui();
+				if (!Files.exists(path)) path = MainApplication.getJarPath().getParent();
+				chooser.setInitialDirectory(path.toFile());
+
+				File dir = chooser.showDialog(box.getScene().getWindow());
+				if (dir != null) {
+					toGui(dir.toPath());
+				}
+			});
+		}
+
+		@Override
+		Node gui() {
+			return box;
+		}
+
+		@Override
+		void toGui(Path value) {
+			textField.setText(value.toString());
+		}
+
+		@Override
+		Path fromGui() {
+			return Paths.get(textField.getText());
+		}
+	}
+
 	private static class ComboBoxPreference<T> extends OneControlPreference<T, ComboBox<T>> {
 		private ComboBoxPreference(Consumer<ComboBox<T>> setAll, String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
 			super(
@@ -297,7 +350,42 @@ public class PreferencesDialog extends Alert {
 		);
 	}
 
+	private final Predicate<Path> IMAGES_PATH_VALIDATOR = path -> {
+		if (!path.equals(Preferences.get().imagesPath)) {
+			try {
+				Path tmp = Files.createTempFile(path, "probe-", ".tmp");
+				Files.delete(tmp);
+			} catch (IOException ioe) {
+				AlertBuilder.notify(null)
+						.type(AlertType.ERROR)
+						.title("Invalid Images Directory")
+						.headerText("Unable to write to chosen images directory.")
+						.contentText("Please make sure you select a path you have permissions to write.")
+						.showAndWait();
+				return false;
+			}
+
+			return AlertBuilder.query(getOwner())
+					.type(AlertType.WARNING)
+					.buttons(ButtonType.OK, ButtonType.CANCEL)
+					.title("Change Image Path")
+					.headerText("Restart required. Old images will remain.")
+					.contentText(String.join(" ",
+							"Changing your image path preference does not move existing images!",
+							"Old images will remain, and images for cards will be redownloaded as you see them.",
+							"You may wish to copy some or all of the old images to the new directory, then",
+							"consider deleting the old directory to save hard drive space!") + "\n\n" +
+							String.join(" ",
+									"Finally, please note that this change will not take effect until you",
+									"restart the deckbuilder. I recommend doing so immediately!"))
+					.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+		}
+
+		return true;
+	};
+
 	private final PrefEntry[] PREFERENCE_FIELDS = {
+			reflectField(PathPreference::new, "Images Path", "imagesPath", IMAGES_PATH_VALIDATOR),
 			reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Physical Versions","preferPhysical", x -> true),
@@ -349,13 +437,6 @@ public class PreferencesDialog extends Alert {
 
 			if (!invalidPrefs.isEmpty()) {
 				ae.consume();
-
-				AlertBuilder.notify(this.getDialogPane().getScene().getWindow())
-						.type(AlertType.ERROR)
-						.title("Validation Error")
-						.headerText("Some preferences are invalid.")
-						.contentText("Please adjust the following: " + String.join(", ", invalidPrefs))
-						.showAndWait();
 			}
 		});
 

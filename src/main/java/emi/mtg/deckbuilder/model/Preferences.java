@@ -56,6 +56,7 @@ public class Preferences {
 
 	public Format defaultFormat = Format.Standard;
 	public URI updateUri = URI.create("http://emi.sly.io/deckbuilder-nodata.zip");
+	public Path imagesPath = MainApplication.getJarPath().resolveSibling("images/").toAbsolutePath();
 
 	public boolean autoUpdateData = true;
 	public boolean autoUpdateProgram = true;
