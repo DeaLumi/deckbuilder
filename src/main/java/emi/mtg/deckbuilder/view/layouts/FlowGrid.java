@@ -66,6 +66,8 @@ public class FlowGrid implements CardView.LayoutEngine {
 			if (gs > maxStride) {
 				maxStride = gs;
 				for (int j = 0; j < i; ++j) {
+					if (groups[j].groupBounds.dim.x == 0 && groups[j].groupBounds.dim.y == 0) continue;
+
 					groups[j].labelBounds.dim.x = groups[j].groupBounds.dim.x = maxStride * pwp;
 				}
 			}

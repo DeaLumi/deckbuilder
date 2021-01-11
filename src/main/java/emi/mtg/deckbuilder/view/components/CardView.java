@@ -374,7 +374,6 @@ public class CardView extends Canvas {
 				this.collapsedModel.setPredicate((collapseDuplicatesProperty.get() ? freshCollapsePredicate : freshTruePredicate).get());
 			}
 		};
-		this.filteredModel.addListener((ListChangeListener<CardInstance>) lce -> invalidateCollapsedModel.run());
 		this.collapseDuplicatesProperty.addListener((a, b, c) -> invalidateCollapsedModel.run());
 
 		grouping(grouping);
@@ -1087,9 +1086,11 @@ public class CardView extends Canvas {
 
 	@Override
 	public void resize(double width, double height) {
-		setWidth(width);
-		setHeight(height);
-		layout();
+		if (width != getWidth() || height != getHeight()) {
+			setWidth(width);
+			setHeight(height);
+			layout();
+		}
 	}
 
 	private volatile long renderGeneration = 0;
@@ -1310,6 +1311,8 @@ public class CardView extends Canvas {
 		}
 	}
 
+	private final Set<CompletableFuture<Image>> waiting = new HashSet<>();
+
 	private SortedMap<MVec2d, RenderStruct> buildRenderMap() {
 		SortedMap<MVec2d, RenderStruct> renderMap = new TreeMap<>();
 		MVec2d loc = new MVec2d();
@@ -1325,6 +1328,11 @@ public class CardView extends Canvas {
 			}
 
 			final Bounds bounds = groupedModel[i].groupBounds;
+
+			if (bounds.pos.x == 0 && bounds.pos.y == 0 && (bounds.dim.x == 0 || bounds.dim.y == 0)) {
+				continue;
+			}
+
 			final MVec2d gpos = new MVec2d(bounds.pos).plus(-scrollX.get(), -scrollY.get());
 
 			if (gpos.x < -bounds.dim.x || gpos.x > getWidth() || gpos.y < -bounds.dim.y || gpos.y > getHeight()) {
@@ -1344,8 +1352,12 @@ public class CardView extends Canvas {
 
 				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
 
-				if (!futureImage.isDone()) {
-					futureImage.thenRun(this::scheduleRender);
+				if (!futureImage.isDone() && !waiting.contains(futureImage)) {
+					waiting.add(futureImage);
+					futureImage.thenRun(() -> {
+						this.scheduleRender();
+						waiting.remove(futureImage);
+					});
 				}
 
 				EnumSet<CardState> states = EnumSet.noneOf(CardState.class);
