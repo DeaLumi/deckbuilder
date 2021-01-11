@@ -33,6 +33,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class CardPane extends BorderPane {
 	private static class CardViewScrollPane extends StackPane {
@@ -126,6 +127,7 @@ public class CardPane extends BorderPane {
 
 	private final Menu deckMenu;
 	private final TextField filter;
+	private final AutoCompleter filterAutoComplete;
 	private final Tooltip filterErrorTooltip;
 	private final CardView cardView;
 	private final Label deckStats;
@@ -255,6 +257,21 @@ public class CardPane extends BorderPane {
 		};
 		filter.setPromptText("Omnibar...");
 		filter.setPrefWidth(250.0);
+
+		filterAutoComplete = new AutoCompleter(filter, name -> {
+			if (name.length() > 3) {
+				return model.stream()
+						.map(ci -> ci.card().name())
+						.filter(n -> n.startsWith(name))
+						.distinct()
+						.sorted()
+						.collect(Collectors.toList());
+			} else {
+				return Collections.emptyList();
+			}
+		}, name -> filter.fireEvent(new ActionEvent(filter, filter)));
+
+		filterAutoComplete.enabledProperty().bind(autoEnabled);
 
 		filterErrorTooltip = new Tooltip();
 		filter.setTooltip(filterErrorTooltip);
