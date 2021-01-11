@@ -154,7 +154,7 @@ public class Updater {
 
 		HttpURLConnection httpConn = (HttpURLConnection) connection;
 
-		httpConn.setIfModifiedSince(Files.getLastModifiedTime(MainApplication.getJarPath()).toMillis());
+		httpConn.setIfModifiedSince(Files.getLastModifiedTime(MainApplication.JAR_PATH).toMillis());
 		httpConn.setRequestMethod("HEAD");
 
 		if (httpConn.getResponseCode() >= 400) {
@@ -169,14 +169,14 @@ public class Updater {
 			return false;
 		}
 
-		Path updateDir = Files.createDirectories(Paths.get(".update"));
+		Path updateDir = Files.createDirectories(MainApplication.JAR_DIR.resolve(".update"));
 
 		try (InputStream input = new Downloader(Preferences.get().updateUri.toURL(), progress)) {
 			ZipInputStream zin = new ZipInputStream(input);
 
 			ZipEntry entry = zin.getNextEntry();
 			while (entry != null) {
-				Path child = Paths.get(updateDir.toString(), entry.getName());
+				Path child = updateDir.resolve(entry.getName());
 
 				if (entry.isDirectory()) {
 					Files.createDirectories(child);
@@ -191,13 +191,13 @@ public class Updater {
 			zin.close();
 		}
 
-		Path script = Files.createFile(Paths.get(".update." + SCRIPT_EXTENSION), SCRIPT_ATTRIBUTES);
+		Path script = Files.createFile(MainApplication.JAR_DIR.resolve(".update." + SCRIPT_EXTENSION), SCRIPT_ATTRIBUTES);
 		Writer scriptWriter = Files.newBufferedWriter(script, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
 		Path java = Paths.get(System.getProperty("java.home"), "bin", "java").toAbsolutePath();
 
-		Path jarPath = MainApplication.getJarPath();
-		Path jarDir = jarPath.getParent();
+		Path jarPath = MainApplication.JAR_PATH;
+		Path jarDir = MainApplication.JAR_DIR;
 
 		scriptWriter.append(String.format(SCRIPT, java.toString(), jarDir.toString(), jarPath.toString(), updateDir.toString()));
 		scriptWriter.close();

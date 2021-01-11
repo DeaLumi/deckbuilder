@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class MainApplication extends Application {
-	public static Path getJarPath() {
+	private static Path getJarPath() {
 		URL jarUrl = MainApplication.class.getProtectionDomain().getCodeSource().getLocation();
 		Path jarPath;
 		try {
@@ -52,6 +52,9 @@ public class MainApplication extends Application {
 
 		return jarPath;
 	}
+
+	public static final Path JAR_PATH = getJarPath();
+	public static final Path JAR_DIR = getJarPath().getParent();
 
 	public static final ClassLoader PLUGIN_CLASS_LOADER;
 
@@ -66,8 +69,8 @@ public class MainApplication extends Application {
 				}
 			}
 
-			if (Files.isDirectory(getJarPath().resolveSibling("plugins/"))) {
-				for (Path path : Files.newDirectoryStream(getJarPath().resolveSibling("plugins/"), "*.jar")) {
+			if (Files.isDirectory(JAR_DIR.resolve("plugins/"))) {
+				for (Path path : Files.newDirectoryStream(JAR_DIR.resolve("plugins/"), "*.jar")) {
 					urls.add(path.toUri().toURL());
 				}
 			}
@@ -258,6 +261,10 @@ public class MainApplication extends Application {
 
 		Preferences prefs = Preferences.instantiate();
 
+		if (!Files.isDirectory(prefs.dataPath)) {
+			Files.createDirectories(prefs.dataPath);
+		}
+
 		if (prefs.autoUpdateProgram && updater.needsUpdate()) {
 			AlertBuilder.query(hostStage)
 					.title("Auto-Update")
@@ -310,12 +317,12 @@ public class MainApplication extends Application {
 
 							DataSource data = combo.getSelectionModel().getSelectedItem();
 
-							if (Preferences.get().autoUpdateData && data.needsUpdate()) {
+							if (Preferences.get().autoUpdateData && data.needsUpdate(Preferences.get().dataPath)) {
 								AlertBuilder.query(hostStage)
 										.title("Auto-Update")
 										.headerText("New card data available.")
 										.contentText("Would you like to update?")
-										.longRunning(data::update)
+										.longRunning(prg -> data.update(Preferences.get().dataPath, prg))
 										.showAndWait();
 							}
 
@@ -326,7 +333,7 @@ public class MainApplication extends Application {
 								throw new RuntimeException(e);
 							}
 						},
-						prg -> { Context.get().loadData(prg); return true; },
+						prg -> Context.get().loadData(prg),
 						dlg -> {
 							if (Preferences.get().autoUpdateData) {
 								if(AlertBuilder.create()
@@ -336,7 +343,7 @@ public class MainApplication extends Application {
 										.title("Data Load Error")
 										.headerText("An error occurred while loading data.")
 										.contentText(DATA_LOAD_ERROR)
-										.longRunning(Context.get().data::update)
+										.longRunning(prg -> Context.get().data.update(Preferences.get().dataPath, prg))
 										.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) {
 									dlg.close();
 								} else {
@@ -418,9 +425,9 @@ public class MainApplication extends Application {
 		final DataSource data = Context.get().data;
 		if(AlertBuilder.query(hostStage)
 				.title("Update Data")
-				.headerText(data.needsUpdate() ? "New card data available." : "Data appears fresh.")
-				.contentText(data.needsUpdate() ? "Would you like to update?" : "Would you like to update anyway?")
-				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), data::update, null, AlertBuilder.Exceptions.Defer)
+				.headerText(data.needsUpdate(Preferences.get().dataPath) ? "New card data available." : "Data appears fresh.")
+				.contentText(data.needsUpdate(Preferences.get().dataPath) ? "Would you like to update?" : "Would you like to update anyway?")
+				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), prg -> data.update(Preferences.get().dataPath, prg), null, AlertBuilder.Exceptions.Defer)
 				.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 
 			wrapIOE(Context.get()::loadTags).run();

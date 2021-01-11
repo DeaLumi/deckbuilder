@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public class Preferences {
-	private static final Path PATH = MainApplication.getJarPath().resolveSibling("preferences.json");
+	private static final Path PATH = MainApplication.JAR_DIR.resolve("preferences.json");
 	private static Preferences instance = null;
 
 	public static synchronized Preferences instantiate() throws IOException {
@@ -56,7 +56,8 @@ public class Preferences {
 
 	public Format defaultFormat = Format.Standard;
 	public URI updateUri = URI.create("http://emi.sly.io/deckbuilder-nodata.zip");
-	public Path imagesPath = MainApplication.getJarPath().resolveSibling("images/").toAbsolutePath();
+	public final Path dataPath = MainApplication.JAR_DIR.resolve("data/").toAbsolutePath();
+	public final Path imagesPath = MainApplication.JAR_DIR.resolve("images/").toAbsolutePath();
 
 	public boolean autoUpdateData = true;
 	public boolean autoUpdateProgram = true;

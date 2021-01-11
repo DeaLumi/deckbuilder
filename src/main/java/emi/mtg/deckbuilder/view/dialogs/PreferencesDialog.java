@@ -224,7 +224,7 @@ public class PreferencesDialog extends Alert {
 			chooseBtn.setOnAction(ae -> {
 				DirectoryChooser chooser = new DirectoryChooser();
 				Path path = fromGui();
-				if (!Files.exists(path)) path = MainApplication.getJarPath().getParent();
+				if (!Files.exists(path)) path = MainApplication.JAR_DIR;
 				chooser.setInitialDirectory(path.toFile());
 
 				File dir = chooser.showDialog(box.getScene().getWindow());
@@ -350,21 +350,26 @@ public class PreferencesDialog extends Alert {
 		);
 	}
 
-	private final Predicate<Path> IMAGES_PATH_VALIDATOR = path -> {
-		if (!path.equals(Preferences.get().imagesPath)) {
-			try {
-				Path tmp = Files.createTempFile(path, "probe-", ".tmp");
-				Files.delete(tmp);
-			} catch (IOException ioe) {
-				AlertBuilder.notify(null)
-						.type(AlertType.ERROR)
-						.title("Invalid Images Directory")
-						.headerText("Unable to write to chosen images directory.")
-						.contentText("Please make sure you select a path you have permissions to write.")
-						.showAndWait();
-				return false;
-			}
+	private final Predicate<Path> PATH_WRITABLE_VALIDATOR = path -> {
+		try {
+			Path tmp = Files.createTempFile(path, "probe-", ".tmp");
+			Files.delete(tmp);
+			return true;
+		} catch (IOException ioe) {
+			AlertBuilder.notify(null)
+					.type(AlertType.ERROR)
+					.title("Invalid Directory")
+					.headerText("Unable to write to chosen directory.")
+					.contentText("Please make sure you select a path you have permissions to write.")
+					.showAndWait();
+			return false;
+		}
+	};
 
+	private final Predicate<Path> IMAGES_PATH_VALIDATOR = path -> {
+		PATH_WRITABLE_VALIDATOR.test(path);
+
+		if (!path.equals(Preferences.get().imagesPath)) {
 			return AlertBuilder.query(getOwner())
 					.type(AlertType.WARNING)
 					.buttons(ButtonType.OK, ButtonType.CANCEL)
@@ -385,6 +390,7 @@ public class PreferencesDialog extends Alert {
 	};
 
 	private final PrefEntry[] PREFERENCE_FIELDS = {
+			reflectField(PathPreference::new, "Data Path", "dataPath", PATH_WRITABLE_VALIDATOR),
 			reflectField(PathPreference::new, "Images Path", "imagesPath", IMAGES_PATH_VALIDATOR),
 			reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),

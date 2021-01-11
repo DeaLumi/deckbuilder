@@ -4,6 +4,7 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
@@ -19,8 +20,9 @@ public class EmptyDataSource implements DataSource {
 	}
 
 	@Override
-	public void loadData(DoubleConsumer progress) throws IOException {
+	public boolean loadData(Path dataDir, DoubleConsumer progress) throws IOException {
 		// No-op
+		return true;
 	}
 
 	@Override
@@ -49,12 +51,12 @@ public class EmptyDataSource implements DataSource {
 	}
 
 	@Override
-	public boolean update(DoubleConsumer progress) throws IOException {
+	public boolean update(Path dataDir, DoubleConsumer progress) throws IOException {
 		return false;
 	}
 
 	@Override
-	public boolean needsUpdate() {
+	public boolean needsUpdate(Path dataDir) {
 		return false;
 	}
 }

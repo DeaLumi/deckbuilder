@@ -6,6 +6,7 @@ import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.Images;
+import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -14,13 +15,12 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoubleConsumer;
 
 public class Context {
-	private static final Path STATE = Paths.get("state.json");
-	private static final Path TAGS = Paths.get("tags.json");
+	private static final Path STATE = MainApplication.JAR_DIR.resolve("state.json");
+	private static final Path TAGS = MainApplication.JAR_DIR.resolve("tags.json");
 
 	private static Context instance;
 
@@ -76,9 +76,13 @@ public class Context {
 		this.tags = new Tags(this);
 	}
 
-	public void loadData(DoubleConsumer progress) throws IOException {
-		this.data.loadData(progress);
-		loadTags();
+	public boolean loadData(DoubleConsumer progress) throws IOException {
+		if (this.data.loadData(Preferences.get().dataPath, progress)) {
+			loadTags();
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	public void loadTags() throws IOException {
