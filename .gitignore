@@ -3,4 +3,9 @@
 *.iml
 target
 *.json
-
+.gitignore
+plugins/
+data/
+images/
+run
+.DS_Store
