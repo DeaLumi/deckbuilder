@@ -374,6 +374,7 @@ public class CardView extends Canvas {
 				this.collapsedModel.setPredicate((collapseDuplicatesProperty.get() ? freshCollapsePredicate : freshTruePredicate).get());
 			}
 		};
+		this.filteredModel.addListener((ListChangeListener<CardInstance>) lce -> invalidateCollapsedModel.run());
 		this.collapseDuplicatesProperty.addListener((a, b, c) -> invalidateCollapsedModel.run());
 
 		grouping(grouping);
