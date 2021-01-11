@@ -44,7 +44,7 @@ public class AutoCompleter extends Popup {
 
 		this.suggestionList = new ListView<>(this.suggestions);
 		this.suggestionList.setFixedCellSize(24.0);
-		this.suggestionList.prefHeightProperty().bind(Bindings.size(this.suggestions).multiply(suggestionList.fixedCellSizeProperty()).add(2.0));
+		this.suggestionList.prefHeightProperty().bind(Bindings.min(20, Bindings.size(this.suggestions)).multiply(suggestionList.fixedCellSizeProperty()).add(2.0));
 
 		this.suggestionList.addEventFilter(KeyEvent.KEY_PRESSED, ke -> {
 			switch (ke.getCode()) {
