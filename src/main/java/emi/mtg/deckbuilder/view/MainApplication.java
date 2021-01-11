@@ -286,13 +286,14 @@ public class MainApplication extends Application {
 	}
 
 	private void selectDataSource() {
-		Label label = new Label("Please select a data source:");
+		Label label = new Label(DATA_SOURCES.size() > 1 ? "Please select a data source:" : "Using data from:");
 		ComboBox<DataSource> combo = new ComboBox<>(FXCollections.observableArrayList(DATA_SOURCES.toArray(new DataSource[0])));
 		GridPane grid = new GridPane();
 		grid.setHgap(10.0);
 		grid.setMaxWidth(Double.MAX_VALUE);
 		combo.setMaxWidth(Double.MAX_VALUE);
 		GridPane.setHgrow(combo, Priority.ALWAYS);
+		GridPane.setHgrow(label, Priority.NEVER);
 		GridPane.setFillWidth(combo, true);
 		grid.add(label, 0, 0);
 		grid.add(combo, 1, 0);
@@ -300,8 +301,8 @@ public class MainApplication extends Application {
 
 		Alert alert = AlertBuilder.query(hostStage)
 				.buttons(ButtonType.OK, ButtonType.CANCEL)
-				.title("Select Data Source")
-				.headerText("Select a data source to use.")
+				.title(DATA_SOURCES.size() > 1 ? "Select Data Source" : "Loading Data")
+				.headerText(DATA_SOURCES.size() > 1 ? "Select a data source to use." : "Please wait...")
 				.contentNode(grid)
 				.longRunning(ButtonType.OK,
 						() -> {
@@ -345,6 +346,8 @@ public class MainApplication extends Application {
 						},
 						AlertBuilder.Exceptions.Throw)
 				.get();
+
+		alert.getDialogPane().setPrefWidth(350.0);
 
 		if(DATA_SOURCES.size() == 1) {
 			Platform.runLater(() -> alert.getDialogPane().lookupButton(ButtonType.OK).executeAccessibleAction(AccessibleAction.FIRE));
