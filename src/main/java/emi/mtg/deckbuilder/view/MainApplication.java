@@ -198,6 +198,27 @@ public class MainApplication extends Application {
 				}
 			}
 
+			Path file = getJarPath().resolveSibling(String.format("exception-%s.log", Instant.now().toString()).replaceAll(":", "-"));
+			try {
+				PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file));
+
+				writer.println(String.format("At %s on thread %s/%d, an uncaught exception was thrown.", Instant.now(), x.getName(), x.getId()));
+				writer.println(deckSaved ? "The user's decks were successfully emergency-saved." : "One or more of the user's decks were not able to be saved.");
+				writer.println();
+
+				writer.println("Abbreviated stack trace:");
+				writer.println("------------------------");
+				writer.println(condensedTrace);
+				writer.println();
+
+				writer.println("Complete stack trace:");
+				writer.println("---------------------");
+				e.printStackTrace(writer);
+				writer.close();
+			} catch (IOException ioe) {
+				e.addSuppressed(ioe);
+			}
+
 			final boolean ds = deckSaved;
 			Platform.runLater(() -> {
 				Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -209,20 +230,22 @@ public class MainApplication extends Application {
 				alert.setContentText(String.join("\n",
 						"Something went wrong!",
 						"",
-						"I have no idea if the application will be able to keep running. " +
-								(ds ?
-										"Your decks have been emergency-saved to 'emergency-save-XXXXXXXX.json' in the deckbuilder directory." :
-										"One or more of your decks couldn't even be emergency-saved. They may be gone. Sorry. D:"
-								),
+						(ds ?
+								"Your decks have been emergency-saved to 'emergency-save-XXXXXXXX.json' beside the Deckbuilder JAR." :
+								"One or more of your decks couldn't even be emergency-saved. They may be gone. I'm terribly sorry. D:"
+						),
 						"",
-						"If this keeps happening, message me on Twitter @DeaLuminis!",
+						"The program may terminate when you close this dialog, or it might seem to work just fine. " +
+								"The internal state of the program may have become corrupted, though, and so " +
+								"I recommend saving all your decks and restarting the program.",
+						"",
+						"Detailed error information was saved to " + file.toAbsolutePath().toString() + " " +
+								"If you care to, please contact me on Twitter @DeaLuminis and share this file!",
 						"",
 						"If you're the nerdy type, tech details follow.",
 						"",
 						"Thread: " + x.getName() + " / " + x.getId(),
-						condensedTrace,
-						"",
-						"Full stack trace follows and was written to standard out and standard error."
+						condensedTrace
 				));
 
 				ScrollPane scroller = new ScrollPane(new Text(stackTrace.toString()));
