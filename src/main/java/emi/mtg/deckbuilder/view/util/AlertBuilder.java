@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view.util;
 
-import com.sun.javafx.event.EventHandlerManager;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -12,7 +11,6 @@ import javafx.stage.Modality;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
-import java.lang.reflect.Field;
 import java.util.Hashtable;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
@@ -42,24 +40,6 @@ public class AlertBuilder {
 
 	public static AlertBuilder create() {
 		return new AlertBuilder();
-	}
-
-	private static final Field dialogEventHandlerManager;
-	static {
-		try {
-			dialogEventHandlerManager = Dialog.class.getDeclaredField("eventHandlerManager");
-			dialogEventHandlerManager.setAccessible(true);
-		} catch (NoSuchFieldException nsfe) {
-			throw new AssertionError(nsfe);
-		}
-	}
-
-	private static EventHandlerManager eventHandlerManager(Dialog<?> dialog) {
-		try {
-			return (EventHandlerManager) dialogEventHandlerManager.get(dialog);
-		} catch (IllegalAccessException iae) {
-			throw new AssertionError(iae);
-		}
 	}
 
 	private final Alert alert;
