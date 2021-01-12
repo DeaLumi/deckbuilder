@@ -61,7 +61,7 @@ public class Context {
 
 		this.gson = Serialization.GSON.newBuilder()
 				.registerTypeAdapter(Card.class, Serialization.createCardAdapter())
-				.registerTypeAdapter(Card.Printing.class, Serialization.createCardPrintingAdapter())
+				.registerTypeAdapterFactory(Serialization.createCardPrintingAdapterFactory())
 				.create();
 
 		if (Files.exists(STATE)) {

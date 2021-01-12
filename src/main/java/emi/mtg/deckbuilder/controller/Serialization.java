@@ -1,6 +1,9 @@
 package emi.mtg.deckbuilder.controller;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -8,6 +11,7 @@ import com.google.gson.stream.JsonWriter;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
+import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
 import javafx.beans.property.Property;
@@ -96,8 +100,23 @@ public class Serialization {
 		return new StringTypeAdapter<>(Card::fullName, NameOnlyImporter::findCard);
 	}
 
-	public static TypeAdapter<Card.Printing> createCardPrintingAdapter() {
+	private static TypeAdapter<Card.Printing> createCardPrintingAdapter() {
 		return new StringTypeAdapter<>(p -> p.id().toString(), i -> Context.get().data.printing(UUID.fromString(i)));
+	}
+
+	public static TypeAdapterFactory createCardPrintingAdapterFactory() {
+		return new TypeAdapterFactory() {
+			@Override
+			public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+				if (CardInstance.class.isAssignableFrom(type.getRawType())) {
+					return gson.getDelegateAdapter(this, type);
+				} else if (Card.Printing.class.isAssignableFrom(type.getRawType())){
+					return (TypeAdapter<T>) new StringTypeAdapter<>(p -> p.id().toString(), i -> Context.get().data.printing(UUID.fromString(i)));
+				} else {
+					return null;
+				}
+			}
+		};
 	}
 
 	public static TypeAdapter<Path> createPathTypeAdapter() {
