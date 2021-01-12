@@ -265,7 +265,7 @@ public class CardView extends Canvas {
 	final ObservableList<CardInstance> model;
 	final FilteredList<CardInstance> filteredModel;
 	private final FilteredList<CardInstance> collapsedModel;
-	private final HashMap<Card, AtomicInteger> collapseAccumulator;
+	private final Hashtable<Card, AtomicInteger> collapseAccumulator;
 	private volatile Group[] groupedModel;
 
 	private LayoutEngine engine;
@@ -342,7 +342,7 @@ public class CardView extends Canvas {
 		this.doubleClick = ci -> {};
 		this.contextMenu = null;
 
-		this.collapseAccumulator = new HashMap<>();
+		this.collapseAccumulator = new Hashtable<>();
 		// N.B. can NOT be a lambda due to JavaFX identity checks!
 		final Supplier<Predicate<CardInstance>> freshTruePredicate = () -> new Predicate<CardInstance>() {
 			@Override
