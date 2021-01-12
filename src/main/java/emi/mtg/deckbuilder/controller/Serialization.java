@@ -36,7 +36,7 @@ public class Serialization {
 			.registerTypeAdapter(CardView.Grouping.class, Serialization.createCardViewGroupingAdapter())
 			.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
 			.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
-			.registerTypeAdapter(Path.class, Serialization.createPathTypeAdapter())
+			.registerTypeHierarchyAdapter(Path.class, Serialization.createPathTypeAdapter())
 			.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
 			.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
 			.registerTypeAdapterFactory(Serialization.createPreferredPrintingAdapterFactory())
