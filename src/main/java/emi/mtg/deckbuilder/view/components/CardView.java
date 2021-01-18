@@ -4,6 +4,7 @@ import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.util.UniqueList;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
@@ -33,10 +34,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -234,25 +233,45 @@ public class CardView extends Canvas {
 	public class Group {
 		public final Bounds groupBounds, labelBounds;
 		public final Grouping.Group group;
-		private final ReadOnlyListWrapper<CardInstance> model;
+		private final FilteredList<CardInstance> filteredModel;
+		private final SortedList<CardInstance> sortedModel;
+		private final UniqueList<CardInstance> collapsedModel;
 
 		public Group(Grouping.Group group, ObservableList<CardInstance> modelSource, Comparator<CardInstance> initialSort) {
 			this.group = group;
 			this.groupBounds = new Bounds();
 			this.labelBounds = new Bounds();
 
-			final SortedList<CardInstance> modelProper = modelSource.filtered(group::contains).sorted(initialSort);
-			this.model = new ReadOnlyListWrapper<>(modelProper);
-			modelProper.addListener((ListChangeListener<CardInstance>) x -> CardView.this.layout());
+			this.filteredModel = modelSource.filtered(group::contains);
+			this.sortedModel = this.filteredModel.sorted(initialSort);
+			this.collapsedModel = new UniqueList<>(this.sortedModel, CardInstance::printing);
+
+			this.collapsedModel.addListener((ListChangeListener<CardInstance>) x -> CardView.this.layout());
+		}
+
+		public void refilter() {
+			// N.B. This can not be a lambda. We need a new instance.
+			this.filteredModel.setPredicate(new Predicate<CardInstance>() {
+				@Override
+				public boolean test(CardInstance cardInstance) {
+					return Group.this.group.contains(cardInstance);
+				}
+			});
 		}
 
 		public ObservableList<CardInstance> model() {
-			return model.getReadOnlyProperty().get();
+			return CardView.this.collapseDuplicatesProperty.get() ? collapsedModel : sortedModel;
 		}
 
-		public void setSort(Comparator<CardInstance> sort) {
-			assert model.get() instanceof SortedList;
-			((SortedList<CardInstance>) model.get()).setComparator(sort);
+		public synchronized void setSort(Comparator<CardInstance> sort) {
+			this.sortedModel.setComparator(sort);
+		}
+
+		public List<? extends CardInstance> hoverCards(CardInstance ci) {
+			if (ci == null) return Collections.emptyList();
+			if (!collapseDuplicatesProperty.get()) return Collections.singletonList(ci);
+
+			return collapsedModel.getAll(collapsedModel.indexOf(ci));
 		}
 	}
 
@@ -264,8 +283,6 @@ public class CardView extends Canvas {
 
 	final ObservableList<CardInstance> model;
 	final FilteredList<CardInstance> filteredModel;
-	private final FilteredList<CardInstance> collapsedModel;
-	private final Hashtable<Card, AtomicInteger> collapseAccumulator;
 	private volatile Group[] groupedModel;
 
 	private LayoutEngine engine;
@@ -342,40 +359,14 @@ public class CardView extends Canvas {
 		this.doubleClick = ci -> {};
 		this.contextMenu = null;
 
-		this.collapseAccumulator = new Hashtable<>();
-		// N.B. can NOT be a lambda due to JavaFX identity checks!
-		final Supplier<Predicate<CardInstance>> freshTruePredicate = () -> new Predicate<CardInstance>() {
-			@Override
-			public boolean test(CardInstance cardInstance) {
-				return true;
-			}
-		};
-		final Supplier<Predicate<CardInstance>> freshCollapsePredicate = () -> new Predicate<CardInstance>() {
-			{
-				collapseAccumulator.clear();
-			}
-
-			@Override
-			public boolean test(CardInstance ci) {
-				return collapseAccumulator.computeIfAbsent(ci.card(), x -> new AtomicInteger()).incrementAndGet() == 1;
-			}
-		};
-
 		this.sortingElements = sorts;
 		this.sort = convertSorts(sorts);
 		this.grouping = grouping;
 
 		this.model = model;
-		this.filteredModel = model.filtered(freshTruePredicate.get());
-		this.collapsedModel = this.filteredModel.filtered(freshTruePredicate.get());
+		this.filteredModel = model.filtered(x -> true);
 
-		final Runnable invalidateCollapsedModel = () -> {
-			synchronized(this.model) {
-				this.collapsedModel.setPredicate((collapseDuplicatesProperty.get() ? freshCollapsePredicate : freshTruePredicate).get());
-			}
-		};
-		this.filteredModel.addListener((ListChangeListener<CardInstance>) lce -> invalidateCollapsedModel.run());
-		this.collapseDuplicatesProperty.addListener((a, b, c) -> invalidateCollapsedModel.run());
+		this.collapseDuplicatesProperty.addListener((a, b, c) -> layout());
 
 		grouping(grouping);
 		layout(layout);
@@ -481,13 +472,7 @@ public class CardView extends Canvas {
 			if (CardView.dragSource == this) {
 				if (this.grouping.supportsModification()) {
 					this.selectedCards.forEach(this.hoverGroup.group::add);
-
-					Set<Card> cards = this.selectedCards.stream().map(CardInstance::card).collect(Collectors.toSet());
-					for (int i = 0; i < this.model.size(); ++i) {
-						if (cards.contains(this.model.get(i).card())) {
-							this.model.set(i, this.model.get(i)); // Refresh groupings
-						}
-					}
+					this.hoverGroup.refilter();
 				}
 			} else if (CardView.dragSource != null) {
 				if (!immutableModel.get()) {
@@ -496,7 +481,7 @@ public class CardView extends Canvas {
 								CardInstance clone = new CardInstance(ci.printing());
 								clone.tags().addAll(ci.tags());
 
-								if (this.grouping.supportsModification()) {
+								if (this.hoverGroup != null && this.grouping.supportsModification()) {
 									this.hoverGroup.group.add(clone);
 								}
 
@@ -522,7 +507,6 @@ public class CardView extends Canvas {
 			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
 				if (CardView.dragTarget == this) {
 					if (this.grouping.supportsModification()) {
-						Set<Card> modifiedCards = new HashSet<>();
 						for (Group group : this.groupedModel) {
 							if (group == hoverGroup) {
 								continue;
@@ -530,14 +514,9 @@ public class CardView extends Canvas {
 
 							for (CardInstance ci : selectedCards) {
 								group.group.remove(ci);
-								modifiedCards.add(ci.card());
 							}
-						}
 
-						for (int i = 0; i < this.model.size(); ++i) {
-							if (modifiedCards.contains(this.model.get(i).card())) {
-								this.model.set(i, this.model.get(i));
-							}
+							group.refilter();
 						}
 					}
 				} else if (CardView.dragTarget != null) {
@@ -564,12 +543,12 @@ public class CardView extends Canvas {
 					}
 
 					if (immutableModel.get()) {
-						if (collapsedModel.stream().anyMatch(ci -> ci.card() == card.card() && ci.printing() != card.printing())) {
+						if (filteredModel.stream().anyMatch(ci -> ci.card() == card.card() && ci.printing() != card.printing())) {
 							return; // Other versions are already represented. TODO: I hate this. Bind to CardPane's showVersionsSeparately?
 						}
 					}
 
-					final List<CardInstance> modifyingCards = hoverCards(card);
+					final List<? extends CardInstance> modifyingCards = hoverGroup.hoverCards(card);
 					PrintingSelectorDialog.show(getScene(), card.card()).ifPresent(pr -> {
 						if (immutableModel.get()) {
 							Preferences.get().preferredPrintings.put(card.card().fullName(), pr.id());
@@ -577,7 +556,7 @@ public class CardView extends Canvas {
 							modifyingCards.forEach(x -> x.printing(pr));
 						}
 
-						invalidateCollapsedModel.run();
+						refreshCardGrouping();
 					});
 				} else if (me.getClickCount() % 2 == 0) {
 					CardInstance ci = cardAt(me.getX(), me.getY());
@@ -642,7 +621,7 @@ public class CardView extends Canvas {
 					if (!me.isControlDown()) {
 						selectedCards.clear();
 					}
-					selectedCards.addAll(hoverCards(hoverCard));
+					selectedCards.addAll(hoverGroup.hoverCards(hoverCard));
 				}
 			} else if (me.getButton() == MouseButton.MIDDLE) {
 				if (hoverCard == null) {
@@ -708,15 +687,6 @@ public class CardView extends Canvas {
 		});
 	}
 
-	private List<CardInstance> hoverCards(CardInstance ci) {
-		if (ci == null) return Collections.emptyList();
-		if (!collapseDuplicatesProperty.get()) return Collections.singletonList(ci);
-
-		return filteredModel.stream()
-				.filter(x -> x.printing() == ci.printing())
-				.collect(Collectors.toList());
-	}
-
 	private void mouseMoved(double x, double y) {
 		if (groupedModel == null) {
 			return;
@@ -755,8 +725,8 @@ public class CardView extends Canvas {
 		}
 
 		rel.plus(hoverGroup.groupBounds.pos.copy().negate());
-		int newHoverIdx = this.engine.cardAt(rel, hoverGroup.model.size());
-		CardInstance newHoverCard = newHoverIdx >= 0 ? hoverGroup.model.get(newHoverIdx) : null;
+		int newHoverIdx = this.engine.cardAt(rel, hoverGroup.model().size());
+		CardInstance newHoverCard = newHoverIdx >= 0 ? hoverGroup.model().get(newHoverIdx) : null;
 
 		if (newHoverCard != hoverCard) {
 			rerender = true;
@@ -829,7 +799,7 @@ public class CardView extends Canvas {
 				continue;
 			}
 
-			for (int j = 0; j < groupedModel[i].model.size(); ++j) {
+			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
 				loc = engine.coordinatesOf(j, loc);
 				loc = loc.plus(groupedModel[i].groupBounds.pos).plus(-scrollX.get(), -scrollY.get());
 
@@ -838,7 +808,7 @@ public class CardView extends Canvas {
 				}
 
 				if (cardInBounds(loc, x1s, y1s, x2s, y2s)) {
-					selectedCards.addAll(hoverCards(groupedModel[i].model.get(j)));
+					selectedCards.addAll(groupedModel[i].hoverCards(groupedModel[i].model().get(j)));
 				}
 			}
 		}
@@ -847,7 +817,7 @@ public class CardView extends Canvas {
 	}
 
 	private MVec2d cardCoordinatesOf(double x, double y) {
-		if (this.engine == null || collapsedModel.size() == 0) {
+		if (this.engine == null || filteredModel.size() == 0) {
 			return null;
 		}
 
@@ -861,12 +831,12 @@ public class CardView extends Canvas {
 			}
 		}
 
-		if (group == null || group.model.isEmpty()) {
+		if (group == null || group.model().isEmpty()) {
 			return null;
 		}
 
 		point.plus(group.groupBounds.pos.copy().negate());
-		int card = this.engine.cardAt(point, group.model.size());
+		int card = this.engine.cardAt(point, group.model().size());
 
 		if (card < 0) {
 			return null;
@@ -879,7 +849,7 @@ public class CardView extends Canvas {
 	}
 
 	private CardInstance cardAt(double x, double y) {
-		if (this.engine == null || collapsedModel.size() == 0) {
+		if (this.engine == null || filteredModel.size() == 0) {
 			return null;
 		}
 
@@ -893,18 +863,18 @@ public class CardView extends Canvas {
 			}
 		}
 
-		if (group == null || group.model.isEmpty()) {
+		if (group == null || group.model().isEmpty()) {
 			return null;
 		}
 
 		point.plus(group.groupBounds.pos.copy().negate());
-		int card = this.engine.cardAt(point, group.model.size());
+		int card = this.engine.cardAt(point, group.model().size());
 
 		if (card < 0) {
 			return null;
 		}
 
-		return group.model.get(card);
+		return group.model().get(card);
 	}
 
 	public void layout(LayoutEngine.Factory factory) {
@@ -915,7 +885,7 @@ public class CardView extends Canvas {
 	public void grouping(Grouping grouping) {
 		this.grouping = grouping;
 		this.groupedModel = Arrays.stream(this.grouping.groups(this.model))
-				.map(g -> new Group(g, this.collapsedModel, this.sort))
+				.map(g -> new Group(g, this.filteredModel, this.sort))
 				.toArray(Group[]::new);
 		layout();
 	}
@@ -928,11 +898,9 @@ public class CardView extends Canvas {
 		grouping(this.grouping);
 	}
 
-	public void refreshCardGrouping(Collection<CardInstance> modifiedCards) {
-		for (int i = 0; i < this.model.size(); ++i) {
-			if (modifiedCards.contains(this.model.get(i))) {
-				this.model.set(i, this.model.get(i)); // Refresh groupings
-			}
+	public void refreshCardGrouping() {
+		for (Group group : this.groupedModel) {
+			group.refilter();
 		}
 	}
 
@@ -1186,7 +1154,7 @@ public class CardView extends Canvas {
 			return;
 		}
 
-		if (collapsedModel == null || collapsedModel.isEmpty()) {
+		if (filteredModel == null || filteredModel.isEmpty()) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
 				gfx.setFill(Color.WHITE);
@@ -1228,22 +1196,13 @@ public class CardView extends Canvas {
 		gfx.setTextAlign(TextAlignment.CENTER);
 		gfx.setTextBaseline(VPos.CENTER);
 		for (int i = 0; i < groupedModel.length; ++i) {
-			if (groupedModel[i] == null || (!showEmptyGroupsProperty.get() && groupedModel[i].model.isEmpty())) {
+			if (groupedModel[i] == null || (!showEmptyGroupsProperty.get() && groupedModel[i].model().isEmpty())) {
 				continue;
 			}
 
 			String s = groupedModel[i].group.toString();
 
-			int size;
-			if (collapseDuplicatesProperty.get()) {
-				size = 0;
-				for (CardInstance ci : groupedModel[i].model) {
-					size += filteredModel.stream().filter(x -> ci.card() == x.card()).count();
-				}
-			} else {
-				size = groupedModel[i].model.size();
-			}
-
+			final int size = groupedModel[i].sortedModel.size();
 			gfx.setFont(Font.font(groupedModel[i].labelBounds.dim.y));
 			gfx.fillText(String.format("%s (%d)", s, size),
 					groupedModel[i].labelBounds.pos.x + groupedModel[i].labelBounds.dim.x / 2.0 - scrollX.get(),
@@ -1340,7 +1299,7 @@ public class CardView extends Canvas {
 				continue;
 			}
 
-			for (int j = 0; j < groupedModel[i].model.size(); ++j) {
+			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
 				loc = engine.coordinatesOf(j, loc);
 				loc = loc.plus(groupedModel[i].groupBounds.pos).plus(-scrollX.get(), -scrollY.get());
 
@@ -1348,7 +1307,7 @@ public class CardView extends Canvas {
 					continue;
 				}
 
-				final CardInstance ci = groupedModel[i].model.get(j);
+				final CardInstance ci = groupedModel[i].model().get(j);
 				final Card.Printing printing = ci.printing();
 
 				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
@@ -1394,8 +1353,8 @@ public class CardView extends Canvas {
 				}
 
 				int count = 1;
-				if (collapseDuplicatesProperty.get() && collapseAccumulator.containsKey(ci.card())) {
-					count = collapseAccumulator.get(ci.card()).get();
+				if (collapseDuplicatesProperty.get()) {
+					count = groupedModel[i].collapsedModel.count(j);
 				}
 
 				renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.LOADING_CARD), states, count));

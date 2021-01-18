@@ -218,7 +218,7 @@ public class MainWindow extends Stage {
 								tags.tags().remove(cmi.getText());
 							}
 						}
-						collection.view().refreshCardGrouping(menu.cards);
+						collection.view().refreshCardGrouping();
 					}))
 					.collect(Collectors.toList())
 			);
@@ -380,7 +380,7 @@ public class MainWindow extends Stage {
 						} else {
 							menu.cards.forEach(ci -> ci.tags().remove(cmi.getText()));
 						}
-						menu.view.get().refreshCardGrouping(menu.cards);
+						menu.view.get().refreshCardGrouping();
 					}))
 					.collect(Collectors.toList())
 			);
