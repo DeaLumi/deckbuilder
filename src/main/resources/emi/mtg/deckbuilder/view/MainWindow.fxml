@@ -20,6 +20,8 @@
                     <SeparatorMenuItem/>
                     <MenuItem text="Import" onAction="#importDeck"/>
                     <MenuItem text="Export" onAction="#exportDeck"/>
+                    <MenuItem text="Copy Decklist" onAction="#copyListToClipboard" accelerator="Shortcut+C"/>
+                    <MenuItem text="Copy Image" onAction="#copyImageToClipboard" accelerator="Shift+Shortcut+C"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Validate" onAction="#validateDeck"/>
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>

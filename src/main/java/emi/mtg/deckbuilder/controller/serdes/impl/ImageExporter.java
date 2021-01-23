@@ -21,6 +21,7 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.FlowPane;
@@ -34,9 +35,11 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
 
 public class ImageExporter implements DeckImportExport {
 	@Override
@@ -58,73 +61,14 @@ public class ImageExporter implements DeckImportExport {
 	public void exportDeck(DeckList deck, File to) throws IOException {
 		if (!promptForOptions(deck.format().deckZones())) return;
 
-		// Prefetch all deck images.
-		CompletableFuture[] futures = deck.cards().values().stream()
-				.flatMap(List::stream)
-				.map(CardInstance::printing)
-				.map(Context.get().images::getThumbnail)
-				.toArray(CompletableFuture[]::new);
-
-		try {
-			CompletableFuture.allOf(futures).get();
-		} catch (InterruptedException e) {
-			throw new IOException(e);
-		} catch (ExecutionException e) {
-			throw new IOException(e.getCause());
-		}
-
-		FlowPane box = new FlowPane(Orientation.HORIZONTAL);
-		box.setBackground(new Background(new BackgroundFill(Color.TRANSPARENT, null, null)));
-		box.setAlignment(Pos.CENTER);
-		box.setPrefWrapLength(1.0);
-
-		List<Label> labels = new ArrayList<>();
-		double maxCVWidth = 0;
-
-		for (Map.Entry<Zone, ObservableList<CardInstance>> zone : deck.cards().entrySet()) {
-			if (zone.getValue().isEmpty()) continue;
-
-			CardView view = new CardView(zone.getValue(),
-					zoneLayouts.get(zone.getKey()).getValue(),
-					zoneGroupings.get(zone.getKey()).getValue(),
-					CardView.DEFAULT_SORTING);
+		deckToImageFile(deck, (zone, view) -> {
+			view.layout(zoneLayouts.get(zone).getValue());
+			view.grouping(zoneGroupings.get(zone).getValue());
 			view.showFlagsProperty().set(false);
 			view.collapseDuplicatesProperty().set(collapseCopies.isSelected());
 			view.cardScaleProperty().set(cardScale.getValue());
 			view.resize(widthHint.getValue().doubleValue(), heightHint.getValue().doubleValue());
-			view.resize(view.prefWidth(-1), view.prefHeight(1800.0));
-			view.layout();
-			view.renderNow();
-			maxCVWidth = Math.max(view.getWidth(), maxCVWidth);
-
-			Label label = new Label(zone.getKey().name().toUpperCase());
-			label.setBackground(new Background(new BackgroundFill(Color.DARKGREY.darker(), null, null)));
-			label.setTextFill(Color.WHITE);
-			label.setAlignment(Pos.CENTER);
-			label.setMinWidth(2.0);
-			label.setMaxWidth(Double.MAX_VALUE);
-			label.setPrefHeight(48.0);
-			label.setMaxHeight(Double.MAX_VALUE);
-			label.setFont(Font.font(null, FontWeight.BOLD, 32.0));
-			label.layout();
-			labels.add(label);
-
-			box.getChildren().add(label);
-			box.getChildren().add(view);
-		}
-
-		for (Label label : labels) {
-			label.setPrefWidth(maxCVWidth * 0.95);
-		}
-
-		box.resize(box.prefWidth(-1), box.prefHeight(-1));
-
-		Scene scene = new Scene(box, Color.WHITE);
-		BufferedImage img = SwingFXUtils.fromFXImage(scene.snapshot(null), null);
-
-		BufferedImage buffer = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.OPAQUE);
-		buffer.createGraphics().drawImage(img, 0, 0, null);
-		ImageIO.write(buffer, "jpg", to);
+		}, to.toPath());
 	}
 
 	@Override
@@ -164,8 +108,8 @@ public class ImageExporter implements DeckImportExport {
 
 		FxUtils.FXML(this, alert.getDialogPane());
 
-		widthHint.getValueFactory().setValue(4000);
-		heightHint.getValueFactory().setValue(4000);
+		widthHint.getValueFactory().setValue(2500);
+		heightHint.getValueFactory().setValue(2500);
 
 		int i = 3;
 		for (Zone zone : Zone.values()) {
@@ -213,5 +157,81 @@ public class ImageExporter implements DeckImportExport {
 		}
 
 		return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+	}
+
+	public static WritableImage deckToImage(DeckList deck, BiConsumer<Zone, CardView> viewModifier) throws IOException {
+		// Prefetch all deck images.
+		CompletableFuture[] futures = deck.cards().values().stream()
+				.flatMap(List::stream)
+				.map(CardInstance::printing)
+				.map(Context.get().images::getThumbnail)
+				.toArray(CompletableFuture[]::new);
+
+		try {
+			CompletableFuture.allOf(futures).get();
+		} catch (InterruptedException e) {
+			throw new IOException(e);
+		} catch (ExecutionException e) {
+			throw new IOException(e.getCause());
+		}
+
+		FlowPane box = new FlowPane(Orientation.HORIZONTAL);
+		box.setBackground(new Background(new BackgroundFill(Color.TRANSPARENT, null, null)));
+		box.setAlignment(Pos.CENTER);
+		box.setPrefWrapLength(1.0);
+
+		List<Label> labels = new ArrayList<>();
+		double maxCVWidth = 0;
+
+		for (Map.Entry<Zone, ObservableList<CardInstance>> zone : deck.cards().entrySet()) {
+			if (zone.getValue().isEmpty()) continue;
+
+			CardView view = new CardView(zone.getValue(),
+					CardView.LAYOUT_ENGINES.get(0),
+					CardView.GROUPINGS.get(0),
+					CardView.DEFAULT_SORTING);
+			viewModifier.accept(zone.getKey(), view);
+			view.resize(view.prefWidth(-1), view.prefHeight(1800.0));
+			view.layout();
+			view.renderNow();
+			maxCVWidth = Math.max(view.getWidth(), maxCVWidth);
+
+			Label label = new Label(zone.getKey().name().toUpperCase());
+			label.setBackground(new Background(new BackgroundFill(Color.DARKGREY.darker(), null, null)));
+			label.setTextFill(Color.WHITE);
+			label.setAlignment(Pos.CENTER);
+			label.setMinWidth(2.0);
+			label.setMaxWidth(Double.MAX_VALUE);
+			label.setPrefHeight(48.0);
+			label.setMaxHeight(Double.MAX_VALUE);
+			label.setFont(Font.font(null, FontWeight.BOLD, 32.0));
+			label.layout();
+			labels.add(label);
+
+			box.getChildren().add(label);
+			box.getChildren().add(view);
+		}
+
+		for (Label label : labels) {
+			label.setPrefWidth(maxCVWidth * 0.95);
+		}
+
+		box.resize(box.prefWidth(-1), box.prefHeight(-1));
+
+		Scene scene = new Scene(box, Color.WHITE);
+		return scene.snapshot(null);
+	}
+
+	public static void writeSafeImage(WritableImage fxImg, Path target) throws IOException {
+		String fn = target.getFileName().toString();
+
+		BufferedImage img = SwingFXUtils.fromFXImage(fxImg, null);
+		BufferedImage buffer = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.OPAQUE);
+		buffer.createGraphics().drawImage(img, 0, 0, null);
+		ImageIO.write(buffer, fn.substring(fn.indexOf('.') + 1), target.toFile());
+	}
+
+	public static void deckToImageFile(DeckList deck, BiConsumer<Zone, CardView> viewModifier, Path to) throws IOException {
+		writeSafeImage(deckToImage(deck, viewModifier), to);
 	}
 }

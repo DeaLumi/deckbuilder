@@ -7,6 +7,7 @@ import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Tags;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
+import emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter;
 import emi.mtg.deckbuilder.controller.serdes.impl.Json;
 import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.model.CardInstance;
@@ -30,9 +31,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
@@ -1066,6 +1066,44 @@ public class MainWindow extends Stage {
 					.headerText("An error occurred while exporting:")
 					.contentText(ioe.getMessage())
 					.modal(Modality.WINDOW_MODAL)
+					.showAndWait();
+		}
+	}
+
+	@FXML
+	protected void copyListToClipboard() throws IOException {
+		ClipboardContent content = new ClipboardContent();
+		content.put(DataFormat.PLAIN_TEXT, TextFile.deckToString(deck));
+
+		if (!Clipboard.getSystemClipboard().setContent(content)) {
+			AlertBuilder.notify(MainWindow.this)
+					.title("Copy Failed")
+					.headerText("Unable to copy deck to clipboard.")
+					.contentText("No idea why, sorry -- maybe try again? Or clear your clipboard?")
+					.showAndWait();
+		}
+	}
+
+	@FXML
+	protected void copyImageToClipboard() throws IOException {
+		ClipboardContent content = new ClipboardContent();
+
+		WritableImage img = ImageExporter.deckToImage(deck, (zone, view) -> {
+			view.layout(new FlowGrid.Factory());
+			view.grouping(Preferences.get().zoneGroupings.getOrDefault(zone, new ConvertedManaCost()));
+			view.showFlagsProperty().set(false);
+			view.collapseDuplicatesProperty().set(deckPane(zone).view().collapseDuplicatesProperty().get());
+			view.cardScaleProperty().set(deckPane(zone).view().cardScaleProperty().get());
+			view.resize(2500.0, 2500.0);
+		});
+
+		content.put(DataFormat.IMAGE, img);
+
+		if (!Clipboard.getSystemClipboard().setContent(content)) {
+			AlertBuilder.notify(MainWindow.this)
+					.title("Copy Failed")
+					.headerText("Unable to copy deck to clipboard.")
+					.contentText("No idea why, sorry -- maybe try again? Or clear your clipboard?")
 					.showAndWait();
 		}
 	}

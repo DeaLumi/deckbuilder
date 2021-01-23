@@ -6,10 +6,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -110,10 +107,7 @@ public class TextFile extends NameOnlyImporter {
 		}
 	}
 
-	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
-		FileWriter writer = new FileWriter(to);
-
+	private static void writeDeck(DeckList deck, Writer writer) throws IOException {
 		for (Zone zone : Zone.values()) {
 			if (deck.cards(zone).isEmpty()) {
 				continue;
@@ -125,7 +119,18 @@ public class TextFile extends NameOnlyImporter {
 
 			writeList(deck.cards(zone), writer);
 		}
+	}
 
+	public static String deckToString(DeckList deck) throws IOException {
+		StringWriter writer = new StringWriter();
+		writeDeck(deck, writer);
+		return writer.toString();
+	}
+
+	@Override
+	public void exportDeck(DeckList deck, File to) throws IOException {
+		FileWriter writer = new FileWriter(to);
+		writeDeck(deck, writer);
 		writer.close();
 	}
 
