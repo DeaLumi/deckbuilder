@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view.components;
 
-import com.sun.javafx.event.DirectEvent;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -49,14 +48,32 @@ public class AutoCompleter extends Popup {
 		this.suggestionList.addEventFilter(KeyEvent.KEY_PRESSED, ke -> {
 			switch (ke.getCode()) {
 				case A:
-					if (!ke.isShortcutDown()) return; // Intentional fallthrough
-				case HOME: // Intentional fallthrough
-				case END: // Intentional fallthrough
-					this.target.fireEvent(new DirectEvent(ke));
+					if (ke.isShortcutDown()) {
+						this.target.selectAll();
+						ke.consume();
+					}
+					break;
+				case HOME:
+					if (ke.isShiftDown()) {
+						this.target.selectRange(this.target.getCaretPosition(), 0);
+					} else {
+						this.target.positionCaret(0);
+					}
+					ke.consume();
+					break;
+				case END:
+					if (ke.isShiftDown()) {
+						this.target.selectRange(this.target.getCaretPosition(), this.target.getText().length());
+					} else {
+						this.target.positionCaret(this.target.getText().length());
+					}
 					ke.consume();
 					break;
 				case ESCAPE:
-					if (isHideOnEscape()) hide();
+					if (isHideOnEscape()) {
+						hide();
+						ke.consume();
+					}
 					break;
 				case TAB:
 				case ENTER:
