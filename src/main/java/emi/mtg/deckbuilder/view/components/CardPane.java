@@ -33,6 +33,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 public class CardPane extends BorderPane {
@@ -262,9 +263,9 @@ public class CardPane extends BorderPane {
 			if (name.length() > 3) {
 				return model.stream()
 						.map(ci -> ci.card().name())
-						.filter(n -> n.startsWith(name))
+						.filter(n -> n.toLowerCase().contains(name.toLowerCase()))
 						.distinct()
-						.sorted()
+						.sorted(Comparator.comparingInt((ToIntFunction<String>) n -> n.toLowerCase().indexOf(name.toLowerCase())).thenComparing(Comparator.naturalOrder()))
 						.collect(Collectors.toList());
 			} else {
 				return Collections.emptyList();
