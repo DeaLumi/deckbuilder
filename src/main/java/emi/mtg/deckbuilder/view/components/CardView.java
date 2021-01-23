@@ -124,6 +124,23 @@ public class CardView extends Canvas {
 		public boolean contains(MVec2d point) {
 			return point.x >= pos.x && point.y >= pos.y && point.x <= pos.x + dim.x && point.y <= pos.y + dim.y;
 		}
+
+		public boolean empty() {
+			return dim.x >= 0 && dim.y >= 0;
+		}
+
+		public Bounds plus(Bounds other) {
+			final double myHighX = pos.x + dim.x;
+			final double myHighY = pos.y + dim.y;
+
+			pos.x = Math.min(pos.x, other.pos.x);
+			pos.y = Math.min(pos.y, other.pos.y);
+
+			dim.x = myHighX - pos.x;
+			dim.y = myHighY - pos.y;
+
+			return this;
+		}
 	}
 
 	public interface LayoutEngine {
@@ -1291,6 +1308,7 @@ public class CardView extends Canvas {
 		if (hoverGroup != null) {
 			renderMap.hoverGroupBounds.pos.set(hoverGroup.groupBounds.pos).plus(scroll);
 			renderMap.hoverGroupBounds.dim.set(hoverGroup.groupBounds.dim);
+			renderMap.hoverGroupBounds.plus(hoverGroup.labelBounds);
 		}
 
 		for (int i = 0; i < groupedModel.length; ++i) {
