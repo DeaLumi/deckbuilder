@@ -1172,14 +1172,14 @@ public class CardView extends Canvas {
 		}
 
 		if (generation < renderGeneration) return;
-		SortedMap<MVec2d, RenderStruct> renderMap = buildRenderMap();
+		SortedMap<MVec2d, RenderStruct> renderMap = buildRenderMap(false);
 
 		if (generation < renderGeneration) return;
 		Platform.runLater(() -> drawRenderMap(generation, renderMap));
 	}
 
 	private void drawRenderMap(long generation, SortedMap<MVec2d, RenderStruct> renderMap) {
-		if (generation < renderGeneration) return;
+		if (generation >= 0 && generation < renderGeneration) return;
 
 		GraphicsContext gfx = getGraphicsContext2D();
 
@@ -1273,7 +1273,7 @@ public class CardView extends Canvas {
 
 	private final Set<CompletableFuture<Image>> waiting = new HashSet<>();
 
-	private SortedMap<MVec2d, RenderStruct> buildRenderMap() {
+	private SortedMap<MVec2d, RenderStruct> buildRenderMap(boolean blocking) {
 		SortedMap<MVec2d, RenderStruct> renderMap = new TreeMap<>();
 		MVec2d loc = new MVec2d();
 
@@ -1312,7 +1312,13 @@ public class CardView extends Canvas {
 
 				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
 
-				if (!futureImage.isDone() && !waiting.contains(futureImage)) {
+				if (blocking) {
+					try {
+						futureImage.get();
+					} catch (InterruptedException | ExecutionException e) {
+						throw new RuntimeException(e);
+					}
+				} else if (!futureImage.isDone() && !waiting.contains(futureImage)) {
 					waiting.add(futureImage);
 					futureImage.thenRun(() -> {
 						this.scheduleRender();
@@ -1369,6 +1375,6 @@ public class CardView extends Canvas {
 			throw new IllegalStateException("renderNow must be called from the FX Application thread!");
 		}
 
-		drawRenderMap(-1, buildRenderMap());
+		drawRenderMap(-1, buildRenderMap(true));
 	}
 }

@@ -156,6 +156,7 @@ public class ImageExporter implements DeckImportExport {
 
 	public ImageExporter() {
 		alert = AlertBuilder.query(null)
+				.modal(Modality.APPLICATION_MODAL)
 				.buttons(ButtonType.OK, ButtonType.CANCEL)
 				.title("Image Export Settings")
 				.headerText("Please enter image export settings.")
@@ -210,8 +211,6 @@ public class ImageExporter implements DeckImportExport {
 				zoneFlows.get(zone).setVisible(false);
 			}
 		}
-
-		alert.initModality(Modality.APPLICATION_MODAL);
 
 		return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
 	}
