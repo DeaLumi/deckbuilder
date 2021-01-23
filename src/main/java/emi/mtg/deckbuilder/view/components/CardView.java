@@ -1125,15 +1125,27 @@ public class CardView extends Canvas {
 		}
 	}
 
-	static class RenderStruct {
-		public final Image img;
-		public final EnumSet<CardState> state;
-		private final int count;
+	private static class RenderMap {
+		private static class CardState {
+			public final Image img;
+			public final EnumSet<CardView.CardState> state;
+			public final int count;
 
-		public RenderStruct(Image img, EnumSet<CardState> states, int count) {
-			this.img = img;
-			this.state = states;
-			this.count = count;
+			public CardState(Image img, EnumSet<CardView.CardState> states, int count) {
+				this.img = img;
+				this.state = states;
+				this.count = count;
+			}
+		}
+
+		public final SortedMap<MVec2d, CardState> cards;
+		public final Map<Bounds, String> labels;
+		public final Bounds hoverGroupBounds;
+
+		public RenderMap() {
+			this.cards = new TreeMap<>();
+			this.labels = new HashMap<>();
+			this.hoverGroupBounds = new Bounds();
 		}
 	}
 
@@ -1172,13 +1184,13 @@ public class CardView extends Canvas {
 		}
 
 		if (generation < renderGeneration) return;
-		SortedMap<MVec2d, RenderStruct> renderMap = buildRenderMap(false);
+		RenderMap renderMap = buildRenderMap(false);
 
 		if (generation < renderGeneration) return;
 		Platform.runLater(() -> drawRenderMap(generation, renderMap));
 	}
 
-	private void drawRenderMap(long generation, SortedMap<MVec2d, RenderStruct> renderMap) {
+	private void drawRenderMap(long generation, RenderMap renderMap) {
 		if (generation >= 0 && generation < renderGeneration) return;
 
 		GraphicsContext gfx = getGraphicsContext2D();
@@ -1186,39 +1198,32 @@ public class CardView extends Canvas {
 		gfx.setFill(Color.WHITE);
 		gfx.fillRect(0, 0, getWidth(), getHeight());
 
-		if (hoverGroup != null) {
+		if (renderMap.hoverGroupBounds.dim.x >= 0 && renderMap.hoverGroupBounds.dim.y >= 0) {
 			gfx.setFill(Color.color(0.9, 0.9, 0.9));
-			gfx.fillRect(hoverGroup.groupBounds.pos.x - scrollX.get(), hoverGroup.groupBounds.pos.y - scrollY.get(),
-					hoverGroup.groupBounds.dim.x, hoverGroup.groupBounds.dim.y);
+			gfx.fillRect(renderMap.hoverGroupBounds.pos.x, renderMap.hoverGroupBounds.pos.y,
+					renderMap.hoverGroupBounds.dim.x, renderMap.hoverGroupBounds.dim.y);
 		}
 
 		gfx.setFill(Color.BLACK);
 		gfx.setTextAlign(TextAlignment.CENTER);
 		gfx.setTextBaseline(VPos.CENTER);
-		for (int i = 0; i < groupedModel.length; ++i) {
-			if (groupedModel[i] == null || (!showEmptyGroupsProperty.get() && groupedModel[i].model().isEmpty())) {
-				continue;
-			}
-
-			String s = groupedModel[i].group.toString();
-
-			final int size = groupedModel[i].sortedModel.size();
-			gfx.setFont(Font.font(groupedModel[i].labelBounds.dim.y));
-			gfx.fillText(String.format("%s (%d)", s, size),
-					groupedModel[i].labelBounds.pos.x + groupedModel[i].labelBounds.dim.x / 2.0 - scrollX.get(),
-					groupedModel[i].labelBounds.pos.y + groupedModel[i].labelBounds.dim.y / 2.0 - scrollY.get(),
-					groupedModel[i].labelBounds.dim.x);
+		for (Map.Entry<Bounds, String> label : renderMap.labels.entrySet()) {
+			gfx.setFont(Font.font(label.getKey().dim.y));
+			gfx.fillText(label.getValue(),
+					label.getKey().pos.x + label.getKey().dim.x / 2.0,
+					label.getKey().pos.y + label.getKey().dim.y / 2.0,
+					label.getKey().dim.x);
 		}
 
 		final double cw = cardWidth();
 		final double ch = cardHeight();
 
-		for (Map.Entry<MVec2d, RenderStruct> str : renderMap.entrySet()) {
+		for (Map.Entry<MVec2d, RenderMap.CardState> str : renderMap.cards.entrySet()) {
 			gfx.drawImage(str.getValue().img, str.getKey().x, str.getKey().y, cw, ch);
 
 			boolean drewFill = false, drewOutline = false;
 
-			for (CardState state : CardState.values()) {
+			for (CardState state : CardView.CardState.values()) {
 				if (str.getValue().state.contains(state)) {
 					if (!drewFill && state.fillColor != Color.TRANSPARENT) {
 						drewFill = true;
@@ -1273,17 +1278,23 @@ public class CardView extends Canvas {
 
 	private final Set<CompletableFuture<Image>> waiting = new HashSet<>();
 
-	private SortedMap<MVec2d, RenderStruct> buildRenderMap(boolean blocking) {
-		SortedMap<MVec2d, RenderStruct> renderMap = new TreeMap<>();
+	private RenderMap buildRenderMap(boolean blocking) {
+		RenderMap renderMap = new RenderMap();
 		MVec2d loc = new MVec2d();
+		MVec2d scroll = new MVec2d(-scrollX.get(), -scrollY.get());
 
 		double dragBoxX1 = Math.min(dragStartX, lastDragX);
 		double dragBoxY1 = Math.min(dragStartY, lastDragY);
 		double dragBoxX2 = Math.max(dragStartX, lastDragX);
 		double dragBoxY2 = Math.max(dragStartY, lastDragY);
 
+		if (hoverGroup != null) {
+			renderMap.hoverGroupBounds.pos.set(hoverGroup.groupBounds.pos).plus(scroll);
+			renderMap.hoverGroupBounds.dim.set(hoverGroup.groupBounds.dim);
+		}
+
 		for (int i = 0; i < groupedModel.length; ++i) {
-			if (groupedModel[i] == null) {
+			if (groupedModel[i] == null || (!showEmptyGroupsProperty.get() && groupedModel[i].model().isEmpty())) {
 				continue;
 			}
 
@@ -1293,7 +1304,15 @@ public class CardView extends Canvas {
 				continue;
 			}
 
-			final MVec2d gpos = new MVec2d(bounds.pos).plus(-scrollX.get(), -scrollY.get());
+			final Bounds labelBounds = new Bounds();
+			labelBounds.pos.set(groupedModel[i].labelBounds.pos).plus(scroll);
+			labelBounds.dim.set(groupedModel[i].labelBounds.dim);
+
+			if (labelBounds.pos.x > -labelBounds.dim.x && labelBounds.pos.x < getWidth() && labelBounds.pos.y > -labelBounds.dim.y && labelBounds.pos.y < getHeight()) {
+				renderMap.labels.put(labelBounds, String.format("%s (%d)", groupedModel[i].group.toString(), groupedModel[i].sortedModel.size()));
+			}
+
+			final MVec2d gpos = new MVec2d(bounds.pos).plus(scroll);
 
 			if (gpos.x < -bounds.dim.x || gpos.x > getWidth() || gpos.y < -bounds.dim.y || gpos.y > getHeight()) {
 				continue;
@@ -1301,7 +1320,7 @@ public class CardView extends Canvas {
 
 			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
 				loc = engine.coordinatesOf(j, loc);
-				loc = loc.plus(groupedModel[i].groupBounds.pos).plus(-scrollX.get(), -scrollY.get());
+				loc = loc.plus(groupedModel[i].groupBounds.pos).plus(scroll);
 
 				if (loc.x < -cardWidth() || loc.x > getWidth() || loc.y < -cardHeight() || loc.y > getHeight()) {
 					continue;
@@ -1330,31 +1349,31 @@ public class CardView extends Canvas {
 
 				if (showFlags.get()) {
 					if (ci.flags.contains(CardInstance.Flags.Invalid)) {
-						states.add(CardState.Flagged);
+						states.add(CardView.CardState.Flagged);
 					}
 
 					if (ci.flags.contains(CardInstance.Flags.Full)) {
-						states.add(CardState.Full);
+						states.add(CardView.CardState.Full);
 					}
 
 					if (ci.flags.contains(CardInstance.Flags.Warning)) {
-						states.add(CardState.Warning);
+						states.add(CardView.CardState.Warning);
 					}
 
 					if (ci.flags.contains(CardInstance.Flags.Notice)) {
-						states.add(CardState.Notice);
+						states.add(CardView.CardState.Notice);
 					}
 				}
 
 				if (hoverCard == ci) {
-					states.add(CardState.Hover);
+					states.add(CardView.CardState.Hover);
 				}
 
 				if (selectedCards.contains(ci)) {
-					states.add(CardState.Selected);
+					states.add(CardView.CardState.Selected);
 				} else if (dragMode == DragMode.Selecting) {
 					if (cardInBounds(loc, dragBoxX1, dragBoxY1, dragBoxX2, dragBoxY2)) {
-						states.add(CardState.Selected);
+						states.add(CardView.CardState.Selected);
 					}
 				}
 
@@ -1363,7 +1382,7 @@ public class CardView extends Canvas {
 					count = groupedModel[i].collapsedModel.count(j);
 				}
 
-				renderMap.put(new MVec2d(loc), new RenderStruct(futureImage.getNow(Images.LOADING_CARD), states, count));
+				renderMap.cards.put(new MVec2d(loc), new RenderMap.CardState(futureImage.getNow(Images.LOADING_CARD), states, count));
 			}
 		}
 
