@@ -6,6 +6,7 @@ import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.Context;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
@@ -94,6 +95,11 @@ public class CardInstance implements Card.Printing, Serializable {
 	@Override
 	public UUID id() {
 		return printing.id();
+	}
+
+	@Override
+	public LocalDate releaseDate() {
+		return printing.releaseDate();
 	}
 
 	public void refreshInstance() {

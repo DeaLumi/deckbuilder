@@ -95,8 +95,8 @@ public class Preferences {
 		if (preferNotPromo) stream = stream.filter(pr -> !pr.promo());
 		if (preferPhysical) stream = stream.filter(pr -> !pr.set().digital());
 		if (preferAge != PreferAge.Any) stream = stream.sorted(preferAge == PreferAge.Newest ?
-				(a1, a2) -> a2.set().releaseDate().compareTo(a1.set().releaseDate()) :
-				(a1, a2) -> a1.set().releaseDate().compareTo(a2.set().releaseDate()));
+				(a1, a2) -> a2.releaseDate().compareTo(a1.releaseDate()) :
+				(a1, a2) -> a1.releaseDate().compareTo(a2.releaseDate()));
 
 		return stream.findFirst().orElse(null);
 	}
