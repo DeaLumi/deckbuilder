@@ -1128,7 +1128,7 @@ public class CardView extends Canvas {
 
 	public enum CardState {
 		Full (Color.TRANSPARENT, Color.color(0.0f, 0.0f, 0.0f, 0.5f)),
-		Hover (Color.GREEN, Color.TRANSPARENT),
+		Hover (Color.DODGERBLUE, Color.TRANSPARENT),
 		Selected (Color.DODGERBLUE, Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25)),
 		Flagged (Color.RED, Color.TRANSPARENT),
 		Warning (Color.ORANGE, Color.TRANSPARENT),
