@@ -1,13 +1,15 @@
 package emi.mtg.deckbuilder.util;
 
-import com.sun.javafx.collections.NonIterableChange;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ObjectPropertyBase;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.TransformationList;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -16,21 +18,23 @@ import java.util.stream.Collectors;
 // Since refilter is using a hashmap, it's not actually horrifically slow,
 // but it *is* all additional time over sorting that we don't need to take.
 public class UniqueList<T> extends TransformationList<T, T> {
-	private static class Element {
+	private static class Element<T> {
 		public final ArrayList<Integer> sourceIndices;
 		public int preferredIndex;
 		public final Object identity;
+		public final T object;
 
-		public Element(Object identity) {
+		public Element(T object, Object identity) {
 			this.sourceIndices = new ArrayList<>(4);
 			this.preferredIndex = -1;
+			this.object = object;
 			this.identity = identity;
 		}
 	}
 
-	private final ArrayList<Element> filtered;
-	private final Map<Object, Element> witness;
-	private final Map<Integer, Element> reverse;
+	private final ArrayList<Element<T>> filtered;
+	private final Map<Object, Element<T>> witness;
+	private final Map<Integer, Element<T>> reverse;
 
 	/**
 	 * Creates a new Transformation list wrapped around the source list.
@@ -112,6 +116,11 @@ public class UniqueList<T> extends TransformationList<T, T> {
 		// This is to prevent refiltering when we're still creating our properties in constructor.
 		if (preference == null || extractor == null) return;
 
+		if (hasListeners()) {
+			beginChange();
+			nextRemove(0, filtered.stream().map(x -> x.object).collect(Collectors.toList()));
+		}
+
 		filtered.clear();
 		witness.clear();
 		reverse.clear();
@@ -122,12 +131,12 @@ public class UniqueList<T> extends TransformationList<T, T> {
 		int i = 0;
 		for (final T next : getSource()) {
 			final Object key = extract.apply(next);
-			final Element elem;
+			final Element<T> elem;
 
 			if (witness.containsKey(key)) {
 				elem = witness.get(key);
 			} else {
-				elem = new Element(key);
+				elem = new Element<T>(next, key);
 				filtered.add(elem);
 				witness.put(key, elem);
 			}
@@ -143,7 +152,8 @@ public class UniqueList<T> extends TransformationList<T, T> {
 		}
 
 		if (hasListeners()) {
-			fireChange(new NonIterableChange.GenericAddRemoveChange<>(0, filtered.size(), new ArrayList<>(),  this));
+			nextAdd(0, filtered.size());
+			endChange();
 		}
 	}
 
@@ -159,7 +169,7 @@ public class UniqueList<T> extends TransformationList<T, T> {
 
 	@Override
 	public int getSourceIndex(int index) {
-		final Element elem = filtered.get(index);
+		final Element<T> elem = filtered.get(index);
 
 		return elem.preferredIndex >= 0 ? elem.preferredIndex : elem.sourceIndices.get(0);
 	}
