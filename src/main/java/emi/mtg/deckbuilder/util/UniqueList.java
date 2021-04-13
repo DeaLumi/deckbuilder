@@ -33,8 +33,8 @@ public class UniqueList<T> extends TransformationList<T, T> {
 	}
 
 	private final ArrayList<Element<T>> filtered;
-	private final Map<Object, Element<T>> witness;
-	private final Map<Integer, Element<T>> reverse;
+	private final Map<Object, Integer> witness; // identity -> view index
+	private final Map<Integer, Integer> reverse; // source index -> view index
 
 	/**
 	 * Creates a new Transformation list wrapped around the source list.
@@ -134,11 +134,14 @@ public class UniqueList<T> extends TransformationList<T, T> {
 			final Element<T> elem;
 
 			if (witness.containsKey(key)) {
-				elem = witness.get(key);
+				int viewIndex = witness.get(key);
+				elem = filtered.get(viewIndex);
+				reverse.put(i, viewIndex);
 			} else {
 				elem = new Element<T>(next, key);
 				filtered.add(elem);
-				witness.put(key, elem);
+				witness.put(key, filtered.size() - 1);
+				reverse.put(i, filtered.size() - 1);
 			}
 
 			if (elem.preferredIndex < 0 && prefer.test(next)) {
@@ -146,7 +149,6 @@ public class UniqueList<T> extends TransformationList<T, T> {
 			}
 
 			elem.sourceIndices.add(i);
-			reverse.put(i, elem);
 
 			++i;
 		}
@@ -172,6 +174,11 @@ public class UniqueList<T> extends TransformationList<T, T> {
 		final Element<T> elem = filtered.get(index);
 
 		return elem.preferredIndex >= 0 ? elem.preferredIndex : elem.sourceIndices.get(0);
+	}
+
+	@Override
+	public int getViewIndex(int i) {
+		return reverse.get(i);
 	}
 
 	@Override
