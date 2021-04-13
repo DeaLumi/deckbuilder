@@ -286,6 +286,12 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class ThemePreference extends ComboBoxPreference<Preferences.Theme> {
+		public ThemePreference(String label, Function<Preferences, Preferences.Theme> fromPrefs, Predicate<Preferences.Theme> validate, BiConsumer<Preferences, Preferences.Theme> toPrefs) {
+			super(Preferences.Theme.values(), label, fromPrefs, validate, toPrefs);
+		}
+	}
+
 	private static class SortingPreference extends OneControlPreference<List<CardView.ActiveSorting>, Button> {
 		public SortingPreference(String label, Function<Preferences, List<CardView.ActiveSorting>> fromPrefs, Predicate<List<CardView.ActiveSorting>> validate, BiConsumer<Preferences, List<CardView.ActiveSorting>> toPrefs) {
 			super(
@@ -390,6 +396,8 @@ public class PreferencesDialog extends Alert {
 	};
 
 	private final PrefEntry[] PREFERENCE_FIELDS = {
+			reflectField(ThemePreference::new, "Theme", "theme", x -> true),
+			new PrefSeparator(),
 			reflectField(PathPreference::new, "Data Path", "dataPath", PATH_WRITABLE_VALIDATOR),
 			reflectField(PathPreference::new, "Images Path", "imagesPath", IMAGES_PATH_VALIDATOR),
 			reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
@@ -417,6 +425,7 @@ public class PreferencesDialog extends Alert {
 		initOwner(owner);
 		setTitle("Deck Builder Preferences");
 		setHeaderText("Update Preferences");
+		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
 
 		GridPane grid = new GridPane();
 		grid.setHgap(10.0);

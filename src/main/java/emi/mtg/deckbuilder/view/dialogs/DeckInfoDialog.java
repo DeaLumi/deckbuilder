@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.Preferences;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
@@ -28,6 +29,7 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 		loader.setController(this);
 		loader.setRoot(getDialogPane());
 		loader.load();
+		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
 
 		deckNameField.setText(deck.nameProperty().getValue());
 		authorField.setText(deck.authorProperty().getValue());

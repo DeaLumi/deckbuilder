@@ -107,4 +107,21 @@ public class Preferences {
 
 		return preferred;
 	}
+
+	public enum Theme {
+		Light (javafx.scene.paint.Color.gray(0.925)),
+		Dark (javafx.scene.paint.Color.gray(0.15));
+
+		public final javafx.scene.paint.Color base;
+
+		Theme(javafx.scene.paint.Color base) {
+			this.base = base;
+		}
+
+		public String baseHex() {
+			return String.format("#%02x%02x%02x", (int) (base.getRed() * 255.0), (int) (base.getBlue() * 255.0), (int) (base.getBlue() * 255.0));
+		}
+	}
+
+	public Theme theme = Theme.Dark;
 }

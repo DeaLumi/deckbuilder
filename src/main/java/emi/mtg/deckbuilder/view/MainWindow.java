@@ -90,6 +90,8 @@ public class MainWindow extends Stage {
 			throw new AssertionError(ioe);
 		}
 
+		root.setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+
 		setTitle("Deck Builder v0.0.0");
 		setScene(new Scene(root, 1024, 1024));
 
@@ -956,7 +958,14 @@ public class MainWindow extends Stage {
 	}
 
 	void preferencesChanged() {
+		getScene().getRoot().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+
 		ForkJoinPool.commonPool().submit(collection::updateFilter);
+		collection.view().scheduleRender();
+
+		for (Node node : deckSplitter.getItems()) {
+			((CardPane) node).view().scheduleRender();
+		}
 
 		for (MenuItem mi : newDeckMenu.getItems()) {
 			if (mi.getUserData() == Preferences.get().defaultFormat) {

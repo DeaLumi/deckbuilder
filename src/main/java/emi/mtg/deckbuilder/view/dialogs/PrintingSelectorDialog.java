@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import javafx.application.Platform;
@@ -51,6 +52,7 @@ public class PrintingSelectorDialog extends Dialog<Card.Printing> {
 		pane.setPrefHeight(scene.getHeight() / 1.5);
 		pane.setPrefWidth(scene.getWidth() / 1.5);
 
+		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
 		getDialogPane().setContent(pane);
 		getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
 		initModality(Modality.WINDOW_MODAL);

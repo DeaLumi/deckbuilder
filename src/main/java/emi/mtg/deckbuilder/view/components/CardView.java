@@ -1173,10 +1173,10 @@ public class CardView extends Canvas {
 		if (engine == null || grouping == null) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
-				gfx.setFill(Color.WHITE);
+				gfx.setFill(Preferences.get().theme.base);
 				gfx.fillRect(0, 0, getWidth(), getHeight());
 				gfx.setTextAlign(TextAlignment.CENTER);
-				gfx.setFill(Color.BLACK);
+				gfx.setFill(Preferences.get().theme.base.invert());
 				gfx.setFont(new Font(null, getHeight() / 10.0));
 				gfx.fillText("Select a valid display layout/card grouping.", getWidth() / 2, getHeight() / 2, getWidth());
 			});
@@ -1186,10 +1186,10 @@ public class CardView extends Canvas {
 		if (filteredModel == null || filteredModel.isEmpty()) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
-				gfx.setFill(Color.WHITE);
+				gfx.setFill(Preferences.get().theme.base);
 				gfx.fillRect(0, 0, getWidth(), getHeight());
 				gfx.setTextAlign(TextAlignment.CENTER);
-				gfx.setFill(Color.BLACK);
+				gfx.setFill(Preferences.get().theme.base.invert());
 				gfx.setFont(new Font(null, getHeight() / 10.0));
 				gfx.fillText("No cards to display.", getWidth() / 2, getHeight() / 2, getWidth());
 			});
@@ -1212,20 +1212,20 @@ public class CardView extends Canvas {
 
 		GraphicsContext gfx = getGraphicsContext2D();
 
-		gfx.setFill(Color.WHITE);
+		gfx.setFill(Preferences.get().theme.base);
 		gfx.fillRect(0, 0, getWidth(), getHeight());
 
 		if (renderMap.hoverGroupBounds.dim.x >= 0 && renderMap.hoverGroupBounds.dim.y >= 0) {
-			gfx.setFill(Color.color(0.9, 0.9, 0.9));
+			gfx.setFill(Preferences.get().theme.base.deriveColor(0.0, 1.0, 0.9, 1.0));
 			gfx.fillRect(renderMap.hoverGroupBounds.pos.x, renderMap.hoverGroupBounds.pos.y,
 					renderMap.hoverGroupBounds.dim.x, renderMap.hoverGroupBounds.dim.y);
 		}
 
-		gfx.setFill(Color.BLACK);
+		gfx.setFill(Preferences.get().theme.base.invert());
 		gfx.setTextAlign(TextAlignment.CENTER);
 		gfx.setTextBaseline(VPos.CENTER);
 		for (Map.Entry<Bounds, String> label : renderMap.labels.entrySet()) {
-			gfx.setFont(Font.font(label.getKey().dim.y));
+			gfx.setFont(Font.font(null, FontWeight.MEDIUM, label.getKey().dim.y));
 			gfx.fillText(label.getValue(),
 					label.getKey().pos.x + label.getKey().dim.x / 2.0,
 					label.getKey().pos.y + label.getKey().dim.y / 2.0,

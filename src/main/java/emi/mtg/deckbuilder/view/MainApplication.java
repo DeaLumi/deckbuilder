@@ -164,6 +164,12 @@ public class MainApplication extends Application {
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
 
+		Preferences prefs = Preferences.instantiate();
+
+		if (!Files.isDirectory(prefs.dataPath)) {
+			Files.createDirectories(prefs.dataPath);
+		}
+
 		if (Runtime.getRuntime().maxMemory() <= 1024*1024*1024) {
 			AlertBuilder.notify(primaryStage)
 					.type(Alert.AlertType.WARNING)
@@ -258,12 +264,6 @@ public class MainApplication extends Application {
 				alert.show();
 			});
 		});
-
-		Preferences prefs = Preferences.instantiate();
-
-		if (!Files.isDirectory(prefs.dataPath)) {
-			Files.createDirectories(prefs.dataPath);
-		}
 
 		if (prefs.autoUpdateProgram && updater.needsUpdate()) {
 			AlertBuilder.query(hostStage)

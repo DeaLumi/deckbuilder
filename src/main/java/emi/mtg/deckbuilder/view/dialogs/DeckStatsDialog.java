@@ -4,6 +4,7 @@ import emi.lib.mtg.characteristic.Color;
 import emi.lib.mtg.characteristic.ManaCost;
 import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.Preferences;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -202,6 +203,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 		loader.setRoot(this);
 		loader.setController(this);
 		loader.load();
+		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
 
 		// TODO: Update data dynamically.
 		CardSummaryData data = cardList.parallelStream().collect(CardSummaryData.COLLECTOR);

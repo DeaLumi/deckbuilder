@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardView;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -89,6 +90,7 @@ public class SortDialog extends Dialog<List<CardView.ActiveSorting>> {
 		} catch (IOException e) {
 			throw new Error(e);
 		}
+		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
 
 		List<CardView.Sorting> source = new ArrayList<>(CardView.SORTINGS);
 		source.removeAll(currentSorts.stream().map(s -> s.sorting).collect(Collectors.toSet()));

@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.view.util;
 
+import emi.mtg.deckbuilder.model.Preferences;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -55,6 +56,7 @@ public class AlertBuilder {
 
 	private AlertBuilder(Alert.AlertType alertType, String contentText, ButtonType... buttons) {
 		alert = new Alert(alertType, contentText, buttons);
+		alert.getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
 		this.buttonsSet = buttons != null && buttons.length > 0;
 		this.buttonsCustomized = false;
 	}
