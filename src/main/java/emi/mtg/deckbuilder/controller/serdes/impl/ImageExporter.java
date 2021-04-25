@@ -218,7 +218,7 @@ public class ImageExporter implements DeckImportExport {
 
 		box.resize(box.prefWidth(-1), box.prefHeight(-1));
 
-		Scene scene = new Scene(box, Color.WHITE);
+		Scene scene = new Scene(box, Preferences.get().theme.base);
 		return scene.snapshot(null);
 	}
 
