@@ -232,6 +232,7 @@ public class MainApplication extends Application {
 			Platform.runLater(() -> {
 				Alert alert = new Alert(Alert.AlertType.ERROR);
 				alert.initOwner(hostStage);
+				alert.getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
 
 				alert.setTitle("Uncaught Exception");
 				alert.setHeaderText("An internal error has occurred.");
