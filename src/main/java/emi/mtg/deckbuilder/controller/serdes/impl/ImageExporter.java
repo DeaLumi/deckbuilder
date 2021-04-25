@@ -85,10 +85,10 @@ public class ImageExporter implements DeckImportExport {
 	protected Slider cardScale;
 
 	@FXML
-	protected Spinner<Integer> widthHint;
+	protected Spinner<Double> widthHint;
 
 	@FXML
-	protected Spinner<Integer> heightHint;
+	protected Spinner<Double> heightHint;
 
 	@FXML
 	protected GridPane grid;
@@ -108,8 +108,8 @@ public class ImageExporter implements DeckImportExport {
 
 		FxUtils.FXML(this, alert.getDialogPane());
 
-		widthHint.getValueFactory().setValue(2500);
-		heightHint.getValueFactory().setValue(2500);
+		widthHint.getValueFactory().setValue(2500.0);
+		heightHint.getValueFactory().setValue(2500.0);
 
 		int i = 3;
 		for (Zone zone : Zone.values()) {
