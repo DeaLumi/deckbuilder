@@ -16,9 +16,9 @@
 
             <Label GridPane.rowIndex="2" GridPane.columnIndex="0" text="Size Hint:" GridPane.halignment="RIGHT"/>
             <FlowPane GridPane.rowIndex="2" GridPane.columnIndex="1">
-                <Spinner amountToStepBy="50" min="100" max="10000" fx:id="widthHint"/>
+                <Spinner amountToStepBy="50.0" min="100.0" max="10000.0" fx:id="widthHint"/>
                 <Text text=" x "/>
-                <Spinner amountToStepBy="50" min="100" max="10000" fx:id="heightHint"/>
+                <Spinner amountToStepBy="50.0" min="100.0" max="10000.0" fx:id="heightHint"/>
             </FlowPane>
         </GridPane>
     </content>
