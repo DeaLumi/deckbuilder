@@ -1,8 +1,8 @@
 package emi.mtg.deckbuilder.view.groupings;
 
 import emi.lib.mtg.Card;
+import emi.lib.mtg.Mana;
 import emi.lib.mtg.characteristic.CardType;
-import emi.lib.mtg.characteristic.ManaCost;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -27,7 +27,7 @@ public class ManaValue extends CharacteristicGrouping implements CardView.Groupi
 			return "Land";
 		}
 
-		ManaCost mc = ci.card().manaCost();
+		Mana.Value mc = ci.card().manaCost();
 		return mc.varies() ? "X" : Integer.toString((int) mc.value());
 	}
 }

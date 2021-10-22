@@ -1,8 +1,7 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
+import emi.lib.mtg.Mana;
 import emi.lib.mtg.characteristic.Color;
-import emi.lib.mtg.characteristic.ManaCost;
-import emi.lib.mtg.characteristic.ManaSymbol;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
 import javafx.collections.FXCollections;
@@ -89,7 +88,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 			@Override
 			public BiConsumer<CardSummaryData, CardInstance> accumulator() {
 				return (csd, ci) -> {
-					ManaCost mc = ci.card().manaCost();
+					Mana.Value mc = ci.card().manaCost();
 
 					HashMap<Color, AtomicInteger> byCmc = csd.byCmc.computeIfAbsent((int) mc.value(), cmc -> {
 						HashMap<Color, AtomicInteger> ret = new HashMap<>();
@@ -113,7 +112,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 					}
 					byCmc.get(key).incrementAndGet();
 
-					for (ManaSymbol sym : mc.symbols()) {
+					for (Mana.Symbol sym : mc.symbols()) {
 						switch (sym.color().size()) {
 							case 0:
 								continue;
