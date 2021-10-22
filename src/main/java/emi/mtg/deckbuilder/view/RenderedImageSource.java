@@ -83,22 +83,22 @@ public class RenderedImageSource implements ImageSource {
 				bgColor = Color.LIGHTGRAY;
 			} else {
 				switch (face.face().color().iterator().next()) {
-					case WHITE:
+					case White:
 						bgColor = Color.WHITE;
 						break;
-					case BLUE:
+					case Blue:
 						bgColor = Color.LIGHTBLUE;
 						break;
-					case BLACK:
+					case Black:
 						bgColor = Color.DARKGRAY;
 						break;
-					case RED:
+					case Red:
 						bgColor = Color.LIGHTPINK;
 						break;
-					case GREEN:
+					case Green:
 						bgColor = Color.PALEGREEN;
 						break;
-					case COLORLESS:
+					case Colorless:
 						bgColor = Color.LIGHTGRAY;
 						break;
 					default:

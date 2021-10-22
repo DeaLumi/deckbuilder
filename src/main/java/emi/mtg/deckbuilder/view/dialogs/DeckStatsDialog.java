@@ -30,12 +30,12 @@ public class DeckStatsDialog extends Dialog<Void> {
 	private static final Map<Color, javafx.scene.paint.Color> colorColorMap() {
 		Map<Color, javafx.scene.paint.Color> ccm = new HashMap<>();
 
-		ccm.put(Color.COLORLESS, javafx.scene.paint.Color.color(0.4, 0.4, 0.4));
-		ccm.put(Color.WHITE, javafx.scene.paint.Color.color(0.9, 0.9, 0.9));
-		ccm.put(Color.BLUE, javafx.scene.paint.Color.color(0.2, 0.2, 0.9));
-		ccm.put(Color.BLACK, javafx.scene.paint.Color.color(0.2, 0.2, 0.2));
-		ccm.put(Color.RED, javafx.scene.paint.Color.color(0.9, 0.2, 0.2));
-		ccm.put(Color.GREEN, javafx.scene.paint.Color.color(0.2, 0.9, 0.2));
+		ccm.put(Color.Colorless, javafx.scene.paint.Color.color(0.4, 0.4, 0.4));
+		ccm.put(Color.White, javafx.scene.paint.Color.color(0.9, 0.9, 0.9));
+		ccm.put(Color.Blue, javafx.scene.paint.Color.color(0.2, 0.2, 0.9));
+		ccm.put(Color.Black, javafx.scene.paint.Color.color(0.2, 0.2, 0.2));
+		ccm.put(Color.Red, javafx.scene.paint.Color.color(0.9, 0.2, 0.2));
+		ccm.put(Color.Green, javafx.scene.paint.Color.color(0.2, 0.9, 0.2));
 		ccm.put(null, javafx.scene.paint.Color.color(1.0, 0.7, 0.2));
 
 		return Collections.unmodifiableMap(ccm);
@@ -54,7 +54,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 	@FXML
 	private Label averageCmc;
 
-	private static final Color[] ALL_COLORS = { Color.COLORLESS, Color.WHITE, Color.BLUE, Color.BLACK, Color.RED, Color.GREEN, null };
+	private static final Color[] ALL_COLORS = { Color.Colorless, Color.White, Color.Blue, Color.Black, Color.Red, Color.Green, null };
 
 	private static class CardSummaryData {
 		public final HashMap<Integer, HashMap<Color, AtomicInteger>> byCmc;
@@ -102,7 +102,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 					Color key;
 					switch (mc.color().size()) {
 						case 0:
-							key = Color.COLORLESS;
+							key = Color.Colorless;
 							break;
 						case 1:
 							key = mc.color().iterator().next();
