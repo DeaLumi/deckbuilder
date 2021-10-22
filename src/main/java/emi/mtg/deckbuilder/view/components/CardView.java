@@ -200,7 +200,7 @@ public class CardView extends Canvas {
 		GROUPINGS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(Grouping.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), true)
 				.collect(Collectors.toList()));
 
-		Sorting color = null, cmc = null, manaCost = null, name = null, rarity = null;
+		Sorting color = null, mv = null, manaCost = null, name = null, rarity = null;
 
 		SORTINGS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(Sorting.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
 				.collect(Collectors.toList()));
@@ -210,8 +210,8 @@ public class CardView extends Canvas {
 				case "Color":
 					color = sorting;
 					break;
-				case "Converted Mana Cost":
-					cmc = sorting;
+				case "Mana Value":
+					mv = sorting;
 					break;
 				case "Mana Cost":
 					manaCost = sorting;
@@ -226,14 +226,14 @@ public class CardView extends Canvas {
 		}
 
 		assert color != null;
-		assert cmc != null;
+		assert mv != null;
 		assert manaCost != null;
 		assert name != null;
 		assert rarity != null;
 
 		DEFAULT_SORTING = Arrays.asList(
 				new ActiveSorting(color, false),
-				new ActiveSorting(cmc, false),
+				new ActiveSorting(mv, false),
 				new ActiveSorting(manaCost, false),
 				new ActiveSorting(name, false)
 		);
@@ -241,7 +241,7 @@ public class CardView extends Canvas {
 		DEFAULT_COLLECTION_SORTING = Arrays.asList(
 				new ActiveSorting(rarity, true),
 				new ActiveSorting(color, false),
-				new ActiveSorting(cmc, false),
+				new ActiveSorting(mv, false),
 				new ActiveSorting(manaCost, false),
 				new ActiveSorting(name, false)
 		);

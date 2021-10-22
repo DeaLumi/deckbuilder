@@ -5,7 +5,7 @@ import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 
 import java.util.function.Predicate;
 
-public class ConvertedManaCost implements Omnifilter.Subfilter {
+public class ManaValue implements Omnifilter.Subfilter {
 	@Override
 	public String key() {
 		return "cmc";
@@ -13,7 +13,7 @@ public class ConvertedManaCost implements Omnifilter.Subfilter {
 
 	@Override
 	public String shorthand() {
-		return null;
+		return "mv";
 	}
 
 	@Override
@@ -21,7 +21,7 @@ public class ConvertedManaCost implements Omnifilter.Subfilter {
 		double doubleValue = Double.parseDouble(value);
 
 		return (Omnifilter.FaceFilter) face -> {
-			double cmc = face.convertedManaCost();
+			double cmc = face.manaValue();
 
 			switch (operator) {
 				case DIRECT:

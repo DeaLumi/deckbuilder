@@ -17,7 +17,7 @@ import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
-import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
+import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
@@ -444,7 +444,7 @@ public class MainWindow extends Stage {
 					CardPane pane = new CardPane(z.name(),
 							deck.cards(z),
 							Piles.Factory.INSTANCE,
-							Preferences.get().zoneGroupings.getOrDefault(z, ConvertedManaCost.INSTANCE));
+							Preferences.get().zoneGroupings.getOrDefault(z, ManaValue.INSTANCE));
 					deck.cards(z).addListener(deckListChangedListener);
 					pane.view().doubleClick(ci -> pane.changeModel(x -> x.remove(ci)));
 					pane.view().contextMenu(createDeckContextMenu(pane, z));
@@ -1099,7 +1099,7 @@ public class MainWindow extends Stage {
 
 		WritableImage img = ImageExporter.deckToImage(deck, (zone, view) -> {
 			view.layout(new FlowGrid.Factory());
-			view.grouping(Preferences.get().zoneGroupings.getOrDefault(zone, new ConvertedManaCost()));
+			view.grouping(Preferences.get().zoneGroupings.getOrDefault(zone, new ManaValue()));
 			view.showFlagsProperty().set(false);
 			view.collapseDuplicatesProperty().set(deckPane(zone).view().collapseDuplicatesProperty().get());
 			view.cardScaleProperty().set(deckPane(zone).view().cardScaleProperty().get());

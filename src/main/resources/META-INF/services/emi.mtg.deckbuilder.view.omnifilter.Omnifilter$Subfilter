@@ -2,7 +2,7 @@ emi.mtg.deckbuilder.view.omnifilter.filters.CardSet
 emi.mtg.deckbuilder.view.omnifilter.filters.CardType
 emi.mtg.deckbuilder.view.omnifilter.filters.ColorIdentity
 emi.mtg.deckbuilder.view.omnifilter.filters.Colors
-emi.mtg.deckbuilder.view.omnifilter.filters.ConvertedManaCost
+emi.mtg.deckbuilder.view.omnifilter.filters.ManaValue
 emi.mtg.deckbuilder.view.omnifilter.filters.DeckTagFilter
 emi.mtg.deckbuilder.view.omnifilter.filters.PowerToughnessLoyalty$Toughness
 emi.mtg.deckbuilder.view.omnifilter.filters.PowerToughnessLoyalty$Loyalty

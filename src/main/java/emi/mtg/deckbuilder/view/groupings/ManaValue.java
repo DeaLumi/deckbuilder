@@ -6,14 +6,14 @@ import emi.lib.mtg.characteristic.ManaCost;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
-public class ConvertedManaCost extends CharacteristicGrouping implements CardView.Grouping {
-	public static final ConvertedManaCost INSTANCE = new ConvertedManaCost();
+public class ManaValue extends CharacteristicGrouping implements CardView.Grouping {
+	public static final ManaValue INSTANCE = new ManaValue();
 
 	private static final String[] GROUPS = { "Land", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "1000000", "X" };
 
 	@Override
 	public String name() {
-		return "Converted Mana Cost";
+		return "Mana Value";
 	}
 
 	@Override
@@ -28,6 +28,6 @@ public class ConvertedManaCost extends CharacteristicGrouping implements CardVie
 		}
 
 		ManaCost mc = ci.card().manaCost();
-		return mc.varies() ? "X" : Integer.toString((int) mc.convertedCost());
+		return mc.varies() ? "X" : Integer.toString((int) mc.value());
 	}
 }

@@ -6,7 +6,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.SortDialog;
-import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
+import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
 import javafx.application.Platform;
@@ -433,7 +433,7 @@ public class CardPane extends BorderPane {
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {
-		this(title, model, layoutEngine, ConvertedManaCost.INSTANCE);
+		this(title, model, layoutEngine, ManaValue.INSTANCE);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model) {

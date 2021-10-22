@@ -91,7 +91,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 				return (csd, ci) -> {
 					ManaCost mc = ci.card().manaCost();
 
-					HashMap<Color, AtomicInteger> byCmc = csd.byCmc.computeIfAbsent((int) mc.convertedCost(), cmc -> {
+					HashMap<Color, AtomicInteger> byCmc = csd.byCmc.computeIfAbsent((int) mc.value(), cmc -> {
 						HashMap<Color, AtomicInteger> ret = new HashMap<>();
 						for (Color color : ALL_COLORS) {
 							ret.put(color, new AtomicInteger());
@@ -129,7 +129,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 					}
 
 					synchronized(csd.totalCmcLock) {
-						csd.totalCmc += mc.convertedCost();
+						csd.totalCmc += mc.value();
 					}
 					csd.count.incrementAndGet();
 				};

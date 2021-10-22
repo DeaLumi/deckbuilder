@@ -1,6 +1,6 @@
 emi.mtg.deckbuilder.view.groupings.CardTypeGroup
 emi.mtg.deckbuilder.view.groupings.ColorGrouping
-emi.mtg.deckbuilder.view.groupings.ConvertedManaCost
+emi.mtg.deckbuilder.view.groupings.ManaValue
 emi.mtg.deckbuilder.view.groupings.None
 emi.mtg.deckbuilder.view.groupings.Rarity
 emi.mtg.deckbuilder.view.groupings.Tags

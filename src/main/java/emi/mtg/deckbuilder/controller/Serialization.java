@@ -13,7 +13,7 @@ import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
-import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
+import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -92,7 +92,7 @@ public class Serialization {
 				.findAny()
 				.orElseGet(() -> {
 					System.err.println(String.format("Couldn't find grouping factory %s! Did a plugin go away? Defaulting to CMC...", s));
-					return ConvertedManaCost.INSTANCE;
+					return ManaValue.INSTANCE;
 				}));
 	}
 

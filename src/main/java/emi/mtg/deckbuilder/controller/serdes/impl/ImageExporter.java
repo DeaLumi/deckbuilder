@@ -7,7 +7,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardView;
-import emi.mtg.deckbuilder.view.groupings.ConvertedManaCost;
+import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
@@ -123,7 +123,7 @@ public class ImageExporter implements DeckImportExport {
 
 			Label groupingLabel = new Label("Grouping:");
 			ComboBox<CardView.Grouping> grouping = new ComboBox<>(FXCollections.observableList(CardView.GROUPINGS));
-			grouping.getSelectionModel().select(Preferences.get().zoneGroupings.getOrDefault(zone, ConvertedManaCost.INSTANCE));
+			grouping.getSelectionModel().select(Preferences.get().zoneGroupings.getOrDefault(zone, ManaValue.INSTANCE));
 
 			zoneLabels.put(zone, label);
 			zoneFlows.put(zone, new FlowPane(2.0, 0.0, layoutLabel, layout, groupingLabel, grouping));

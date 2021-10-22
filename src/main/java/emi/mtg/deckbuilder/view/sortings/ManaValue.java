@@ -4,7 +4,7 @@ import emi.lib.mtg.characteristic.ManaCost;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
-public class CMC implements CardView.Sorting {
+public class ManaValue implements CardView.Sorting {
 	@Override
 	public int compare(CardInstance o1, CardInstance o2) {
 		ManaCost mc1 = o1.card().manaCost();
@@ -13,12 +13,12 @@ public class CMC implements CardView.Sorting {
 		if (mc1.varies() != mc2.varies()) {
 			return mc1.varies() ? 1 : -1;
 		} else {
-			return Double.compare(o1.card().manaCost().convertedCost(), o2.card().manaCost().convertedCost());
+			return Double.compare(o1.card().manaCost().value(), o2.card().manaCost().value());
 		}
 	}
 
 	@Override
 	public String toString() {
-		return "Converted Mana Cost";
+		return "Mana Value";
 	}
 }
