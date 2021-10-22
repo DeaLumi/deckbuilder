@@ -9,7 +9,7 @@ import emi.mtg.deckbuilder.view.components.CardView;
 public class ManaValue extends CharacteristicGrouping implements CardView.Grouping {
 	public static final ManaValue INSTANCE = new ManaValue();
 
-	private static final String[] GROUPS = { "Land", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "1000000", "X" };
+	private static final String[] GROUPS = { "Land", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "1000000", "X" };
 
 	@Override
 	public String name() {
