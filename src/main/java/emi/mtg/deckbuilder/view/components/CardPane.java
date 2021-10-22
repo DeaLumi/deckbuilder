@@ -124,7 +124,7 @@ public class CardPane extends BorderPane {
 		};
 	}
 
-	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().allMatch(f -> CardType.CONSTRUCTED_TYPES.containsAll(f.type().cardTypes()));
+	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().flatMap(f -> f.type().cardTypes().stream()).allMatch(t -> t.constructed);
 
 	private final Menu deckMenu;
 	private final TextField filter;

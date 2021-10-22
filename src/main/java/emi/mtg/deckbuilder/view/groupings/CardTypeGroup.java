@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.view.groupings;
 
+import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.CardType;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
@@ -12,7 +13,15 @@ import java.util.stream.Collectors;
 public class CardTypeGroup extends CharacteristicGrouping implements CardView.Grouping {
 	public static final CardTypeGroup INSTANCE = new CardTypeGroup();
 
-	private CardType[] PRIORITIES = { CardType.Creature, CardType.Artifact };
+	private List<CardType> PRIORITIES = Arrays.asList(
+			CardType.Creature,
+			CardType.Enchantment,
+			CardType.Sorcery,
+			CardType.Instant,
+			CardType.Planeswalker,
+			CardType.Land,
+			CardType.Artifact
+	);
 
 	@Override
 	public String name() {
@@ -28,22 +37,24 @@ public class CardTypeGroup extends CharacteristicGrouping implements CardView.Gr
 
 	@Override
 	public String extract(CardInstance ci) {
-		for (CardType ct : PRIORITIES) {
-			if (ci.card().faces().stream().anyMatch(cf -> cf.type().cardTypes().contains(ct))) {
-				return ct.name();
+		int min = PRIORITIES.size();
+		for (Card.Face face : ci.card().faces()) {
+			for (CardType type : face.type().cardTypes()) {
+				int idx = PRIORITIES.indexOf(type);
+				if (idx >= 0 && idx < min) {
+					min = idx;
+				}
 			}
 		}
+
+		if (min < PRIORITIES.size()) return PRIORITIES.get(min).toString();
 
 		Set<CardType> type = ci.card().faces().stream()
 				.flatMap(f -> f.type().cardTypes().stream())
 				.collect(Collectors.toSet());
 
-		if (type.isEmpty()) {
-			return "Unknown";
-		}
+		if (type.size() > 1) throw new AssertionError("Disambiguate " + type.toString() + " of card " + ci.card().name());
 
-		assert type.size() == 1 : "Disambiguate: " + type.stream().map(CardType::name).collect(Collectors.joining(", "));
-
-		return type.iterator().next().name();
+		return type.iterator().next().toString();
 	}
 }
