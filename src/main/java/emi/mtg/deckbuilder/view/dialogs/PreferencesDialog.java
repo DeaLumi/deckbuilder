@@ -93,25 +93,31 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
-	private static class PreferAgePreference extends Preference<Preferences.PreferAge> {
+	private static class MultiOptionPreference<E extends Enum<E>> extends Preference<E> {
+		private final E[] options;
 		private final ToggleGroup toggleGroup;
-		private final ToggleButton oldest, newest;
+		private final ToggleButton[] buttons;
 		private final HBox box;
 
-		public PreferAgePreference(String label, Function<Preferences, Preferences.PreferAge> fromPrefs, Predicate<Preferences.PreferAge> validate, BiConsumer<Preferences, Preferences.PreferAge> toPrefs) {
+		public MultiOptionPreference(String label, Function<Preferences, E> fromPrefs, Predicate<E> validate, BiConsumer<Preferences, E> toPrefs, Class<E> cls) {
 			super(label, fromPrefs, validate, toPrefs);
 
 			this.toggleGroup = new ToggleGroup();
-			this.oldest = new ToggleButton("Oldest");
-			this.oldest.setToggleGroup(this.toggleGroup);
-			this.oldest.setMaxWidth(Double.MAX_VALUE);
-			this.newest = new ToggleButton("Newest");
-			this.newest.setToggleGroup(this.toggleGroup);
-			this.newest.setMaxWidth(Double.MAX_VALUE);
-			this.box = new HBox(8.0, this.oldest, this.newest);
+
+			this.options = cls.getEnumConstants();
+			this.buttons = new ToggleButton[this.options.length - 1];
+			for (int i = 1; i < this.options.length; ++i) {
+				E e = this.options[i];
+				ToggleButton btn = new ToggleButton(e.toString());
+				btn.setToggleGroup(this.toggleGroup);
+				btn.setMaxWidth(Double.MAX_VALUE);
+				HBox.setHgrow(btn, Priority.ALWAYS);
+				this.buttons[i - 1] = btn;
+			}
+
+			this.box = new HBox(8.0);
+			this.box.getChildren().setAll(buttons);
 			this.box.setAlignment(Pos.BASELINE_CENTER);
-			HBox.setHgrow(this.oldest, Priority.ALWAYS);
-			HBox.setHgrow(this.newest, Priority.ALWAYS);
 		}
 
 		@Override
@@ -120,20 +126,32 @@ public class PreferencesDialog extends Alert {
 		}
 
 		@Override
-		void toGui(Preferences.PreferAge value) {
-			oldest.setSelected(value == Preferences.PreferAge.Oldest);
-			newest.setSelected(value == Preferences.PreferAge.Newest);
+		void toGui(E value) {
+			for (int i = 0; i < this.buttons.length; ++i) {
+				this.buttons[i].setSelected(value == this.options[i + 1]);
+			}
 		}
 
 		@Override
-		Preferences.PreferAge fromGui() {
-			if (oldest.isSelected()) {
-				return Preferences.PreferAge.Oldest;
-			} else if (newest.isSelected()) {
-				return Preferences.PreferAge.Newest;
-			} else {
-				return Preferences.PreferAge.Any;
+		E fromGui() {
+			for (int i = 0; i < this.buttons.length; ++i) {
+				if (this.buttons[i].isSelected()) {
+					return this.options[i + 1];
+				}
 			}
+			return this.options[0];
+		}
+	}
+
+	private static class PreferAgePreference extends MultiOptionPreference<Preferences.PreferAge> {
+		public PreferAgePreference(String label, Function<Preferences, Preferences.PreferAge> fromPrefs, Predicate<Preferences.PreferAge> validate, BiConsumer<Preferences, Preferences.PreferAge> toPrefs) {
+			super(label, fromPrefs, validate, toPrefs, Preferences.PreferAge.class);
+		}
+	}
+
+	private static class PreferVariationPreference extends MultiOptionPreference<Preferences.PreferVariation> {
+		public PreferVariationPreference(String label, Function<Preferences, Preferences.PreferVariation> fromPrefs, Predicate<Preferences.PreferVariation> validate, BiConsumer<Preferences, Preferences.PreferVariation> toPrefs) {
+			super(label, fromPrefs, validate, toPrefs, Preferences.PreferVariation.class);
 		}
 	}
 
@@ -401,6 +419,7 @@ public class PreferencesDialog extends Alert {
 			reflectField(PathPreference::new, "Data Path", "dataPath", PATH_WRITABLE_VALIDATOR),
 			reflectField(PathPreference::new, "Images Path", "imagesPath", IMAGES_PATH_VALIDATOR),
 			reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
+			reflectField(PreferVariationPreference::new, "Prefer Variation", "preferVariation", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Physical Versions","preferPhysical", x -> true),
 			new PrefSeparator(),
