@@ -8,11 +8,11 @@ import java.util.*;
 public class ColorGrouping extends CharacteristicGrouping {
 	public static final ColorGrouping INSTANCE = new ColorGrouping();
 
-	private static final Map<Set<Color>, String> GROUPS = groupsMap();
+	private static final Map<Color.Combination, String> GROUPS = groupsMap();
 	private static final String[] GROUP_VALUES = GROUPS.values().toArray(new String[GROUPS.size()]);
 
-	private static Map<Set<Color>, String> groupsMap() {
-		Map<Set<Color>, String> tmp = new LinkedHashMap<>();
+	private static Map<Color.Combination, String> groupsMap() {
+		Map<Color.Combination, String> tmp = new LinkedHashMap<>();
 
 		for (Color.Combination combo : Color.Combination.values()) {
 			tmp.put(combo, combo.aliases.get(0));

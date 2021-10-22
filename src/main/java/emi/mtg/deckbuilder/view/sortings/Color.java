@@ -8,6 +8,7 @@ import java.util.Set;
 public class Color implements CardView.Sorting {
 	@Override
 	public int compare(CardInstance o1, CardInstance o2) {
+		// TODO: Fit this into libmtg somehow. These should really be using Color.Combination.
 		Set<emi.lib.mtg.characteristic.Color> c1 = o1.card().manaCost().color();
 		Set<emi.lib.mtg.characteristic.Color> c2 = o2.card().manaCost().color();
 
