@@ -180,7 +180,7 @@ public class MainWindow extends Stage {
 
 		MenuItem changePrintingMenuItem = new MenuItem("Prefer Printing");
 		changePrintingMenuItem.visibleProperty().bind(collection.showingVersionsSeparately.not()
-				.and(menu.cards.sizeProperty().isEqualTo(1)));
+				.and(Bindings.createBooleanBinding(() -> menu.cards.size() == 1 && menu.cards.iterator().next().card().printings().size() > 1, menu.cards)));
 		changePrintingMenuItem.setOnAction(ae -> {
 			if (collection.showingVersionsSeparately.get()) {
 				return;
@@ -196,6 +196,11 @@ public class MainWindow extends Stage {
 			}
 
 			final Card card = cards.iterator().next();
+
+			if (card.printings().size() <= 1) {
+				return;
+			}
+
 			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
 				Preferences.get().preferredPrintings.put(card.fullName(), pr.id());
 				ForkJoinPool.commonPool().submit(collection::updateFilter);
@@ -327,6 +332,10 @@ public class MainWindow extends Stage {
 		CardView.ContextMenu menu = new CardView.ContextMenu();
 
 		MenuItem changePrintingMenuItem = new MenuItem("Choose Printing");
+		changePrintingMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> {
+			Set<Card> cards = menu.cards.stream().map(CardInstance::card).collect(Collectors.toSet());
+			return cards.size() == 1 && cards.iterator().next().printings().size() > 1;
+		}, menu.cards));
 		changePrintingMenuItem.setOnAction(ae -> {
 			if (menu.cards.isEmpty()) {
 				return;
@@ -366,8 +375,6 @@ public class MainWindow extends Stage {
 		Menu tagsMenu = new Menu("Deck Tags");
 
 		menu.setOnShowing(e -> {
-			changePrintingMenuItem.setVisible(menu.cards.stream().map(CardInstance::card).distinct().count() == 1);
-
 			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
 			tagCBs.setAll(deck.cards(zone).stream()
 					.map(CardInstance::tags)
