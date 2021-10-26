@@ -634,7 +634,7 @@ public class CardView extends Canvas {
 			} else if (me.getButton() == MouseButton.SECONDARY) {
 				dragMode = DragMode.None;
 
-				if (!selectedCards.contains(hoverCard)) {
+				if (hoverCard != null && !selectedCards.contains(hoverCard)) {
 					if (!me.isControlDown()) {
 						selectedCards.clear();
 					}
