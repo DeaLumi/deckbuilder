@@ -153,6 +153,14 @@ public class MainApplication extends Application {
 			"Check the plugins/ directory for a data source plugin. " +
 			"At bare minimum, scryfall-0.0.0.jar should be provided!");
 
+	private static final String UPDATE_ERROR = String.join("\n",
+			"The update server may be down, or there may be a problem with",
+			"your internet connection. This shouldn't cause problems for your",
+			"deckbuilding, but you won't be able to get bugfixes etc.",
+			"",
+			"If you're not expecting this, you should let me know,",
+			"in case the server's down and I need to fix that. :^)");
+
 	private static final String DATA_LOAD_ERROR = String.join("\n",
 			"An error occurred while loading card data.",
 			"Some or all cards may not have been loaded..",
@@ -266,12 +274,22 @@ public class MainApplication extends Application {
 			});
 		});
 
-		if (prefs.autoUpdateProgram && updater.needsUpdate()) {
-			AlertBuilder.query(hostStage)
-					.title("Auto-Update")
-					.headerText("A program update is available.")
-					.contentText("Would you like to update?")
-					.longRunning(updater::update, AlertBuilder.Exceptions.Throw)
+		try {
+			if (prefs.autoUpdateProgram && updater.needsUpdate()) {
+				AlertBuilder.query(hostStage)
+						.title("Auto-Update")
+						.headerText("A program update is available.")
+						.contentText("Would you like to update?")
+						.longRunning(updater::update, AlertBuilder.Exceptions.Throw)
+						.showAndWait();
+			}
+		} catch (IOException ioe) {
+			AlertBuilder.notify(hostStage)
+					.type(Alert.AlertType.WARNING)
+					.title("Updater Error")
+					.headerText("Unable to check for updates.")
+					.contentText(UPDATE_ERROR)
+					.modal(Modality.APPLICATION_MODAL)
 					.showAndWait();
 		}
 
