@@ -41,6 +41,7 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -160,10 +161,11 @@ public class MainWindow extends Stage {
 				ci.flags.add(CardInstance.Flags.Invalid);
 				break;
 			case NotLegal:
-				if (Preferences.get().theFutureIsNow && ci.card().legality(Format.Future) == Card.Legality.Legal) {
-					break;
+				if (Preferences.get().theFutureIsNow && (ci.card().legality(Format.Future) == Card.Legality.Legal || ci.card().printings().stream().allMatch(pr -> pr.releaseDate().isAfter(LocalDate.now())))) {
+					ci.flags.add(CardInstance.Flags.Warning);
+				} else {
+					ci.flags.add(CardInstance.Flags.Invalid);
 				}
-				ci.flags.add(CardInstance.Flags.Invalid);
 				break;
 			case Unknown:
 				ci.flags.add(CardInstance.Flags.Warning);
