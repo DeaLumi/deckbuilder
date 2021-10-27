@@ -83,8 +83,8 @@ public class Preferences {
 
 	public enum PreferVariation {
 		Any,
-		Normal,
-		Promotional
+		Primary,
+		Variant
 	}
 
 	public PreferAge preferAge = PreferAge.Any;
@@ -102,13 +102,12 @@ public class Preferences {
 		if (preferNotPromo) stream = stream.filter(pr -> !pr.promo());
 		if (preferPhysical) stream = stream.filter(pr -> !pr.set().digital());
 
-		// N.B. These sortings happen in reverse order.
-		if (preferVariation != PreferVariation.Any) stream = stream.sorted(preferVariation == PreferVariation.Normal ?
-				(a1, a2) -> a2.variation() - a1.variation() :
-				(a1, a2) -> a1.variation() - a2.variation());
 		if (preferAge != PreferAge.Any) stream = stream.sorted(preferAge == PreferAge.Newest ?
 				(a1, a2) -> a2.releaseDate().compareTo(a1.releaseDate()) :
 				(a1, a2) -> a1.releaseDate().compareTo(a2.releaseDate()));
+		if (preferVariation != PreferVariation.Any) stream = stream.sorted(preferVariation == PreferVariation.Primary ?
+				(a1, a2) -> a1.variation() - a2.variation() :
+				(a1, a2) -> a2.variation() - a1.variation());
 
 		return stream.findFirst().orElse(null);
 	}
