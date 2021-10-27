@@ -2,6 +2,8 @@ package emi.mtg.deckbuilder.model;
 
 import emi.mtg.deckbuilder.controller.Serialization;
 import emi.mtg.deckbuilder.view.MainApplication;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -46,4 +48,16 @@ public class State {
 	public String lastBuildTime = "";
 
 	public Path lastDeckDirectory = null;
+	public ObservableList<Path> recentDecks = FXCollections.observableArrayList();
+
+	public static int MRU_LIMIT = 5;
+
+	public void addRecentDeck(Path path) {
+		recentDecks.remove(path);
+		recentDecks.add(0, path);
+
+		if (recentDecks.size() > MRU_LIMIT) {
+			recentDecks.remove(MRU_LIMIT, recentDecks.size());
+		}
+	}
 }

@@ -58,6 +58,9 @@ public class MainWindow extends Stage {
 	private Menu newDeckMenu;
 
 	@FXML
+	private Menu openRecentDeckMenu;
+
+	@FXML
 	private SplitPane deckSplitter;
 
 	@FXML
@@ -79,6 +82,16 @@ public class MainWindow extends Stage {
 	private final ListChangeListener<Object> deckListChangedListener = e -> {
 		if (autoValidateDeck.isSelected()) updateCardStates(deck.validate());
 		deckModified = true;
+	};
+
+	private final ListChangeListener<Object> mruChangedListener = e -> {
+		this.openRecentDeckMenu.getItems().setAll(State.get().recentDecks.stream()
+				.map(path -> {
+					MenuItem item = new MenuItem(path.toAbsolutePath().toString());
+					item.setOnAction(ae -> openDeck(path));
+					return item;
+				})
+				.collect(Collectors.toList()));
 	};
 
 	public MainWindow(MainApplication owner, DeckList deck) {
@@ -108,6 +121,7 @@ public class MainWindow extends Stage {
 				return;
 			}
 
+			State.get().recentDecks.removeListener(mruChangedListener);
 			owner.deregisterMainWindow(this);
 		});
 
@@ -329,6 +343,9 @@ public class MainWindow extends Stage {
 			this.newDeckMenu.getItems().add(item);
 		}
 
+		State.get().recentDecks.addListener(mruChangedListener);
+		mruChangedListener.onChanged(null);
+
 		this.serdesFileChooser = new FileChooser();
 		this.importSerdes = new HashMap<>();
 		this.exportSerdes = new HashMap<>();
@@ -526,6 +543,7 @@ public class MainWindow extends Stage {
 
 			DeckList list = primarySerdes.importDeck(from.toFile());
 			State.get().lastDeckDirectory = from.getParent();
+			State.get().addRecentDeck(from);
 			if (currentDeckFile == null && deckIsEmpty()) {
 				currentDeckFile = from.toFile();
 				setDeck(list);
