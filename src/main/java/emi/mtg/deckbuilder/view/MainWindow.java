@@ -450,7 +450,7 @@ public class MainWindow extends Stage {
 		titleProperty().unbind();
 		titleProperty().bind(Bindings.createStringBinding(() -> {
 			if (deck.name() != null && !deck.name().isEmpty()) {
-				return String.format("Deck Builder v0.0.0 - %s", deck.name());
+				return String.format("%s - Deck Builder v0.0.0", deck.name());
 			} else {
 				return "Deck Builder v0.0.0";
 			}
