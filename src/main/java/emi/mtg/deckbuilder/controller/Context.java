@@ -19,7 +19,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoubleConsumer;
 
 public class Context {
-	private static final Path STATE = MainApplication.JAR_DIR.resolve("state.json");
 	private static final Path TAGS = MainApplication.JAR_DIR.resolve("tags.json");
 
 	private static Context instance;
@@ -54,8 +53,6 @@ public class Context {
 	public final Images images;
 	public final Tags tags;
 
-	public final State state;
-
 	public Context(DataSource data) throws IOException {
 		this.data = data;
 
@@ -63,14 +60,6 @@ public class Context {
 				.registerTypeAdapter(Card.class, Serialization.createCardAdapter())
 				.registerTypeAdapterFactory(Serialization.createCardPrintingAdapterFactory())
 				.create();
-
-		if (Files.exists(STATE)) {
-			Reader reader = Files.newBufferedReader(STATE);
-			this.state = gson.fromJson(reader, State.class);
-			reader.close();
-		} else {
-			this.state = new State();
-		}
 
 		this.images = new Images(Preferences.get().imagesPath);
 		this.tags = new Tags(this);
@@ -99,17 +88,5 @@ public class Context {
 
 	public void saveTags() throws IOException {
 		this.tags.save(TAGS);
-	}
-
-	public void saveState() throws IOException {
-		OutputStream fos = Files.newOutputStream(STATE);
-		OutputStreamWriter writer = new OutputStreamWriter(fos);
-		gson.toJson(this.state, writer);
-		writer.close();
-	}
-
-	public void saveAll() throws IOException {
-		saveTags();
-		saveState();
 	}
 }

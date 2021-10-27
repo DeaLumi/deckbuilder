@@ -5,6 +5,7 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Application;
@@ -123,7 +124,8 @@ public class MainApplication extends Application {
 		if (mainWindows.isEmpty()) {
 			try {
 				Preferences.save();
-				Context.get().saveAll();
+				State.save();
+				Context.get().saveTags();
 			} catch (IOException ioe) {
 				throw new RuntimeException(ioe);
 			} finally {
@@ -174,6 +176,7 @@ public class MainApplication extends Application {
 		hostStage.getScene().getStylesheets().add("/emi/mtg/deckbuilder/styles.css");
 
 		Preferences prefs = Preferences.instantiate();
+		State state = State.instantiate();
 
 		if (!Files.isDirectory(prefs.dataPath)) {
 			Files.createDirectories(prefs.dataPath);
