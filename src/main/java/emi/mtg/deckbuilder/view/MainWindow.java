@@ -828,7 +828,7 @@ public class MainWindow extends Stage {
 			"Developer: Emi (@DeaLumi)",
 			"Data & Images: Scryfall (@Scryfall)",
 			"",
-			"Source code will be available at some point probably.",
+			"Source code is almost available on GitHub, I swear.",
 			"Feel free to DM me with feedback/issues on Twitter!",
 			"",
 			"Special thanks to MagnetMan, for generously indulging my madness time and time again.");
