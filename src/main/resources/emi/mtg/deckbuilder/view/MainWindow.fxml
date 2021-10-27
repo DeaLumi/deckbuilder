@@ -12,21 +12,6 @@
     <top>
         <MenuBar>
             <menus>
-                <Menu text="Application">
-                    <!--<MenuItem text="Settings..."/>-->
-                    <MenuItem text="Preferences" onAction="#showPreferencesDialog"/>
-                    <SeparatorMenuItem/>
-                    <MenuItem text="Update Deck Builder" onAction="#updateDeckbuilder"/>
-                    <MenuItem text="Update Data" onAction="#updateData"/>
-                    <SeparatorMenuItem/>
-                    <MenuItem text="Trim Cached Images" onAction="#trimImageDiskCache"/>
-                    <SeparatorMenuItem/>
-                    <MenuItem text="Quit" onAction="#actionQuit">
-                        <accelerator>
-                            <KeyCodeCombination code="Q" alt="UP" control="UP" shift="UP" meta="DOWN" shortcut="ANY"/>
-                        </accelerator>
-                    </MenuItem>
-                </Menu>
                 <Menu text="Deck">
                     <Menu text="New..." fx:id="newDeckMenu"/> <!-- Children are populated by controller. -->
                     <MenuItem text="Open" onAction="#openDeck" accelerator="Shortcut+O"/>
@@ -41,6 +26,21 @@
                     <CheckMenuItem text="Auto-Validate" fx:id="autoValidateDeck"/>
                     <MenuItem text="Validate Now" onAction="#validateDeckAndNotify"/>
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
+                </Menu>
+                <Menu text="Application">
+                    <!--<MenuItem text="Settings..."/>-->
+                    <MenuItem text="Preferences" onAction="#showPreferencesDialog"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Update Deck Builder" onAction="#updateDeckbuilder"/>
+                    <MenuItem text="Update Data" onAction="#updateData"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Trim Cached Images" onAction="#trimImageDiskCache"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Quit" onAction="#actionQuit">
+                        <accelerator>
+                            <KeyCodeCombination code="Q" alt="UP" control="UP" shift="UP" meta="DOWN" shortcut="ANY"/>
+                        </accelerator>
+                    </MenuItem>
                 </Menu>
                 <Menu text="Help">
                     <MenuItem text="Tips &amp; Tricks" onAction="#showTipsAndTricks"/>
