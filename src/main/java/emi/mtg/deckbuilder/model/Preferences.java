@@ -14,10 +14,7 @@ import java.io.Writer;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class Preferences {
@@ -65,6 +62,25 @@ public class Preferences {
 	public boolean theFutureIsNow = true;
 
 	public String authorName = "";
+
+	public enum WindowBehavior {
+		AlwaysAsk ("Always Ask"),
+		ThisWindow ("This Window"),
+		NewWindow ("New Window");
+
+		private final String string;
+
+		WindowBehavior(String string) {
+			this.string = string;
+		}
+
+		@Override
+		public String toString() {
+			return string;
+		}
+	}
+
+	public WindowBehavior windowBehavior = WindowBehavior.AlwaysAsk;
 
 	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
 	public List<CardView.ActiveSorting> collectionSorting = CardView.DEFAULT_COLLECTION_SORTING;

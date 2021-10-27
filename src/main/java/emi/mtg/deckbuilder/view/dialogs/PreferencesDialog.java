@@ -155,6 +155,12 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class WindowBehaviorPreference extends MultiOptionPreference<Preferences.WindowBehavior> {
+		public WindowBehaviorPreference(String label, Function<Preferences, Preferences.WindowBehavior> fromPrefs, Predicate<Preferences.WindowBehavior> validate, BiConsumer<Preferences, Preferences.WindowBehavior> toPrefs) {
+			super(label, fromPrefs, validate, toPrefs, Preferences.WindowBehavior.class);
+		}
+	}
+
 	private static abstract class OneControlPreference<T, C extends Node> extends Preference<T> {
 		private final C gui;
 		private final BiConsumer<C, T> set;
@@ -415,9 +421,11 @@ public class PreferencesDialog extends Alert {
 
 	private final PrefEntry[] PREFERENCE_FIELDS = {
 			reflectField(ThemePreference::new, "Theme", "theme", x -> true),
+			reflectField(WindowBehaviorPreference::new, "Open/New Deck Window", "windowBehavior", x -> true),
 			new PrefSeparator(),
 			reflectField(PathPreference::new, "Data Path", "dataPath", PATH_WRITABLE_VALIDATOR),
 			reflectField(PathPreference::new, "Images Path", "imagesPath", IMAGES_PATH_VALIDATOR),
+			new PrefSeparator(),
 			reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
 			reflectField(PreferVariationPreference::new, "Prefer Variation", "preferVariation", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),

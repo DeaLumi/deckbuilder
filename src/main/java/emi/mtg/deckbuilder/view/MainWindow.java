@@ -525,13 +525,54 @@ public class MainWindow extends Stage {
 
 	private void newDeck(Format format) {
 		DeckList newDeck = new DeckList("", Preferences.get().authorName, format, "", Collections.emptyMap());
+		maybeOpenNewWindow(newDeck, false, null);
+	}
 
-		if (currentDeckFile == null && deckIsEmpty()) {
-			setDeck(newDeck);
+	private boolean maybeOpenNewWindow(DeckList forDeck, boolean opened, Path source) {
+		boolean thisWindow = (currentDeckFile == null && deckIsEmpty());
+
+		if (!thisWindow) thisWindow = Preferences.get().windowBehavior == Preferences.WindowBehavior.ThisWindow;
+
+		if (!thisWindow && Preferences.get().windowBehavior == Preferences.WindowBehavior.AlwaysAsk) {
+			CheckBox askCb = new CheckBox("Always Ask");
+			askCb.setSelected(Preferences.get().windowBehavior == Preferences.WindowBehavior.AlwaysAsk);
+			Alert alert = AlertBuilder.query(this)
+					.title(opened ? "Open Deck" : "New Deck")
+					.headerText("Replace this window?")
+					.contentText(opened ? "Would you like to open the deck in this window, or open a new window for it?"
+							: "Would you like to replace this opened deck with the new deck, or open a new window for it?")
+					.buttons(
+							new ButtonType(Preferences.WindowBehavior.ThisWindow.toString(), ButtonBar.ButtonData.OTHER),
+							new ButtonType(Preferences.WindowBehavior.NewWindow.toString(), ButtonBar.ButtonData.OTHER),
+							ButtonType.CANCEL
+					).get();
+			alert.getDialogPane().setExpandableContent(askCb);
+			alert.getDialogPane().setExpanded(true);
+			ButtonType bt = alert.showAndWait().orElse(ButtonType.CANCEL);
+
+			if (bt.getButtonData() == ButtonBar.ButtonData.CANCEL_CLOSE) {
+				return false;
+			}
+
+			thisWindow = bt.getText().equals(Preferences.WindowBehavior.ThisWindow.toString());
+
+			if (askCb.isSelected()) {
+				Preferences.get().windowBehavior = Preferences.WindowBehavior.AlwaysAsk;
+			} else {
+				Preferences.get().windowBehavior = thisWindow ? Preferences.WindowBehavior.ThisWindow : Preferences.WindowBehavior.NewWindow;
+			}
+		}
+
+		if (thisWindow) {
+			currentDeckFile = source == null ? null : source.toFile();
+			setDeck(forDeck);
 		} else {
-			MainWindow window = new MainWindow(this.owner, newDeck);
+			MainWindow window = new MainWindow(this.owner, forDeck);
+			window.currentDeckFile = source == null ? null : source.toFile();
 			window.show();
 		}
+
+		return true;
 	}
 
 	private void openDeck(Path from) {
@@ -543,15 +584,9 @@ public class MainWindow extends Stage {
 			}
 
 			DeckList list = primarySerdes.importDeck(from.toFile());
-			State.get().lastDeckDirectory = from.getParent();
-			State.get().addRecentDeck(from);
-			if (currentDeckFile == null && deckIsEmpty()) {
-				currentDeckFile = from.toFile();
-				setDeck(list);
-			} else {
-				MainWindow window = new MainWindow(this.owner, list);
-				window.currentDeckFile = from.toFile();
-				window.show();
+			if (maybeOpenNewWindow(list, true, from)) {
+				State.get().lastDeckDirectory = from.getParent();
+				State.get().addRecentDeck(from);
 			}
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
@@ -1083,11 +1118,8 @@ public class MainWindow extends Stage {
 
 		try {
 			DeckList list = importer.importDeck(f);
-			State.get().lastDeckDirectory = f.toPath().getParent();
-			if (currentDeckFile == null && deckIsEmpty()) {
-				setDeck(list);
-			} else {
-				new MainWindow(this.owner, list).show();
+			if (maybeOpenNewWindow(list, true, null)) {
+				State.get().lastDeckDirectory = f.toPath().getParent();
 			}
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
