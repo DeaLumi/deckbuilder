@@ -520,6 +520,7 @@ public class MainWindow extends Stage {
 					return pane;
 				})
 				.collect(Collectors.toList()));
+		deckSplitter.setDividerPosition(0, 0.75);
 	}
 
 	private void newDeck(Format format) {
