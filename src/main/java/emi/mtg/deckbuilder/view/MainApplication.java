@@ -267,9 +267,11 @@ public class MainApplication extends Application {
 						condensedTrace
 				));
 
-				ScrollPane scroller = new ScrollPane(new Text(stackTrace.toString()));
-				scroller.setPrefViewportHeight(350.0);
-				alert.getDialogPane().setExpandableContent(scroller);
+				TextArea text = new TextArea(stackTrace.toString());
+				text.setMinWidth(800.0);
+				text.setMinHeight(800.0);
+				text.setEditable(false);
+				alert.getDialogPane().setExpandableContent(text);
 
 				alert.show();
 			});
