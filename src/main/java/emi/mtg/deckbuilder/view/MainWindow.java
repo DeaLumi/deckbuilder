@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MainWindow extends Stage {
 	@FXML
@@ -55,6 +56,9 @@ public class MainWindow extends Stage {
 
 	@FXML
 	private SplitPane deckSplitter;
+
+	@FXML
+	private CheckMenuItem autoValidateDeck;
 
 	private DeckList deck;
 	private boolean deckModified;
@@ -70,7 +74,7 @@ public class MainWindow extends Stage {
 	private final MainApplication owner;
 
 	private final ListChangeListener<Object> deckListChangedListener = e -> {
-		updateCardStates();
+		if (autoValidateDeck.isSelected()) updateCardStates(deck.validate());
 		deckModified = true;
 	};
 
@@ -292,6 +296,15 @@ public class MainWindow extends Stage {
 		collection.showingVersionsSeparately.set(false);
 
 		this.collectionSplitter.getItems().add(0, collection);
+
+		autoValidateDeck.setSelected(true);
+		autoValidateDeck.setOnAction(ae -> {
+			if (!autoValidateDeck.isSelected()) {
+				updateCardStates(null);
+			} else {
+				updateCardStates(deck.validate());
+			}
+		});
 	}
 
 	private void setupImportExport() {
@@ -442,7 +455,7 @@ public class MainWindow extends Stage {
 		}, deck.nameProperty()));
 
 		deckModified = false;
-		updateCardStates();
+		if (autoValidateDeck.isSelected()) updateCardStates(deck.validate());
 
 		ForkJoinPool.commonPool().submit(collection::updateFilter);
 
@@ -828,37 +841,43 @@ public class MainWindow extends Stage {
 				.showAndWait();
 	}
 
-	private Format.ValidationResult updateCardStates() {
-		Format.ValidationResult result = deck.validate();
+	private void updateCardStates(Format.ValidationResult result) {
 		Map<Card, AtomicInteger> histogram = new HashMap<>();
 
-		deck.cards().values().stream()
-				.flatMap(ObservableList::stream)
-				.peek(ci -> {
-					Format.ValidationResult.CardResult cr = result.cards.get(ci);
-					ci.lastValidation = result.cards.get(ci);
+		Stream<CardInstance> stream = deck.cards().values().stream()
+				.flatMap(ObservableList::stream);
 
-					if (cr == null) {
-						ci.flags.clear();
-						return;
-					};
+		if (result != null) {
+			stream = stream.peek(ci -> {
+				Format.ValidationResult.CardResult cr = result.cards.get(ci);
+				ci.lastValidation = result.cards.get(ci);
 
-					if (cr.errors.isEmpty())
-						ci.flags.remove(CardInstance.Flags.Invalid);
-					else
-						ci.flags.add(CardInstance.Flags.Invalid);
+				if (cr == null) {
+					ci.flags.clear();
+					return;
+				}
+				;
 
-					if (cr.warnings.isEmpty())
-						ci.flags.remove(CardInstance.Flags.Warning);
-					else
-						ci.flags.add(CardInstance.Flags.Warning);
+				if (cr.errors.isEmpty())
+					ci.flags.remove(CardInstance.Flags.Invalid);
+				else
+					ci.flags.add(CardInstance.Flags.Invalid);
 
-					if (cr.notices.isEmpty())
-						ci.flags.remove(CardInstance.Flags.Notice);
-					else
-						ci.flags.add(CardInstance.Flags.Notice);
-				})
-				.map(CardInstance::card)
+				if (cr.warnings.isEmpty())
+					ci.flags.remove(CardInstance.Flags.Warning);
+				else
+					ci.flags.add(CardInstance.Flags.Warning);
+
+				if (cr.notices.isEmpty())
+					ci.flags.remove(CardInstance.Flags.Notice);
+				else
+					ci.flags.add(CardInstance.Flags.Notice);
+			});
+		} else {
+			stream = stream.peek(ci -> ci.flags.clear());
+		}
+
+		stream.map(CardInstance::card)
 				.forEach(c -> histogram.computeIfAbsent(c, x -> new AtomicInteger(0)).incrementAndGet());
 		for (Node zonePane : deckSplitter.getItems()) {
 			if (zonePane instanceof CardPane) {
@@ -877,13 +896,12 @@ public class MainWindow extends Stage {
 			}
 		}));
 		collection.view().scheduleRender();
-
-		return result;
 	}
 
 	@FXML
-	protected void validateDeck() {
-		Format.ValidationResult result = updateCardStates();
+	protected void validateDeckAndNotify() {
+		Format.ValidationResult result = deck.validate();
+		updateCardStates(result);
 
 		if (result.deckErrors.isEmpty() &&
 				result.zoneErrors.values().stream().allMatch(Set::isEmpty) &&
@@ -1002,7 +1020,7 @@ public class MainWindow extends Stage {
 				.flatMap(ObservableList::stream)
 				.forEach(CardInstance::refreshInstance);
 
-		updateCardStates();
+		updateCardStates(deck.validate());
 	}
 
 	private boolean deckIsEmpty() {

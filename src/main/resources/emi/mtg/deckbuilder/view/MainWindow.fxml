@@ -38,6 +38,7 @@
                     <MenuItem text="Copy Decklist" onAction="#copyListToClipboard" accelerator="Shortcut+C"/>
                     <MenuItem text="Copy Image" onAction="#copyImageToClipboard" accelerator="Shift+Shortcut+C"/>
                     <SeparatorMenuItem/>
+                    <CheckMenuItem text="Auto-Validate" fx:id="autoValidateDeck"/>
                     <MenuItem text="Validate Now" onAction="#validateDeckAndNotify"/>
                     <MenuItem text="Info..." onAction="#showDeckInfoDialog"/>
                 </Menu>
