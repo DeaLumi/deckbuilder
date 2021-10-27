@@ -17,12 +17,12 @@
                 <Label style="-fx-text-fill: -fx-text-background-color;" fx:id="cardScaleText"/>
             </HBox>
 
-            <Label GridPane.rowIndex="2" GridPane.columnIndex="0" text="Size Hint:" GridPane.halignment="RIGHT"/>
-            <FlowPane GridPane.rowIndex="2" GridPane.columnIndex="1">
-                <Spinner amountToStepBy="50.0" min="100.0" max="10000.0" fx:id="widthHint"/>
-                <Label text=" x "/>
-                <Spinner amountToStepBy="50.0" min="100.0" max="10000.0" fx:id="heightHint"/>
-            </FlowPane>
+            <Label GridPane.rowIndex="2" GridPane.columnIndex="0" text="Width (cards):" GridPane.halignment="RIGHT"/>
+            <Spinner GridPane.rowIndex="2" GridPane.columnIndex="1" amountToStepBy="1" min="4" max="100" fx:id="widthHint">
+                <tooltip>
+                    <Tooltip text="This is only a hint. Final image size is determined by this, chosen zone layouts, and card scale. Some zone layouts, like piles, ignore this value."/>
+                </tooltip>
+            </Spinner>
         </GridPane>
     </content>
 </fx:root>

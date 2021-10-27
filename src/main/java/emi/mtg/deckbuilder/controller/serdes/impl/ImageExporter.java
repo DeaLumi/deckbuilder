@@ -6,6 +6,7 @@ import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
@@ -57,6 +58,10 @@ public class ImageExporter implements DeckImportExport {
 		throw new UnsupportedOperationException();
 	}
 
+	public double estimateViewWidth() {
+		return widthHint.getValue() * (Images.CARD_WIDTH * cardScale.getValue() + Images.CARD_PADDING * 2);
+	}
+
 	@Override
 	public void exportDeck(DeckList deck, File to) throws IOException {
 		if (!promptForOptions(deck.format().deckZones())) return;
@@ -67,7 +72,7 @@ public class ImageExporter implements DeckImportExport {
 			view.showFlagsProperty().set(false);
 			view.collapseDuplicatesProperty().set(collapseCopies.isSelected());
 			view.cardScaleProperty().set(cardScale.getValue());
-			view.resize(widthHint.getValue().doubleValue(), heightHint.getValue().doubleValue());
+			view.resize(estimateViewWidth(), Images.CARD_HEIGHT + Images.CARD_PADDING * 2);
 		}, to.toPath());
 	}
 
@@ -88,10 +93,7 @@ public class ImageExporter implements DeckImportExport {
 	protected Label cardScaleText;
 
 	@FXML
-	protected Spinner<Double> widthHint;
-
-	@FXML
-	protected Spinner<Double> heightHint;
+	protected Spinner<Integer> widthHint;
 
 	@FXML
 	protected GridPane grid;
@@ -111,8 +113,7 @@ public class ImageExporter implements DeckImportExport {
 
 		FxUtils.FXML(this, alert.getDialogPane());
 
-		widthHint.getValueFactory().setValue(2500.0);
-		heightHint.getValueFactory().setValue(2500.0);
+		widthHint.getValueFactory().setValue(10);
 		cardScaleText.textProperty().bind(cardScale.valueProperty().multiply(100).asString("%.0f%%"));
 
 		int i = 3;
