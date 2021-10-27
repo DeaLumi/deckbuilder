@@ -44,4 +44,6 @@ public class State {
 	}
 
 	public String lastBuildTime = "";
+
+	public Path lastDeckDirectory = null;
 }

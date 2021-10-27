@@ -13,6 +13,7 @@ import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
@@ -41,6 +42,7 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
@@ -514,26 +516,22 @@ public class MainWindow extends Stage {
 		}
 	}
 
-	@FXML
-	protected void openDeck() {
-		File from = primaryFileChooser.showOpenDialog(this);
-
-		if (from == null) {
-			return;
-		}
+	private void openDeck(Path from) {
+		if (from == null) return;
 
 		try {
-			if(checkDeckForVariants(from)) {
+			if (checkDeckForVariants(from.toFile())) {
 				return;
 			}
 
-			DeckList list = primarySerdes.importDeck(from);
+			DeckList list = primarySerdes.importDeck(from.toFile());
+			State.get().lastDeckDirectory = from.getParent();
 			if (currentDeckFile == null && deckIsEmpty()) {
-				currentDeckFile = from;
+				currentDeckFile = from.toFile();
 				setDeck(list);
 			} else {
 				MainWindow window = new MainWindow(this.owner, list);
-				window.currentDeckFile = from;
+				window.currentDeckFile = from.toFile();
 				window.show();
 			}
 		} catch (IOException ioe) {
@@ -546,6 +544,18 @@ public class MainWindow extends Stage {
 					.modal(Modality.WINDOW_MODAL)
 					.show();
 		}
+	}
+
+	@FXML
+	protected void openDeck() {
+		if (State.get().lastDeckDirectory != null) primaryFileChooser.setInitialDirectory(State.get().lastDeckDirectory.toFile());
+		File from = primaryFileChooser.showOpenDialog(this);
+
+		if (from == null) {
+			return;
+		}
+
+		openDeck(from.toPath());
 	}
 
 	private static class DeckListWithVariants {
@@ -666,6 +676,7 @@ public class MainWindow extends Stage {
 	}
 
 	protected boolean doSaveDeckAs() {
+		if (State.get().lastDeckDirectory != null) primaryFileChooser.setInitialDirectory(State.get().lastDeckDirectory.toFile());
 		File to = primaryFileChooser.showSaveDialog(this);
 
 		if (to == null) {
@@ -1035,6 +1046,7 @@ public class MainWindow extends Stage {
 				.sorted(Comparator.comparing(e -> e.getValue().toString()))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList()));
+		if (State.get().lastDeckDirectory != null) serdesFileChooser.setInitialDirectory(State.get().lastDeckDirectory.toFile());
 		File f = serdesFileChooser.showOpenDialog(this);
 
 		if (f == null) {
@@ -1052,12 +1064,12 @@ public class MainWindow extends Stage {
 
 		try {
 			DeckList list = importer.importDeck(f);
+			State.get().lastDeckDirectory = f.toPath().getParent();
 			if (currentDeckFile == null && deckIsEmpty()) {
 				setDeck(list);
 			} else {
 				new MainWindow(this.owner, list).show();
 			}
-			serdesFileChooser.setInitialDirectory(f.getParentFile());
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			AlertBuilder.notify(this)
@@ -1076,6 +1088,7 @@ public class MainWindow extends Stage {
 				.sorted(Comparator.comparing(e -> e.getValue().toString()))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList()));
+		if (State.get().lastDeckDirectory != null) serdesFileChooser.setInitialDirectory(State.get().lastDeckDirectory.toFile());
 		File f = serdesFileChooser.showSaveDialog(this);
 
 		if (f == null) {
@@ -1093,7 +1106,7 @@ public class MainWindow extends Stage {
 
 		try {
 			exporter.exportDeck(deck, f);
-			serdesFileChooser.setInitialDirectory(f.getParentFile());
+			State.get().lastDeckDirectory = f.toPath().getParent();
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			AlertBuilder.notify(this)
