@@ -444,7 +444,7 @@ public class PreferencesDialog extends Alert {
 		initOwner(owner);
 		setTitle("Deck Builder Preferences");
 		setHeaderText("Update Preferences");
-		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+		getDialogPane().setStyle(Preferences.get().theme.style());
 
 		GridPane grid = new GridPane();
 		grid.setHgap(10.0);

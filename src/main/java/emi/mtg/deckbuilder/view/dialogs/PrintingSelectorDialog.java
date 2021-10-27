@@ -52,7 +52,7 @@ public class PrintingSelectorDialog extends Dialog<Card.Printing> {
 		pane.setPrefHeight(scene.getHeight() / 1.5);
 		pane.setPrefWidth(scene.getWidth() / 1.5);
 
-		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+		getDialogPane().setStyle(Preferences.get().theme.style());
 		getDialogPane().setContent(pane);
 		getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
 		initModality(Modality.WINDOW_MODAL);

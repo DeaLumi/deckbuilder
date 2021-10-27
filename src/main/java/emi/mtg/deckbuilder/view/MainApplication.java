@@ -171,6 +171,7 @@ public class MainApplication extends Application {
 	public void start(Stage primaryStage) throws Exception {
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
+		hostStage.getScene().getStylesheets().add("/emi/mtg/deckbuilder/styles.css");
 
 		Preferences prefs = Preferences.instantiate();
 
@@ -240,7 +241,7 @@ public class MainApplication extends Application {
 			Platform.runLater(() -> {
 				Alert alert = new Alert(Alert.AlertType.ERROR);
 				alert.initOwner(hostStage);
-				alert.getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+				alert.getDialogPane().setStyle(Preferences.get().theme.style());
 
 				alert.setTitle("Uncaught Exception");
 				alert.setHeaderText("An internal error has occurred.");

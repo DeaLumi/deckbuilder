@@ -130,7 +130,15 @@ public class Preferences {
 		}
 
 		public String baseHex() {
-			return String.format("#%02x%02x%02x", (int) (base.getRed() * 255.0), (int) (base.getBlue() * 255.0), (int) (base.getBlue() * 255.0));
+			return hex(base);
+		}
+
+		public String style() {
+			return String.format("-fx-base: %s;", baseHex());
+		}
+
+		public static String hex(javafx.scene.paint.Color color) {
+			return String.format("#%02x%02x%02x", (int) (color.getRed() * 255.0), (int) (color.getBlue() * 255.0), (int) (color.getBlue() * 255.0));
 		}
 	}
 

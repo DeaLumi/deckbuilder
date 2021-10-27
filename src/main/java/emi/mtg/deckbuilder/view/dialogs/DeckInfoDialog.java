@@ -29,7 +29,7 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 		loader.setController(this);
 		loader.setRoot(getDialogPane());
 		loader.load();
-		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+		getDialogPane().setStyle(Preferences.get().theme.style());
 
 		deckNameField.setText(deck.nameProperty().getValue());
 		authorField.setText(deck.authorProperty().getValue());

@@ -95,10 +95,10 @@ public class MainWindow extends Stage {
 			throw new AssertionError(ioe);
 		}
 
-		root.setStyle("-fx-base: " + Preferences.get().theme.baseHex());
-
 		setTitle("Deck Builder v0.0.0");
 		setScene(new Scene(root, 1024, 1024));
+		getScene().getStylesheets().add("/emi/mtg/deckbuilder/styles.css");
+		root.setStyle(Preferences.get().theme.style());
 
 		setOnCloseRequest(we -> {
 			if (!offerSaveIfModified()) {
@@ -985,7 +985,7 @@ public class MainWindow extends Stage {
 	}
 
 	void preferencesChanged() {
-		getScene().getRoot().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+		getScene().getRoot().setStyle(Preferences.get().theme.style());
 
 		ForkJoinPool.commonPool().submit(collection::updateFilter);
 		collection.view().scheduleRender();

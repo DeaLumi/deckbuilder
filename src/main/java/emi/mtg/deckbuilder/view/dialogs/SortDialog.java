@@ -90,7 +90,7 @@ public class SortDialog extends Dialog<List<CardView.ActiveSorting>> {
 		} catch (IOException e) {
 			throw new Error(e);
 		}
-		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+		getDialogPane().setStyle(Preferences.get().theme.style());
 
 		List<CardView.Sorting> source = new ArrayList<>(CardView.SORTINGS);
 		source.removeAll(currentSorts.stream().map(s -> s.sorting).collect(Collectors.toSet()));

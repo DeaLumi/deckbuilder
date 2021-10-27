@@ -202,7 +202,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 		loader.setRoot(this);
 		loader.setController(this);
 		loader.load();
-		getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+		getDialogPane().setStyle(Preferences.get().theme.style());
 
 		// TODO: Update data dynamically.
 		CardSummaryData data = cardList.parallelStream().collect(CardSummaryData.COLLECTOR);
