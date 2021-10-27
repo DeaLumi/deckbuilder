@@ -12,12 +12,15 @@
             <CheckBox GridPane.rowIndex="0" GridPane.columnIndex="1" fx:id="collapseCopies" selected="true"/>
 
             <Label GridPane.rowIndex="1" GridPane.columnIndex="0" text="Card Scale:" GridPane.halignment="RIGHT"/>
-            <Slider GridPane.rowIndex="1" GridPane.columnIndex="1" min="0.1" value="0.8" max="2.0" fx:id="cardScale"/>
+            <HBox GridPane.rowIndex="1" GridPane.columnIndex="1">
+                <Slider min="0.1" value="1.0" max="2.0" blockIncrement="0.05" majorTickUnit="0.05" minorTickCount="0" snapToTicks="true" fx:id="cardScale"/>
+                <Label style="-fx-text-fill: -fx-text-background-color;" fx:id="cardScaleText"/>
+            </HBox>
 
             <Label GridPane.rowIndex="2" GridPane.columnIndex="0" text="Size Hint:" GridPane.halignment="RIGHT"/>
             <FlowPane GridPane.rowIndex="2" GridPane.columnIndex="1">
                 <Spinner amountToStepBy="50.0" min="100.0" max="10000.0" fx:id="widthHint"/>
-                <Text text=" x "/>
+                <Label text=" x "/>
                 <Spinner amountToStepBy="50.0" min="100.0" max="10000.0" fx:id="heightHint"/>
             </FlowPane>
         </GridPane>

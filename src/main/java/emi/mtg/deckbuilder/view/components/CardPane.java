@@ -198,8 +198,14 @@ public class CardPane extends BorderPane {
 
 		CustomMenuItem cardScale = new CustomMenuItem();
 		Slider cardScaleSlider = new Slider(0.25, 1.5, 1.0);
+		cardScaleSlider.setMajorTickUnit(0.05);
+		cardScaleSlider.setBlockIncrement(0.05);
+		cardScaleSlider.setMinorTickCount(0);
+		cardScaleSlider.setSnapToTicks(true);
+		Label cardScaleText = new Label("100%");
+		cardScaleText.textProperty().bind(cardScaleSlider.valueProperty().multiply(100).asString("%.0f%%"));
 		this.cardView.cardScaleProperty().bind(cardScaleSlider.valueProperty());
-		cardScale.setContent(cardScaleSlider);
+		cardScale.setContent(new HBox(cardScaleSlider, cardScaleText));
 		cardScale.setHideOnClick(false);
 
 		MenuItem statisticsButton = new MenuItem("Statistics");

@@ -85,6 +85,9 @@ public class ImageExporter implements DeckImportExport {
 	protected Slider cardScale;
 
 	@FXML
+	protected Label cardScaleText;
+
+	@FXML
 	protected Spinner<Double> widthHint;
 
 	@FXML
@@ -110,6 +113,7 @@ public class ImageExporter implements DeckImportExport {
 
 		widthHint.getValueFactory().setValue(2500.0);
 		heightHint.getValueFactory().setValue(2500.0);
+		cardScaleText.textProperty().bind(cardScale.valueProperty().multiply(100).asString("%.0f%%"));
 
 		int i = 3;
 		for (Zone zone : Zone.values()) {
