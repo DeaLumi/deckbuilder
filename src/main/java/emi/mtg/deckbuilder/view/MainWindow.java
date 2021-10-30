@@ -16,11 +16,12 @@ import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
+import emi.mtg.deckbuilder.view.components.DeckPane;
+import emi.mtg.deckbuilder.view.components.DeckTab;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
-import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -29,7 +30,6 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
@@ -46,7 +46,6 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,28 +60,19 @@ public class MainWindow extends Stage {
 	private Menu openRecentDeckMenu;
 
 	@FXML
-	private SplitPane deckSplitter;
+	private TabPane deckTabs;
 
 	@FXML
 	private CheckMenuItem autoValidateDeck;
-
-	private DeckList deck;
-	private boolean deckModified;
 
 	private CardPane collection;
 
 	private FileChooser primaryFileChooser;
 	private DeckImportExport primarySerdes;
-	private File currentDeckFile;
 
 	private Map<FileChooser.ExtensionFilter, DeckImportExport> importSerdes, exportSerdes;
 	private FileChooser serdesFileChooser;
 	private final MainApplication owner;
-
-	private final ListChangeListener<Object> deckListChangedListener = e -> {
-		if (autoValidateDeck.isSelected()) updateCardStates(deck.validate());
-		deckModified = true;
-	};
 
 	private final ListChangeListener<Object> mruChangedListener = e -> {
 		this.openRecentDeckMenu.getItems().setAll(State.get().recentDecks.stream()
@@ -116,7 +106,7 @@ public class MainWindow extends Stage {
 		root.setStyle(Preferences.get().theme.style());
 
 		setOnCloseRequest(we -> {
-			if (!offerSaveIfModified()) {
+			if (!offerSaveIfModifiedAll()) {
 				we.consume();
 				return;
 			}
@@ -136,7 +126,7 @@ public class MainWindow extends Stage {
 		Platform.runLater(() -> {
 			setupUI();
 			setupImportExport();
-			setDeck(deck);
+			addDeck(deck);
 
 			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
 
@@ -153,23 +143,58 @@ public class MainWindow extends Stage {
 	}
 
 	void emergencySave() throws IOException {
-		primarySerdes.exportDeck(deck, Files.createTempFile(
-				MainApplication.JAR_DIR,
-				String.format("emergency-save-%s-", deck.name()), ".json").toFile());
+		List<IOException> exceptions = new ArrayList<>();
+		allDecks().forEach(deck -> {
+			try {
+				primarySerdes.exportDeck(deck, Files.createTempFile(
+						MainApplication.JAR_DIR,
+						String.format("emergency-save-%s-", deck.name()), ".json").toFile());
+			} catch (IOException ioe) {
+				exceptions.add(ioe);
+			}
+		});
+
+		if (exceptions.size() == 0) return;
+		if (exceptions.size() == 1) throw exceptions.get(0);
+
+		IOException thrown = new IOException("Multiple exceptions encountered during emergency save.");
+		exceptions.forEach(thrown::addSuppressed);
+		throw thrown;
 	}
 
-	private CardPane deckPane(Zone zone) {
-		return deckSplitter.getItems().stream()
-				.map(pane -> (CardPane) pane)
-				.filter(pane -> pane.title().equals(zone.name()))
-				.findAny()
-				.orElseThrow(() -> new AssertionError("No zone " + zone.name() + " in deck!"));
+	public Stream<DeckTab> allTabs() {
+		return deckTabs.getTabs().stream()
+				.map(t -> (DeckTab) t);
+	}
+
+	public Stream<DeckPane> allPanes() {
+		return allTabs().map(DeckTab::pane);
+	}
+
+	public Stream<DeckList> allDecks() {
+		return allPanes().map(DeckPane::deck);
+	}
+
+	public DeckTab activeTab() {
+		return (DeckTab) deckTabs.getSelectionModel().getSelectedItem();
+	}
+
+	public DeckPane activeDeckPane() {
+		DeckTab activeTab = activeTab();
+		return activeTab == null ? null : activeTab.pane();
+	}
+
+	public DeckList activeDeck() {
+		DeckPane pane = activeDeckPane();
+		return pane == null ? null : pane.deck();
 	}
 
 	private void flagCollectionCardLegality(CardInstance ci) {
+		Format format = activeDeck() == null ? Preferences.get().defaultFormat : activeDeck().format();
+
 		ci.flags.clear();
 		ci.flags.add(CardInstance.Flags.Unlimited);
-		switch (ci.card().legality(deck.format())) {
+		switch (ci.card().legality(format)) {
 			case Legal:
 			case Restricted:
 				break;
@@ -279,11 +304,11 @@ public class MainWindow extends Stage {
 
 		for (Zone zone : Zone.values()) {
 			MenuItem fillZoneMenuItem = new MenuItem(zone.name());
-			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> deck != null && deck.format().deckZones().contains(zone), menu.showingProperty()));
+			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> activeDeck() != null && activeDeck().format().deckZones().contains(zone), menu.showingProperty()));
 			fillZoneMenuItem.setOnAction(ae -> {
-				deckPane(zone).changeModel(model -> {
+				activeDeckPane().zonePane(zone).changeModel(model -> {
 					for (CardInstance source : menu.cards) {
-						long count = deck.format().maxCopies - model.parallelStream().filter(ci -> ci.card().equals(source.card())).count();
+						long count = activeDeck().format().maxCopies - model.parallelStream().filter(ci -> ci.card().equals(source.card())).count(); // TODO: Should count all zones.
 						for (int i = 0; i < count; ++i) {
 							model.add(new CardInstance(source.printing()));
 						}
@@ -305,8 +330,8 @@ public class MainWindow extends Stage {
 				Preferences.get().collectionGrouping,
 				Preferences.get().collectionSorting);
 		collection.view().immutableModelProperty().set(true);
-		collection.view().doubleClick(ci -> deckPane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci.printing()))));
-		collection.autoAction.set(ci -> deckPane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci.printing()))));
+		collection.view().doubleClick(ci -> activeDeckPane().zonePane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci.printing()))));
+		collection.autoAction.set(ci -> activeDeckPane().zonePane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci.printing()))));
 
 		collection.view().contextMenu(createCollectionContextMenu());
 
@@ -316,11 +341,36 @@ public class MainWindow extends Stage {
 		this.collectionSplitter.getItems().add(0, collection);
 
 		autoValidateDeck.setSelected(true);
-		autoValidateDeck.setOnAction(ae -> {
-			if (!autoValidateDeck.isSelected()) {
-				updateCardStates(null);
+		allPanes().forEach(pane -> {
+			pane.autoValidateProperty().bind(autoValidateDeck.selectedProperty());
+			pane.setOnDeckChanged(lce -> updateCollectionState());
+		});
+
+		deckTabs.setSide(javafx.geometry.Side.TOP);
+		deckTabs.getStyleClass().add("flashy-tabs");
+		deckTabs.setTabClosingPolicy(TabPane.TabClosingPolicy.ALL_TABS);
+		deckTabs.setRotateGraphic(true);
+		deckTabs.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+			DeckPane old = oldTab == null ? null : (DeckPane) oldTab.getContent();
+			DeckPane newp = newTab == null ? null : (DeckPane) newTab.getContent();
+
+			ForkJoinPool.commonPool().submit(() -> {
+				if (old != null && newp != null && !old.deck().format().equals(newp.deck().format())) collection.updateFilter();
+				updateCollectionState();
+				collection.view().scheduleRender();
+			});
+
+			MainWindow.this.titleProperty().unbind();
+			if (newp == null) {
+				MainWindow.this.setTitle("Deckbuilder v0.0.0");
 			} else {
-				updateCardStates(deck.validate());
+				MainWindow.this.titleProperty().bind(Bindings.createStringBinding(() -> {
+					if (newp.deck().name().isEmpty()) {
+						return "Unnamed Deck - Deckbuilder v0.0.0";
+					} else {
+						return newp.deck().name() + " - Deckbuilder v0.0.0";
+					}
+				}, newp.deck().nameProperty()));
 			}
 		});
 	}
@@ -333,7 +383,7 @@ public class MainWindow extends Stage {
 
 		for (Format format : Format.values()) {
 			MenuItem item = new MenuItem(format.name());
-			item.setOnAction(ae -> newDeck(format));
+			item.setOnAction(ae -> maybeOpenNewWindow(new DeckList("", Preferences.get().authorName, format, "", Collections.emptyMap())));
 			item.setUserData(format);
 
 			if (format == Preferences.get().defaultFormat) {
@@ -362,214 +412,67 @@ public class MainWindow extends Stage {
 		}
 	}
 
-	private CardView.ContextMenu createDeckContextMenu(CardPane pane, Zone zone) {
-		CardView.ContextMenu menu = new CardView.ContextMenu();
-
-		MenuItem changePrintingMenuItem = new MenuItem("Choose Printing");
-		changePrintingMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> {
-			Set<Card> cards = menu.cards.stream().map(CardInstance::card).collect(Collectors.toSet());
-			return cards.size() == 1 && cards.iterator().next().printings().size() > 1;
-		}, menu.cards));
-		changePrintingMenuItem.setOnAction(ae -> {
-			if (menu.cards.isEmpty()) {
-				return;
-			}
-
-			Set<Card> cards = menu.cards.stream().map(CardInstance::card).collect(Collectors.toSet());
-			if (cards.size() != 1) {
-				return;
-			}
-
-			final Card card = cards.iterator().next();
-			final Set<CardInstance> modify = new HashSet<>(menu.cards.get());
-			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
-				modify.forEach(ci -> ci.printing(pr));
-				pane.view().scheduleRender();
-			});
-		});
-
-		MenuItem removeAllMenuItem = new MenuItem("Remove All");
-		removeAllMenuItem.setOnAction(ae -> deck.cards(zone).removeAll(menu.cards));
-
-		Menu moveMenu = new Menu("Move To");
-
-		for (Zone other : deck.format().deckZones()) {
-			if (other == zone) continue;
-
-			MenuItem moveItem = new MenuItem(other.toString());
-			moveItem.setOnAction(ae -> {
-				final List<CardInstance> cards = new ArrayList<>(menu.cards);
-				deck.cards(zone).removeAll(cards);
-				deck.cards(other).addAll(cards);
-			});
-
-			moveMenu.getItems().add(moveItem);
-		}
-
-		Menu tagsMenu = new Menu("Deck Tags");
-
-		menu.setOnShowing(e -> {
-			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
-			tagCBs.setAll(deck.cards(zone).stream()
-					.map(CardInstance::tags)
-					.flatMap(Set::stream)
-					.distinct()
-					.sorted()
-					.map(CheckMenuItem::new)
-					.peek(cmi -> cmi.setSelected(menu.cards.stream().allMatch(ci -> ci.tags().contains(cmi.getText()))))
-					.peek(cmi -> cmi.selectedProperty().addListener(x -> {
-						if (cmi.isSelected()) {
-							menu.cards.forEach(ci -> ci.tags().add(cmi.getText()));
-						} else {
-							menu.cards.forEach(ci -> ci.tags().remove(cmi.getText()));
-						}
-						menu.view.get().refreshCardGrouping();
-					}))
-					.collect(Collectors.toList())
-			);
-			tagCBs.add(new SeparatorMenuItem());
-
-			TextField newTagField = new TextField();
-			CustomMenuItem newTagMenuItem = new CustomMenuItem(newTagField);
-			newTagMenuItem.setHideOnClick(false);
-			newTagField.setPromptText("New tag...");
-			newTagField.setOnAction(ae -> {
-				if (newTagField.getText().isEmpty()) {
-					ae.consume();
-					return;
+	private void addDeck(DeckList deck) {
+		DeckPane pane = new DeckPane(deck);
+		pane.autoValidateProperty().bind(autoValidateDeck.selectedProperty());
+		pane.setOnDeckChanged(lce -> updateCollectionState());
+		DeckTab tab = new DeckTab(pane);
+		tab.closableProperty().bind(Bindings.size(deckTabs.getTabs()).greaterThan(1));
+		tab.setOnCloseRequest(ce -> {
+			if (deck.modified()) {
+				deckTabs.getSelectionModel().select(tab);
+				if (!offerSaveIfModified(deck)) {
+					ce.consume();
 				}
-
-				menu.cards.forEach(ci -> ci.tags().add(newTagField.getText()));
-				menu.view.get().regroup();
-				menu.hide();
-			});
-
-			tagCBs.add(newTagMenuItem);
-
-			tagsMenu.getItems().setAll(tagCBs);
+			}
 		});
 
-		menu.getItems().addAll(changePrintingMenuItem, tagsMenu);
+		tab.setOnClosed(ce -> {
+			if (deckTabs.getTabs().isEmpty()) MainWindow.this.close();
+		});
 
-		if (moveMenu.getItems().size() == 1) {
-			MenuItem item = moveMenu.getItems().get(0);
-			item.setText("Move to " + item.getText());
-			menu.getItems().add(item);
-		} else if (!moveMenu.getItems().isEmpty()) {
-			menu.getItems().add(moveMenu);
-		}
-
-		menu.getItems().add(removeAllMenuItem);
-
-		return menu;
+		deckTabs.getTabs().add(tab);
+		deckTabs.getSelectionModel().select(tab);
 	}
 
-	private void setDeck(DeckList deck) {
-		this.deck = deck;
-		titleProperty().unbind();
-		titleProperty().bind(Bindings.createStringBinding(() -> {
-			if (deck.name() != null && !deck.name().isEmpty()) {
-				return String.format("%s - Deck Builder v0.0.0", deck.name());
-			} else {
-				return "Deck Builder v0.0.0";
-			}
-		}, deck.nameProperty()));
-
-		deckModified = false;
-		if (autoValidateDeck.isSelected()) updateCardStates(deck.validate());
-
-		ForkJoinPool.commonPool().submit(collection::updateFilter);
-
-		deckSplitter.getItems().setAll(deck.format().deckZones().stream()
-				.map(z -> {
-					CardPane pane = new CardPane(z.name(),
-							deck.cards(z),
-							Piles.Factory.INSTANCE,
-							Preferences.get().zoneGroupings.getOrDefault(z, ManaValue.INSTANCE));
-					deck.cards(z).addListener(deckListChangedListener);
-					pane.view().doubleClick(ci -> pane.changeModel(x -> x.remove(ci)));
-					pane.view().contextMenu(createDeckContextMenu(pane, z));
-					pane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
-					pane.listPasteAction.set(list -> {
-						String[] lines = list.split("\r?\n");
-						List<CardInstance> addAll = new ArrayList<>();
-						Set<String> unrecognized = new HashSet<>();
-
-						for (String line : lines) {
-							if (!TextFile.parseLine(line, (pr, count) -> {
-								for (int i = 0; i < count; ++i) {
-									addAll.add(new CardInstance(pr));
-								}
-							})) {
-								unrecognized.add(line);
-							}
-						}
-
-						pane.changeModel(x -> x.addAll(addAll));
-
-						if (!unrecognized.isEmpty()) {
-							AlertBuilder.notify(MainWindow.this)
-									.title("Unrecognized Cards")
-									.type(Alert.AlertType.WARNING)
-									.headerText("Some cards weren't found.")
-									.contentText("The following cards couldn't be found:\n\u2022 " + String.join("\n\u2022 ", unrecognized))
-									.modal(Modality.WINDOW_MODAL)
-									.show();
-						}
-					});
-					return pane;
-				})
-				.collect(Collectors.toList()));
-		deckSplitter.setDividerPosition(0, 0.75);
-	}
-
-	private void newDeck(Format format) {
-		DeckList newDeck = new DeckList("", Preferences.get().authorName, format, "", Collections.emptyMap());
-		maybeOpenNewWindow(newDeck, false, null);
-	}
-
-	private boolean maybeOpenNewWindow(DeckList forDeck, boolean opened, Path source) {
-		boolean thisWindow = (currentDeckFile == null && deckIsEmpty());
-
-		if (!thisWindow) thisWindow = Preferences.get().windowBehavior == Preferences.WindowBehavior.ThisWindow;
-
-		if (!thisWindow && Preferences.get().windowBehavior == Preferences.WindowBehavior.AlwaysAsk) {
-			CheckBox askCb = new CheckBox("Always Ask");
-			askCb.setSelected(Preferences.get().windowBehavior == Preferences.WindowBehavior.AlwaysAsk);
+	private boolean maybeOpenNewWindow(DeckList forDeck) {
+		Preferences.WindowBehavior behavior = Preferences.get().windowBehavior;
+		if (behavior == Preferences.WindowBehavior.AlwaysAsk) {
+			CheckBox rememberCb = new CheckBox("Remember This Choice");
 			Alert alert = AlertBuilder.query(this)
-					.title(opened ? "Open Deck" : "New Deck")
-					.headerText("Replace this window?")
-					.contentText(opened ? "Would you like to open the deck in this window, or open a new window for it?"
-							: "Would you like to replace this opened deck with the new deck, or open a new window for it?")
+					.title("Window Behavior")
+					.headerText("Where should this deck be opened?")
+					.contentText("You can choose to replace the current window (after being prompted to save any changes), open a new tab for this deck, or open a new window for this deck.")
 					.buttons(
-							new ButtonType(Preferences.WindowBehavior.ThisWindow.toString(), ButtonBar.ButtonData.OTHER),
-							new ButtonType(Preferences.WindowBehavior.NewWindow.toString(), ButtonBar.ButtonData.OTHER),
+							new ButtonType(Preferences.WindowBehavior.NewTab.toString()),
+							new ButtonType(Preferences.WindowBehavior.NewWindow.toString()),
+							new ButtonType(Preferences.WindowBehavior.ReplaceCurrent.toString()),
 							ButtonType.CANCEL
 					).get();
-			alert.getDialogPane().setExpandableContent(askCb);
+			alert.getDialogPane().setExpandableContent(rememberCb);
 			alert.getDialogPane().setExpanded(true);
 			ButtonType bt = alert.showAndWait().orElse(ButtonType.CANCEL);
 
-			if (bt.getButtonData() == ButtonBar.ButtonData.CANCEL_CLOSE) {
-				return false;
-			}
+			if (bt == ButtonType.CANCEL) return false;
 
-			thisWindow = bt.getText().equals(Preferences.WindowBehavior.ThisWindow.toString());
+			behavior = Arrays.stream(Preferences.WindowBehavior.values()).filter(v -> v.toString().equals(bt.getText())).findAny().orElseThrow(() -> new NoSuchElementException("???"));
 
-			if (askCb.isSelected()) {
-				Preferences.get().windowBehavior = Preferences.WindowBehavior.AlwaysAsk;
-			} else {
-				Preferences.get().windowBehavior = thisWindow ? Preferences.WindowBehavior.ThisWindow : Preferences.WindowBehavior.NewWindow;
+			if (rememberCb.isSelected()) {
+				Preferences.get().windowBehavior = behavior;
 			}
 		}
 
-		if (thisWindow) {
-			currentDeckFile = source == null ? null : source.toFile();
-			setDeck(forDeck);
-		} else {
-			MainWindow window = new MainWindow(this.owner, forDeck);
-			window.currentDeckFile = source == null ? null : source.toFile();
-			window.show();
+		switch (behavior) {
+			case ReplaceCurrent:
+				if (!activeTab().forceClose()) return false; // Intentional fallthrough
+			case NewTab:
+				addDeck(forDeck);
+				break;
+			case NewWindow:
+				new MainWindow(this.owner, forDeck).show();
+				break;
+			default:
+				throw new IllegalStateException("Behavior shouldn't still be ask...");
 		}
 
 		return true;
@@ -584,7 +487,8 @@ public class MainWindow extends Stage {
 			}
 
 			DeckList list = primarySerdes.importDeck(from.toFile());
-			if (maybeOpenNewWindow(list, true, from)) {
+			list.sourceProperty().setValue(from);
+			if (maybeOpenNewWindow(list)) {
 				State.get().lastDeckDirectory = from.getParent();
 				State.get().addRecentDeck(from);
 			}
@@ -649,10 +553,12 @@ public class MainWindow extends Stage {
 			return false;
 		}
 
-		if (lwv.variants.size() == 1 && currentDeckFile == null && deckIsEmpty()) {
+		if (lwv.variants.size() == 1) {
 			DeckListWithVariants.Variant var = lwv.variants.iterator().next();
-			setDeck(lwv.toDeckList(var));
-			currentDeckFile = f;
+			DeckList list = lwv.toDeckList(var);
+			list.sourceProperty().setValue(f.toPath());
+			list.modifiedProperty().setValue(true);
+			addDeck(lwv.toDeckList(var));
 			return true;
 		}
 
@@ -670,9 +576,9 @@ public class MainWindow extends Stage {
 		}
 
 		for (DeckListWithVariants.Variant var : lwv.variants) {
-			MainWindow window = new MainWindow(this.owner, lwv.toDeckList(var));
-			window.deckModified = true;
-			window.show();
+			DeckList list = lwv.toDeckList(var);
+			list.modifiedProperty().set(true);
+			addDeck(list);
 		}
 
 		if (lwv.variants.size() > 1) {
@@ -688,12 +594,16 @@ public class MainWindow extends Stage {
 		return true;
 	}
 
-	protected boolean offerSaveIfModified() {
-		if (deckModified) {
+	protected boolean offerSaveIfModifiedAll() {
+		return allDecks().allMatch(this::offerSaveIfModified);
+	}
+
+	protected boolean offerSaveIfModified(DeckList deck) {
+		if (deck.modified()) {
 			ButtonType type = AlertBuilder.query(this)
 					.type(Alert.AlertType.WARNING)
 					.title("Deck Modified")
-					.headerText("Deck has been modified.")
+					.headerText((deck.name().isEmpty() ? "Unnamed Deck" : deck.name()) + " has been modified.")
 					.contentText("Would you like to save this deck?")
 					.buttons(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL)
 					.modal(Modality.WINDOW_MODAL)
@@ -704,7 +614,7 @@ public class MainWindow extends Stage {
 			}
 
 			if (type == ButtonType.YES) {
-				return doSaveDeck();
+				return doSaveDeck(deck);
 			}
 		}
 
@@ -713,23 +623,23 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void saveDeck() {
-		doSaveDeck();
+		doSaveDeck(activeDeck());
 	}
 
-	protected boolean doSaveDeck() {
-		if (currentDeckFile == null) {
-			return doSaveDeckAs();
+	protected boolean doSaveDeck(DeckList deck) {
+		if (deck.source() == null) {
+			return doSaveDeckAs(deck);
 		} else {
-			return saveDeck(currentDeckFile);
+			return saveDeck(deck, deck.source().toFile());
 		}
 	}
 
 	@FXML
 	protected void saveDeckAs() {
-		doSaveDeckAs();
+		doSaveDeckAs(activeDeck());
 	}
 
-	protected boolean doSaveDeckAs() {
+	protected boolean doSaveDeckAs(DeckList deck) {
 		if (State.get().lastDeckDirectory != null) primaryFileChooser.setInitialDirectory(State.get().lastDeckDirectory.toFile());
 		File to = primaryFileChooser.showSaveDialog(this);
 
@@ -737,14 +647,14 @@ public class MainWindow extends Stage {
 			return false;
 		}
 
-		return saveDeck(to);
+		return saveDeck(deck, to);
 	}
 
-	private boolean saveDeck(File to) {
+	private boolean saveDeck(DeckList deck, File to) {
 		try {
 			primarySerdes.exportDeck(deck, to);
-			deckModified = false;
-			currentDeckFile = to;
+			deck.modifiedProperty().set(false);
+			deck.sourceProperty().setValue(to.toPath());
 			return true;
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
@@ -792,11 +702,13 @@ public class MainWindow extends Stage {
 	@FXML
 	protected void showDeckInfoDialog() {
 		try {
-			DeckInfoDialog did = new DeckInfoDialog(deck);
+			final DeckPane pane = activeDeckPane();
+			final Format oldFormat = pane.deck().format();
+			DeckInfoDialog did = new DeckInfoDialog(pane.deck());
 			did.initOwner(this);
 
-			if(did.showAndWait().orElse(false)) {
-				setDeck(deck); // Reset the view.
+			if(did.showAndWait().orElse(false) && !oldFormat.equals(pane.deck().format())) {
+				pane.applyDeck();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -812,6 +724,7 @@ public class MainWindow extends Stage {
 			"The UI of this program is really dense! Here are some bits on some subtle but powerful features!",
 			"",
 			"General stuff:",
+			"\u2022 Double-click on a deck tab to change the deck's name.",
 			"\u2022 Toggle on 'Auto' mode to immediately add any single-result searches to the deck.",
 			"\u2022 You can paste card lists into the Omnibar over a zone to add those cards/quantities.",
 			"",
@@ -908,55 +821,11 @@ public class MainWindow extends Stage {
 				.showAndWait();
 	}
 
-	private void updateCardStates(Format.ValidationResult result) {
-		Map<Card, AtomicInteger> histogram = new HashMap<>();
-
-		Stream<CardInstance> stream = deck.cards().values().stream()
-				.flatMap(ObservableList::stream);
-
-		if (result != null) {
-			stream = stream.peek(ci -> {
-				Format.ValidationResult.CardResult cr = result.cards.get(ci);
-				ci.lastValidation = result.cards.get(ci);
-
-				if (cr == null) {
-					ci.flags.clear();
-					return;
-				}
-				;
-
-				if (cr.errors.isEmpty())
-					ci.flags.remove(CardInstance.Flags.Invalid);
-				else
-					ci.flags.add(CardInstance.Flags.Invalid);
-
-				if (cr.warnings.isEmpty())
-					ci.flags.remove(CardInstance.Flags.Warning);
-				else
-					ci.flags.add(CardInstance.Flags.Warning);
-
-				if (cr.notices.isEmpty())
-					ci.flags.remove(CardInstance.Flags.Notice);
-				else
-					ci.flags.add(CardInstance.Flags.Notice);
-			});
-		} else {
-			stream = stream.peek(ci -> ci.flags.clear());
-		}
-
-		stream.map(CardInstance::card)
-				.forEach(c -> histogram.computeIfAbsent(c, x -> new AtomicInteger(0)).incrementAndGet());
-		for (Node zonePane : deckSplitter.getItems()) {
-			if (zonePane instanceof CardPane) {
-				((CardPane) zonePane).view().scheduleRender();
-			}
-		}
-
-		histogram.entrySet().removeIf(e -> e.getValue().get() < deck.format().maxCopies);
-
+	private void updateCollectionState() {
+		Set<Card> fullCards = activeDeckPane().fullCards();
 		collection.changeModel(x -> x.forEach(ci -> {
 			flagCollectionCardLegality(ci);
-			if (histogram.containsKey(ci.card())) {
+			if (fullCards.contains(ci.card())) {
 				ci.flags.add(CardInstance.Flags.Full);
 			} else {
 				ci.flags.remove(CardInstance.Flags.Full);
@@ -965,9 +834,14 @@ public class MainWindow extends Stage {
 		collection.view().scheduleRender();
 	}
 
+	private void updateCardStates(Format.ValidationResult result) {
+		activeDeckPane().updateCardStates(result);
+		updateCollectionState();
+	}
+
 	@FXML
 	protected void validateDeckAndNotify() {
-		Format.ValidationResult result = deck.validate();
+		Format.ValidationResult result = activeDeck().validate();
 		updateCardStates(result);
 
 		if (result.deckErrors.isEmpty() &&
@@ -1054,10 +928,7 @@ public class MainWindow extends Stage {
 
 		ForkJoinPool.commonPool().submit(collection::updateFilter);
 		collection.view().scheduleRender();
-
-		for (Node node : deckSplitter.getItems()) {
-			((CardPane) node).view().scheduleRender();
-		}
+		allPanes().forEach(DeckPane::rerenderViews);
 
 		for (MenuItem mi : newDeckMenu.getItems()) {
 			if (mi.getUserData() == Preferences.get().defaultFormat) {
@@ -1083,15 +954,11 @@ public class MainWindow extends Stage {
 		collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
 
 		// We need to fix all the card instances in the current deck. They're hooked to old objects.
-		deck.cards().values().stream()
+		allDecks().flatMap(deck -> deck.cards().values().stream())
 				.flatMap(ObservableList::stream)
 				.forEach(CardInstance::refreshInstance);
 
-		updateCardStates(deck.validate());
-	}
-
-	private boolean deckIsEmpty() {
-		return deck.cards().values().stream().allMatch(List::isEmpty);
+		updateCardStates(autoValidateDeck.isSelected() ? activeDeck().validate() : null);
 	}
 
 	@FXML
@@ -1118,7 +985,7 @@ public class MainWindow extends Stage {
 
 		try {
 			DeckList list = importer.importDeck(f);
-			if (maybeOpenNewWindow(list, true, null)) {
+			if (maybeOpenNewWindow(list)) {
 				State.get().lastDeckDirectory = f.toPath().getParent();
 			}
 		} catch (IOException ioe) {
@@ -1156,7 +1023,7 @@ public class MainWindow extends Stage {
 		}
 
 		try {
-			exporter.exportDeck(deck, f);
+			exporter.exportDeck(activeDeck(), f);
 			State.get().lastDeckDirectory = f.toPath().getParent();
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
@@ -1173,7 +1040,7 @@ public class MainWindow extends Stage {
 	@FXML
 	protected void copyListToClipboard() throws IOException {
 		ClipboardContent content = new ClipboardContent();
-		content.put(DataFormat.PLAIN_TEXT, TextFile.deckToString(deck));
+		content.put(DataFormat.PLAIN_TEXT, TextFile.deckToString(activeDeck()));
 
 		if (!Clipboard.getSystemClipboard().setContent(content)) {
 			AlertBuilder.notify(MainWindow.this)
@@ -1188,12 +1055,13 @@ public class MainWindow extends Stage {
 	protected void copyImageToClipboard() throws IOException {
 		ClipboardContent content = new ClipboardContent();
 
-		WritableImage img = ImageExporter.deckToImage(deck, (zone, view) -> {
+		final DeckPane pane = activeDeckPane();
+		WritableImage img = ImageExporter.deckToImage(pane.deck(), (zone, view) -> {
 			view.layout(new FlowGrid.Factory());
 			view.grouping(Preferences.get().zoneGroupings.getOrDefault(zone, new ManaValue()));
 			view.showFlagsProperty().set(false);
-			view.collapseDuplicatesProperty().set(deckPane(zone).view().collapseDuplicatesProperty().get());
-			view.cardScaleProperty().set(deckPane(zone).view().cardScaleProperty().get());
+			view.collapseDuplicatesProperty().set(pane.zonePane(zone).view().collapseDuplicatesProperty().get());
+			view.cardScaleProperty().set(pane.zonePane(zone).view().cardScaleProperty().get());
 			view.resize(2500.0, 2500.0);
 		});
 

@@ -65,18 +65,19 @@ public class Preferences {
 
 	public enum WindowBehavior {
 		AlwaysAsk ("Always Ask"),
-		ThisWindow ("This Window"),
+		ReplaceCurrent("Replace Current"),
+		NewTab ("New Tab"),
 		NewWindow ("New Window");
 
-		private final String string;
+		public final String text;
 
-		WindowBehavior(String string) {
-			this.string = string;
+		WindowBehavior(String text) {
+			this.text = text;
 		}
 
 		@Override
 		public String toString() {
-			return string;
+			return text;
 		}
 	}
 
