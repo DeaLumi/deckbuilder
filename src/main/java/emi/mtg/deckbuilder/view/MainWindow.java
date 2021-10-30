@@ -30,11 +30,20 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Bounds;
+import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.RadialGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.shape.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -374,6 +383,82 @@ public class MainWindow extends Stage {
 				}, newp.deck().nameProperty()));
 			}
 		});
+
+		deckTabs.setOnDragOver(de -> {
+			if (!de.getDragboard().hasContent(DeckTab.DRAGGED_TAB)) return;
+
+			de.acceptTransferModes(TransferMode.MOVE);
+			de.consume();
+		});
+
+		final Rectangle feedbackRect = new Rectangle(), feedbackOutline = new Rectangle();
+		final Group feedbackGroup = new Group(feedbackRect, feedbackOutline);
+		final BorderPane root = (BorderPane) getScene().getRoot();
+
+		feedbackRect.setFill(Color.gray(0.25));
+		feedbackRect.setOpacity(0.5);
+
+		feedbackOutline.setStroke(Color.gray(0.75));
+		feedbackOutline.setStrokeWidth(4.0);
+		feedbackOutline.setStrokeLineJoin(StrokeLineJoin.ROUND);
+		feedbackOutline.setStrokeType(StrokeType.CENTERED);
+		feedbackOutline.setStrokeLineCap(StrokeLineCap.ROUND);
+		feedbackOutline.setOpacity(0.75);
+		feedbackOutline.setFill(Color.TRANSPARENT);
+
+		for (Node child : feedbackGroup.getChildrenUnmodifiable()) {
+			child.setManaged(false);
+			child.setMouseTransparent(true);
+		}
+
+		deckTabs.setOnDragEntered(de -> {
+			if (!de.getDragboard().hasContent(DeckTab.DRAGGED_TAB)) return;
+			if (DeckTab.draggedTab == null) return;
+			if (deckTabs.getTabs().contains(DeckTab.draggedTab)) return;
+
+			Bounds bounds = root.screenToLocal(deckTabs.localToScreen(deckTabs.getLayoutBounds()));
+			feedbackRect.setX(bounds.getMinX());
+			feedbackRect.setY(bounds.getMinY());
+			feedbackRect.setWidth(bounds.getWidth());
+			feedbackRect.setHeight(bounds.getHeight());
+
+			double mins = Math.min(bounds.getWidth(), bounds.getHeight());
+			double dash = (2*(bounds.getWidth() - mins * 0.1) + 2*(bounds.getHeight() - mins * 0.1)) / 101;
+			feedbackOutline.getStrokeDashArray().setAll(dash * 0.5, dash * 0.5);
+			feedbackOutline.setStrokeDashOffset(dash * 0.25);
+			feedbackOutline.setX(bounds.getMinX() + mins * 0.05);
+			feedbackOutline.setY(bounds.getMinY() + mins * 0.05);
+			feedbackOutline.setWidth(bounds.getWidth() - mins * 0.1);
+			feedbackOutline.setHeight(bounds.getHeight() - mins * 0.1);
+
+			root.getChildren().add(feedbackGroup);
+		});
+
+		deckTabs.setOnDragExited(de -> {
+			if (!de.getDragboard().hasContent(DeckTab.DRAGGED_TAB)) return;
+			if (DeckTab.draggedTab == null) return;
+
+			root.getChildren().remove(feedbackGroup);
+		});
+
+		deckTabs.setOnDragDropped(de -> {
+			if (!de.getDragboard().hasContent(DeckTab.DRAGGED_TAB)) return;
+			if (DeckTab.draggedTab == null) return;
+
+			if (deckTabs.getTabs().contains(DeckTab.draggedTab)) {
+				if (deckTabs.getTabs().size() <= 1) return;
+
+				MainWindow window = new MainWindow(MainWindow.this.owner);
+				window.addDeck(DeckTab.draggedTab.pane().deck());
+				window.show();
+			} else {
+				addDeck(DeckTab.draggedTab.pane().deck());
+			}
+
+			DeckTab.draggedTab.reallyForceClose();
+			de.setDropCompleted(true);
+			de.consume();
+		});
 	}
 
 	private void setupImportExport() {
@@ -418,7 +503,9 @@ public class MainWindow extends Stage {
 		pane.autoValidateProperty().bind(autoValidateDeck.selectedProperty());
 		pane.setOnDeckChanged(lce -> updateCollectionState());
 		DeckTab tab = new DeckTab(pane);
+
 		tab.closableProperty().bind(Bindings.size(deckTabs.getTabs()).greaterThan(1));
+
 		tab.setOnCloseRequest(ce -> {
 			if (deck.modified()) {
 				deckTabs.getSelectionModel().select(tab);

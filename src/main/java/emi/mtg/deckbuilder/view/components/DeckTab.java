@@ -5,10 +5,14 @@ import javafx.event.Event;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseButton;
+import javafx.scene.input.*;
+
+import java.util.Collections;
 
 public class DeckTab extends Tab {
+	public static final DataFormat DRAGGED_TAB = new DataFormat("application/deckbuilder-dragged-tab");
+	public static DeckTab draggedTab = null;
+
 	private final DeckPane pane;
 	private final Label label;
 	private final TextField textField;
@@ -29,6 +33,20 @@ public class DeckTab extends Tab {
 
 		this.label.setOnMousePressed(me -> {
 			if (me.getButton() == MouseButton.MIDDLE) me.consume();
+		});
+
+		this.label.setOnDragDetected(me -> {
+			if (me.getButton() != MouseButton.PRIMARY) return;
+
+			Dragboard db = this.label.startDragAndDrop(TransferMode.MOVE);
+			DeckTab.draggedTab = DeckTab.this;
+			db.setContent(Collections.singletonMap(DRAGGED_TAB, pane().deck().name()));
+			me.consume();
+		});
+
+		this.label.setOnDragDone(de -> {
+			DeckTab.draggedTab = null;
+			de.consume();
 		});
 
 		this.label.setOnMouseClicked(ce -> {
@@ -80,10 +98,18 @@ public class DeckTab extends Tab {
 
 	public boolean forceClose() {
 		Event close = new Event(Tab.CLOSED_EVENT);
-		if (DeckTab.this.getOnCloseRequest() != null) DeckTab.this.getOnCloseRequest().handle(close);
+		if (getOnCloseRequest() != null) getOnCloseRequest().handle(close);
 		if (close.isConsumed()) return false;
-		if (DeckTab.this.getOnClosed() != null) DeckTab.this.getOnClosed().handle(close);
+		return reallyForceClose(close);
+	}
+
+	public boolean reallyForceClose() {
+		return reallyForceClose(new Event(Tab.CLOSED_EVENT));
+	}
+
+	protected boolean reallyForceClose(Event close) {
 		getTabPane().getTabs().remove(DeckTab.this);
+		if (getOnClosed() != null) getOnClosed().handle(close);
 		return true;
 	}
 }

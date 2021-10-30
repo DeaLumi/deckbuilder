@@ -458,9 +458,9 @@ public class CardView extends Canvas {
 		});
 
 		setOnDragOver(de -> {
-			mouseMoved(de.getX(), de.getY());
-
 			if (CardView.dragSource == this) {
+				mouseMoved(de.getX(), de.getY());
+
 				if (hoverGroup != null && !selectedCards.stream().allMatch(hoverGroup.group::contains)) {
 					if (CardView.dragModified) {
 						de.acceptTransferModes(TransferMode.LINK);
@@ -474,6 +474,8 @@ public class CardView extends Canvas {
 				}
 				de.consume();
 			} else if (CardView.dragSource != null) {
+				mouseMoved(de.getX(), de.getY());
+
 				if (CardView.dragModified) {
 					de.acceptTransferModes(TransferMode.COPY);
 				} else {
@@ -490,6 +492,10 @@ public class CardView extends Canvas {
 				if (this.grouping.supportsModification()) {
 					this.selectedCards.forEach(this.hoverGroup.group::add);
 					this.hoverGroup.refilter();
+
+					CardView.dragTarget = this;
+					de.setDropCompleted(true);
+					de.consume();
 				}
 			} else if (CardView.dragSource != null) {
 				if (!immutableModel.get()) {
@@ -508,16 +514,16 @@ public class CardView extends Canvas {
 					this.model.addAll(newCards);
 					this.selectedCards.clear();
 					this.selectedCards.addAll(newCards);
+
+					CardView.dragTarget = this;
+					de.setDropCompleted(true);
+					de.consume();
 				}
 			} else {
 				// TODO: Accept transfer from other programs/areas?
 			}
 
 			layout();
-
-			CardView.dragTarget = this;
-			de.setDropCompleted(true);
-			de.consume();
 		});
 
 		setOnDragDone(de -> {
@@ -535,20 +541,24 @@ public class CardView extends Canvas {
 
 							group.refilter();
 						}
+
+						CardView.dragSource = null;
+						CardView.dragTarget = null;
+						de.consume();
 					}
 				} else if (CardView.dragTarget != null) {
 					if (!immutableModel.get()) {
 						this.model.removeAll(selectedCards);
 					}
 					selectedCards.clear();
+
+					CardView.dragSource = null;
+					CardView.dragTarget = null;
+					de.consume();
 				}
 			}
 
 			layout();
-
-			CardView.dragSource = null;
-			CardView.dragTarget = null;
-			de.consume();
 		});
 
 		setOnMouseClicked(me -> {
