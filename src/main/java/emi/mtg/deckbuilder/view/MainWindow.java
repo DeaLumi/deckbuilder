@@ -84,7 +84,7 @@ public class MainWindow extends Stage {
 				.collect(Collectors.toList()));
 	};
 
-	public MainWindow(MainApplication owner, DeckList deck) {
+	public MainWindow(MainApplication owner) {
 		super();
 
 		this.owner = owner;
@@ -126,8 +126,9 @@ public class MainWindow extends Stage {
 		Platform.runLater(() -> {
 			setupUI();
 			setupImportExport();
-			addDeck(deck);
 
+			// TODO: Replace this with some newDeck() call? But the normal new-deck commands open a new window.
+			if (deckTabs.getTabs().isEmpty()) addDeck(new DeckList("", Preferences.get().authorName, Preferences.get().defaultFormat, "", Collections.emptyMap()));
 			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
 
 			alert.getButtonTypes().setAll(ButtonType.CLOSE);
@@ -436,7 +437,8 @@ public class MainWindow extends Stage {
 	}
 
 	private boolean maybeOpenNewWindow(DeckList forDeck) {
-		Preferences.WindowBehavior behavior = Preferences.get().windowBehavior;
+		// We always open a new tab if we don't have any tabs open.
+		Preferences.WindowBehavior behavior = !allTabs().findAny().isPresent() ? Preferences.WindowBehavior.NewTab : Preferences.get().windowBehavior;
 		if (behavior == Preferences.WindowBehavior.AlwaysAsk) {
 			CheckBox rememberCb = new CheckBox("Remember This Choice");
 			Alert alert = AlertBuilder.query(this)
@@ -469,7 +471,9 @@ public class MainWindow extends Stage {
 				addDeck(forDeck);
 				break;
 			case NewWindow:
-				new MainWindow(this.owner, forDeck).show();
+				MainWindow window = new MainWindow(this.owner);
+				window.addDeck(forDeck);
+				window.show();
 				break;
 			default:
 				throw new IllegalStateException("Behavior shouldn't still be ask...");

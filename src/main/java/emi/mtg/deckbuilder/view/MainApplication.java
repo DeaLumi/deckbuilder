@@ -3,7 +3,6 @@ package emi.mtg.deckbuilder.view;
 import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
-import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
@@ -20,7 +19,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
-import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -314,7 +312,7 @@ public class MainApplication extends Application {
 
 		selectDataSource();
 
-		new MainWindow(this, new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap())).show();
+		new MainWindow(this).show();
 	}
 
 	private void selectDataSource() {
