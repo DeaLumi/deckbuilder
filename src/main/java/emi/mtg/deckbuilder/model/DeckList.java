@@ -3,12 +3,11 @@ package emi.mtg.deckbuilder.model;
 import emi.lib.mtg.game.Deck;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
-import javafx.beans.property.Property;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -29,6 +28,9 @@ public class DeckList implements Deck {
 	private Property<Format> format = new SimpleObjectProperty<>(null);
 	private Property<String> author = new SimpleStringProperty("");
 	private Property<String> description = new SimpleStringProperty("");
+
+	private transient Property<Path> source = new SimpleObjectProperty<>(null);
+	private transient BooleanProperty modified = new SimpleBooleanProperty(false);
 
 	private Map<Zone, ObservableList<CardInstance>> cards = emptyDeck();
 
@@ -81,6 +83,22 @@ public class DeckList implements Deck {
 
 	public Property<String> descriptionProperty() {
 		return description;
+	}
+
+	public Path source() {
+		return source.getValue();
+	}
+
+	public Property<Path> sourceProperty() {
+		return source;
+	}
+
+	public boolean modified() {
+		return modified.get();
+	}
+
+	public BooleanProperty modifiedProperty() {
+		return modified;
 	}
 
 	@Override
