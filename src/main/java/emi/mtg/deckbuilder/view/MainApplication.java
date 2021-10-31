@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view;
 import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Updater;
+import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
@@ -312,7 +313,9 @@ public class MainApplication extends Application {
 
 		selectDataSource();
 
-		new MainWindow(this).show();
+		MainWindow window = new MainWindow(this);
+		window.addDeck(new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap()));
+		window.show();
 	}
 
 	private void selectDataSource() {

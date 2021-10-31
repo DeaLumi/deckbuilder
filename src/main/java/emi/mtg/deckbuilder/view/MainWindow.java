@@ -23,7 +23,6 @@ import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -125,14 +124,10 @@ public class MainWindow extends Stage {
 
 		collection.loading().set(true);
 
-		Platform.runLater(() -> {
-			// TODO: Replace this with some newDeck() call? But the normal new-deck commands open a new window.
-			if (deckTabs.getTabs().isEmpty()) addDeck(new DeckList("", Preferences.get().authorName, Preferences.get().defaultFormat, "", Collections.emptyMap()));
-			ForkJoinPool.commonPool().submit(() -> {
-				collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
-				collection.updateFilter();
-				collection.loading().set(false);
-			});
+		ForkJoinPool.commonPool().submit(() -> {
+			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
+			collection.updateFilter();
+			collection.loading().set(false);
 		});
 	}
 
