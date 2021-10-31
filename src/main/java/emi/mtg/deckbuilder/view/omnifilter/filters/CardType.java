@@ -38,7 +38,7 @@ public class CardType implements Omnifilter.Subfilter {
 
 		for (String part : parts) {
 			Supertype st = Arrays.stream(Supertype.values())
-					.filter(t -> t.toString().toLowerCase().startsWith(part))
+					.filter(t -> t.toString().equalsIgnoreCase(part))
 					.findAny()
 					.orElse(null);
 
@@ -48,7 +48,7 @@ public class CardType implements Omnifilter.Subfilter {
 			}
 
 			emi.lib.mtg.characteristic.CardType ct = Arrays.stream(emi.lib.mtg.characteristic.CardType.values())
-					.filter(t -> t.toString().toLowerCase().startsWith(part))
+					.filter(t -> t.toString().equalsIgnoreCase(part))
 					.findAny()
 					.orElse(null);
 
