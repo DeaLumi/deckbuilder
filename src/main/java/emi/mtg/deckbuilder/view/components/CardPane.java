@@ -8,7 +8,7 @@ import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.SortDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.Piles;
-import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
+import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.*;
@@ -304,7 +304,7 @@ public class CardPane extends BorderPane {
 				}
 			}
 		};
-		filter.setPromptText("Omnibar...");
+		filter.setPromptText(Preferences.get().searchProvider.name() + "...");
 		filter.setMinSize(TextField.USE_PREF_SIZE, TextField.USE_PREF_SIZE);
 
 		filterAutoComplete = new AutoCompleter(filter, name -> {
@@ -423,13 +423,18 @@ public class CardPane extends BorderPane {
 		}
 
 		Predicate<CardInstance> compositeFilter;
-		try {
-			compositeFilter = Omnifilter.parse(filter.getText());
-		} catch (IllegalArgumentException iae) {
-			Tooltip.install(filter, filterErrorTooltip);
-			filter.getTooltip().setText(iae.getMessage());
-			filter.setStyle("-fx-control-inner-background: #ff8080;");
-			return;
+		if (filter.getText().isEmpty()) {
+			compositeFilter = c -> true;
+		} else {
+			try {
+				SearchProvider provider = Preferences.get().searchProvider;
+				compositeFilter = provider.parse(filter.getText());
+			} catch (IllegalArgumentException iae) {
+				Tooltip.install(filter, filterErrorTooltip);
+				filter.getTooltip().setText(iae.getMessage());
+				filter.setStyle("-fx-control-inner-background: #ff8080;");
+				return;
+			}
 		}
 
 		Tooltip.uninstall(filter, filterErrorTooltip);

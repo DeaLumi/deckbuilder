@@ -7,6 +7,8 @@ import emi.mtg.deckbuilder.controller.Serialization;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
+import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
+import emi.mtg.deckbuilder.view.search.SearchProvider;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -133,6 +135,8 @@ public class Preferences {
 	/**
 	 * Card pane preferences
 	 */
+
+	public SearchProvider searchProvider = SearchProvider.SEARCH_PROVIDERS.get(Omnifilter.NAME);
 
 	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
 	public List<CardView.ActiveSorting> collectionSorting = CardView.DEFAULT_COLLECTION_SORTING;

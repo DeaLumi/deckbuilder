@@ -5,6 +5,7 @@ import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
+import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.event.ActionEvent;
 import javafx.geometry.HPos;
@@ -304,6 +305,12 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class SearchProviderPreference extends ComboBoxPreference<SearchProvider> {
+		public SearchProviderPreference(String label, Function<Preferences, SearchProvider> fromPrefs, Predicate<SearchProvider> validate, BiConsumer<Preferences, SearchProvider> toPrefs) {
+			super(b -> b.getItems().setAll(SearchProvider.SEARCH_PROVIDERS.values()), label, fromPrefs, validate, toPrefs);
+		}
+	}
+
 	private static class FormatPreference extends ComboBoxPreference<Format> {
 		public FormatPreference(String label, Function<Preferences, Format> fromPrefs, Predicate<Format> validate, BiConsumer<Preferences, Format> toPrefs) {
 			super(Format.values(), label, fromPrefs, validate, toPrefs);
@@ -431,6 +438,7 @@ public class PreferencesDialog extends Alert {
 			reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Physical Versions","preferPhysical", x -> true),
 			new PrefSeparator(),
+			reflectField(SearchProviderPreference::new, "Search Provider", "searchProvider", x -> true),
 			reflectField(BooleanPreference::new, "The Future is Now", "theFutureIsNow", x -> true),
 			reflectField(BooleanPreference::new, "Collapse Duplicates", "collapseDuplicates", x -> true),
 			reflectField(GroupingPreference::new, "Collection Grouping", "collectionGrouping", x -> true),

@@ -14,6 +14,7 @@ import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
+import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -31,6 +32,7 @@ public class Serialization {
 	public static final Gson GSON = new GsonBuilder()
 			.setPrettyPrinting()
 			.setExclusionStrategies()
+			.registerTypeAdapter(SearchProvider.class, Serialization.createSearchProviderAdapter())
 			.registerTypeAdapter(CardView.Grouping.class, Serialization.createCardViewGroupingAdapter())
 			.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
 			.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
@@ -73,6 +75,10 @@ public class Serialization {
 
 			return fromString.apply(v);
 		}
+	}
+
+	public static TypeAdapter<SearchProvider> createSearchProviderAdapter() {
+		return new StringTypeAdapter<>(SearchProvider::name, SearchProvider.SEARCH_PROVIDERS::get);
 	}
 
 	public static TypeAdapter<Format> createFormatAdapter() {

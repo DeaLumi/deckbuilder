@@ -22,7 +22,9 @@ import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
+import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -39,6 +41,7 @@ import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
+import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -837,49 +840,18 @@ public class MainWindow extends Stage {
 				.showAndWait();
 	}
 
-	private static final String FILTER_SYNTAX = String.join("\n",
-			"General:",
-			"\u2022 Separate search terms with a space.",
-			"\u2022 Search terms that don't start with a key and operator search card names.",
-			"\u2022 Prefix a term with '!' or '-' to negate.",
-			"",
-			"Operators:",
-			"\u2022 ':' \u2014 Meaning varies.",
-			"\u2022 '=' \u2014 Must match the value exactly.",
-			"\u2022 '!=' \u2014 Must not exactly match the value.",
-			"\u2022 '>=' \u2014 Must contain the value.",
-			"\u2022 '>' \u2014 Must contain the value and more.",
-			"\u2022 '<=' \u2014 Value must completely contain the characteristic.",
-			"\u2022 '<' \u2014 Value must contain the characteristic and more.",
-			"",
-			"Search keys:",
-			"\u2022 'type' or 't' \u2014 Supertype/type/subtype. (Use ':' or '>='.)",
-			"\u2022 'text' or 'o' \u2014 Rules text. (Use ':' or '>='.)",
-			"\u2022 'identity' or 'ci' \u2014 Color identity. (':' means '<='.) Can use a number!",
-			"\u2022 'color' or 'c' \u2014 Color. (':' means '<=') Can use a number!",
-			"\u2022 'cmc' \u2014 Converted mana cost. (':' means '=').",
-			"\u2022 'tag' and 'decktag' \u2014 See Tips & Tricks!",
-			"\u2022 'rarity' or 'r' \u2014 Printing rarity.",
-			"\u2022 'set' or 's' \u2014 Set the card appears in. Use '=' to be exact!",
-			"\u2022 're' \u2014 Search rules text with regular expressions!",
-			"\u2022 'power'/'pow', 'toughness'/'tough', 'loyalty'/'loy'",
-			"",
-			"Examples:",
-			"\u2022 'color=rug t:legendary' \u2014 Finds all RUG commanders.",
-			"\u2022 't:sorcery cmc>=8' \u2014 Finds good cards for Spellweaver Helix.",
-			"\u2022 'o:when o:\"enters the battlefield\" t:creature' \u2014 Finds creatures with ETB effects.",
-			"",
-			"Upcoming features:",
-			"\u2022 Complex Logic \u2014 And, or, and parenthetical grouping.",
-			"\u2022 More keys \u2014 e.g. Mana cost including color.",
-			"\u2022 Full expressions \u2014 Power > toughness, for example.");
-
 	@FXML
-	protected void showFilterSyntax() {
+	protected void showSearchHelp() {
+		SearchProvider provider = Preferences.get().searchProvider;
+		WebView view = new WebView();
+		view.getEngine().setJavaScriptEnabled(false);
+		view.getEngine().setUserStyleSheetLocation(getClass().getResource("/emi/mtg/deckbuilder/html-styles.css").toExternalForm());
+		view.getEngine().loadContent("<style>" + FxUtils.themeCss() + "</style>" + provider.usage());
+
 		AlertBuilder.notify(this)
-				.title("Syntax Help")
-				.headerText("Omnifilter Syntax")
-				.contentText(FILTER_SYNTAX)
+				.title("Search Help")
+				.headerText(provider.name() + ": Usage")
+				.contentNode(view)
 				.showAndWait();
 	}
 

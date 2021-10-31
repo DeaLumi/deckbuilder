@@ -42,7 +42,7 @@
                 </Menu>
                 <Menu text="Help">
                     <MenuItem text="Tips &amp; Tricks" onAction="#showTipsAndTricks"/>
-                    <MenuItem text="Filter Syntax" onAction="#showFilterSyntax"/>
+                    <MenuItem text="Search Help" onAction="#showSearchHelp"/>
                     <MenuItem text="About" onAction="#showAboutDialog"/>
                     <SeparatorMenuItem/>
                     <Menu text="Debug">
