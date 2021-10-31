@@ -26,7 +26,7 @@ public class CardSet implements Omnifilter.Subfilter {
 	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		Set set = Context.get().data.sets().stream()
-				.filter(s -> s.name().toLowerCase().equals(value.toLowerCase()) || s.code().toLowerCase().equals(value.toLowerCase()))
+				.filter(s -> s.name().equalsIgnoreCase(value) || s.code().equalsIgnoreCase(value))
 				.findAny().orElseThrow(() -> new IllegalArgumentException("No such set " + value));
 
 		return ci -> {
