@@ -18,6 +18,10 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public class Preferences {
+	/**
+	 * Static utilities
+	 */
+
 	private static final Path PATH = MainApplication.JAR_DIR.resolve("preferences.json");
 	private static Preferences instance = null;
 
@@ -51,17 +55,44 @@ public class Preferences {
 		writer.close();
 	}
 
-	public Format defaultFormat = Format.Standard;
-	public URI updateUri = URI.create("http://emi.sly.io/deckbuilder-nodata.zip");
-	public final Path dataPath = MainApplication.JAR_DIR.resolve("data/").toAbsolutePath();
-	public final Path imagesPath = MainApplication.JAR_DIR.resolve("images/").toAbsolutePath();
+	/**
+	 * Preference value types
+	 */
 
-	public boolean autoUpdateData = true;
-	public boolean autoUpdateProgram = true;
+	public enum PreferAge {
+		Any,
+		Newest,
+		Oldest
+	}
 
-	public boolean theFutureIsNow = true;
+	public enum PreferVariation {
+		Any,
+		Primary,
+		Variant
+	}
 
-	public String authorName = "";
+	public enum Theme {
+		Light (javafx.scene.paint.Color.gray(0.925)),
+		Dark (javafx.scene.paint.Color.gray(0.15));
+
+		public final javafx.scene.paint.Color base;
+
+		Theme(javafx.scene.paint.Color base) {
+			this.base = base;
+		}
+
+		public String baseHex() {
+			return hex(base);
+		}
+
+		public String style() {
+			return String.format("-fx-base: %s;", baseHex());
+		}
+
+		public static String hex(javafx.scene.paint.Color color) {
+			return String.format("#%02x%02x%02x", (int) (color.getRed() * 255.0), (int) (color.getBlue() * 255.0), (int) (color.getBlue() * 255.0));
+		}
+	}
 
 	public enum WindowBehavior {
 		AlwaysAsk ("Always Ask"),
@@ -81,33 +112,57 @@ public class Preferences {
 		}
 	}
 
+	/**
+	 * Critical operation preferences
+	 */
+
+	public final Path dataPath = MainApplication.JAR_DIR.resolve("data/").toAbsolutePath();
+	public final Path imagesPath = MainApplication.JAR_DIR.resolve("images/").toAbsolutePath();
+
+	public URI updateUri = URI.create("http://emi.sly.io/deckbuilder-nodata.zip");
+	public boolean autoUpdateData = true;
+	public boolean autoUpdateProgram = true;
+
+	/**
+	 * Overall user interface preferences
+	 */
+
 	public WindowBehavior windowBehavior = WindowBehavior.AlwaysAsk;
+	public Theme theme = Theme.Dark;
+
+	/**
+	 * Card pane preferences
+	 */
 
 	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
 	public List<CardView.ActiveSorting> collectionSorting = CardView.DEFAULT_COLLECTION_SORTING;
 	public Map<Zone, CardView.Grouping> zoneGroupings = new HashMap<>();
 
 	public boolean collapseDuplicates = true;
+	public boolean theFutureIsNow = true;
+
+	/**
+	 * Printing selection preferences
+	 */
 
 	// N.B. Preferences get loaded *before* card data, so we can't reference Card.Printings here.
 	public HashMap<String, UUID> preferredPrintings = new HashMap<>();
-
-	public enum PreferAge {
-		Any,
-		Newest,
-		Oldest
-	}
-
-	public enum PreferVariation {
-		Any,
-		Primary,
-		Variant
-	}
 
 	public PreferAge preferAge = PreferAge.Any;
 	public PreferVariation preferVariation = PreferVariation.Any;
 	public boolean preferNotPromo = true;
 	public boolean preferPhysical = true;
+
+	/**
+	 * Preferences related to deck construction
+	 */
+
+	public Format defaultFormat = Format.Standard;
+	public String authorName = "";
+
+	/**
+	 * Instance utilities (e.g. simplifying accessors)
+	 */
 
 	public Card.Printing preferredPrinting(Card card) {
 		Card.Printing preferred = card.printing(preferredPrintings.get(card.fullName()));
@@ -135,29 +190,4 @@ public class Preferences {
 
 		return preferred;
 	}
-
-	public enum Theme {
-		Light (javafx.scene.paint.Color.gray(0.925)),
-		Dark (javafx.scene.paint.Color.gray(0.15));
-
-		public final javafx.scene.paint.Color base;
-
-		Theme(javafx.scene.paint.Color base) {
-			this.base = base;
-		}
-
-		public String baseHex() {
-			return hex(base);
-		}
-
-		public String style() {
-			return String.format("-fx-base: %s;", baseHex());
-		}
-
-		public static String hex(javafx.scene.paint.Color color) {
-			return String.format("#%02x%02x%02x", (int) (color.getRed() * 255.0), (int) (color.getBlue() * 255.0), (int) (color.getBlue() * 255.0));
-		}
-	}
-
-	public Theme theme = Theme.Dark;
 }
