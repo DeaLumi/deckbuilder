@@ -97,12 +97,13 @@ public class CardPane extends BorderPane {
 			fill.visibleProperty().bind(vbar.visibleProperty().and(hbar.visibleProperty()));
 
 			loadingDim = new Rectangle(0, 0, Color.gray(0.25));
-			loadingDim.setOpacity(0.9);
+			loadingDim.setOpacity(0.5);
 			loadingDim.visibleProperty().bind(loading);
 			loadingDim.setManaged(false);
 
 			loadingText = new Text("Loading...");
-			loadingText.setFill(Preferences.get().theme.base.invert());
+			loadingText.setFill(Color.gray(0.75));
+			loadingText.setOpacity(0.75);
 			loadingText.visibleProperty().bind(loading);
 			loadingText.setBoundsType(TextBoundsType.LOGICAL_VERTICAL_CENTER);
 			loadingText.setManaged(false);
