@@ -785,17 +785,13 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void showDeckInfoDialog() {
-		try {
-			final DeckPane pane = activeDeckPane();
-			final Format oldFormat = pane.deck().format();
-			DeckInfoDialog did = new DeckInfoDialog(pane.deck());
-			did.initOwner(this);
+		final DeckPane pane = activeDeckPane();
+		final Format oldFormat = pane.deck().format();
+		DeckInfoDialog did = new DeckInfoDialog(pane.deck());
+		did.initOwner(this);
 
-			if(did.showAndWait().orElse(false) && !oldFormat.equals(pane.deck().format())) {
-				pane.applyDeck();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
+		if(did.showAndWait().orElse(false) && !oldFormat.equals(pane.deck().format())) {
+			pane.applyDeck();
 		}
 	}
 

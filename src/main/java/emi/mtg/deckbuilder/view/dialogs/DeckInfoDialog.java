@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.dialogs;
 import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
@@ -22,13 +23,10 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 	@FXML
 	private TextArea descriptionField;
 
-	public DeckInfoDialog(DeckList deck) throws IOException {
+	public DeckInfoDialog(DeckList deck) {
 		setTitle("Deck Info");
 
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("DeckInfoDialog.fxml"));
-		loader.setController(this);
-		loader.setRoot(getDialogPane());
-		loader.load();
+		FxUtils.FXML(this, getDialogPane());
 		getDialogPane().setStyle(Preferences.get().theme.style());
 
 		deckNameField.setText(deck.nameProperty().getValue());
@@ -40,11 +38,29 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
-				deck.nameProperty().setValue(deckNameField.getText());
-				deck.authorProperty().setValue(authorField.getText());
-				deck.formatProperty().setValue(formatCombo.getValue());
-				deck.descriptionProperty().setValue(descriptionField.getText());
-				return true;
+				boolean modified = false;
+
+				if (!deck.name().equals(deckNameField.getText())) {
+					modified = true;
+					deck.nameProperty().setValue(deckNameField.getText());
+				}
+
+				if (!deck.author().equals(authorField.getText())) {
+					modified = true;
+					deck.authorProperty().setValue(authorField.getText());
+				}
+
+				if (!deck.format().equals(formatCombo.getValue())) {
+					modified = true;
+					deck.formatProperty().setValue(formatCombo.getValue());
+				}
+
+				if (!deck.description().equals(descriptionField.getText())) {
+					modified = true;
+					deck.descriptionProperty().setValue(descriptionField.getText());
+				}
+
+				return modified;
 			} else {
 				return false;
 			}
