@@ -8,7 +8,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -38,14 +37,18 @@ public class DeckList implements Deck {
 
 	}
 
-	public DeckList(String name, String author, Format format, String description, Map<Zone, List<CardInstance>> cards) {
+	public DeckList(String name, String author, Format format, String description, Map<Zone, ? extends List<CardInstance>> cards) {
 		this.name.setValue(name);
 		this.author.setValue(author);
 		this.format.setValue(format);
 		this.description.setValue(description);
 
 		for (Zone zone : Zone.values()) {
-			this.cards.get(zone).setAll(cards.getOrDefault(zone, Collections.emptyList()));
+			if (cards.containsKey(zone)) {
+				this.cards.get(zone).setAll(cards.get(zone));
+			} else {
+				this.cards.get(zone).clear();
+			}
 		}
 	}
 
