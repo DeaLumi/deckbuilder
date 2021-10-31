@@ -100,16 +100,16 @@ public class DeckTab extends Tab {
 		Event close = new Event(Tab.CLOSED_EVENT);
 		if (getOnCloseRequest() != null) getOnCloseRequest().handle(close);
 		if (close.isConsumed()) return false;
-		return reallyForceClose(close);
+		reallyForceClose(close);
+		return true;
 	}
 
-	public boolean reallyForceClose() {
-		return reallyForceClose(new Event(Tab.CLOSED_EVENT));
+	public void reallyForceClose() {
+		reallyForceClose(new Event(Tab.CLOSED_EVENT));
 	}
 
-	protected boolean reallyForceClose(Event close) {
+	protected void reallyForceClose(Event close) {
 		getTabPane().getTabs().remove(DeckTab.this);
 		if (getOnClosed() != null) getOnClosed().handle(close);
-		return true;
 	}
 }

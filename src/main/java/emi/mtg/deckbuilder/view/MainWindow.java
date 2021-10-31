@@ -435,16 +435,12 @@ public class MainWindow extends Stage {
 			if (DeckTab.draggedTab == null) return;
 
 			if (deckTabs.getTabs().contains(DeckTab.draggedTab)) {
-				if (deckTabs.getTabs().size() <= 1) return;
-
-				MainWindow window = new MainWindow(MainWindow.this.owner);
-				window.addDeck(DeckTab.draggedTab.pane().deck());
-				window.show();
+				if (undock(DeckTab.draggedTab) == null) return;
 			} else {
 				addDeck(DeckTab.draggedTab.pane().deck());
+				DeckTab.draggedTab.reallyForceClose();
 			}
 
-			DeckTab.draggedTab.reallyForceClose();
 			de.setDropCompleted(true);
 			de.consume();
 		});
@@ -458,7 +454,7 @@ public class MainWindow extends Stage {
 
 		for (Format format : Format.values()) {
 			MenuItem item = new MenuItem(format.name());
-			item.setOnAction(ae -> maybeOpenNewWindow(new DeckList("", Preferences.get().authorName, format, "", Collections.emptyMap())));
+			item.setOnAction(ae -> openDeckPane(new DeckList("", Preferences.get().authorName, format, "", Collections.emptyMap())));
 			item.setUserData(format);
 
 			if (format == Preferences.get().defaultFormat) {
@@ -487,7 +483,19 @@ public class MainWindow extends Stage {
 		}
 	}
 
-	private void addDeck(DeckList deck) {
+	public MainWindow undock(DeckTab tab) {
+		if (!deckTabs.getTabs().contains(tab)) return null;
+		if (deckTabs.getTabs().size() == 1) return null;
+
+		MainWindow window = new MainWindow(MainWindow.this.owner);
+		window.addDeck(tab.pane().deck());
+		window.show();
+		tab.reallyForceClose();
+
+		return window;
+	}
+
+	public DeckTab addDeck(DeckList deck) {
 		DeckPane pane = new DeckPane(deck);
 		pane.autoValidateProperty().bind(autoValidateDeck.selectedProperty());
 		pane.setOnDeckChanged(lce -> updateCollectionState());
@@ -510,9 +518,11 @@ public class MainWindow extends Stage {
 
 		deckTabs.getTabs().add(tab);
 		deckTabs.getSelectionModel().select(tab);
+
+		return tab;
 	}
 
-	private boolean maybeOpenNewWindow(DeckList forDeck) {
+	public boolean openDeckPane(DeckList forDeck) {
 		// We always open a new tab if we don't have any tabs open.
 		Preferences.WindowBehavior behavior = !allTabs().findAny().isPresent() ? Preferences.WindowBehavior.NewTab : Preferences.get().windowBehavior;
 		if (behavior == Preferences.WindowBehavior.AlwaysAsk) {
@@ -568,7 +578,7 @@ public class MainWindow extends Stage {
 
 			DeckList list = primarySerdes.importDeck(from.toFile());
 			list.sourceProperty().setValue(from);
-			if (maybeOpenNewWindow(list)) {
+			if (openDeckPane(list)) {
 				State.get().lastDeckDirectory = from.getParent();
 				State.get().addRecentDeck(from);
 			}
@@ -1061,7 +1071,7 @@ public class MainWindow extends Stage {
 
 		try {
 			DeckList list = importer.importDeck(f);
-			if (maybeOpenNewWindow(list)) {
+			if (openDeckPane(list)) {
 				State.get().lastDeckDirectory = f.toPath().getParent();
 			}
 		} catch (IOException ioe) {
