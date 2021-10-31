@@ -806,6 +806,7 @@ public class MainWindow extends Stage {
 			"",
 			"General stuff:",
 			"\u2022 Double-click on a deck tab to change the deck's name.",
+			"\u2022 Right click on a deck tab for a handy menu.",
 			"\u2022 Toggle on 'Auto' mode to immediately add any single-result searches to the deck.",
 			"\u2022 You can paste card lists into the Omnibar over a zone to add those cards/quantities.",
 			"",

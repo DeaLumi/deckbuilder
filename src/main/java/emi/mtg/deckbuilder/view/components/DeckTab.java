@@ -1,12 +1,15 @@
 package emi.mtg.deckbuilder.view.components;
 
+import emi.lib.mtg.game.Format;
+import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.view.MainWindow;
+import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import javafx.beans.binding.Bindings;
 import javafx.event.Event;
-import javafx.scene.control.Label;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.input.*;
 
+import java.io.IOException;
 import java.util.Collections;
 
 public class DeckTab extends Tab {
@@ -85,6 +88,28 @@ public class DeckTab extends Tab {
 
 		setGraphic(this.label);
 		setContent(pane);
+
+		MenuItem deckInfo = new MenuItem("Deck Info...");
+		deckInfo.setOnAction(ae -> {
+			Format oldFormat = pane().deck().format();
+			if (new DeckInfoDialog(pane().deck()).showAndWait().orElse(false) && !oldFormat.equals(pane().deck().format())) {
+				pane().applyDeck();
+			}
+		});
+
+		MenuItem undock = new MenuItem("Undock");
+		undock.setOnAction(ae -> mainWindow().undock(DeckTab.this));
+
+		MenuItem duplicate = new MenuItem("Open Copy");
+		duplicate.setOnAction(ae -> {
+			DeckList deck = pane().deck();
+			DeckList copy = new DeckList(deck.name() + " - Copy", deck.author(), deck.format(), deck.description(), deck.cards());
+			copy.modifiedProperty().set(true);
+			mainWindow().openDeckPane(copy);
+		});
+
+		ContextMenu menu = new ContextMenu(deckInfo, undock, duplicate);
+		setContextMenu(menu);
 	}
 
 	public DeckPane pane() {
@@ -111,5 +136,9 @@ public class DeckTab extends Tab {
 	protected void reallyForceClose(Event close) {
 		getTabPane().getTabs().remove(DeckTab.this);
 		if (getOnClosed() != null) getOnClosed().handle(close);
+	}
+
+	protected MainWindow mainWindow() {
+		return (MainWindow) getTabPane().getScene().getWindow();
 	}
 }
