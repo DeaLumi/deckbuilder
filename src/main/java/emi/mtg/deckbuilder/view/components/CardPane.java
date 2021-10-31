@@ -165,7 +165,7 @@ public class CardPane extends BorderPane {
 
 	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().flatMap(f -> f.type().cardTypes().stream()).allMatch(t -> t.constructed);
 
-	private final Menu deckMenu;
+	private final MenuButton deckMenuButton;
 	private final TextField filter;
 	private final AutoCompleter filterAutoComplete;
 	private final Tooltip filterErrorTooltip;
@@ -191,9 +191,8 @@ public class CardPane extends BorderPane {
 		this.scrollPane = new CardViewScrollPane(this.cardView);
 		setCenter(this.scrollPane);
 
-		MenuBar menuBar = new MenuBar();
-		deckMenu = new Menu(title);
-		menuBar.getMenus().add(deckMenu);
+		this.deckMenuButton = new MenuButton(title);
+		this.deckMenuButton.setMinSize(Button.USE_PREF_SIZE, Button.USE_PREF_SIZE);
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
@@ -270,17 +269,19 @@ public class CardPane extends BorderPane {
 		collapseDuplicates = new CheckMenuItem("Collapse Duplicates");
 		collapseDuplicates.selectedProperty().bindBidirectional(cardView.collapseDuplicatesProperty());
 
-		deckMenu.getItems().add(groupingMenu);
-		deckMenu.getItems().add(displayMenu);
-		deckMenu.getItems().add(sortButton);
-		deckMenu.getItems().add(cardScale);
-		deckMenu.getItems().add(new SeparatorMenuItem());
-		deckMenu.getItems().add(statisticsButton);
-		deckMenu.getItems().add(new SeparatorMenuItem());
-		deckMenu.getItems().add(showIllegalCards);
-		deckMenu.getItems().add(findOtherCards);
-		deckMenu.getItems().add(showVersionsSeparately);
-		deckMenu.getItems().add(collapseDuplicates);
+		deckMenuButton.getItems().setAll(
+				groupingMenu,
+				displayMenu,
+				sortButton,
+				cardScale,
+				new SeparatorMenuItem(),
+				statisticsButton,
+				new SeparatorMenuItem(),
+				showIllegalCards,
+				findOtherCards,
+				showVersionsSeparately,
+				collapseDuplicates
+		);
 
 		filter = new TextField() {
 			@Override
@@ -304,7 +305,7 @@ public class CardPane extends BorderPane {
 			}
 		};
 		filter.setPromptText("Omnibar...");
-		filter.setPrefWidth(250.0);
+		filter.setMinSize(TextField.USE_PREF_SIZE, TextField.USE_PREF_SIZE);
 
 		filterAutoComplete = new AutoCompleter(filter, name -> {
 			if (name.length() > 3) {
@@ -337,14 +338,14 @@ public class CardPane extends BorderPane {
 		deckStats = new Label("");
 		model.addListener((ListChangeListener<CardInstance>) lce -> ForkJoinPool.commonPool().submit(this::updateStats));
 
-		HBox controlBar = new HBox(8.0);
-		controlBar.setPadding(new Insets(8.0));
+		HBox controlBar = new HBox(4.0);
+		controlBar.setPadding(new Insets(4.0));
 		controlBar.setAlignment(Pos.CENTER_LEFT);
-		controlBar.getChildren().add(menuBar);
+		controlBar.getChildren().add(deckMenuButton);
 		controlBar.getChildren().add(filter);
 		controlBar.getChildren().add(autoToggle);
 		controlBar.getChildren().add(deckStats);
-		HBox.setHgrow(menuBar, Priority.NEVER);
+		HBox.setHgrow(deckMenuButton, Priority.NEVER);
 		HBox.setHgrow(filter, Priority.SOMETIMES);
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
@@ -353,7 +354,7 @@ public class CardPane extends BorderPane {
 	}
 
 	public String title() {
-		return deckMenu.getText();
+		return deckMenuButton.getText();
 	}
 
 	private synchronized void updateStats() {
