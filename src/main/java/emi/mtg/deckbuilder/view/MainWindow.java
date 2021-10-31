@@ -469,11 +469,11 @@ public class MainWindow extends Stage {
 		Iterator<DeckImportExport> serdes = ServiceLoader.load(DeckImportExport.class, MainApplication.PLUGIN_CLASS_LOADER).iterator();
 		while (serdes.hasNext()) {
 			DeckImportExport s = serdes.next();
-			if (s.supportedFeatures().contains(DeckImportExport.Feature.Import)) {
-				this.importSerdes.put(new FileChooser.ExtensionFilter(s.toString(), "*." + s.extension()), s);
+			if (!s.importExtensions().isEmpty()) {
+				this.importSerdes.put(new FileChooser.ExtensionFilter(s.toString(), s.importExtensions().stream().map(e -> "*." + e).collect(Collectors.toList())), s);
 			}
-			if (s.supportedFeatures().contains(DeckImportExport.Feature.Export)) {
-				this.exportSerdes.put(new FileChooser.ExtensionFilter(s.toString(), "*." + s.extension()), s);
+			if (!s.exportExtensions().isEmpty()) {
+				this.exportSerdes.put(new FileChooser.ExtensionFilter(s.toString(), s.exportExtensions().stream().map(e -> "*." + e).collect(Collectors.toList())), s);
 			}
 		}
 	}
@@ -754,22 +754,21 @@ public class MainWindow extends Stage {
 		}
 	}
 
-	private boolean warnAboutSerdes(Set<DeckImportExport.Feature> unsupportedFeatures) {
+	private boolean warnAboutSerdes(DeckImportExport serdes) {
+		EnumSet<DeckImportExport.Feature> unsupportedFeatures = EnumSet.complementOf(serdes.supportedFeatures());
+		if (unsupportedFeatures.isEmpty() && !serdes.importExtensions().isEmpty() && !serdes.exportExtensions().isEmpty()) return false;
+
 		StringBuilder builder = new StringBuilder();
 
 		builder.append("The file format you selected doesn't support the following features:\n");
 
 		for (DeckImportExport.Feature feature : unsupportedFeatures) {
-			if (feature == DeckImportExport.Feature.Import || feature == DeckImportExport.Feature.Export) {
-				continue;
-			}
-
 			builder.append(" \u2022 ").append(feature.toString()).append('\n');
 		}
 
-		if (unsupportedFeatures.contains(DeckImportExport.Feature.Import)) {
+		if (serdes.importExtensions().isEmpty()) {
 			builder.append('\n').append("Additionally, you will not be able to re-import from this file.");
-		} else if (unsupportedFeatures.contains(DeckImportExport.Feature.Export)) {
+		} else if (serdes.exportExtensions().isEmpty()) {
 			builder.append('\n').append("Additionally, you will not be able to re-export to this file.");
 		}
 
@@ -1058,11 +1057,8 @@ public class MainWindow extends Stage {
 
 		DeckImportExport importer = importSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
-		EnumSet<DeckImportExport.Feature> unsupported = EnumSet.complementOf(importer.supportedFeatures());
-		if (!unsupported.isEmpty()) {
-			if (warnAboutSerdes(unsupported)) {
-				return;
-			}
+		if (warnAboutSerdes(importer)) {
+			return;
 		}
 
 		try {
@@ -1097,11 +1093,8 @@ public class MainWindow extends Stage {
 
 		DeckImportExport exporter = exportSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
 
-		EnumSet<DeckImportExport.Feature> unsupported = EnumSet.complementOf(exporter.supportedFeatures());
-		if (!unsupported.isEmpty()) {
-			if (warnAboutSerdes(unsupported)) {
-				return;
-			}
+		if (warnAboutSerdes(exporter)) {
+			return;
 		}
 
 		try {

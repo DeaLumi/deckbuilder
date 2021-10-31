@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MTGO implements DeckImportExport {
+public class MTGO implements DeckImportExport.Monotype {
 	@Override
 	public String extension() {
 		return "dek";
@@ -190,6 +190,6 @@ public class MTGO implements DeckImportExport {
 
 	@Override
 	public EnumSet<Feature> supportedFeatures() {
-		return EnumSet.of(Feature.CardArt, Feature.Import, Feature.Export);
+		return EnumSet.of(Feature.CardArt);
 	}
 }

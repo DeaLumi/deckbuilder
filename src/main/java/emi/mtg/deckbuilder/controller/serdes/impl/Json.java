@@ -10,7 +10,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.EnumSet;
 
-public class Json implements DeckImportExport {
+public class Json implements DeckImportExport.Monotype {
 	@Override
 	public String extension() {
 		return "json";

@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
@@ -12,7 +13,7 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TextFile extends NameOnlyImporter {
+public class TextFile extends NameOnlyImporter implements DeckImportExport.Monotype {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>.+)(?: x?(?<postCount>\\d+))?(?![:])$");
 	private static final Pattern ZONE_PATTERN = Pattern.compile("^(?:// )?(?<zoneName>[A-Za-z ]+):?$");
 
@@ -136,6 +137,6 @@ public class TextFile extends NameOnlyImporter {
 
 	@Override
 	public EnumSet<Feature> supportedFeatures() {
-		return EnumSet.of(Feature.OtherZones, Feature.Import, Feature.Export);
+		return EnumSet.of(Feature.OtherZones);
 	}
 }

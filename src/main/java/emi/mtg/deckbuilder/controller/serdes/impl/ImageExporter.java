@@ -49,8 +49,13 @@ public class ImageExporter implements DeckImportExport {
 	}
 
 	@Override
-	public String extension() {
-		return "jpg";
+	public List<String> importExtensions() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public List<String> exportExtensions() {
+		return Arrays.asList("jpg", "png", "gif");
 	}
 
 	@Override
@@ -78,7 +83,7 @@ public class ImageExporter implements DeckImportExport {
 
 	@Override
 	public EnumSet<Feature> supportedFeatures() {
-		return EnumSet.of(Feature.OtherZones, Feature.CardArt, Feature.Export);
+		return EnumSet.of(Feature.OtherZones, Feature.CardArt);
 	}
 
 	private final Alert alert;

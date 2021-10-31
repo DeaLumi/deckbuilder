@@ -4,7 +4,9 @@ import emi.mtg.deckbuilder.model.DeckList;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 
 public interface DeckImportExport {
 	enum Feature {
@@ -14,9 +16,7 @@ public interface DeckImportExport {
 		Format("Intended deck format"),
 		CardArt("Specific card printings"),
 		OtherZones("Zones (beyond library & sideboard)"),
-		Tags("Deck-specific card tags"),
-		Export("Exporting"),
-		Import("Importing");
+		Tags("Deck-specific card tags");
 
 		private final String description;
 
@@ -30,11 +30,25 @@ public interface DeckImportExport {
 		}
 	}
 
-	String extension();
+	List<String> importExtensions();
+
+	List<String> exportExtensions();
 
 	DeckList importDeck(File from) throws IOException;
 
 	void exportDeck(DeckList deck, File to) throws IOException;
 
 	EnumSet<Feature> supportedFeatures();
+
+	interface Monotype extends DeckImportExport {
+		String extension();
+
+		default List<String> importExtensions() {
+			return Collections.singletonList(extension());
+		}
+
+		default List<String> exportExtensions() {
+			return Collections.singletonList(extension());
+		}
+	}
 }

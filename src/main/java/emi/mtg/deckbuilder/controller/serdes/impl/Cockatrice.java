@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import org.w3c.dom.Document;
@@ -20,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class Cockatrice extends NameOnlyImporter {
+public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Monotype {
 
 	private static final Map<String, Zone> COCKATRICE_ZONE_MAP = cockatriceZoneMap();
 	private static Map<String, Zone> cockatriceZoneMap() {
@@ -169,6 +170,6 @@ public class Cockatrice extends NameOnlyImporter {
 
 	@Override
 	public EnumSet<Feature> supportedFeatures() {
-		return EnumSet.of(Feature.DeckName, Feature.Description, Feature.Author, Feature.Import, Feature.Export);
+		return EnumSet.of(Feature.DeckName, Feature.Description, Feature.Author);
 	}
 }
