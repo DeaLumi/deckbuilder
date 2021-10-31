@@ -114,6 +114,9 @@ public class MainWindow extends Stage {
 		getScene().getStylesheets().add("/emi/mtg/deckbuilder/styles.css");
 		root.setStyle(Preferences.get().theme.style());
 
+		setupUI();
+		setupImportExport();
+
 		setOnCloseRequest(we -> {
 			if (!offerSaveIfModifiedAll()) {
 				we.consume();
@@ -124,27 +127,17 @@ public class MainWindow extends Stage {
 			owner.deregisterMainWindow(this);
 		});
 
-		Alert alert = AlertBuilder.notify(this)
-				.buttons()
-				.title("Initializing UI")
-				.headerText("Getting things ready...")
-				.contentText("Please wait a moment!")
-				.modal(Modality.WINDOW_MODAL)
-				.get();
+		collection.loading().set(true);
 
 		Platform.runLater(() -> {
-			setupUI();
-			setupImportExport();
-
 			// TODO: Replace this with some newDeck() call? But the normal new-deck commands open a new window.
 			if (deckTabs.getTabs().isEmpty()) addDeck(new DeckList("", Preferences.get().authorName, Preferences.get().defaultFormat, "", Collections.emptyMap()));
-			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
-
-			alert.getButtonTypes().setAll(ButtonType.CLOSE);
-			alert.hide();
+			ForkJoinPool.commonPool().submit(() -> {
+				collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
+				collection.updateFilter();
+				collection.loading().set(false);
+			});
 		});
-
-		alert.showAndWait();
 	}
 
 	@FXML

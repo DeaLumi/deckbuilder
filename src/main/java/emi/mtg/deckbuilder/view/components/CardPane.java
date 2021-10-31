@@ -18,6 +18,7 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
@@ -25,7 +26,12 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
+import javafx.scene.text.TextBoundsType;
 
 import java.io.IOException;
 import java.util.*;
@@ -39,7 +45,7 @@ import java.util.stream.Collectors;
 public class CardPane extends BorderPane {
 	private static class CardViewScrollPane extends StackPane {
 		private static class VisibleAmountBinding extends DoubleBinding {
-			private DoubleProperty height, min, max;
+			private final DoubleProperty height, min, max;
 
 			public VisibleAmountBinding(DoubleProperty height, DoubleProperty min, DoubleProperty max) {
 				this.bind(height, min, max);
@@ -60,10 +66,15 @@ public class CardPane extends BorderPane {
 
 		private final CardView view;
 		private final ScrollBar hbar, vbar;
-		private final Rectangle fill;
+		private final Rectangle fill, loadingDim;
+		private final Text loadingText;
+
+		private final BooleanProperty loading;
 
 		public CardViewScrollPane(CardView view) {
 			this.view = view;
+
+			this.loading = new SimpleBooleanProperty(false);
 
 			vbar = new ScrollBar();
 			vbar.setOrientation(Orientation.VERTICAL);
@@ -82,15 +93,38 @@ public class CardPane extends BorderPane {
 			hbar.visibleProperty().bind(hbar.maxProperty().greaterThan(hbar.minProperty()));
 
 			fill = new Rectangle(12.0, 12.0);
-			fill.setFill(javafx.scene.paint.Color.grayRgb(232));
+			fill.setFill(Preferences.get().theme.base);
 			fill.visibleProperty().bind(vbar.visibleProperty().and(hbar.visibleProperty()));
 
-			getChildren().addAll(view, vbar, hbar, fill);
+			loadingDim = new Rectangle(0, 0, Color.gray(0.25));
+			loadingDim.setOpacity(0.9);
+			loadingDim.visibleProperty().bind(loading);
+			loadingDim.setManaged(false);
+
+			loadingText = new Text("Loading...");
+			loadingText.setFill(Preferences.get().theme.base.invert());
+			loadingText.visibleProperty().bind(loading);
+			loadingText.setBoundsType(TextBoundsType.LOGICAL_VERTICAL_CENTER);
+			loadingText.setManaged(false);
+
+			Platform.runLater(this::layoutChildren);
+
+			getChildren().addAll(view, vbar, hbar, fill, loadingDim, loadingText);
 		}
 
 		@Override
 		protected void layoutChildren() {
 			view.resizeRelocate(0, 0, getWidth(), getHeight());
+
+			if (loading.get()) {
+				loadingDim.setWidth(getWidth());
+				loadingDim.setHeight(getHeight());
+				loadingDim.resizeRelocate(0, 0, getWidth(), getHeight());
+				loadingText.relocate(getWidth() / 2 - loadingText.prefWidth(-1) / 2, getHeight() / 2 - loadingText.prefHeight(-1) / 2);
+				loadingText.setTextAlignment(TextAlignment.CENTER);
+				loadingText.setTextOrigin(VPos.CENTER);
+				loadingText.setFont(Font.font(null, getScene().getHeight() / 12.0));
+			}
 
 			if (vbar.isVisible() && hbar.isVisible()) {
 				double vsbWidth = vbar.prefWidth(-1);
@@ -108,6 +142,10 @@ public class CardPane extends BorderPane {
 			} else if (hbar.isVisible()) {
 				hbar.resizeRelocate(0, getHeight() - hbar.prefHeight(-1), getWidth(), hbar.prefHeight(-1));
 			}
+		}
+
+		public BooleanProperty loading() {
+			return loading;
 		}
 	}
 
@@ -131,6 +169,7 @@ public class CardPane extends BorderPane {
 	private final AutoCompleter filterAutoComplete;
 	private final Tooltip filterErrorTooltip;
 	private final CardView cardView;
+	private final CardViewScrollPane scrollPane;
 	private final Label deckStats;
 	private final CheckMenuItem showIllegalCards;
 	private final CheckMenuItem showVersionsSeparately;
@@ -148,7 +187,8 @@ public class CardPane extends BorderPane {
 		super();
 
 		this.cardView = new CardView(model, initEngine, initGrouping, sortings);
-		setCenter(new CardViewScrollPane(this.cardView));
+		this.scrollPane = new CardViewScrollPane(this.cardView);
+		setCenter(this.scrollPane);
 
 		MenuBar menuBar = new MenuBar();
 		deckMenu = new Menu(title);
@@ -458,5 +498,9 @@ public class CardPane extends BorderPane {
 
 	public TextField filter() {
 		return filter;
+	}
+
+	public BooleanProperty loading() {
+		return scrollPane.loading();
 	}
 }
