@@ -338,7 +338,7 @@ public class CardView extends Canvas {
 	private final BooleanProperty showFlags;
 
 	private static boolean dragModified = false;
-	private static CardView dragSource = null, dragTarget = null;
+	private static CardView dragSource = null;
 
 	private final Tooltip tooltip = new Tooltip();
 
@@ -493,7 +493,20 @@ public class CardView extends Canvas {
 					this.selectedCards.forEach(this.hoverGroup.group::add);
 					this.hoverGroup.refilter();
 
-					CardView.dragTarget = this;
+					if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
+						for (Group group : this.groupedModel) {
+							if (group == hoverGroup) {
+								continue;
+							}
+
+							for (CardInstance ci : selectedCards) {
+								group.group.remove(ci);
+							}
+
+							group.refilter();
+						}
+					}
+
 					de.setDropCompleted(true);
 					de.consume();
 				}
@@ -514,11 +527,17 @@ public class CardView extends Canvas {
 					this.model.addAll(newCards);
 					this.selectedCards.clear();
 					this.selectedCards.addAll(newCards);
-
-					CardView.dragTarget = this;
-					de.setDropCompleted(true);
-					de.consume();
 				}
+
+				if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
+					if (!CardView.dragSource.immutableModel.get()) {
+						CardView.dragSource.model.removeAll(CardView.dragSource.selectedCards);
+					}
+					CardView.dragSource.selectedCards.clear();
+				}
+
+				de.setDropCompleted(true);
+				de.consume();
 			} else {
 				// TODO: Accept transfer from other programs/areas?
 			}
@@ -527,38 +546,10 @@ public class CardView extends Canvas {
 		});
 
 		setOnDragDone(de -> {
-			if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-				if (CardView.dragTarget == this) {
-					if (this.grouping.supportsModification()) {
-						for (Group group : this.groupedModel) {
-							if (group == hoverGroup) {
-								continue;
-							}
-
-							for (CardInstance ci : selectedCards) {
-								group.group.remove(ci);
-							}
-
-							group.refilter();
-						}
-
-						CardView.dragSource = null;
-						CardView.dragTarget = null;
-						de.consume();
-					}
-				} else if (CardView.dragTarget != null) {
-					if (!immutableModel.get()) {
-						this.model.removeAll(selectedCards);
-					}
-					selectedCards.clear();
-
-					CardView.dragSource = null;
-					CardView.dragTarget = null;
-					de.consume();
-				}
+			if (CardView.dragSource != null) {
+				CardView.dragSource = null;
+				de.consume();
 			}
-
-			layout();
 		});
 
 		setOnMouseClicked(me -> {
