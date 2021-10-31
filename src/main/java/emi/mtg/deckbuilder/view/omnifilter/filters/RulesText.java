@@ -17,6 +17,11 @@ public class RulesText implements Omnifilter.Subfilter {
 	}
 
 	@Override
+	public String description() {
+		return "Search cards' rules (oracle) text.";
+	}
+
+	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		return (Omnifilter.FaceFilter) face -> {
 			switch (operator) {

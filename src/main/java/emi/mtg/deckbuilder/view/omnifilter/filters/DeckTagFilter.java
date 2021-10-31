@@ -21,6 +21,11 @@ public class DeckTagFilter implements Omnifilter.Subfilter {
 	}
 
 	@Override
+	public String description() {
+		return "Find cards based on deck-specific tags. Doesn't work on collection. Separate multiple tags with commas.";
+	}
+
+	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		Set<String> tagSet = new HashSet<>(Arrays.asList(value.split(",")));
 

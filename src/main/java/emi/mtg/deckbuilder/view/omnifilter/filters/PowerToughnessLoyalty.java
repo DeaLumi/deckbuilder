@@ -34,6 +34,11 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 		}
 
 		@Override
+		public String description() {
+			return "Search cards based on power. Use * or X to find cards with variable power.";
+		}
+
+		@Override
 		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 			return new PowerToughnessLoyalty(operator, value, Card.Face::power, Card.Face::convertedPower);
 		}
@@ -51,6 +56,11 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 		}
 
 		@Override
+		public String description() {
+			return "Search cards based on power. Use * or X to find cards with variable toughness.";
+		}
+
+		@Override
 		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 			return new PowerToughnessLoyalty(operator, value, Card.Face::toughness, Card.Face::convertedToughness);
 		}
@@ -65,6 +75,11 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 		@Override
 		public String shorthand() {
 			return "loy";
+		}
+
+		@Override
+		public String description() {
+			return "Search cards based on power. Use * or X to find cards with variable loyalty.";
 		}
 
 		@Override

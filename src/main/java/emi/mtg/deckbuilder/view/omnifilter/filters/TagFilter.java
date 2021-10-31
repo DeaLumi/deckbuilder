@@ -22,6 +22,11 @@ public class TagFilter implements Omnifilter.Subfilter {
 	}
 
 	@Override
+	public String description() {
+		return "Find cards based on global tags. Separate multiple tags with commas.";
+	}
+
+	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		Set<String> tagSet = new HashSet<>(Arrays.asList(value.split(",")));
 

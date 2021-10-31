@@ -19,6 +19,11 @@ public class CardSet implements Omnifilter.Subfilter {
 	}
 
 	@Override
+	public String description() {
+		return "Find cards printed in the named set, by full name or set code. <code>=</code> will show <i>only</i> printings in that set.";
+	}
+
+	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		Set set = Context.get().data.sets().stream()
 				.filter(s -> s.name().toLowerCase().equals(value.toLowerCase()) || s.code().toLowerCase().equals(value.toLowerCase()))

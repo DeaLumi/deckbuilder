@@ -18,6 +18,11 @@ public class Regex implements Omnifilter.Subfilter {
 	}
 
 	@Override
+	public String description() {
+		return "Search cards' rules text with a regular expression.";
+	}
+
+	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		if (operator != Omnifilter.Operator.DIRECT) {
 			throw new IllegalArgumentException("Can only use ':' with regex filter.");

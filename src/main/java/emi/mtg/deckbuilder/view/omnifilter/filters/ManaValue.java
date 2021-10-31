@@ -17,6 +17,11 @@ public class ManaValue implements Omnifilter.Subfilter {
 	}
 
 	@Override
+	public String description() {
+		return "Filter by mana value (converted mana cost).";
+	}
+
+	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		double doubleValue = Double.parseDouble(value);
 

@@ -24,6 +24,11 @@ public class CardType implements Omnifilter.Subfilter {
 	}
 
 	@Override
+	public String description() {
+		return "Filter cards by typeline. Any number of supertypes, card types, and subtypes can be specified.";
+	}
+
+	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		String[] parts = value.toLowerCase().split("[ ]+");
 

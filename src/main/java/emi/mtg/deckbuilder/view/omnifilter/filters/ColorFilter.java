@@ -29,6 +29,11 @@ public abstract class ColorFilter implements Omnifilter.Subfilter {
 		}
 
 		@Override
+		public String description() {
+			return "Find cards by color. Comparison operators perform set comparisons. You can also compare against a number.";
+		}
+
+		@Override
 		protected Color.Combination get(Card.Face face) {
 			return Color.Combination.byColors(face.color());
 		}
@@ -43,6 +48,11 @@ public abstract class ColorFilter implements Omnifilter.Subfilter {
 		@Override
 		public String shorthand() {
 			return "ci";
+		}
+
+		@Override
+		public String description() {
+			return "Find cards by color identity, including colors of symbols in the card's text.";
 		}
 
 		@Override

@@ -47,6 +47,7 @@ public class Omnifilter {
 	public interface Subfilter {
 		String key();
 		String shorthand();
+		String description();
 		Predicate<CardInstance> create(Omnifilter.Operator operator, String value);
 	}
 
