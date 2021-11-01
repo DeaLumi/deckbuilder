@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.view.omnifilter;
+package emi.mtg.deckbuilder.view.search.omnifilter;
 
 import java.util.Collection;
 import java.util.Set;

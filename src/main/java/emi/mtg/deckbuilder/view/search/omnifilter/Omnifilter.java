@@ -1,4 +1,4 @@
-package emi.mtg.deckbuilder.view.omnifilter;
+package emi.mtg.deckbuilder.view.search.omnifilter;
 
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;

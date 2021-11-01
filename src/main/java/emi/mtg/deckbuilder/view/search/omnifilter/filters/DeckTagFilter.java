@@ -1,29 +1,28 @@
-package emi.mtg.deckbuilder.view.omnifilter.filters;
+package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 
-import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
-import emi.mtg.deckbuilder.view.omnifilter.Util;
+import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
+import emi.mtg.deckbuilder.view.search.omnifilter.Util;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 
-public class TagFilter implements Omnifilter.Subfilter {
+public class DeckTagFilter implements Omnifilter.Subfilter {
 	@Override
 	public String key() {
-		return "tagged";
+		return "decktag";
 	}
 
 	@Override
 	public String shorthand() {
-		return "tag";
+		return "dt";
 	}
 
 	@Override
 	public String description() {
-		return "Find cards based on global tags. Separate multiple tags with commas.";
+		return "Find cards based on deck-specific tags. Doesn't work on collection. Separate multiple tags with commas.";
 	}
 
 	@Override
@@ -31,7 +30,7 @@ public class TagFilter implements Omnifilter.Subfilter {
 		Set<String> tagSet = new HashSet<>(Arrays.asList(value.split(",")));
 
 		return ci -> {
-			Util.SetComparison compare = Util.compareStringSetsInsensitive(Context.get().tags.tags(ci.card()), tagSet);
+			Util.SetComparison compare = Util.compareStringSetsInsensitive(ci.tags(), tagSet);
 
 			switch (operator) {
 				case EQUALS:

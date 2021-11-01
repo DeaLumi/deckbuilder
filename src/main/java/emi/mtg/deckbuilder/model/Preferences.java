@@ -7,7 +7,7 @@ import emi.mtg.deckbuilder.controller.Serialization;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
-import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
+import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 
 import java.io.IOException;

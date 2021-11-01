@@ -1,8 +1,8 @@
-package emi.mtg.deckbuilder.view.omnifilter.filters;
+package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
+import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
 import java.util.function.Function;
 import java.util.function.Predicate;

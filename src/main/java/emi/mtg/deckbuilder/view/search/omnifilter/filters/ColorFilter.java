@@ -1,13 +1,12 @@
-package emi.mtg.deckbuilder.view.omnifilter.filters;
+package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.characteristic.Color;
 import emi.lib.mtg.util.CollectionComparator;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
+import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
 import java.util.Arrays;
-import java.util.Set;
 import java.util.function.Predicate;
 
 public abstract class ColorFilter implements Omnifilter.Subfilter {

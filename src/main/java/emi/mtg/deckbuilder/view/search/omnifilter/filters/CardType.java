@@ -1,10 +1,10 @@
-package emi.mtg.deckbuilder.view.omnifilter.filters;
+package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 
 import emi.lib.mtg.characteristic.CardTypeLine;
 import emi.lib.mtg.characteristic.Supertype;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.omnifilter.Omnifilter;
-import emi.mtg.deckbuilder.view.omnifilter.Util;
+import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
+import emi.mtg.deckbuilder.view.search.omnifilter.Util;
 
 import java.util.Arrays;
 import java.util.EnumSet;
