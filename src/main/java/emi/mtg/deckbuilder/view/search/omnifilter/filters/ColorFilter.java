@@ -12,7 +12,7 @@ import java.util.function.Predicate;
 public abstract class ColorFilter implements Omnifilter.Subfilter {
 	static Color.Combination colorsIn(String in) {
 		return Arrays.stream(Color.values())
-				.filter(c -> in.toLowerCase().contains(c.letter.toLowerCase()))
+				.filter(c -> in.toLowerCase().indexOf(c.letter) >= 0)
 				.collect(Color.Combination.COLOR_COLLECTOR);
 	}
 
