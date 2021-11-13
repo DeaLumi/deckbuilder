@@ -154,10 +154,10 @@ public class RenderedImageSource implements ImageSource {
 
 			{
 				Label pt;
-				if (!face.face().power().isEmpty() && !face.face().toughness().isEmpty()) {
-					pt = new Label(String.format("%s / %s", face.face().power(), face.face().toughness()));
-				} else if (!face.face().loyalty().isEmpty()) {
-					pt = new Label(face.face().loyalty());
+				if (!face.face().printedPower().isEmpty() && !face.face().printedToughness().isEmpty()) {
+					pt = new Label(String.format("%s / %s", face.face().printedPower(), face.face().printedToughness()));
+				} else if (!face.face().printedLoyalty().isEmpty()) {
+					pt = new Label(face.face().printedLoyalty());
 				} else {
 					pt = new Label("");
 				}

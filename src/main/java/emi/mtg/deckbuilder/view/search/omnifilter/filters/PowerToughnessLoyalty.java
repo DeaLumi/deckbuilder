@@ -40,7 +40,7 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 		@Override
 		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
-			return new PowerToughnessLoyalty(operator, value, Card.Face::power, Card.Face::convertedPower);
+			return new PowerToughnessLoyalty(operator, value, Card.Face::printedPower, Card.Face::power);
 		}
 	}
 
@@ -62,7 +62,7 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 		@Override
 		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
-			return new PowerToughnessLoyalty(operator, value, Card.Face::toughness, Card.Face::convertedToughness);
+			return new PowerToughnessLoyalty(operator, value, Card.Face::printedToughness, Card.Face::toughness);
 		}
 	}
 
@@ -84,7 +84,7 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 		@Override
 		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
-			return new PowerToughnessLoyalty(operator, value, Card.Face::loyalty, Card.Face::convertedLoyalty);
+			return new PowerToughnessLoyalty(operator, value, Card.Face::printedLoyalty, Card.Face::loyalty);
 		}
 	}
 
