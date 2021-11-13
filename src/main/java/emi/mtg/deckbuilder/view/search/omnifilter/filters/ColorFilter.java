@@ -12,7 +12,7 @@ import java.util.function.Predicate;
 public abstract class ColorFilter implements Omnifilter.Subfilter {
 	static Color.Combination colorsIn(String in) {
 		return Arrays.stream(Color.values())
-				.filter(c -> in.toLowerCase().indexOf(c.letter) >= 0)
+				.filter(c -> in.indexOf(c.letter) >= 0)
 				.collect(Color.Combination.COLOR_COLLECTOR);
 	}
 
@@ -90,7 +90,7 @@ public abstract class ColorFilter implements Omnifilter.Subfilter {
 			// pass
 		}
 
-		Color.Combination colors = colorsIn(value);
+		Color.Combination colors = colorsIn(value.toUpperCase());
 
 		return (Omnifilter.FaceFilter) face -> {
 			CollectionComparator.Result result = Color.Combination.COMPARATOR.compare(Color.Combination.byColors(get(face)), colors);
