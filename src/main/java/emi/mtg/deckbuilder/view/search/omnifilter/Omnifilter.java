@@ -101,7 +101,7 @@ public class Omnifilter implements SearchProvider {
 	@Override
 	public String usage() {
 		String start = String.join("\n",
-				"A Scryfall-like search tool with some Deckbuilder-specific enhancements.",
+				"A Scryfall-like search tool with some Deckbuilder-specific enhancements. ",
 				"Search terms with no prefix/operator search within the card's name. Otherwise:<br/>",
 				"<br/>",
 				"The following operators are supported, though behavior may vary with search prefix:<br/>",
