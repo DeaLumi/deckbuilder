@@ -350,7 +350,7 @@ public class CardPane extends BorderPane {
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
 
-		updateFilterFx(null);
+		cardView.filteredModel.setPredicate(calculateFilter());
 	}
 
 	public String title() {
@@ -407,6 +407,30 @@ public class CardPane extends BorderPane {
 		}
 	}
 
+	private Predicate<CardInstance> calculateFilter() throws IllegalArgumentException {
+		Predicate<CardInstance> compositeFilter;
+		if (filter.getText().isEmpty()) {
+			compositeFilter = c -> true;
+		} else {
+			SearchProvider provider = Preferences.get().searchProvider;
+			compositeFilter = provider.parse(filter.getText());
+		}
+
+		if (!findOtherCards.isSelected()) {
+			compositeFilter = compositeFilter.and(STANDARD_CARDS);
+		}
+
+		if (!showIllegalCards.isSelected()) {
+			compositeFilter = compositeFilter.and(c -> !c.flags.contains(CardInstance.Flags.Invalid));
+		}
+
+		if (!showVersionsSeparately.isSelected()) {
+			compositeFilter = compositeFilter.and(uniquenessPredicate());
+		}
+
+		return compositeFilter;
+	}
+
 	private void updateFilterFx(ActionEvent ae) {
 		if (!Platform.isFxApplicationThread()) {
 			throw new IllegalStateException("updateFilterFx must only be called from the FX Application thread!");
@@ -422,38 +446,20 @@ public class CardPane extends BorderPane {
 			return;
 		}
 
-		Predicate<CardInstance> compositeFilter;
-		if (filter.getText().isEmpty()) {
-			compositeFilter = c -> true;
-		} else {
-			try {
-				SearchProvider provider = Preferences.get().searchProvider;
-				compositeFilter = provider.parse(filter.getText());
-			} catch (IllegalArgumentException iae) {
-				Tooltip.install(filter, filterErrorTooltip);
-				filter.getTooltip().setText(iae.getMessage());
-				filter.setStyle("-fx-control-inner-background: #ff8080;");
-				return;
-			}
+		final Predicate<CardInstance> finalFilter;
+		try {
+			finalFilter = calculateFilter();
+		} catch (IllegalArgumentException iae) {
+			Tooltip.install(filter, filterErrorTooltip);
+			filter.getTooltip().setText(iae.getMessage());
+			filter.setStyle("-fx-control-inner-background: #ff8080;");
+			return;
 		}
 
 		Tooltip.uninstall(filter, filterErrorTooltip);
 		filter.getTooltip().setText("");
 		filter.setStyle("");
 
-		if (!findOtherCards.isSelected()) {
-			compositeFilter = compositeFilter.and(STANDARD_CARDS);
-		}
-
-		if (!showIllegalCards.isSelected()) {
-			compositeFilter = compositeFilter.and(c -> !c.flags.contains(CardInstance.Flags.Invalid));
-		}
-
-		if (!showVersionsSeparately.isSelected()) {
-			compositeFilter = compositeFilter.and(uniquenessPredicate());
-		}
-
-		final Predicate<CardInstance> finalFilter = compositeFilter;
 		changeModel(x -> this.cardView.filteredModel.setPredicate(finalFilter));
 
 		final boolean clear;

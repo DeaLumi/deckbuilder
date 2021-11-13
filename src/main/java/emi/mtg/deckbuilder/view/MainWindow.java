@@ -128,8 +128,8 @@ public class MainWindow extends Stage {
 		collection.loading().set(true);
 
 		ForkJoinPool.commonPool().submit(() -> {
-			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
 			collection.updateFilter();
+			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
 			collection.loading().set(false);
 		});
 	}
