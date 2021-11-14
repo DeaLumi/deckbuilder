@@ -1,2 +1,3 @@
 emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter
 emi.mtg.deckbuilder.view.search.TextSearch
+emi.mtg.deckbuilder.view.search.expressions.ExpressionFilter
