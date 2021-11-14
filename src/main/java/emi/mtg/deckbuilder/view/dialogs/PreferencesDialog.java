@@ -437,6 +437,7 @@ public class PreferencesDialog extends Alert {
 			reflectField(PreferVariationPreference::new, "Prefer Variation", "preferVariation", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
 			reflectField(BooleanPreference::new, "Prefer Physical Versions","preferPhysical", x -> true),
+			reflectField(BooleanPreference::new, "Prefer Standard Printing", "preferStandard", x -> true),
 			new PrefSeparator(),
 			reflectField(SearchProviderPreference::new, "Search Provider", "searchProvider", x -> true),
 			reflectField(BooleanPreference::new, "The Future is Now", "theFutureIsNow", x -> true),

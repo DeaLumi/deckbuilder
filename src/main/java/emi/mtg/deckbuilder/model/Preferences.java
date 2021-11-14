@@ -156,6 +156,7 @@ public class Preferences {
 	public PreferVariation preferVariation = PreferVariation.Any;
 	public boolean preferNotPromo = true;
 	public boolean preferPhysical = true;
+	public boolean preferStandard = true;
 
 	/**
 	 * Preferences related to deck construction
@@ -177,6 +178,7 @@ public class Preferences {
 
 		if (preferNotPromo) stream = stream.filter(pr -> !pr.promo());
 		if (preferPhysical) stream = stream.filter(pr -> !pr.set().digital());
+		if (preferStandard) stream = stream.filter(pr -> pr.set().type() == emi.lib.mtg.Set.Type.Standard || pr.set().type() == emi.lib.mtg.Set.Type.Precon);
 
 		if (preferAge != PreferAge.Any) stream = stream.sorted(preferAge == PreferAge.Newest ?
 				(a1, a2) -> a2.releaseDate().compareTo(a1.releaseDate()) :
