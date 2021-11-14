@@ -84,6 +84,7 @@ public class Omnifilter implements SearchProvider {
 		return Collections.unmodifiableMap(map);
 	}
 
+	private static final Pattern PAREN_PATTERN = Pattern.compile("(?<preor> or )?(?<negate>[!-])?\\((?<subexpr>[^)]+)\\)");
 	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]+\"|[^\\s]+)");
 
 	public static final String NAME = "Omnifilter";
@@ -101,9 +102,13 @@ public class Omnifilter implements SearchProvider {
 	@Override
 	public String usage() {
 		String start = String.join("\n",
-				"A Scryfall-like search tool with some Deckbuilder-specific enhancements. ",
-				"Search terms with no prefix/operator search within the card's name. Otherwise:<br/>",
-				"<br/>",
+				"<p>A Scryfall-like search tool with some Deckbuilder-specific enhancements.</p>",
+				"<p>Search terms usually take the form prefix-operator-value, e.g. <code>type>=creature</code>. ",
+				"Terms with no prefix or operator search within the card's name. ",
+				"Terms can be negated by prefixing them with <code>!</code> or <code>-</code>, ",
+				"combined using <code>and</code> and <code>or</code>, ",
+				"and surrounded by parenthesis as in <code>(X or Y)</code>. ",
+				"Parenthesized terms can also be negated.</p>",
 				"The following operators are supported, though behavior may vary with search prefix:<br/>",
 				"<ul>",
 				"<li><code>:</code> &mdash; Tries to take the obvious meaning. Often equivalent to <code>&gt;=</code></li>",
@@ -122,16 +127,46 @@ public class Omnifilter implements SearchProvider {
 				.map(f -> "<li><code>" + f.key() + "</code>" + (f.shorthand() != null && !f.shorthand().isEmpty() ? " or <code>" + f.shorthand() + "</code>" : "") + " &mdash; " + f.description() + "</li>")
 				.collect(Collectors.joining("\n"));
 
-		String trailer = "Note that complex logic like parenthetical terms and boolean and/or aren't supported. All terms must match.";
-
-		return start + "\n<ul>" + filters + "\n</ul>\n" + trailer;
+		return start + "\n<ul>" + filters + "\n</ul>\n";
 	}
 
 	@Override
 	public Predicate<CardInstance> parse(String expression) throws IllegalArgumentException {
-		Matcher m = PATTERN.matcher(expression);
+		Predicate<CardInstance> predicate = null;
 
-		Predicate<CardInstance> predicate = c -> true;
+		Matcher pm = PAREN_PATTERN.matcher(expression);
+		int lastEnd = 0;
+		while (pm.find()) {
+			if (pm.start() > lastEnd) {
+				String prefaceStr = expression.substring(lastEnd, pm.start()).trim();
+				boolean or = false;
+				if (prefaceStr.startsWith("or")) {
+					or = true;
+					prefaceStr = prefaceStr.substring(2).trim();
+				}
+				Predicate<CardInstance> preface = parse(prefaceStr);
+				predicate = predicate == null ? preface : (or ? predicate.or(preface) : predicate.and(preface));
+			}
+
+			Predicate<CardInstance> parenthesized = parse(pm.group("subexpr").trim());
+			if (pm.group("negate") != null) parenthesized = parenthesized.negate();
+			predicate = predicate == null ? parenthesized : (pm.group("preor") == null ? predicate.and(parenthesized) : predicate.or(parenthesized));
+
+			lastEnd = pm.end();
+		}
+
+		expression = expression.substring(lastEnd).trim();
+
+		String[] segments = expression.split(" or ");
+		if (segments.length > 1) {
+			Predicate<CardInstance> result = c -> false;
+			for (String segment : segments) {
+				result = result.or(parse(segment.trim()));
+			}
+			return result;
+		}
+
+		Matcher m = PATTERN.matcher(expression);
 
 		while (m.find()) {
 			String tmp = m.group("value");
@@ -158,7 +193,8 @@ public class Omnifilter implements SearchProvider {
 				append = ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())) || ci.card().fullName().toLowerCase().contains(value.toLowerCase());
 			}
 
-			predicate = predicate.and(m.group("negate") == null ? append : append.negate());
+			if (m.group("negate") != null) append = append.negate();
+			predicate = predicate == null ? append : predicate.and(append);
 		}
 
 		return predicate;
