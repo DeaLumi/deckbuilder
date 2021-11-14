@@ -450,15 +450,21 @@ public class CardPane extends BorderPane {
 		try {
 			finalFilter = calculateFilter();
 		} catch (IllegalArgumentException iae) {
-			Tooltip.install(filter, filterErrorTooltip);
-			filter.getTooltip().setText(iae.getMessage());
-			filter.setStyle("-fx-control-inner-background: #ff8080;");
+			Platform.runLater(() -> {
+				Tooltip.install(filter, filterErrorTooltip);
+				filter.getTooltip().setText(iae.getMessage());
+				filter.setStyle("-fx-control-inner-background: #ff8080;");
+			});
 			return;
 		}
 
-		Tooltip.uninstall(filter, filterErrorTooltip);
-		filter.getTooltip().setText("");
-		filter.setStyle("");
+		if (filter.getStyle().contains("#ff8080")) {
+			Platform.runLater(() -> {
+				Tooltip.uninstall(filter, filterErrorTooltip);
+				filter.getTooltip().setText("");
+				filter.setStyle("");
+			});
+		}
 
 		changeModel(x -> this.cardView.filteredModel.setPredicate(finalFilter));
 
