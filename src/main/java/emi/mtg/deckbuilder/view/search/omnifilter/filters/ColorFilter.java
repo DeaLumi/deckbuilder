@@ -7,6 +7,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.function.Predicate;
 
 public abstract class ColorFilter implements Omnifilter.Subfilter {
@@ -18,13 +19,8 @@ public abstract class ColorFilter implements Omnifilter.Subfilter {
 
 	public static class CardColor extends ColorFilter {
 		@Override
-		public String key() {
-			return "color";
-		}
-
-		@Override
-		public String shorthand() {
-			return "c";
+		public Collection<String> keys() {
+			return Arrays.asList("color", "c");
 		}
 
 		@Override
@@ -40,13 +36,8 @@ public abstract class ColorFilter implements Omnifilter.Subfilter {
 
 	public static class ColorIdentity extends ColorFilter {
 		@Override
-		public String key() {
-			return "identity";
-		}
-
-		@Override
-		public String shorthand() {
-			return "ci";
+		public Collection<String> keys() {
+			return Arrays.asList("identity", "id", "ci");
 		}
 
 		@Override

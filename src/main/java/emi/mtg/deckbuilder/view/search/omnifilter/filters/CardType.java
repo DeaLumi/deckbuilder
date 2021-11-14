@@ -6,21 +6,13 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.search.omnifilter.Util;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 
 public class CardType implements Omnifilter.Subfilter {
 	@Override
-	public String key() {
-		return "type";
-	}
-
-	@Override
-	public String shorthand() {
-		return "t";
+	public Collection<String> keys() {
+		return Arrays.asList("type", "t");
 	}
 
 	@Override

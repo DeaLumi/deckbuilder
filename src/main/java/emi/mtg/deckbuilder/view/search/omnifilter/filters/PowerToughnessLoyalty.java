@@ -4,6 +4,8 @@ import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -24,13 +26,8 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 	public static class Power implements Omnifilter.Subfilter {
 		@Override
-		public String key() {
-			return "power";
-		}
-
-		@Override
-		public String shorthand() {
-			return "pow";
+		public Collection<String> keys() {
+			return Arrays.asList("power", "pow");
 		}
 
 		@Override
@@ -46,13 +43,8 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 	public static class Toughness implements Omnifilter.Subfilter {
 		@Override
-		public String key() {
-			return "toughness";
-		}
-
-		@Override
-		public String shorthand() {
-			return "tough";
+		public Collection<String> keys() {
+			return Arrays.asList("toughness", "tou");
 		}
 
 		@Override
@@ -68,13 +60,8 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 	public static class Loyalty implements Omnifilter.Subfilter {
 		@Override
-		public String key() {
-			return "loyalty";
-		}
-
-		@Override
-		public String shorthand() {
-			return "loy";
+		public Collection<String> keys() {
+			return Arrays.asList("loyalty", "loy");
 		}
 
 		@Override

@@ -5,17 +5,14 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.function.Predicate;
 
 public class CardSet implements Omnifilter.Subfilter {
 	@Override
-	public String key() {
-		return "set";
-	}
-
-	@Override
-	public String shorthand() {
-		return "s";
+	public Collection<String> keys() {
+		return Arrays.asList("set", "s", "expansion", "e");
 	}
 
 	@Override

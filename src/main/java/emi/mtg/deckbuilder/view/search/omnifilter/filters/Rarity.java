@@ -4,17 +4,13 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.function.Predicate;
 
 public class Rarity implements Omnifilter.Subfilter {
 	@Override
-	public String key() {
-		return "rarity";
-	}
-
-	@Override
-	public String shorthand() {
-		return "r";
+	public Collection<String> keys() {
+		return Arrays.asList("rarity", "r");
 	}
 
 	@Override

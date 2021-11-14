@@ -46,8 +46,7 @@ public class Omnifilter implements SearchProvider {
 	}
 
 	public interface Subfilter {
-		String key();
-		String shorthand();
+		Collection<String> keys();
 		String description();
 		Predicate<CardInstance> create(Omnifilter.Operator operator, String value);
 	}
@@ -75,10 +74,10 @@ public class Omnifilter implements SearchProvider {
 		Map<String, Subfilter> map = new HashMap<>();
 
 		for (Subfilter factory : ServiceLoader.load(Subfilter.class, MainApplication.PLUGIN_CLASS_LOADER)) {
-			if (factory.shorthand() != null && !factory.shorthand().isEmpty()) {
-				map.putIfAbsent(factory.shorthand(), factory);
+			for (String key : factory.keys()) {
+				if (map.containsKey(key)) throw new AssertionError(String.format("Duplicate omnifilter key: %s (from %s and %s)", key, map.get(key), factory));
+				map.put(key, factory);
 			}
-			map.put(factory.key(), factory);
 		}
 
 		return Collections.unmodifiableMap(map);
@@ -123,8 +122,8 @@ public class Omnifilter implements SearchProvider {
 
 		String filters = SUBFILTER_FACTORIES.values().stream()
 				.distinct()
-				.sorted(Comparator.comparing(Subfilter::key))
-				.map(f -> "<li><code>" + f.key() + "</code>" + (f.shorthand() != null && !f.shorthand().isEmpty() ? " or <code>" + f.shorthand() + "</code>" : "") + " &mdash; " + f.description() + "</li>")
+				.sorted(Comparator.comparing(f -> f.keys().iterator().next()))
+				.map(f -> "<li>" + f.keys().stream().map(k -> "<code>" + k + "</code>").collect(Collectors.joining(" or ")) + " &mdash; " + f.description() + "</li>")
 				.collect(Collectors.joining("\n"));
 
 		return start + "\n<ul>" + filters + "\n</ul>\n";

@@ -5,19 +5,15 @@ import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.search.omnifilter.Util;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 
 public class DeckTagFilter implements Omnifilter.Subfilter {
 	@Override
-	public String key() {
-		return "decktag";
-	}
-
-	@Override
-	public String shorthand() {
-		return "dt";
+	public Collection<String> keys() {
+		return Arrays.asList("decktag", "dt");
 	}
 
 	@Override

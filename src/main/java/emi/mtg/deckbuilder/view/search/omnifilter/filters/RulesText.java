@@ -3,17 +3,14 @@ package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.function.Predicate;
 
 public class RulesText implements Omnifilter.Subfilter {
 	@Override
-	public String key() {
-		return "text";
-	}
-
-	@Override
-	public String shorthand() {
-		return "o";
+	public Collection<String> keys() {
+		return Arrays.asList("text", "oracle", "o");
 	}
 
 	@Override
