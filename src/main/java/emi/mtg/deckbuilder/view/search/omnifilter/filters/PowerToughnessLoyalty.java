@@ -49,7 +49,7 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 		@Override
 		public String description() {
-			return "Search cards based on power. Use * or X to find cards with variable toughness.";
+			return "Search cards based on toughness. Use * or X to find cards with variable toughness.";
 		}
 
 		@Override
@@ -66,7 +66,7 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 
 		@Override
 		public String description() {
-			return "Search cards based on power. Use * or X to find cards with variable loyalty.";
+			return "Search cards based on loyalty. Use * or X to find cards with variable loyalty.";
 		}
 
 		@Override
