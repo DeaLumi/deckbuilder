@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.lib.mtg.Mana;
-import emi.lib.mtg.characteristic.Color;
+import emi.lib.mtg.enums.Color;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
 import javafx.collections.FXCollections;

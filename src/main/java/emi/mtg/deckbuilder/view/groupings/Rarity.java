@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view.groupings;
 
-import emi.lib.mtg.characteristic.CardRarity;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
 
@@ -13,9 +12,9 @@ public class Rarity extends CharacteristicGrouping implements CardView.Grouping 
 	private static final String[] GROUPS;
 
 	static {
-		GROUPS = Arrays.stream(CardRarity.values())
-				.sorted(Comparator.comparingInt(CardRarity::ordinal).reversed())
-				.map(CardRarity::toString)
+		GROUPS = Arrays.stream(emi.lib.mtg.enums.Rarity.values())
+				.sorted(Comparator.comparingInt(emi.lib.mtg.enums.Rarity::ordinal).reversed())
+				.map(emi.lib.mtg.enums.Rarity::toString)
 				.toArray(String[]::new);
 	}
 

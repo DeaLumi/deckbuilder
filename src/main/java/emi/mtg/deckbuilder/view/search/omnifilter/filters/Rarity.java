@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 
-import emi.lib.mtg.characteristic.CardRarity;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
@@ -25,7 +24,7 @@ public class Rarity implements Omnifilter.Subfilter {
 
 	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String svalue) {
-		CardRarity value = Arrays.stream(CardRarity.values())
+		emi.lib.mtg.enums.Rarity value = Arrays.stream(emi.lib.mtg.enums.Rarity.values())
 				.filter(r -> r.toString().toLowerCase().startsWith(svalue.toLowerCase()))
 				.findAny()
 				.orElseThrow(() -> new IllegalArgumentException("Couldn't find a card rarity for " + svalue));

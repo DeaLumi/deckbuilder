@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.Card;
-import emi.lib.mtg.characteristic.CardType;
+import emi.lib.mtg.enums.CardType;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;

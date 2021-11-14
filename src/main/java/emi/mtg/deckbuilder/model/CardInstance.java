@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.model;
 
 import emi.lib.mtg.Card;
-import emi.lib.mtg.characteristic.CardRarity;
+import emi.lib.mtg.enums.Rarity;
 import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.Context;
 
@@ -63,7 +63,7 @@ public class CardInstance implements Card.Printing, Serializable {
 	}
 
 	@Override
-	public CardRarity rarity() {
+	public Rarity rarity() {
 		return printing.rarity();
 	}
 

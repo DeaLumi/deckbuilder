@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 
 import emi.lib.mtg.Card;
-import emi.lib.mtg.characteristic.Color;
+import emi.lib.mtg.enums.Color;
 import emi.lib.mtg.util.CollectionComparator;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;

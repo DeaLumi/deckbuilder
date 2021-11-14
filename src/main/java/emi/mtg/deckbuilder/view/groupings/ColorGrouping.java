@@ -1,6 +1,6 @@
 package emi.mtg.deckbuilder.view.groupings;
 
-import emi.lib.mtg.characteristic.Color;
+import emi.lib.mtg.enums.Color;
 import emi.mtg.deckbuilder.model.CardInstance;
 
 import java.util.*;
