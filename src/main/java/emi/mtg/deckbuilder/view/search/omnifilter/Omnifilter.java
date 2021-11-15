@@ -83,7 +83,7 @@ public class Omnifilter implements SearchProvider {
 		return Collections.unmodifiableMap(map);
 	}
 
-	private static final Pattern PAREN_PATTERN = Pattern.compile("\"[^\"]+\"|(?<preor> or )?(?<negate>[!-])?\\((?<subexpr>[^)]+)\\)");
+	private static final Pattern PAREN_PATTERN = Pattern.compile("\"[^\"]+\"|(?<preor> or )?(?<negate>[!-])?\\((?<subexpr>[^()]+)\\)");
 	private static final Pattern OR_PATTERN = Pattern.compile("\"[^\"]+\"| or (?<orterm>.+)");
 	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]+\"|[^\\s]+)");
 
