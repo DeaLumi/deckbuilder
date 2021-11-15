@@ -16,7 +16,7 @@ public class ManaCost implements Omnifilter.Subfilter {
 
 	@Override
 	public String description() {
-		return "Compares against each face's mana cost. Costs containing hybrids need to be surrounded by curly braces, e.g. {1}{W}{U}.";
+		return "Compares against each face's mana cost. Costs containing hybrids need to be surrounded by curly braces, e.g. <code>{1}{W}{U}</code>.";
 	}
 
 	@Override
