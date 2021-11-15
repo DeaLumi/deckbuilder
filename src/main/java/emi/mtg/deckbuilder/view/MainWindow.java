@@ -1087,15 +1087,41 @@ public class MainWindow extends Stage {
 	}
 
 	@FXML
-	protected void copyListToClipboard() throws IOException {
+	protected void copyArenaList() throws IOException {
 		ClipboardContent content = new ClipboardContent();
 		content.put(DataFormat.PLAIN_TEXT, TextFile.Arena.INSTANCE.deckToString(activeDeck()));
 
 		if (!Clipboard.getSystemClipboard().setContent(content)) {
 			AlertBuilder.notify(MainWindow.this)
+					.type(Alert.AlertType.ERROR)
 					.title("Copy Failed")
 					.headerText("Unable to copy deck to clipboard.")
 					.contentText("No idea why, sorry -- maybe try again? Or clear your clipboard?")
+					.showAndWait();
+		}
+	}
+
+	@FXML
+	protected void pasteArenaList() {
+		if (!Clipboard.getSystemClipboard().hasString()) {
+			AlertBuilder.notify(MainWindow.this)
+					.type(Alert.AlertType.ERROR)
+					.title("No Clipboard Content")
+					.headerText("Nothing to paste!")
+					.contentText("Your clipboard appears to be empty.")
+					.showAndWait();
+			return;
+		}
+
+		try {
+			DeckList list = TextFile.Arena.INSTANCE.stringToDeck(Clipboard.getSystemClipboard().getString());
+			openDeckPane(list);
+		} catch (IOException ioe) {
+			AlertBuilder.notify(MainWindow.this)
+					.type(Alert.AlertType.ERROR)
+					.title("Paste Failed")
+					.headerText("An error occurred while importing.")
+					.contentText(ioe.getMessage())
 					.showAndWait();
 		}
 	}
