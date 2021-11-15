@@ -13,8 +13,9 @@
                     <Menu text="New..." fx:id="newDeckMenu"/> <!-- Children are populated by controller. -->
                     <MenuItem text="Open" onAction="#openDeck" accelerator="Shortcut+O"/>
                     <Menu text="Open Recent..." fx:id="openRecentDeckMenu"/> <!-- Children are populated by controller. -->
-                    <MenuItem text="Save" fx:id="saveDeckMenuItem" onAction="#saveDeck" accelerator="Shortcut+S"/>
-                    <MenuItem text="Save As" fx:id="saveDeckAsMenuItem" onAction="#saveDeckAs" accelerator="Shift+Shortcut+S"/>
+                    <MenuItem text="Save" onAction="#saveDeck" accelerator="Shortcut+S"/>
+                    <MenuItem text="Save As" onAction="#saveDeckAs" accelerator="Shift+Shortcut+S"/>
+                    <MenuItem text="Save a Copy" onAction="#saveDeckCopy" accelerator="Alt+Shortcut+S"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Import" onAction="#importDeck"/>
                     <MenuItem text="Export" onAction="#exportDeck"/>

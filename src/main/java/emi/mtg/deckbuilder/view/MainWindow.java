@@ -723,18 +723,23 @@ public class MainWindow extends Stage {
 
 	protected boolean doSaveDeck(DeckList deck) {
 		if (deck.source() == null) {
-			return doSaveDeckAs(deck);
+			return doSaveDeckAs(deck, true);
 		} else {
-			return saveDeck(deck, deck.source().toFile());
+			return saveDeck(deck, deck.source().toFile(), true);
 		}
 	}
 
 	@FXML
 	protected void saveDeckAs() {
-		doSaveDeckAs(activeDeck());
+		doSaveDeckAs(activeDeck(), true);
 	}
 
-	protected boolean doSaveDeckAs(DeckList deck) {
+	@FXML
+	protected void saveDeckCopy() {
+		doSaveDeckAs(activeDeck(), false);
+	}
+
+	protected boolean doSaveDeckAs(DeckList deck, boolean setSource) {
 		if (State.get().lastDeckDirectory != null) primaryFileChooser.setInitialDirectory(State.get().lastDeckDirectory.toFile());
 		File to = primaryFileChooser.showSaveDialog(this);
 
@@ -742,14 +747,19 @@ public class MainWindow extends Stage {
 			return false;
 		}
 
-		return saveDeck(deck, to);
+		return saveDeck(deck, to, setSource);
 	}
 
-	private boolean saveDeck(DeckList deck, File to) {
+	private boolean saveDeck(DeckList deck, File to, boolean setSource) {
 		try {
 			primarySerdes.exportDeck(deck, to);
-			deck.modifiedProperty().set(false);
-			deck.sourceProperty().setValue(to.toPath());
+
+			if (setSource) {
+				deck.modifiedProperty().set(false);
+				deck.sourceProperty().setValue(to.toPath());
+				State.get().lastDeckDirectory = activeDeck().source().getParent();
+			}
+
 			return true;
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
