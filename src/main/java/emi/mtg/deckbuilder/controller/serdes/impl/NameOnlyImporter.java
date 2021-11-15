@@ -11,6 +11,8 @@ import emi.mtg.deckbuilder.model.Preferences;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class NameOnlyImporter implements DeckImportExport {
 	private final static Map<String, Card> cache = new HashMap<>(), fullCache = new HashMap<>();
@@ -41,13 +43,26 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 	}
 
 	public static Card.Printing findPrinting(String name) {
+		return findPrinting(name, null, null);
+	}
+
+	public static Card.Printing findPrinting(String name, String setCode, String collectorNumber) {
 		Card card = findCard(name);
 
 		if (card == null) {
 			return null;
 		}
 
-		return Preferences.get().anyPrinting(card);
+		Stream<? extends Card.Printing> printings = card.printings().stream();
+		if (setCode != null) {
+			if (!setCode.isEmpty())
+				printings = printings.filter(pr -> pr.set().code().equalsIgnoreCase(setCode));
+			if (collectorNumber != null && !collectorNumber.isEmpty())
+				printings = printings.filter(pr -> pr.collectorNumber().equalsIgnoreCase(collectorNumber));
+			return printings.findAny().map(pr -> (Card.Printing) pr).orElse(Preferences.get().anyPrinting(card));
+		} else {
+			return Preferences.get().anyPrinting(card);
+		}
 	}
 
 	protected final Map<Zone, List<CardInstance>> deckCards;
@@ -95,7 +110,11 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 	}
 
 	protected void addCard(String name, int quantity) throws IOException {
-		Card.Printing pr = findPrinting(name);
+		addCard(name, null, null, quantity);
+	}
+
+	protected void addCard(String name, String setCode, String collectorNumber, int quantity) throws IOException {
+		Card.Printing pr = findPrinting(name, setCode, collectorNumber);
 
 		if (pr == null) {
 			throw new IOException(String.format("The deck refers to an unidentifiable card \"%s\"", name));

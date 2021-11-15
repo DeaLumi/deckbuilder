@@ -1089,7 +1089,7 @@ public class MainWindow extends Stage {
 	@FXML
 	protected void copyListToClipboard() throws IOException {
 		ClipboardContent content = new ClipboardContent();
-		content.put(DataFormat.PLAIN_TEXT, TextFile.deckToString(activeDeck()));
+		content.put(DataFormat.PLAIN_TEXT, TextFile.Arena.INSTANCE.deckToString(activeDeck()));
 
 		if (!Clipboard.getSystemClipboard().setContent(content)) {
 			AlertBuilder.notify(MainWindow.this)

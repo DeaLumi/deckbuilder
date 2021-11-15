@@ -1,5 +1,6 @@
 emi.mtg.deckbuilder.controller.serdes.impl.MTGO
-emi.mtg.deckbuilder.controller.serdes.impl.TextFile
+emi.mtg.deckbuilder.controller.serdes.impl.TextFile$PlainText
+emi.mtg.deckbuilder.controller.serdes.impl.TextFile$Arena
 emi.mtg.deckbuilder.controller.serdes.impl.Cockatrice
 emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter
-# N.B. impl.Json is instantiated directly. That may change in the future.
+# N.B. Json is instantiated directly. That may change in the future.

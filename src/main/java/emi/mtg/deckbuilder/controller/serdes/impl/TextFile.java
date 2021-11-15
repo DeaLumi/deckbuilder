@@ -2,35 +2,34 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
-import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TextFile extends NameOnlyImporter implements DeckImportExport.Monotype {
-	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>.+)(?: x?(?<postCount>\\d+))?(?![:])$");
+public abstract class TextFile extends NameOnlyImporter {
+	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>[-,A-Za-z0-9 '/]+)(?: \\((?<setCode>[A-Za-z0-9]+)\\)(?: (?<collectorNumber>[A-Za-z0-9]+))?| x(?<postCount>\\d+))?(?![:])$");
 	private static final Pattern ZONE_PATTERN = Pattern.compile("^(?:// )?(?<zoneName>[A-Za-z ]+):?$");
 
-	@Override
-	public String extension() {
-		return "txt";
-	}
+	protected abstract boolean preservePrintings();
 
-	@Override
-	public String toString() {
-		return "Plain Text File";
-	}
+	protected abstract String zoneToName(Zone zone);
 
-	public static boolean parseLine(String line, BiConsumer<Card.Printing, Integer> handler) {
+	protected abstract Zone nameToZone(String name);
+
+	public boolean parseLine(String line, BiConsumer<Card.Printing, Integer> handler) {
 		Matcher m = LINE_PATTERN.matcher(line.trim());
 
 		if (!m.matches()) return false;
+
+		// Spurious matches -- fortunately none of these are card names... for now.
+		if (nameToZone(m.group("cardName")) != null) return false;
 
 		int count;
 		if (m.group("preCount") != null) {
@@ -41,7 +40,17 @@ public class TextFile extends NameOnlyImporter implements DeckImportExport.Monot
 			count = 1;
 		}
 
-		Card.Printing pr = NameOnlyImporter.findPrinting(m.group("cardName"));
+		String setCode = null, collectorNumber = null;
+
+		if (m.group("setCode") != null) {
+			setCode = m.group("setCode");
+		}
+
+		if (m.group("collectorNumber") != null) {
+			collectorNumber = m.group("collectorNumber");
+		}
+
+		Card.Printing pr = NameOnlyImporter.findPrinting(m.group("cardName"), setCode, collectorNumber);
 
 		if (pr == null) return false;
 
@@ -51,9 +60,18 @@ public class TextFile extends NameOnlyImporter implements DeckImportExport.Monot
 
 	@Override
 	public DeckList importDeck(File from) throws IOException {
-		Scanner scanner = new Scanner(from);
+		DeckList deck = readDeck(new Scanner(from));
+		deck.nameProperty().setValue(from.getName().substring(0, from.getName().lastIndexOf('.')));
+		return deck;
+	}
 
-		name(from.getName().substring(0, from.getName().lastIndexOf('.')));
+	public DeckList stringToDeck(String from) throws IOException {
+		return readDeck(new Scanner(from));
+	}
+
+	protected DeckList readDeck(Scanner scanner) throws IOException {
+		beginImport();
+		name("Imported Deck");
 		author(Preferences.get().authorName);
 		description("");
 
@@ -72,17 +90,13 @@ public class TextFile extends NameOnlyImporter implements DeckImportExport.Monot
 					throw new IOException("Malformed line or unrecognized card: \"" + line + "\"");
 				}
 
-				String nextZoneName = zm.group("zoneName");
-				if ("SB".equals(nextZoneName) || "Outside the Game".equals(nextZoneName)) nextZoneName = "Sideboard";
-				if ("Commander".equals(nextZoneName)) nextZoneName = "Command";
-
-				try {
-					Zone nextZone = Zone.valueOf(nextZoneName);
-					endZone();
-					beginZone(nextZone);
-				} catch (IllegalArgumentException iae) {
-					throw new IOException("Unknown zone " + nextZoneName);
+				Zone nextZone = nameToZone(zm.group("zoneName"));
+				if (nextZone == null) {
+					throw new IOException("Text file references unknown zone \"" + zm.group("zoneName") + "\"");
 				}
+
+				endZone();
+				beginZone(nextZone);
 			}
 		}
 		endZone();
@@ -90,39 +104,44 @@ public class TextFile extends NameOnlyImporter implements DeckImportExport.Monot
 		return completeImport();
 	}
 
-	private static void writeList(List<CardInstance> list, Writer writer) throws IOException {
-		LinkedList<CardInstance> tmp = new LinkedList<>(list);
-		while (!tmp.isEmpty()) {
-			Card card = tmp.removeFirst().card();
+	protected void writeList(List<CardInstance> list, Writer writer) throws IOException {
+		Map<Card.Printing, AtomicInteger> qtyMap = new HashMap<>();
 
-			int count = 1;
-			Iterator<CardInstance> iter = tmp.iterator();
-			while (iter.hasNext()) {
-				if (iter.next().card().name().equals(card.name())) {
-					++count;
-					iter.remove();
+		listing: for (CardInstance ci : list) {
+			if (!preservePrintings()) {
+				for (Card.Printing pr : ci.card().printings()) {
+					if (qtyMap.containsKey(pr)) {
+						qtyMap.get(pr).incrementAndGet();
+						continue listing;
+					}
 				}
 			}
 
-			writer.append(Integer.toString(count)).append(' ').append(card.name()).append('\n');
+			qtyMap.computeIfAbsent(ci.printing(), x -> new AtomicInteger()).incrementAndGet();
+		}
+
+		for (Map.Entry<Card.Printing, AtomicInteger> entry : qtyMap.entrySet()) {
+			writer.append(Integer.toString(entry.getValue().get())).append(' ').append(entry.getKey().card().name());
+			if (preservePrintings()) writer.append(" (").append(entry.getKey().set().code().toUpperCase()).append(") ").append(entry.getKey().collectorNumber());
+			writer.append('\n');
 		}
 	}
 
-	private static void writeDeck(DeckList deck, Writer writer) throws IOException {
+	protected void writeDeck(DeckList deck, Writer writer) throws IOException {
 		for (Zone zone : Zone.values()) {
 			if (deck.cards(zone).isEmpty()) {
 				continue;
 			}
 
 			if (zone != Zone.Library) {
-				writer.append('\n').append(zone.name()).append(':').append('\n');
+				writer.append('\n').append(zoneToName(zone)).append('\n');
 			}
 
 			writeList(deck.cards(zone), writer);
 		}
 	}
 
-	public static String deckToString(DeckList deck) throws IOException {
+	public String deckToString(DeckList deck) throws IOException {
 		StringWriter writer = new StringWriter();
 		writeDeck(deck, writer);
 		return writer.toString();
@@ -135,8 +154,83 @@ public class TextFile extends NameOnlyImporter implements DeckImportExport.Monot
 		writer.close();
 	}
 
-	@Override
-	public EnumSet<Feature> supportedFeatures() {
-		return EnumSet.of(Feature.OtherZones);
+	public static class PlainText extends TextFile implements Monotype {
+		@Override
+		public String toString() {
+			return "Plain Text File";
+		}
+
+		@Override
+		public String extension() {
+			return "txt";
+		}
+
+		@Override
+		public EnumSet<Feature> supportedFeatures() {
+			return EnumSet.of(Feature.CardArt, Feature.OtherZones);
+		}
+
+		@Override
+		protected boolean preservePrintings() {
+			return true;
+		}
+
+		@Override
+		protected String zoneToName(Zone zone) {
+			return zone.name() + ":";
+		}
+
+		@Override
+		protected Zone nameToZone(String name) {
+			try {
+				return Zone.valueOf(name);
+			} catch (IllegalArgumentException iae) {
+				return null;
+			}
+		}
+	}
+
+	public static class Arena extends TextFile implements Monotype {
+		public static Arena INSTANCE = new Arena();
+
+		@Override
+		public String toString() {
+			return "Magic: the Gathering: Arena";
+		}
+
+		@Override
+		public String extension() {
+			return "txt";
+		}
+
+		@Override
+		public EnumSet<Feature> supportedFeatures() {
+			return EnumSet.of(Feature.CardArt, Feature.OtherZones);
+		}
+
+		@Override
+		protected boolean preservePrintings() {
+			return true;
+		}
+
+		@Override
+		protected String zoneToName(Zone zone) {
+			switch (zone) {
+				case Library: return "Deck";
+				case Command: return "Commander";
+				case Sideboard: return "Sideboard";
+				default: return null;
+			}
+		}
+
+		@Override
+		protected Zone nameToZone(String name) {
+			switch (name) {
+				case "Deck": return Zone.Library;
+				case "Commander": return Zone.Command;
+				case "Sideboard": return Zone.Sideboard;
+				default: return null;
+			}
+		}
 	}
 }
