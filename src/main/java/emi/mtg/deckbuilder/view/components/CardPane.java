@@ -179,7 +179,6 @@ public class CardPane extends BorderPane {
 	private final ToggleButton autoToggle;
 
 	public final ObjectProperty<Consumer<CardInstance>> autoAction = new SimpleObjectProperty<>(null);
-	public final ObjectProperty<Consumer<String>> listPasteAction = new SimpleObjectProperty<>(null);
 	public final BooleanProperty autoEnabled = new SimpleBooleanProperty(true);
 	public final BooleanProperty showingIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showingVersionsSeparately = new SimpleBooleanProperty(true);
@@ -283,27 +282,7 @@ public class CardPane extends BorderPane {
 				collapseDuplicates
 		);
 
-		filter = new TextField() {
-			@Override
-			public void paste() {
-				if (listPasteAction.get() == null) {
-					super.paste();
-					return;
-				}
-
-				final Clipboard clipboard = Clipboard.getSystemClipboard();
-				if (clipboard.hasString()) {
-					final String text = clipboard.getString();
-					if (text != null) {
-						if (text.contains("\n")) {
-							listPasteAction.get().accept(text);
-						} else {
-							super.paste();
-						}
-					}
-				}
-			}
-		};
+		filter = new TextField();
 		filter.setPromptText(Preferences.get().searchProvider.name() + "...");
 		filter.setMinSize(TextField.USE_PREF_SIZE, TextField.USE_PREF_SIZE);
 

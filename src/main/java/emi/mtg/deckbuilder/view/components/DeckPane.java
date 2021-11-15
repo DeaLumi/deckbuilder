@@ -169,33 +169,6 @@ public class DeckPane extends SplitPane {
 					pane.view().doubleClick(ci -> pane.changeModel(x -> x.remove(ci)));
 					pane.view().contextMenu(createDeckContextMenu(pane, z));
 					pane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
-					pane.listPasteAction.set(list -> {
-						String[] lines = list.split("\r?\n");
-						List<CardInstance> addAll = new ArrayList<>();
-						Set<String> unrecognized = new HashSet<>();
-
-						for (String line : lines) {
-							if (!TextFile.parseLine(line, (pr, count) -> {
-								for (int i = 0; i < count; ++i) {
-									addAll.add(new CardInstance(pr));
-								}
-							})) {
-								unrecognized.add(line);
-							}
-						}
-
-						pane.changeModel(x -> x.addAll(addAll));
-
-						if (!unrecognized.isEmpty()) {
-							AlertBuilder.notify(getScene().getWindow())
-									.title("Unrecognized Cards")
-									.type(Alert.AlertType.WARNING)
-									.headerText("Some cards weren't found.")
-									.contentText("The following cards couldn't be found:\n\u2022 " + String.join("\n\u2022 ", unrecognized))
-									.modal(Modality.WINDOW_MODAL)
-									.show();
-						}
-					});
 
 					return pane;
 				})
