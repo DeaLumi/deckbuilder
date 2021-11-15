@@ -14,7 +14,7 @@ import java.util.stream.StreamSupport;
 /**
  * Specifies a search provider to respond to searches in the filter bar above card views.
  * The primary function of a search provider is to compile a search query (string) into a predicate on CardInstances.
- * CardInstance is used specifically so filters can check things like deck tags.
+ * CardInstance is used specifically so filters can check things like tags.
  *
  * Search providers are instantiated as singletons within a deckbuilder interface, so no factory is required.
  */

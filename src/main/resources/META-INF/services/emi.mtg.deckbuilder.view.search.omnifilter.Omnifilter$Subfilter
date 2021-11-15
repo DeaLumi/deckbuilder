@@ -3,11 +3,10 @@ emi.mtg.deckbuilder.view.search.omnifilter.filters.CardType
 emi.mtg.deckbuilder.view.search.omnifilter.filters.ColorFilter$ColorIdentity
 emi.mtg.deckbuilder.view.search.omnifilter.filters.ColorFilter$CardColor
 emi.mtg.deckbuilder.view.search.omnifilter.filters.ManaValue
-emi.mtg.deckbuilder.view.search.omnifilter.filters.DeckTagFilter
+emi.mtg.deckbuilder.view.search.omnifilter.filters.TagFilter
 emi.mtg.deckbuilder.view.search.omnifilter.filters.PowerToughnessLoyalty$Toughness
 emi.mtg.deckbuilder.view.search.omnifilter.filters.PowerToughnessLoyalty$Loyalty
 emi.mtg.deckbuilder.view.search.omnifilter.filters.PowerToughnessLoyalty$Power
 emi.mtg.deckbuilder.view.search.omnifilter.filters.Rarity
 emi.mtg.deckbuilder.view.search.omnifilter.filters.Regex
 emi.mtg.deckbuilder.view.search.omnifilter.filters.RulesText
-emi.mtg.deckbuilder.view.search.omnifilter.filters.TagFilter

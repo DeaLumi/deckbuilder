@@ -514,8 +514,7 @@ public class CardView extends Canvas {
 				if (!immutableModel.get()) {
 					Set<CardInstance> newCards = dragSource.selectedCards.stream()
 							.map(ci -> {
-								CardInstance clone = new CardInstance(ci.printing());
-								clone.tags().addAll(ci.tags());
+								CardInstance clone = new CardInstance(ci);
 
 								if (this.hoverGroup != null && this.grouping.supportsModification()) {
 									this.hoverGroup.group.add(clone);

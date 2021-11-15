@@ -248,7 +248,7 @@ public class DeckPane extends SplitPane {
 			moveMenu.getItems().add(moveItem);
 		}
 
-		Menu tagsMenu = new Menu("Deck Tags");
+		Menu tagsMenu = new Menu("Tags");
 
 		menu.setOnShowing(e -> {
 			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();

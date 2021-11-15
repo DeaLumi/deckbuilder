@@ -215,6 +215,7 @@ public class MainWindow extends Stage {
 		return FXCollections.observableList(cs.printings().stream()
 				.map(CardInstance::new)
 				.peek(ci -> ci.flags.add(CardInstance.Flags.Unlimited))
+				.peek(ci -> ci.tags().addAll(Context.get().tags.tags(ci.card())))
 				.peek(this::flagCollectionCardLegality)
 				.collect(Collectors.toList()));
 	}
@@ -261,9 +262,15 @@ public class MainWindow extends Stage {
 					.peek(cmi -> cmi.setSelected(menu.cards.stream().allMatch(ci -> tags.tags(ci.card()).contains(cmi.getText()))))
 					.peek(cmi -> cmi.selectedProperty().addListener((cmiObj, wasSelected, isSelected) -> {
 						if (isSelected) {
-							menu.cards.forEach(ci -> tags.add(ci.card(), cmi.getText()));
+							menu.cards.forEach(ci -> {
+								ci.tags().add(cmi.getText());
+								tags.add(ci.card(), cmi.getText());
+							});
 						} else {
-							menu.cards.forEach(ci -> tags.remove(ci.card(), cmi.getText()));
+							menu.cards.forEach(ci -> {
+								ci.tags().remove(cmi.getText());
+								tags.remove(ci.card(), cmi.getText());
+							});
 
 							if (tags.cards(cmi.getText()) == null || tags.cards(cmi.getText()).isEmpty()) {
 								tags.tags().remove(cmi.getText());
@@ -307,7 +314,7 @@ public class MainWindow extends Stage {
 					for (CardInstance source : menu.cards) {
 						long count = activeDeck().format().maxCopies - model.parallelStream().filter(ci -> ci.card().equals(source.card())).count(); // TODO: Should count all zones.
 						for (int i = 0; i < count; ++i) {
-							model.add(new CardInstance(source.printing()));
+							model.add(new CardInstance(source));
 						}
 					}
 				});
@@ -327,8 +334,8 @@ public class MainWindow extends Stage {
 				Preferences.get().collectionGrouping,
 				Preferences.get().collectionSorting);
 		collection.view().immutableModelProperty().set(true);
-		collection.view().doubleClick(ci -> activeDeckPane().zonePane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci.printing()))));
-		collection.autoAction.set(ci -> activeDeckPane().zonePane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci.printing()))));
+		collection.view().doubleClick(ci -> activeDeckPane().zonePane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci))));
+		collection.autoAction.set(ci -> activeDeckPane().zonePane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci))));
 
 		collection.view().contextMenu(createCollectionContextMenu());
 
@@ -818,16 +825,13 @@ public class MainWindow extends Stage {
 			"\u2022 Application -> Save Preferences to remember chosen versions in the Collection.",
 			"",
 			"Tags:",
-			"\u2022 Right click collection cards to assign tags.",
+			"\u2022 Right click a card to assign tags.",
 			"\u2022 Change any view to Grouping -> Tags to group cards by their tags.",
-			"\u2022 While grouped by tags, drag cards to their tag groups to assign tags!",
-			"\u2022 You can even Control+Drag to assign multiple tags to a card!",
+			"\u2022 While grouped by tags, drag cards to their tag groups to assign tags.",
+			"\u2022 You can even Control+Drag to assign multiple tags to a card.",
 			"\u2022 Search for cards by tag with the 'tag' filter: \"tag:wrath\"",
-			"",
-			"Deck Tags:",
-			"\u2022 Just like tags, but saved within the deck.",
-			"\u2022 Can be used as a grouping to organize complex decks.",
-			"\u2022 Right click on a card in a deck to get started.",
+			"\u2022 Tags assigned to cards in the collection are saved globally and transfer one-way into decks.",
+			"\u2022 Tags are also saved and can be edited in decks, independently of the collection.",
 			"",
 			"I never claimed to be good at UI design! :^)");
 

@@ -35,6 +35,11 @@ public class CardInstance implements Card.Printing, Serializable {
 		this.printing = printing;
 	}
 
+	public CardInstance(CardInstance clone) {
+		this(clone.printing);
+		tags.addAll(clone.tags);
+	}
+
 	public Card card() {
 		return printing.card();
 	}
