@@ -164,7 +164,10 @@ public class Operators {
 		register(left, right, BinaryIntent.LessThan, boolean.class, (a, b) -> compare.applyAsDouble(a, b) < 0);
 		register(left, right, BinaryIntent.LessThanOrEqualTo, boolean.class, (a, b) -> compare.applyAsDouble(a, b) <= 0);
 		register(left, right, BinaryIntent.EqualTo, boolean.class, (a, b) -> compare.applyAsDouble(a, b) == 0);
-		register(left, right, BinaryIntent.NotEqualTo, boolean.class, (a, b) -> compare.applyAsDouble(a, b) != 0);
+		register(left, right, BinaryIntent.NotEqualTo, boolean.class, (a, b) -> {
+			double val = compare.applyAsDouble(a, b);
+			return val < 0 || val > 0;
+		});
 		register(left, right, BinaryIntent.GreaterThanOrEqualTo, boolean.class, (a, b) -> compare.applyAsDouble(a, b) >= 0);
 		register(left, right, BinaryIntent.GreaterThan, boolean.class, (a, b) -> compare.applyAsDouble(a, b) > 0);
 	}
@@ -258,7 +261,7 @@ public class Operators {
 		register(double.class, double.class, BinaryIntent.LessThan, boolean.class, (a, b) -> a < b);
 		register(double.class, double.class, BinaryIntent.LessThanOrEqualTo, boolean.class, (a, b) -> a <= b);
 		register(double.class, double.class, BinaryIntent.EqualTo, boolean.class, Double::equals);
-		register(double.class, double.class, BinaryIntent.NotEqualTo, boolean.class, (a, b) -> a != b);
+		register(double.class, double.class, BinaryIntent.NotEqualTo, boolean.class, (a, b) -> a < b || a > b); // N.B. using != would return true for NaNs.
 		register(double.class, double.class, BinaryIntent.GreaterThanOrEqualTo, boolean.class, (a, b) -> a >= b);
 		register(double.class, double.class, BinaryIntent.GreaterThan, boolean.class, (a, b) -> a > b);
 
