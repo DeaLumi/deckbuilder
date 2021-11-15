@@ -11,3 +11,4 @@ emi.mtg.deckbuilder.view.search.omnifilter.filters.Rarity
 emi.mtg.deckbuilder.view.search.omnifilter.filters.Regex
 emi.mtg.deckbuilder.view.search.omnifilter.filters.RulesText
 emi.mtg.deckbuilder.view.search.omnifilter.filters.ManaCost
+emi.mtg.deckbuilder.view.search.omnifilter.filters.IsFilter
