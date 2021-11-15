@@ -22,6 +22,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -98,6 +99,11 @@ public class MainApplication extends Application {
 
 	public void closeAllWindows() {
 		for (MainWindow child : mainWindows) {
+			if (child.getOnCloseRequest() != null) {
+				WindowEvent closeEvent = new WindowEvent(child, WindowEvent.WINDOW_CLOSE_REQUEST);
+				child.getOnCloseRequest().handle(closeEvent);
+				if (closeEvent.isConsumed()) return;
+			}
 			child.close();
 		}
 	}
