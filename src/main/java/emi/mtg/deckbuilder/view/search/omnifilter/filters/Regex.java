@@ -25,7 +25,14 @@ public class Regex implements Omnifilter.Subfilter {
 			throw new IllegalArgumentException("Can only use ':' with regex filter.");
 		}
 
-		Pattern pattern = Pattern.compile(value);
-		return (Omnifilter.FaceFilter) face -> pattern.matcher(face.rules()).find();
+		if (value.indexOf('~') >= 0 || value.contains("CARDNAME")) {
+			return (Omnifilter.FaceFilter) face -> {
+				Pattern pattern = Pattern.compile(value.replace("~", face.name()).replace("CARDNAME", face.name()));
+				return pattern.matcher(face.rules()).find();
+			};
+		} else {
+			Pattern pattern = Pattern.compile(value);
+			return (Omnifilter.FaceFilter) face -> pattern.matcher(face.rules()).find();
+		}
 	}
 }

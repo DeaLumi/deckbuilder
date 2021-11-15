@@ -20,21 +20,13 @@ public class RulesText implements Omnifilter.Subfilter {
 
 	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
-		return (Omnifilter.FaceFilter) face -> {
-			switch (operator) {
-				case DIRECT:
-				case GREATER_OR_EQUALS:
-					return face.rules().toLowerCase().contains(value.toLowerCase());
-				case LESS_OR_EQUALS:
-				case NOT_EQUALS:
-				case LESS_THAN:
-				case EQUALS:
-				case GREATER_THAN:
-					// TODO: Maybe throw in constructor...
-					return true;
-				default:
-					return false;
-			}
-		};
+		if (operator != Omnifilter.Operator.DIRECT) throw new IllegalArgumentException("Can only use ':' with rules filter.");
+
+		if (value.indexOf('~') >= 0 || value.contains("CARDNAME")) {
+			return (Omnifilter.FaceFilter) face -> face.rules().toLowerCase().contains(value.replace("~", face.name()).replace("CARDNAME", face.name()).toLowerCase());
+		} else {
+			final String search = value.toLowerCase();
+			return (Omnifilter.FaceFilter) face -> face.rules().toLowerCase().contains(search);
+		}
 	}
 }
