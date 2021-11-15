@@ -339,7 +339,7 @@ public class Operators {
 		}
 
 		static double compare(Mana.Value left, Mana.Value right) {
-			return Mana.Value.SEARCH_COMPARATOR.compare(left, right);
+			return Mana.Value.SEARCH_COMPARATOR.compare(left, right).value();
 		}
 
 		static double count(Mana.Value object) {
