@@ -83,7 +83,8 @@ public class Omnifilter implements SearchProvider {
 		return Collections.unmodifiableMap(map);
 	}
 
-	private static final Pattern PAREN_PATTERN = Pattern.compile("(?<preor> or )?(?<negate>[!-])?\\((?<subexpr>[^)]+)\\)");
+	private static final Pattern PAREN_PATTERN = Pattern.compile("\"[^\"]+\"|(?<preor> or )?(?<negate>[!-])?\\((?<subexpr>[^)]+)\\)");
+	private static final Pattern OR_PATTERN = Pattern.compile("\"[^\"]+\"| or (?<orterm>.+)");
 	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]+\"|[^\\s]+)");
 
 	public static final String NAME = "Omnifilter";
@@ -136,6 +137,8 @@ public class Omnifilter implements SearchProvider {
 		Matcher pm = PAREN_PATTERN.matcher(expression);
 		int lastEnd = 0;
 		while (pm.find()) {
+			if (pm.group("subexpr") == null) continue;
+
 			if (pm.start() > lastEnd) {
 				String prefaceStr = expression.substring(lastEnd, pm.start()).trim();
 				boolean or = false;
@@ -156,12 +159,20 @@ public class Omnifilter implements SearchProvider {
 
 		expression = expression.substring(lastEnd).trim();
 
-		String[] segments = expression.split(" or ");
-		if (segments.length > 1) {
-			Predicate<CardInstance> result = c -> false;
-			for (String segment : segments) {
-				result = result.or(parse(segment.trim()));
+		pm = OR_PATTERN.matcher(expression);
+		lastEnd = 0;
+		while (pm.find()) {
+			if (pm.group("orterm") == null) continue;
+
+			Predicate<CardInstance> result;
+			if (pm.start() > lastEnd) {
+				String prefaceStr = expression.substring(lastEnd, pm.start()).trim();
+				result = parse(prefaceStr);
+			} else {
+				throw new IllegalArgumentException("???");
 			}
+
+			result = result.or(parse(pm.group("orterm")));
 			return result;
 		}
 
