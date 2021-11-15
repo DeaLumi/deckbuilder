@@ -821,7 +821,6 @@ public class MainWindow extends Stage {
 			"Card versions:",
 			"\u2022 Alt+Click on cards to show all printings.",
 			"\u2022 Double-click a printing to change the version of the card you clicked on.",
-			"\u2022 Application -> Save Preferences to remember chosen versions in the Collection.",
 			"",
 			"Tags:",
 			"\u2022 Right click a card to assign tags.",
