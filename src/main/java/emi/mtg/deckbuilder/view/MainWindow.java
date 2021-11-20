@@ -821,6 +821,7 @@ public class MainWindow extends Stage {
 	private static final String ABOUT_TEXT = String.join("\n",
 			"Developer: Emi (@DeaLumi)",
 			"Data & Images: Scryfall (@Scryfall)",
+			"Time Spiral SVG: BaconCatBug's Set Symbol Megapack",
 			"",
 			"Source code is almost available on GitHub, I swear.",
 			"Feel free to DM me with feedback/issues on Twitter!",
