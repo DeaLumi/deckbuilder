@@ -8,15 +8,10 @@ import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.event.ActionEvent;
-import javafx.geometry.HPos;
-import javafx.geometry.Orientation;
-import javafx.geometry.Pos;
-import javafx.geometry.VPos;
+import javafx.geometry.*;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
+import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
@@ -29,8 +24,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
@@ -426,35 +420,51 @@ public class PreferencesDialog extends Alert {
 		return true;
 	};
 
-	private final PrefEntry[] PREFERENCE_FIELDS = {
-			reflectField(ThemePreference::new, "Theme", "theme", x -> true),
-			reflectField(WindowBehaviorPreference::new, "Open/New Deck Window", "windowBehavior", x -> true),
-			new PrefSeparator(),
-			reflectField(PathPreference::new, "Data Path", "dataPath", PATH_WRITABLE_VALIDATOR),
-			reflectField(PathPreference::new, "Images Path", "imagesPath", IMAGES_PATH_VALIDATOR),
-			new PrefSeparator(),
-			reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
-			reflectField(PreferVariationPreference::new, "Prefer Variation", "preferVariation", x -> true),
-			reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
-			reflectField(BooleanPreference::new, "Prefer Physical Versions","preferPhysical", x -> true),
-			reflectField(BooleanPreference::new, "Prefer Standard Printing", "preferStandard", x -> true),
-			new PrefSeparator(),
-			reflectField(SearchProviderPreference::new, "Search Provider", "searchProvider", x -> true),
-			reflectField(BooleanPreference::new, "The Future is Now", "theFutureIsNow", x -> true),
-			reflectField(BooleanPreference::new, "Collapse Duplicates", "collapseDuplicates", x -> true),
-			reflectField(GroupingPreference::new, "Collection Grouping", "collectionGrouping", x -> true),
-			reflectField(SortingPreference::new, "Collection Sorting", "collectionSorting", x -> true),
-			zoneGroupingPreference(Zone.Library),
-			zoneGroupingPreference(Zone.Sideboard),
-			zoneGroupingPreference(Zone.Command),
-			new PrefSeparator(),
-			reflectField(StringPreference::new, "Default Author", "authorName", x -> true),
-			reflectField(FormatPreference::new, "Default Format", "defaultFormat", x -> true),
-			new PrefSeparator(),
-			reflectField(BooleanPreference::new, "Auto-Update Data", "autoUpdateData", x -> true),
-			reflectField(BooleanPreference::new, "Auto-Update Deckbuilder", "autoUpdateProgram", x -> true),
-			reflectField(URIPreference::new, "Update URL", "updateUri", x -> true)
-	};
+	private final Map<String, PrefEntry[]> PREFERENCE_FIELDS = preferenceFields();
+
+	private Map<String, PrefEntry[]> preferenceFields() {
+		Map<String, PrefEntry[]> map = new LinkedHashMap<>();
+
+		map.put("Interface", new PrefEntry[] {
+				reflectField(ThemePreference::new, "Theme", "theme", x -> true),
+				reflectField(WindowBehaviorPreference::new, "Window Behavior", "windowBehavior", x -> true),
+				new PrefSeparator(),
+				reflectField(StringPreference::new, "Default Author", "authorName", x -> true),
+				reflectField(FormatPreference::new, "Default Format", "defaultFormat", x -> true),
+		});
+
+		map.put("Printing Selection", new PrefEntry[] {
+				reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
+				reflectField(PreferVariationPreference::new, "Prefer Variation", "preferVariation", x -> true),
+				reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
+				reflectField(BooleanPreference::new, "Prefer Physical Versions","preferPhysical", x -> true),
+				reflectField(BooleanPreference::new, "Prefer Standard Printing", "preferStandard", x -> true),
+		});
+
+		map.put("Collection & Zones", new PrefEntry[] {
+				reflectField(SearchProviderPreference::new, "Search Provider", "searchProvider", x -> true),
+				new PrefSeparator(),
+				reflectField(BooleanPreference::new, "The Future is Now", "theFutureIsNow", x -> true),
+				reflectField(BooleanPreference::new, "Collapse Duplicates", "collapseDuplicates", x -> true),
+				reflectField(GroupingPreference::new, "Collection Grouping", "collectionGrouping", x -> true),
+				reflectField(SortingPreference::new, "Collection Sorting", "collectionSorting", x -> true),
+				new PrefSeparator(),
+				zoneGroupingPreference(Zone.Library),
+				zoneGroupingPreference(Zone.Sideboard),
+				zoneGroupingPreference(Zone.Command),
+		});
+
+		map.put("Paths & Updates", new PrefEntry[] {
+				reflectField(PathPreference::new, "Data Path", "dataPath", PATH_WRITABLE_VALIDATOR),
+				reflectField(PathPreference::new, "Images Path", "imagesPath", IMAGES_PATH_VALIDATOR),
+				new PrefSeparator(),
+				reflectField(BooleanPreference::new, "Auto-Update Data", "autoUpdateData", x -> true),
+				reflectField(BooleanPreference::new, "Auto-Update Deckbuilder", "autoUpdateProgram", x -> true),
+				reflectField(URIPreference::new, "Update URL", "updateUri", x -> true)
+		});
+
+		return Collections.unmodifiableMap(map);
+	}
 
 	public PreferencesDialog(Window owner) {
 		super(AlertType.CONFIRMATION);
@@ -463,23 +473,38 @@ public class PreferencesDialog extends Alert {
 		setHeaderText("Update Preferences");
 		getDialogPane().setStyle(Preferences.get().theme.style());
 
-		GridPane grid = new GridPane();
-		grid.setHgap(10.0);
-		grid.setVgap(10.0);
+		TabPane tabs = new TabPane();
+		tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+		tabs.getStyleClass().add(TabPane.STYLE_CLASS_FLOATING);
 
-		int i = -1;
-		for (PrefEntry entry : PREFERENCE_FIELDS) {
-			entry.installGui(grid, ++i);
+		for (Map.Entry<String, PrefEntry[]> tab : PREFERENCE_FIELDS.entrySet()) {
+			GridPane grid = new GridPane();
+			grid.setHgap(10.0);
+			grid.setVgap(10.0);
+			grid.setMaxWidth(GridPane.USE_PREF_SIZE);
+			grid.setMaxHeight(GridPane.USE_PREF_SIZE);
 
-			if (entry instanceof Preference) {
-				((Preference<?>) entry).init();
+			int i = -1;
+			for (PrefEntry entry : tab.getValue()) {
+				entry.installGui(grid, ++i);
+
+				if (entry instanceof Preference) {
+					((Preference<?>) entry).init();
+				}
 			}
+
+			StackPane pane = new StackPane(grid);
+			pane.setPadding(new Insets(10.0));
+			StackPane.setAlignment(grid, Pos.CENTER);
+
+			tabs.getTabs().add(new Tab(tab.getKey(), pane));
 		}
 
-		getDialogPane().setContent(grid);
+		getDialogPane().setContent(tabs);
 
 		getDialogPane().lookupButton(ButtonType.OK).addEventFilter(ActionEvent.ACTION, ae -> {
-			List<String> invalidPrefs = Arrays.stream(PREFERENCE_FIELDS)
+			List<String> invalidPrefs = PREFERENCE_FIELDS.values().stream()
+					.flatMap(Arrays::stream)
 					.filter(f -> f instanceof Preference)
 					.map(f -> (Preference<?>) f)
 					.filter(f -> !f.validate())
@@ -493,7 +518,8 @@ public class PreferencesDialog extends Alert {
 
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
-				Arrays.stream(PREFERENCE_FIELDS)
+				PREFERENCE_FIELDS.values().stream()
+						.flatMap(Arrays::stream)
 						.filter(f -> f instanceof Preference)
 						.map(f -> (Preference<?>) f)
 						.forEach(Preference::save);
