@@ -43,7 +43,7 @@ public class CardSet implements Omnifilter.Subfilter {
 				case GREATER_OR_EQUALS:
 					return ci.card().printings().stream().anyMatch(x -> x.set() == set);
 				case LESS_THAN:
-					return false;
+					return ci.card().printings().stream().noneMatch(x -> x.set() == set);
 				default:
 					assert false;
 					return false;

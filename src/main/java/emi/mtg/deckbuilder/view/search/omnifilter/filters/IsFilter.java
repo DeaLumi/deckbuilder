@@ -25,7 +25,7 @@ public class IsFilter implements Omnifilter.Subfilter {
 		docs.put("dfc", "Finds two-faced cards (transforming and MDFCs).");
 		opts.put("flip", ci -> ci.card().face(Card.Face.Kind.Flipped) != null);
 		docs.put("flip", "Finds cards which flip over (rotating 180 degrees).");
-		opts.put("permanent", ci -> ci.card().faces().stream().anyMatch(f -> f.type().cardTypes().stream().anyMatch(t -> t.permanent)));
+		opts.put("permanent", ci -> ci.card().faces().stream().anyMatch(f -> f.type().isPermanent()));
 		docs.put("permanent", "Finds cards which are permanents.");
 
 		OPTS = opts;
