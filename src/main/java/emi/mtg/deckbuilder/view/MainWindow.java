@@ -577,10 +577,6 @@ public class MainWindow extends Stage {
 		if (from == null) return;
 
 		try {
-			if (checkDeckForVariants(from.toFile())) {
-				return;
-			}
-
 			DeckList list = primarySerdes.importDeck(from.toFile());
 			list.sourceProperty().setValue(from);
 			if (openDeckPane(list)) {
@@ -639,55 +635,6 @@ public class MainWindow extends Stage {
 
 	private static final String VARIANTS_OPENED = String.join("\n",
 			"You should save each of them separately!");
-
-	private boolean checkDeckForVariants(File f) throws IOException {
-		java.io.FileReader reader = new java.io.FileReader(f);
-		DeckListWithVariants lwv = Context.get().gson.getAdapter(DeckListWithVariants.class).fromJson(reader);
-
-		if (lwv == null || lwv.variants == null) {
-			return false;
-		}
-
-		if (lwv.variants.size() == 1) {
-			DeckListWithVariants.Variant var = lwv.variants.iterator().next();
-			DeckList list = lwv.toDeckList(var);
-			list.sourceProperty().setValue(f.toPath());
-			list.modifiedProperty().setValue(true);
-			addDeck(lwv.toDeckList(var));
-			return true;
-		}
-
-		if (lwv.variants.size() > 1) {
-			ButtonType result = AlertBuilder.query(this)
-					.title("Variants")
-					.headerText("A deck with variants was opened.")
-					.contentText(VARIANTS_QUERY)
-					.modal(Modality.WINDOW_MODAL)
-					.showAndWait().orElse(ButtonType.NO);
-
-			if (result != ButtonType.YES) {
-				return true;
-			}
-		}
-
-		for (DeckListWithVariants.Variant var : lwv.variants) {
-			DeckList list = lwv.toDeckList(var);
-			list.modifiedProperty().set(true);
-			addDeck(list);
-		}
-
-		if (lwv.variants.size() > 1) {
-			this.requestFocus();
-			AlertBuilder.notify(this)
-					.title("Variants Opened")
-					.headerText("All variants have been opened.")
-					.contentText(VARIANTS_OPENED)
-					.modal(Modality.WINDOW_MODAL)
-					.show();
-		}
-
-		return true;
-	}
 
 	protected boolean offerSaveIfModifiedAll() {
 		return allDecks().allMatch(this::offerSaveIfModified);
