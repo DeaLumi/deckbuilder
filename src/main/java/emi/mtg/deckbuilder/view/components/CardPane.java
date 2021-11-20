@@ -302,6 +302,8 @@ public class CardPane extends BorderPane {
 
 		filterErrorTooltip = new Tooltip();
 		filter.setTooltip(filterErrorTooltip);
+		Tooltip.uninstall(filter, filterErrorTooltip);
+		filter.getTooltip().setText("");
 
 		autoToggle = new ToggleButton("Auto");
 		autoToggle.visibleProperty().bind(autoAction.isNotNull());
