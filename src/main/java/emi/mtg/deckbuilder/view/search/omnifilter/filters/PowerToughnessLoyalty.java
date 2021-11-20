@@ -6,25 +6,14 @@ import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
-	private final Omnifilter.Operator operator;
-	private final boolean hasValue;
-	private final double value;
-	private final Function<Card.Face, String> characteristic;
-	private final Function<Card.Face, Double> convertedCharacteristic;
+public abstract class PowerToughnessLoyalty implements Omnifilter.Subfilter {
+	protected abstract double getValue(Card.Face face);
 
-	private PowerToughnessLoyalty(Omnifilter.Operator operator, String value, Function<Card.Face, String> characteristic, Function<Card.Face, Double> converted) {
-		this.operator = operator;
-		this.hasValue = !value.contains("*") && !value.contains("X");
-		this.value = hasValue ? Float.parseFloat(value.toLowerCase()) : -1;
-		this.characteristic = characteristic;
-		this.convertedCharacteristic = converted;
-	}
+	protected abstract String getRawValue(Card.Face face);
 
-	public static class Power implements Omnifilter.Subfilter {
+	public static class Power extends PowerToughnessLoyalty {
 		@Override
 		public Collection<String> keys() {
 			return Arrays.asList("power", "pow");
@@ -36,12 +25,17 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 		}
 
 		@Override
-		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
-			return new PowerToughnessLoyalty(operator, value, Card.Face::printedPower, Card.Face::power);
+		protected double getValue(Card.Face face) {
+			return face.power();
+		}
+
+		@Override
+		protected String getRawValue(Card.Face face) {
+			return face.printedPower();
 		}
 	}
 
-	public static class Toughness implements Omnifilter.Subfilter {
+	public static class Toughness extends PowerToughnessLoyalty {
 		@Override
 		public Collection<String> keys() {
 			return Arrays.asList("toughness", "tou");
@@ -53,12 +47,17 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 		}
 
 		@Override
-		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
-			return new PowerToughnessLoyalty(operator, value, Card.Face::printedToughness, Card.Face::toughness);
+		protected double getValue(Card.Face face) {
+			return face.toughness();
+		}
+
+		@Override
+		protected String getRawValue(Card.Face face) {
+			return face.printedToughness();
 		}
 	}
 
-	public static class Loyalty implements Omnifilter.Subfilter {
+	public static class Loyalty extends PowerToughnessLoyalty {
 		@Override
 		public Collection<String> keys() {
 			return Arrays.asList("loyalty", "loy");
@@ -70,36 +69,32 @@ public class PowerToughnessLoyalty implements Omnifilter.FaceFilter {
 		}
 
 		@Override
-		public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
-			return new PowerToughnessLoyalty(operator, value, Card.Face::printedLoyalty, Card.Face::loyalty);
+		protected double getValue(Card.Face face) {
+			return face.loyalty();
+		}
+
+		@Override
+		protected String getRawValue(Card.Face face) {
+			return face.printedLoyalty();
 		}
 	}
 
 	@Override
-	public boolean testFace(Card.Face face) {
-		double converted = convertedCharacteristic.apply(face);
-
-		if (Double.isNaN(converted)) {
-			return false;
+	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
+		if (value.contains("*") || value.contains("X")) {
+			switch (operator) {
+				case DIRECT:
+				case EQUALS:
+					return (Omnifilter.FaceFilter) f -> getRawValue(f).contains("*") || getRawValue(f).contains("X");
+				case NOT_EQUALS:
+					return (Omnifilter.FaceFilter) f -> !getRawValue(f).contains("*") && !getRawValue(f).contains("X");
+				default:
+					throw new IllegalArgumentException("Can't use comparison operators with variable values.");
+			}
 		}
 
-		switch (operator) {
-			case DIRECT:
-			case EQUALS:
-				return hasValue ? value == converted : characteristic.apply(face).contains("*");
-			case LESS_OR_EQUALS:
-				return converted <= value;
-			case LESS_THAN:
-				return converted < value;
-			case GREATER_THAN:
-				return converted > value;
-			case GREATER_OR_EQUALS:
-				return converted >= value;
-			case NOT_EQUALS:
-				return hasValue ? value != converted : !characteristic.apply(face).contains("*");
-			default:
-				assert false;
-				return false;
-		}
+		double doubleValue = Double.parseDouble(value.toLowerCase());
+		if (operator == Omnifilter.Operator.DIRECT) operator = Omnifilter.Operator.EQUALS;
+		return Omnifilter.Operator.faceComparison(operator, f -> getValue(f) - doubleValue);
 	}
 }

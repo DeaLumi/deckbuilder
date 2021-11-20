@@ -28,25 +28,7 @@ public class ManaCost implements Omnifilter.Subfilter {
 			mana = Mana.Value.parse(value);
 		}
 
-		switch (operator) {
-			case LESS_THAN:
-				return (Omnifilter.FaceFilter) face -> Mana.Value.SEARCH_COMPARATOR.compare(face.manaCost(), mana).value() < 0;
-			case LESS_OR_EQUALS:
-				return (Omnifilter.FaceFilter) face -> Mana.Value.SEARCH_COMPARATOR.compare(face.manaCost(), mana).value() <= 0;
-			case EQUALS:
-			case DIRECT:
-				return (Omnifilter.FaceFilter) face -> Mana.Value.SEARCH_COMPARATOR.compare(face.manaCost(), mana).value() == 0;
-			case NOT_EQUALS:
-				return (Omnifilter.FaceFilter) face -> {
-					double cmp = Mana.Value.SEARCH_COMPARATOR.compare(face.manaCost(), mana).value();
-					return !Double.isNaN(cmp) && cmp != 0;
-				};
-			case GREATER_OR_EQUALS:
-				return (Omnifilter.FaceFilter) face -> Mana.Value.SEARCH_COMPARATOR.compare(face.manaCost(), mana).value() >= 0;
-			case GREATER_THAN:
-				return (Omnifilter.FaceFilter) face -> Mana.Value.SEARCH_COMPARATOR.compare(face.manaCost(), mana).value() > 0;
-		}
-
-		throw new IllegalArgumentException("No such operator " + operator);
+		if (operator == Omnifilter.Operator.DIRECT) operator = Omnifilter.Operator.EQUALS;
+		return Omnifilter.Operator.faceComparison(operator, f -> Mana.Value.SEARCH_COMPARATOR.compare(f.manaCost(), mana).value());
 	}
 }

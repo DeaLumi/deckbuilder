@@ -7,6 +7,7 @@ import emi.mtg.deckbuilder.view.search.SearchProvider;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -42,6 +43,30 @@ public class Omnifilter implements SearchProvider {
 			}
 
 			return op;
+		}
+
+		public static <T> Predicate<T> comparison(Operator operator, ToDoubleFunction<T> comparison) {
+			switch (operator) {
+				case EQUALS:
+					return obj -> comparison.applyAsDouble(obj) == 0.0;
+				case NOT_EQUALS:
+					return obj -> { double v = comparison.applyAsDouble(obj); return v < 0 || v > 0; };
+				case LESS_THAN:
+					return obj -> comparison.applyAsDouble(obj) < 0.0;
+				case GREATER_THAN:
+					return obj -> comparison.applyAsDouble(obj) > 0.0;
+				case LESS_OR_EQUALS:
+					return obj -> comparison.applyAsDouble(obj) <= 0.0;
+				case GREATER_OR_EQUALS:
+					return obj -> comparison.applyAsDouble(obj) >= 0.0;
+				default:
+					throw new IllegalArgumentException("The direct operator isn't supported here.");
+			}
+		}
+
+		public static Predicate<CardInstance> faceComparison(Operator operator, ToDoubleFunction<Card.Face> faceComparison) {
+			Predicate<Card.Face> facePredicate = comparison(operator, faceComparison);
+			return (FaceFilter) facePredicate::test;
 		}
 	}
 

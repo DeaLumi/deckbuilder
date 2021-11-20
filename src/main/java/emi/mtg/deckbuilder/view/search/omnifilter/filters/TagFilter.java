@@ -1,8 +1,8 @@
 package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 
+import emi.lib.mtg.util.CollectionComparator;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
-import emi.mtg.deckbuilder.view.search.omnifilter.Util;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,26 +25,7 @@ public class TagFilter implements Omnifilter.Subfilter {
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		Set<String> tagSet = new HashSet<>(Arrays.asList(value.split(",")));
 
-		return ci -> {
-			Util.SetComparison compare = Util.compareStringSetsInsensitive(ci.tags(), tagSet);
-
-			switch (operator) {
-				case EQUALS:
-					return compare == Util.SetComparison.EQUALS;
-				case NOT_EQUALS:
-					return compare != Util.SetComparison.EQUALS;
-				case LESS_THAN:
-					return compare == Util.SetComparison.LESS_THAN;
-				case GREATER_THAN:
-					return compare == Util.SetComparison.GREATER_THAN;
-				case LESS_OR_EQUALS:
-					return compare == Util.SetComparison.LESS_THAN || compare == Util.SetComparison.EQUALS;
-				case DIRECT:
-				case GREATER_OR_EQUALS:
-					return compare == Util.SetComparison.GREATER_THAN || compare == Util.SetComparison.EQUALS;
-				default:
-					return false;
-			}
-		};
+		if (operator == Omnifilter.Operator.DIRECT) operator = Omnifilter.Operator.GREATER_OR_EQUALS;
+		return Omnifilter.Operator.comparison(operator, ci -> CollectionComparator.SET_COMPARATOR.compare(ci.tags(), tagSet).value());
 	}
 }

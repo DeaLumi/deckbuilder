@@ -25,25 +25,7 @@ public class Rarity implements Omnifilter.Subfilter {
 				.findAny()
 				.orElseThrow(() -> new IllegalArgumentException("Couldn't find a card rarity for " + svalue));
 
-		return ci -> {
-			switch (operator) {
-				case DIRECT:
-				case EQUALS:
-					return ci.printing().rarity() == value;
-				case NOT_EQUALS:
-					return ci.printing().rarity() != value;
-				case GREATER_OR_EQUALS:
-					return ci.printing().rarity().ordinal() >= value.ordinal();
-				case GREATER_THAN:
-					return ci.printing().rarity().ordinal() > value.ordinal();
-				case LESS_OR_EQUALS:
-					return ci.printing().rarity().ordinal() <= value.ordinal();
-				case LESS_THAN:
-					return ci.printing().rarity().ordinal() < value.ordinal();
-				default:
-					assert false;
-					return false;
-			}
-		};
+		if (operator == Omnifilter.Operator.DIRECT) operator = Omnifilter.Operator.EQUALS;
+		return Omnifilter.Operator.comparison(operator, ci -> ci.printing().rarity().ordinal() - value.ordinal());
 	}
 }

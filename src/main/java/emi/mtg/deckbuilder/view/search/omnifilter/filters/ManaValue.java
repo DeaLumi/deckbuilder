@@ -21,28 +21,7 @@ public class ManaValue implements Omnifilter.Subfilter {
 	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		double doubleValue = Double.parseDouble(value);
-
-		return (Omnifilter.FaceFilter) face -> {
-			double cmc = face.manaValue();
-
-			switch (operator) {
-				case DIRECT:
-				case EQUALS:
-					return cmc == doubleValue;
-				case NOT_EQUALS:
-					return cmc != doubleValue;
-				case LESS_OR_EQUALS:
-					return cmc <= doubleValue;
-				case LESS_THAN:
-					return cmc < doubleValue;
-				case GREATER_OR_EQUALS:
-					return cmc >= doubleValue;
-				case GREATER_THAN:
-					return cmc > doubleValue;
-				default:
-					assert false;
-					return false;
-			}
-		};
+		if (operator == Omnifilter.Operator.DIRECT) operator = Omnifilter.Operator.EQUALS;
+		return Omnifilter.Operator.faceComparison(operator, f -> f.manaValue() - doubleValue);
 	}
 }
