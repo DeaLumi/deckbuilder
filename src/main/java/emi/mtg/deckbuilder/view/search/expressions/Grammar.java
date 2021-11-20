@@ -15,12 +15,6 @@ package emi.mtg.deckbuilder.view.search.expressions;
 # this document without much difficulty. If you're not, do some learning on regular expressions -- PEGs function a lot
 # like them, only instead of characters, it matches other regexes and composed regexes.
 #
-# As an aside, this grammar is NOT parsed entirely as a PEG. Specifically note the deviation around undifferentiated
-# constants. There's an automatic ambiguity in MtG search syntax where e.g. "4" could mean the mana cost {4} or the
-# number 4.0, and "BUG" could mean the set of Sultai colors [blue, green, black], or the mana cost {B}{U}{G}. Since the
-# meaning of these substrings is contextual, the undiff-constant rule parses all of them and stores any that match for
-# the compiler to use later.
-#
 
 #
 # Nonterminals
@@ -116,7 +110,7 @@ regex
 	;
 
 number-constant
-	: [-+]? [0-9]+ ![HWUBRGCSPXYZhwubrgcspXYZ0-9\u00bd\u221e] ([.] [0-9]+)? ([Ee] [0-9]+)?
+	: [-+]? [0-9]+ ![HWUBRGCSPXYZhwubrgcspxyz0-9\u00bd\u221e] ([.] [0-9]+)? ([Ee] [0-9]+)?
 	;
 
 mana-pure
@@ -140,15 +134,6 @@ RPAREN: ')';
 LBRACE: '{';
 RBRACE: '}';
 
- */
-
-/**
- * Notes for morning:
- *
- * You still have to update the whitespacing around operators in or-expression/and-expression/relate-expression/etc.
- * Note that 'or' is currently being parsed as an identifier. I think I need to make it a reserved word.
- * Also, see if you can write a more clear identifier-exclusion clause for number-constant and mana-constant...
- * Having so many unquoted things sucks. :c
  */
 
 import emi.lib.mtg.Mana;
