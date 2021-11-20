@@ -13,7 +13,6 @@ import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
-import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
@@ -94,11 +93,11 @@ public class Serialization {
 
 	public static TypeAdapter<CardView.Grouping> createCardViewGroupingAdapter() {
 		return new StringTypeAdapter<>(CardView.Grouping::name, s -> CardView.GROUPINGS.stream()
-				.filter(g -> g.name().equals(s))
+				.filter(g -> "Converted Mana Cost".equals(s) ? g instanceof emi.mtg.deckbuilder.view.groupings.ManaValue : g.name().equals(s))
 				.findAny()
 				.orElseGet(() -> {
 					System.err.println(String.format("Couldn't find grouping factory %s! Did a plugin go away? Defaulting to CMC...", s));
-					return ManaValue.INSTANCE;
+					return emi.mtg.deckbuilder.view.groupings.ManaValue.INSTANCE;
 				}));
 	}
 
@@ -133,7 +132,7 @@ public class Serialization {
 		return new StringTypeAdapter<>(
 				v -> String.format("%s%s", v.descending.get() ? "+" : "-", v.toString()),
 				s -> CardView.SORTINGS.stream()
-						.filter(n -> s.substring(1).equals(n.toString()))
+						.filter(n -> s.endsWith("Converted Mana Cost") ? n instanceof emi.mtg.deckbuilder.view.sortings.ManaValue : s.substring(1).equals(n.toString()))
 						.findAny()
 						.map(sorting -> new CardView.ActiveSorting(sorting, s.startsWith("+")))
 						.orElse(null)
