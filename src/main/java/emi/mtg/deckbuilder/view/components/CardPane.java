@@ -177,6 +177,8 @@ public class CardPane extends BorderPane {
 	private final CheckMenuItem findOtherCards;
 	private final ToggleButton autoToggle;
 
+	private final Consumer<Preferences> prefsListener;
+
 	public final ObjectProperty<Consumer<CardInstance>> autoAction = new SimpleObjectProperty<>(null);
 	public final BooleanProperty autoEnabled = new SimpleBooleanProperty(true);
 	public final BooleanProperty showingIllegalCards = new SimpleBooleanProperty(true);
@@ -284,6 +286,7 @@ public class CardPane extends BorderPane {
 		filter = new TextField();
 		filter.setPromptText(Preferences.get().searchProvider.name() + "...");
 		filter.setMinSize(TextField.USE_PREF_SIZE, TextField.USE_PREF_SIZE);
+		Preferences.listen(prefsListener = prefs -> filter.setPromptText(prefs.searchProvider.name() + "..."));
 
 		filterAutoComplete = new AutoCompleter(filter, name -> {
 			if (name.length() > 3) {

@@ -13,10 +13,12 @@ import emi.mtg.deckbuilder.view.search.SearchProvider;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class Preferences {
@@ -26,6 +28,7 @@ public class Preferences {
 
 	private static final Path PATH = MainApplication.JAR_DIR.resolve("preferences.json");
 	private static Preferences instance = null;
+	private static final Set<WeakReference<Consumer<Preferences>>> LISTENERS = new HashSet<>();
 
 	public static synchronized Preferences instantiate() throws IOException {
 		if (instance == null) {
@@ -57,6 +60,24 @@ public class Preferences {
 		Writer writer = Files.newBufferedWriter(PATH);
 		Serialization.GSON.toJson(get(), writer);
 		writer.close();
+	}
+
+	public static void listen(Consumer<Preferences> listener) {
+		LISTENERS.add(new WeakReference<>(listener));
+	}
+
+	public void changed() {
+		Iterator<WeakReference<Consumer<Preferences>>> iter = LISTENERS.iterator();
+		while (iter.hasNext()) {
+			WeakReference<Consumer<Preferences>> ref = iter.next();
+			final Consumer<Preferences> listener = ref.get();
+			if (listener == null) {
+				iter.remove();
+				continue;
+			}
+
+			listener.accept(this);
+		}
 	}
 
 	/**

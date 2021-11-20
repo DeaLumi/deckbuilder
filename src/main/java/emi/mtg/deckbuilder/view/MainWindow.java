@@ -53,6 +53,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,6 +81,7 @@ public class MainWindow extends Stage {
 	private Map<FileChooser.ExtensionFilter, DeckImportExport> importSerdes, exportSerdes;
 	private FileChooser serdesFileChooser;
 	private final MainApplication owner;
+	private final Consumer<Preferences> prefsListener;
 
 	private final ListChangeListener<Object> mruChangedListener = e -> {
 		this.openRecentDeckMenu.getItems().setAll(State.get().recentDecks.stream()
@@ -126,6 +128,8 @@ public class MainWindow extends Stage {
 		});
 
 		collection.loading().set(true);
+
+		Preferences.listen(prefsListener = this::preferencesChanged);
 
 		ForkJoinPool.commonPool().submit(() -> {
 			collection.updateFilter();
@@ -935,7 +939,7 @@ public class MainWindow extends Stage {
 		owner.showPreferences();
 	}
 
-	void preferencesChanged() {
+	void preferencesChanged(Preferences prefs) {
 		getScene().getRoot().setStyle(Preferences.get().theme.style());
 
 		ForkJoinPool.commonPool().submit(collection::updateFilter);
@@ -943,7 +947,7 @@ public class MainWindow extends Stage {
 		allPanes().forEach(DeckPane::rerenderViews);
 
 		for (MenuItem mi : newDeckMenu.getItems()) {
-			if (mi.getUserData() == Preferences.get().defaultFormat) {
+			if (mi.getUserData() == prefs.defaultFormat) {
 				mi.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN));
 			} else {
 				mi.setAccelerator(null);

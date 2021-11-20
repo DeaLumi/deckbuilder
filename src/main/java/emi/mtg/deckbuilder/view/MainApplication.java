@@ -473,7 +473,7 @@ public class MainApplication extends Application {
 		PreferencesDialog pd = new PreferencesDialog(hostStage);
 
 		if (pd.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-			this.mainWindows.forEach(MainWindow::preferencesChanged);
+			Preferences.get().changed();
 		}
 	}
 
