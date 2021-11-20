@@ -375,55 +375,11 @@ public class Operators {
 
 	static class TypeLineFunctions {
 		static TypeLine parse(String from) {
-			Set<Supertype> supertypes = EnumSet.noneOf(Supertype.class);
-			Set<CardType> cardTypes = EnumSet.noneOf(CardType.class);
-			Set<String> subtypes = new HashSet<>();
-
-			for (String elem : from.split(" ")) {
-				if (elem.contains("-") || elem.contains("\u2014")) continue;
-
-				String capped = elem.substring(0, 1).toUpperCase() + elem.substring(1).toLowerCase();
-
-				try {
-					supertypes.add(Supertype.valueOf(capped));
-					continue;
-				} catch (IllegalArgumentException iae) {
-					// ignore
-				}
-
-				if (!"Elemental".equals(capped)) {
-					try {
-						cardTypes.add(CardType.valueOf(capped));
-						continue;
-					} catch (IllegalArgumentException iae) {
-						// ignore
-					}
-				}
-
-				subtypes.add(capped);
-			}
-
-			return new TypeLine.Basic(supertypes, cardTypes, subtypes);
+			return TypeLine.Basic.parseFragment(from);
 		}
 
 		static double compare(TypeLine left, TypeLine right) {
-			if (left == null) return right == null ? CollectionComparator.Result.Equal.value() : CollectionComparator.Result.ContainedIn.value();
-			if (right == null) return CollectionComparator.Result.Contains.value();
-
-			CollectionComparator.Result supertypes = CollectionComparator.SET_COMPARATOR.compare(left.supertypes(), right.supertypes());
-			CollectionComparator.Result cardTypes = CollectionComparator.SET_COMPARATOR.compare(left.cardTypes(), right.cardTypes());
-			CollectionComparator.Result subtypes = CollectionComparator.SET_COMPARATOR.compare(left.subtypes(), right.subtypes());
-
-			if (supertypes == CollectionComparator.Result.Intersects || cardTypes == CollectionComparator.Result.Intersects || subtypes == CollectionComparator.Result.Intersects) return CollectionComparator.Result.Intersects.value();
-
-			double min = Math.min(supertypes.value(), Math.min(cardTypes.value(), subtypes.value()));
-			double max = Math.max(supertypes.value(), Math.max(cardTypes.value(), subtypes.value()));
-
-			if (min >= 0 && max > 0) return CollectionComparator.Result.Contains.value();
-			if (min == 0 && max == 0) return CollectionComparator.Result.Equal.value();
-			if (min < 0 && max <= 0) return CollectionComparator.Result.ContainedIn.value();
-
-			return CollectionComparator.Result.Disjoint.value();
+			return TypeLine.COMPARATOR.compare(left, right).value();
 		}
 	}
 }
