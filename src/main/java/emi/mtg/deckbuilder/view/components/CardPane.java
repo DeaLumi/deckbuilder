@@ -162,7 +162,7 @@ public class CardPane extends BorderPane {
 		};
 	}
 
-	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().flatMap(f -> f.type().cardTypes().stream()).allMatch(t -> t.constructed);
+	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().flatMap(f -> f.type().cardTypes().stream()).allMatch(CardType::constructed);
 
 	private final MenuButton deckMenuButton;
 	private final TextField filter;
@@ -342,9 +342,9 @@ public class CardPane extends BorderPane {
 		try {
 			for (CardInstance ci : cardView.filteredModel) {
 				Card.Face front = ci.card().face(Card.Face.Kind.Front);
-				if (front != null && front.type().cardTypes().contains(CardType.Creature)) {
+				if (front != null && front.type().is(CardType.Creature)) {
 					creature.incrementAndGet();
-				} else if (front != null && front.type().cardTypes().contains(CardType.Land)) {
+				} else if (front != null && front.type().is(CardType.Land)) {
 					land.incrementAndGet();
 				} else {
 					other.incrementAndGet();

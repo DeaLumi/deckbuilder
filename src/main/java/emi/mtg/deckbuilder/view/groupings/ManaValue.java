@@ -23,7 +23,7 @@ public class ManaValue extends CharacteristicGrouping implements CardView.Groupi
 
 	@Override
 	public String extract(CardInstance ci) {
-		if (ci.card().face(Card.Face.Kind.Front) != null && ci.card().face(Card.Face.Kind.Front).type().cardTypes().contains(CardType.Land)) {
+		if (ci.card().face(Card.Face.Kind.Front) != null && ci.card().face(Card.Face.Kind.Front).type().is(CardType.Land)) {
 			return "Land";
 		}
 
