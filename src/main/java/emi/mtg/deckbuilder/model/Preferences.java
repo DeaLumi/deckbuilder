@@ -33,7 +33,9 @@ public class Preferences {
 				Reader reader = Files.newBufferedReader(PATH);
 				instance = Serialization.GSON.fromJson(reader, Preferences.class);
 				reader.close();
-			} else {
+			}
+
+			if (instance == null) {
 				instance = new Preferences();
 			}
 		} else {
