@@ -331,6 +331,7 @@ public class CardPane extends BorderPane {
 		this.setTop(controlBar);
 
 		cardView.filteredModel.setPredicate(calculateFilter());
+		ForkJoinPool.commonPool().submit(this::updateStats);
 	}
 
 	public String title() {
