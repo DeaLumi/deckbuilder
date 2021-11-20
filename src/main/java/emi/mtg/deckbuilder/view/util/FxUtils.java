@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.util;
 
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.view.MainApplication;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -38,7 +39,7 @@ public class FxUtils {
 		text.setFont(Font.font(10.0));
 		Region parent = new Pane(text);
 		Scene scene = new Scene(parent);
-		scene.getStylesheets().add("/emi/mtg/deckbuilder/styles.css");
+		scene.getStylesheets().add(MainApplication.class.getResource("styles.css").toExternalForm());
 		parent.setStyle(Preferences.get().theme.style());
 
 		parent.applyCss();

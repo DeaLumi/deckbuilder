@@ -178,7 +178,7 @@ public class MainApplication extends Application {
 	public void start(Stage primaryStage) throws Exception {
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
-		hostStage.getScene().getStylesheets().add("/emi/mtg/deckbuilder/styles.css");
+		hostStage.getScene().getStylesheets().add(MainApplication.class.getResource("styles.css").toExternalForm());
 
 		Preferences prefs = Preferences.instantiate();
 		State state = State.instantiate();

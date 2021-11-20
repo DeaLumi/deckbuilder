@@ -109,7 +109,7 @@ public class MainWindow extends Stage {
 
 		setTitle("Deck Builder v0.0.0");
 		setScene(new Scene(root, 1024, 1024));
-		getScene().getStylesheets().add("/emi/mtg/deckbuilder/styles.css");
+		getScene().getStylesheets().add(MainApplication.class.getResource("styles.css").toExternalForm());
 		root.setStyle(Preferences.get().theme.style());
 
 		setupUI();
@@ -857,7 +857,7 @@ public class MainWindow extends Stage {
 		SearchProvider provider = Preferences.get().searchProvider;
 		WebView view = new WebView();
 		view.getEngine().setJavaScriptEnabled(false);
-		view.getEngine().setUserStyleSheetLocation(getClass().getResource("/emi/mtg/deckbuilder/html-styles.css").toExternalForm());
+		view.getEngine().setUserStyleSheetLocation(MainApplication.class.getResource("html-styles.css").toExternalForm());
 		view.getEngine().loadContent("<style>" + FxUtils.themeCss() + "</style>" + provider.usage());
 
 		AlertBuilder.notify(this)
