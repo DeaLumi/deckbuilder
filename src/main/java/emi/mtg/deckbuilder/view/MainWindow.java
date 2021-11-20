@@ -1072,6 +1072,7 @@ public class MainWindow extends Stage {
 
 		try {
 			DeckList list = TextFile.Arena.INSTANCE.stringToDeck(Clipboard.getSystemClipboard().getString());
+			list.modifiedProperty().set(true);
 			openDeckPane(list);
 		} catch (IOException ioe) {
 			AlertBuilder.notify(MainWindow.this)
