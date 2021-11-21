@@ -105,10 +105,6 @@ public class Serialization {
 		return new StringTypeAdapter<>(Card::fullName, NameOnlyImporter::findCard);
 	}
 
-	private static TypeAdapter<Card.Printing> createCardPrintingAdapter() {
-		return new StringTypeAdapter<>(p -> p.id().toString(), i -> Context.get().data.printing(UUID.fromString(i)));
-	}
-
 	public static TypeAdapterFactory createCardPrintingAdapterFactory() {
 		return new TypeAdapterFactory() {
 			@Override
@@ -116,7 +112,13 @@ public class Serialization {
 				if (CardInstance.class.isAssignableFrom(type.getRawType())) {
 					return gson.getDelegateAdapter(this, type);
 				} else if (Card.Printing.class.isAssignableFrom(type.getRawType())){
-					return (TypeAdapter<T>) new StringTypeAdapter<>(p -> p.id().toString(), i -> Context.get().data.printing(UUID.fromString(i)));
+					return (TypeAdapter<T>) new StringTypeAdapter<>(p -> CardInstance.printingToString(p), i -> {
+						try {
+							return CardInstance.stringToPrinting(i);
+						} catch (IllegalArgumentException iae) {
+							return Context.get().data.printing(UUID.fromString(i));
+						}
+					});
 				} else {
 					return null;
 				}
