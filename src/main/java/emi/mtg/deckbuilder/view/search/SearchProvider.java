@@ -4,9 +4,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.ServiceLoader;
-import java.util.SortedMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
