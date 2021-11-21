@@ -522,10 +522,6 @@ public class MainWindow extends Stage {
 			}
 		});
 
-		tab.setOnClosed(ce -> {
-			if (deckTabs.getTabs().isEmpty()) MainWindow.this.close();
-		});
-
 		deckTabs.getTabs().add(tab);
 		deckTabs.getSelectionModel().select(tab);
 

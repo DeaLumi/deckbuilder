@@ -4,12 +4,12 @@ import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.MainWindow;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
-import javafx.beans.binding.Bindings;
+import javafx.application.Platform;
+import javafx.beans.Observable;
 import javafx.event.Event;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 
-import java.io.IOException;
 import java.util.Collections;
 
 public class DeckTab extends Tab {
@@ -26,11 +26,9 @@ public class DeckTab extends Tab {
 		this.pane = pane;
 
 		this.label = new Label();
-		this.label.textProperty().bind(Bindings.createStringBinding(() -> {
-			String mod = pane.deck().modified() ? "*" : "";
-			if (pane.deck().name() == null || pane.deck().name().isEmpty()) return mod + "Unnamed Deck";
-			return mod + pane.deck().name();
-		}, pane.deck().nameProperty(), pane.deck().modifiedProperty()));
+		pane.deck().nameProperty().addListener(this::updateLabel);
+		pane.deck().modifiedProperty().addListener(this::updateLabel);
+		this.updateLabel(null);
 
 		this.textField = new TextField();
 
@@ -136,6 +134,17 @@ public class DeckTab extends Tab {
 	protected void reallyForceClose(Event close) {
 		getTabPane().getTabs().remove(DeckTab.this);
 		if (getOnClosed() != null) getOnClosed().handle(close);
+	}
+
+	protected void updateLabel(Observable on) {
+		String mod = pane.deck().modified() ? "*" : "";
+		if (pane.deck().name() == null || pane.deck().name().isEmpty()) {
+			mod += "Unnamed Deck";
+		} else {
+			mod += pane.deck().name();
+		}
+		final String fmod = mod;
+		Platform.runLater(() -> this.label.setText(fmod));
 	}
 
 	protected MainWindow mainWindow() {
