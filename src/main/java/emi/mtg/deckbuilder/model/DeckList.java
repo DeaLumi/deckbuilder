@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.model;
 
+import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Deck;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
@@ -8,9 +9,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.nio.file.Path;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DeckList implements Deck {
 	private static Map<Zone, ObservableList<CardInstance>> emptyDeck() {
@@ -111,5 +111,39 @@ public class DeckList implements Deck {
 
 	public Map<Zone, ObservableList<CardInstance>> cards() {
 		return cards;
+	}
+
+	public Map<CardInstance, AtomicInteger> printingHisto(Zone zone) {
+		Map<Card.Printing, AtomicInteger> tmp = new LinkedHashMap<>();
+		Map<CardInstance, AtomicInteger> replace = new HashMap<>();
+
+		for (CardInstance ci : cards(zone)) {
+			AtomicInteger i = tmp.get(ci.printing());
+			if (i == null) {
+				i = new AtomicInteger();
+				tmp.put(ci.printing(), i);
+				replace.put(ci, i);
+			}
+			i.incrementAndGet();
+		}
+
+		return replace;
+	}
+
+	public Map<CardInstance, AtomicInteger> cardHisto(Zone zone) {
+		Map<Card.Printing, AtomicInteger> tmp = new LinkedHashMap<>();
+		Map<CardInstance, AtomicInteger> replace = new HashMap<>();
+
+		for (CardInstance ci : cards(zone)) {
+			AtomicInteger i = tmp.get(ci.printing());
+			if (i == null) {
+				i = new AtomicInteger();
+				tmp.put(ci.printing(), i);
+				replace.put(ci, i);
+			}
+			i.incrementAndGet();
+		}
+
+		return replace;
 	}
 }
