@@ -443,6 +443,7 @@ public class PreferencesDialog extends Alert {
 
 		map.put("Collection & Zones", new PrefEntry[] {
 				reflectField(SearchProviderPreference::new, "Search Provider", "searchProvider", x -> true),
+				reflectField(StringPreference::new, "New Window Search", "defaultQuery", x -> true),
 				new PrefSeparator(),
 				reflectField(BooleanPreference::new, "The Future is Now", "theFutureIsNow", x -> true),
 				reflectField(BooleanPreference::new, "Collapse Duplicates", "collapseDuplicates", x -> true),

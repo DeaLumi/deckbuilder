@@ -132,6 +132,7 @@ public class MainWindow extends Stage {
 		Preferences.listen(prefsListener = this::preferencesChanged);
 
 		ForkJoinPool.commonPool().submit(() -> {
+			collection.filter().setText(Preferences.get().defaultQuery);
 			collection.updateFilter();
 			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
 			collection.loading().set(false);

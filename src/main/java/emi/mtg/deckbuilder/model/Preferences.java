@@ -160,6 +160,7 @@ public class Preferences {
 	 */
 
 	public SearchProvider searchProvider = SearchProvider.SEARCH_PROVIDERS.get(Omnifilter.NAME);
+	public String defaultQuery = "";
 
 	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
 	public List<CardView.ActiveSorting> collectionSorting = CardView.DEFAULT_COLLECTION_SORTING;
