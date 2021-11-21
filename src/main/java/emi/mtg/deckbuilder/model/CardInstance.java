@@ -11,6 +11,8 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CardInstance implements Card.Printing, Serializable {
 	public enum Flags {
@@ -116,5 +118,32 @@ public class CardInstance implements Card.Printing, Serializable {
 
 	public Set<String> tags() {
 		return tags;
+	}
+
+	@Override
+	public String toString() {
+		return printingToString(printing);
+	}
+
+	public static String printingToString(Card.Printing pr) {
+		return String.format("%s (%s) %s", pr.card().name(), pr.set().code().toUpperCase(), pr.collectorNumber());
+	}
+
+	private static final Pattern PRINTING_PATTERN = Pattern.compile("^(?<cardName>[^(]+) \\((?<setCode>[A-Z0-9]+)\\) (?<collectorNumber>.+)$");
+
+	public static Card.Printing stringToPrinting(String str) {
+		Matcher matcher = PRINTING_PATTERN.matcher(str);
+		if (!matcher.find()) throw new IllegalArgumentException("String does not appear to represent a printing: \"" + str + "\"");
+
+		emi.lib.mtg.Set set = Context.get().data.set(matcher.group("setCode"));
+		if (set == null) throw new IllegalArgumentException("While parsing printing \"" + str + "\": Unable to match set code " + matcher.group("setCode") + " -- did the data source change?");
+
+		for (Card.Printing pr : set.printings()) {
+			if (!matcher.group("collectorNumber").equals(pr.collectorNumber())) continue;
+			if (!matcher.group("cardName").equals(pr.card().name())) continue;
+			return pr;
+		}
+
+		throw new IllegalArgumentException("While parsing printing \"" + str + "\": Unable to match card name " + matcher.group("cardName") + " and collector number " + matcher.group("collectorNumber") + " -- did the data source change?");
 	}
 }
