@@ -3,4 +3,7 @@ emi.mtg.deckbuilder.controller.serdes.impl.TextFile$PlainText
 emi.mtg.deckbuilder.controller.serdes.impl.TextFile$Arena
 emi.mtg.deckbuilder.controller.serdes.impl.Cockatrice
 emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter
+emi.mtg.deckbuilder.controller.serdes.impl.SeparatedValues$CSV
+emi.mtg.deckbuilder.controller.serdes.impl.SeparatedValues$TSV
+emi.mtg.deckbuilder.controller.serdes.impl.SeparatedValues$BuylistTSV
 # N.B. Json is instantiated directly. That may change in the future.
