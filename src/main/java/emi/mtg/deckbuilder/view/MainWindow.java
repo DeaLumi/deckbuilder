@@ -827,7 +827,11 @@ public class MainWindow extends Stage {
 			"Source code is almost available on GitHub, I swear.",
 			"Feel free to DM me with feedback/issues on Twitter!",
 			"",
-			"Special thanks to MagnetMan, for generously indulging my madness time and time again.");
+			"Special thanks:",
+			"- MagnetMan, for generously indulging my madness time and time again.",
+			"- SpookySquid, for good ideas and listening to me yell.",
+			"- Fangs, for listening to me yell and good ideas.",
+			"- Vash, Akvar, nobodi, and many others, for feedback and testing.");
 
 	@FXML
 	protected void showAboutDialog() {
