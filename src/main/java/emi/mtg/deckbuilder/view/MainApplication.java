@@ -319,6 +319,8 @@ public class MainApplication extends Application {
 
 		selectDataSource();
 
+		prefs.convertOldPreferredPrintings();
+
 		MainWindow window = new MainWindow(this);
 		window.addDeck(new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap()));
 		window.show();

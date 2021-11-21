@@ -568,7 +568,7 @@ public class CardView extends Canvas {
 					final List<? extends CardInstance> modifyingCards = hoverGroup.hoverCards(card);
 					PrintingSelectorDialog.show(getScene(), card.card()).ifPresent(pr -> {
 						if (immutableModel.get()) {
-							Preferences.get().preferredPrintings.put(card.card().fullName(), pr.id());
+							Preferences.get().preferredPrintings.put(card.card().fullName(), new Preferences.PreferredPrinting(pr.set().code(), pr.collectorNumber()));
 						} else {
 							modifyingCards.forEach(x -> x.printing(pr));
 						}

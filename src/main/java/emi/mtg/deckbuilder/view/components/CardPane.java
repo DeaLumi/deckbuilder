@@ -153,6 +153,7 @@ public class CardPane extends BorderPane {
 			Card.Printing preferred = Preferences.get().preferredPrinting(ci.card());
 			if (preferred != null) return preferred.id().equals(ci.id());
 
+			// TODO: This use of id() is entirely internal and might be able to stay.
 			synchronized(prefPrintCache) {
 				return ci.id().equals(prefPrintCache.computeIfAbsent(ci.card(), fn -> ci.card().printings().iterator().next().id()));
 			}

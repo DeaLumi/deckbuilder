@@ -12,6 +12,7 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.beans.property.Property;
@@ -38,6 +39,7 @@ public class Serialization {
 			.registerTypeAdapter(Path.class, Serialization.createPathTypeAdapter())
 			.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
 			.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
+			.registerTypeAdapterFactory(Serialization.createPreferredPrintingAdapterFactory())
 			.create();
 
 	private static class StringTypeAdapter<T> extends TypeAdapter<T> {
@@ -122,6 +124,43 @@ public class Serialization {
 				} else {
 					return null;
 				}
+			}
+		};
+	}
+
+	public static TypeAdapterFactory createPreferredPrintingAdapterFactory() {
+		return new TypeAdapterFactory() {
+			@Override
+			public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+				if (!Preferences.PreferredPrinting.class.isAssignableFrom(type.getRawType())) return null;
+
+				TypeAdapter<Preferences.PreferredPrinting> reflective = gson.getDelegateAdapter(this, (TypeToken<Preferences.PreferredPrinting>) type);
+
+				return (TypeAdapter<T>) new TypeAdapter<Preferences.PreferredPrinting>() {
+					@Override
+					public void write(JsonWriter out, Preferences.PreferredPrinting value) throws IOException {
+						reflective.write(out, value);
+					}
+
+					@Override
+					public Preferences.PreferredPrinting read(JsonReader in) throws IOException {
+						String val;
+						if (in.peek() == JsonToken.STRING) {
+							val = in.nextString();
+						} else if (in.peek() == JsonToken.NAME) {
+							val = in.nextName();
+						} else {
+							val = null;
+						}
+
+						if (val != null) {
+							Preferences.deferredPreferredPrintings.add(UUID.fromString(val));
+							return null;
+						}
+
+						return reflective.read(in);
+					}
+				};
 			}
 		};
 	}

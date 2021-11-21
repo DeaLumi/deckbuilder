@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.model;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Serialization;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
@@ -80,9 +81,21 @@ public class Preferences {
 		}
 	}
 
+	public static HashSet<UUID> deferredPreferredPrintings = new HashSet<>();
+
 	/**
 	 * Preference value types
 	 */
+
+	public static class PreferredPrinting {
+		public final String setCode;
+		public final String collectorNumber;
+
+		public PreferredPrinting(String setCode, String collectorNumber) {
+			this.setCode = setCode;
+			this.collectorNumber = collectorNumber;
+		}
+	}
 
 	public enum PreferAge {
 		Any,
@@ -174,7 +187,7 @@ public class Preferences {
 	 */
 
 	// N.B. Preferences get loaded *before* card data, so we can't reference Card.Printings here.
-	public HashMap<String, UUID> preferredPrintings = new HashMap<>();
+	public HashMap<String, PreferredPrinting> preferredPrintings = new HashMap<>();
 
 	public PreferAge preferAge = PreferAge.Any;
 	public PreferVariation preferVariation = PreferVariation.Any;
@@ -194,9 +207,8 @@ public class Preferences {
 	 */
 
 	public Card.Printing preferredPrinting(Card card) {
-		Card.Printing preferred = card.printing(preferredPrintings.get(card.fullName()));
-
-		if (preferred != null) return preferred;
+		PreferredPrinting pref = preferredPrintings.get(card.fullName());
+		if (pref != null) return card.printing(pref.setCode, pref.collectorNumber);
 
 		Stream<? extends Card.Printing> stream = card.printings().stream();
 
@@ -219,5 +231,14 @@ public class Preferences {
 		if (preferred == null) preferred = card.printings().iterator().next();
 
 		return preferred;
+	}
+
+	public void convertOldPreferredPrintings() {
+		for (UUID old : deferredPreferredPrintings) {
+			Card.Printing pr = Context.get().data.printing(old);
+			preferredPrintings.put(pr.card().fullName(), new PreferredPrinting(pr.set().code(), pr.collectorNumber()));
+		}
+
+		deferredPreferredPrintings.clear();
 	}
 }
