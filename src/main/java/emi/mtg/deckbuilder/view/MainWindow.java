@@ -144,6 +144,11 @@ public class MainWindow extends Stage {
 		throw new RuntimeException("Pattern Analysis: Blood Type = Blue!");
 	}
 
+	@FXML
+	protected void flushImageCaches() {
+		Context.get().images.flushMemoryCaches();
+	}
+
 	void emergencySave() throws IOException {
 		List<IOException> exceptions = new ArrayList<>();
 		allDecks().forEach(deck -> {

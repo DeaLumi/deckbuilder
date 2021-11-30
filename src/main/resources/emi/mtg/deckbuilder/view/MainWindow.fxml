@@ -50,6 +50,7 @@
                     <Menu text="Debug">
                         <MenuItem text="Remodel" onAction="#remodel"/>
                         <MenuItem text="Create Emergency" onAction="#createEmergency"/>
+                        <MenuItem text="Flush Image Caches" onAction="#flushImageCaches"/>
                     </Menu>
                 </Menu>
             </menus>

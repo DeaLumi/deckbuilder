@@ -487,11 +487,11 @@ public class MainApplication extends Application {
 		grid.setHgap(8.0);
 		grid.setVgap(8.0);
 
-		Label unusedLabel = new Label("Max Days w/o Loading:");
+		Label unusedLabel = new Label("Days Since Last Load:");
 		Spinner<Integer> unusedDays = new Spinner<>(1, 365, 180);
 		unusedDays.setMaxWidth(Double.MAX_VALUE);
 
-		Label sizeFactorLabel = new Label("Min % of Median Size:");
+		Label sizeFactorLabel = new Label("Below % of Median Size:");
 		Slider sizeFactor = new Slider(0.10, 0.85, 0.50);
 		sizeFactor.setMaxWidth(Double.MAX_VALUE);
 		Label sizeFactorIndicator = new Label();
@@ -525,7 +525,7 @@ public class MainApplication extends Application {
 				IOException tmpThrown;
 				Images.CacheCleanupResults tmpResults;
 				try {
-					tmpResults = Context.get().images.cleanCache(
+					tmpResults = Context.get().images.cleanDiskCache(
 							Instant.now().minus(unusedDays.getValue(), ChronoUnit.DAYS),
 							sizeFactor.getValue(),
 							d -> Platform.runLater(() -> progress.setProgress(d))

@@ -220,7 +220,7 @@ public class Images {
 	 * @param progress An optional callback to report cache purge progress.
 	 * @return The list of sizes of files that were deleted.
 	 */
-	public CacheCleanupResults cleanCache(Instant accessedBefore, double medianFraction, DoubleConsumer progress) throws IOException {
+	public CacheCleanupResults cleanDiskCache(Instant accessedBefore, double medianFraction, DoubleConsumer progress) throws IOException {
 		long deletedFiles = 0, deletedBytes = 0;
 
 		Set<Path> allImages = new HashSet<>();
@@ -277,6 +277,13 @@ public class Images {
 			}
 		}
 
+		if (deletedFiles > 0) flushMemoryCaches();
+
 		return new CacheCleanupResults(deletedFiles, deletedBytes);
+	}
+
+	public void flushMemoryCaches() {
+		faceCache.clear();
+		frontCache.clear();
 	}
 }
