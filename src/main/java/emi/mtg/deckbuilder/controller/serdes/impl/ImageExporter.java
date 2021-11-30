@@ -34,7 +34,6 @@ import javafx.stage.Modality;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
@@ -59,7 +58,7 @@ public class ImageExporter implements DeckImportExport {
 	}
 
 	@Override
-	public DeckList importDeck(File from) {
+	public DeckList importDeck(Path from) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -68,7 +67,7 @@ public class ImageExporter implements DeckImportExport {
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
+	public void exportDeck(DeckList deck, Path to) throws IOException {
 		if (!promptForOptions(deck.format().deckZones())) return;
 
 		deckToImageFile(deck, (zone, view) -> {
@@ -78,7 +77,7 @@ public class ImageExporter implements DeckImportExport {
 			view.collapseDuplicatesProperty().set(collapseCopies.isSelected());
 			view.cardScaleProperty().set(cardScale.getValue());
 			view.resize(estimateViewWidth(), Images.CARD_HEIGHT + Images.CARD_PADDING * 2);
-		}, to.toPath());
+		}, to);
 	}
 
 	@Override

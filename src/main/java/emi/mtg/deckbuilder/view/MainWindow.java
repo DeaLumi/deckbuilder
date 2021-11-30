@@ -150,7 +150,7 @@ public class MainWindow extends Stage {
 			try {
 				primarySerdes.exportDeck(deck, Files.createTempFile(
 						MainApplication.JAR_DIR,
-						String.format("emergency-save-%s-", deck.name()), ".json").toFile());
+						String.format("emergency-save-%s-", deck.name()), ".json"));
 			} catch (IOException ioe) {
 				exceptions.add(ioe);
 			}
@@ -578,7 +578,7 @@ public class MainWindow extends Stage {
 		if (from == null) return;
 
 		try {
-			DeckList list = primarySerdes.importDeck(from.toFile());
+			DeckList list = primarySerdes.importDeck(from);
 			list.sourceProperty().setValue(from);
 			if (openDeckPane(list)) {
 				State.get().lastDeckDirectory = from.getParent();
@@ -673,7 +673,7 @@ public class MainWindow extends Stage {
 		if (deck.source() == null) {
 			return doSaveDeckAs(deck, true);
 		} else {
-			return saveDeck(deck, deck.source().toFile(), true);
+			return saveDeck(deck, deck.source(), true);
 		}
 	}
 
@@ -695,16 +695,16 @@ public class MainWindow extends Stage {
 			return false;
 		}
 
-		return saveDeck(deck, to, setSource);
+		return saveDeck(deck, to.toPath(), setSource);
 	}
 
-	private boolean saveDeck(DeckList deck, File to, boolean setSource) {
+	private boolean saveDeck(DeckList deck, Path to, boolean setSource) {
 		try {
 			primarySerdes.exportDeck(deck, to);
 
 			if (setSource) {
 				deck.modifiedProperty().set(false);
-				deck.sourceProperty().setValue(to.toPath());
+				deck.sourceProperty().setValue(to);
 				State.get().lastDeckDirectory = activeDeck().source().getParent();
 			}
 
@@ -999,7 +999,7 @@ public class MainWindow extends Stage {
 		}
 
 		try {
-			DeckList list = importer.importDeck(f);
+			DeckList list = importer.importDeck(f.toPath());
 			if (openDeckPane(list)) {
 				State.get().lastDeckDirectory = f.toPath().getParent();
 			}
@@ -1035,7 +1035,7 @@ public class MainWindow extends Stage {
 		}
 
 		try {
-			exporter.exportDeck(activeDeck(), f);
+			exporter.exportDeck(activeDeck(), f.toPath());
 			State.get().lastDeckDirectory = f.toPath().getParent();
 		} catch (IOException ioe) {
 			ioe.printStackTrace();

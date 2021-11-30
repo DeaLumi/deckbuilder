@@ -7,9 +7,10 @@ import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -22,13 +23,13 @@ public abstract class SeparatedValues implements DeckImportExport {
 	protected abstract char separator();
 
 	@Override
-	public DeckList importDeck(File from) throws IOException {
+	public DeckList importDeck(Path from) throws IOException {
 		return null; // TODO: Add importer
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
-		FileWriter writer = new FileWriter(to);
+	public void exportDeck(DeckList deck, Path to) throws IOException {
+		BufferedWriter writer = Files.newBufferedWriter(to);
 
 		final char separator = separator();
 		int row = 1;

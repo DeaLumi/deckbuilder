@@ -13,12 +13,18 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Monotype {
@@ -51,15 +57,15 @@ public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Mon
 	}
 
 	@Override
-	public DeckList importDeck(File from) throws IOException {
+	public DeckList importDeck(Path from) throws IOException {
 		Document xml;
 
 		beginImport();
 
-		try {
+		try (InputStream in = Files.newInputStream(from)) {
 			xml = DocumentBuilderFactory.newInstance()
 					.newDocumentBuilder()
-					.parse(from);
+					.parse(in);
 		} catch (ParserConfigurationException | SAXException e) {
 			throw new IOException(e);
 		}
@@ -68,7 +74,7 @@ public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Mon
 		if (deckNameEl != null && !deckNameEl.getTextContent().isEmpty()) {
 			name(deckNameEl.getTextContent());
 		} else {
-			name(from.getName().replace(".cod", ""));
+			name(from.getFileName().toString().replace(".cod", ""));
 		}
 
 		String deckComments = "";
@@ -108,7 +114,7 @@ public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Mon
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
+	public void exportDeck(DeckList deck, Path to) throws IOException {
 		Document xml;
 		try {
 			xml = DocumentBuilderFactory.newInstance()
@@ -159,10 +165,10 @@ public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Mon
 		rootEl.appendChild(xml.createTextNode("\n"));
 		xml.appendChild(rootEl);
 
-		try {
-			TransformerFactory.newInstance()
-					.newTransformer()
-					.transform(new DOMSource(xml), new StreamResult(to));
+		try (OutputStream out = Files.newOutputStream(to)) {
+			Transformer xform = TransformerFactory.newInstance().newTransformer();
+			xform.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
+			xform.transform(new DOMSource(xml), new StreamResult(out));
 		} catch (TransformerException te) {
 			throw new IOException(te);
 		}

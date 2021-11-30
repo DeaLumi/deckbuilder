@@ -177,6 +177,8 @@ public class MainApplication extends Application {
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+		System.setProperty("file.encoding", "UTF-8");
+
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
 		hostStage.getScene().getStylesheets().add(MainApplication.class.getResource("styles.css").toExternalForm());

@@ -4,10 +4,10 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.DeckList;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 
 public class Json implements DeckImportExport.Monotype {
@@ -22,8 +22,8 @@ public class Json implements DeckImportExport.Monotype {
 	}
 
 	@Override
-	public DeckList importDeck(File from) throws IOException {
-		FileReader reader = new FileReader(from);
+	public DeckList importDeck(Path from) throws IOException {
+		BufferedReader reader = Files.newBufferedReader(from);
 
 		DeckList out = Context.get().gson.getAdapter(DeckList.class).fromJson(reader);
 		reader.close();
@@ -32,8 +32,8 @@ public class Json implements DeckImportExport.Monotype {
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
-		FileWriter writer = new FileWriter(to);
+	public void exportDeck(DeckList deck, Path to) throws IOException {
+		BufferedWriter writer = Files.newBufferedWriter(to);
 
 		Context.get().gson.toJson(deck, DeckList.class, writer);
 

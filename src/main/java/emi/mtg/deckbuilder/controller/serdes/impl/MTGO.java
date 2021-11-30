@@ -16,13 +16,18 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,16 +43,16 @@ public class MTGO implements DeckImportExport.Monotype {
 	}
 
 	@Override
-	public DeckList importDeck(File from) throws IOException {
+	public DeckList importDeck(Path from) throws IOException {
 		Document xml;
 
 		List<CardInstance> library = new ArrayList<>(),
 				sideboard = new ArrayList<>();
 
-		try {
+		try (InputStream in = Files.newInputStream(from)) {
 			xml = DocumentBuilderFactory.newInstance()
 					.newDocumentBuilder()
-					.parse(from);
+					.parse(in);
 		} catch (ParserConfigurationException | SAXException e) {
 			throw new IOException(e);
 		}
@@ -95,7 +100,7 @@ public class MTGO implements DeckImportExport.Monotype {
 		cards.put(Zone.Library, library);
 		cards.put(Zone.Sideboard, sideboard);
 
-		return new DeckList(from.getName().substring(0, from.getName().lastIndexOf('.')), "", Format.Freeform, "Imported from MTGO.", cards);
+		return new DeckList(from.getFileName().toString().substring(0, from.getFileName().toString().lastIndexOf('.')), "", Format.Freeform, "Imported from MTGO.", cards);
 	}
 
 	private static void appendZone(Document xml, Element deckEl, Collection<? extends Card.Printing> printings, boolean sideboard, Set<String> missingCards, Set<String> subbedCards) {
@@ -135,7 +140,7 @@ public class MTGO implements DeckImportExport.Monotype {
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
+	public void exportDeck(DeckList deck, Path to) throws IOException {
 		Document xml;
 		try {
 			xml = DocumentBuilderFactory.newInstance()
@@ -175,10 +180,10 @@ public class MTGO implements DeckImportExport.Monotype {
 
 		deckEl.appendChild(xml.createTextNode("\n"));
 
-		try {
-			TransformerFactory factory = TransformerFactory.newInstance();
-			Transformer xform = factory.newTransformer();
-			xform.transform(new DOMSource(xml), new StreamResult(to));
+		try (OutputStream out = Files.newOutputStream(to)) {
+			Transformer xform = TransformerFactory.newInstance().newTransformer();
+			xform.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
+			xform.transform(new DOMSource(xml), new StreamResult(out));
 		} catch (TransformerException e) {
 			throw new IOException(e);
 		}

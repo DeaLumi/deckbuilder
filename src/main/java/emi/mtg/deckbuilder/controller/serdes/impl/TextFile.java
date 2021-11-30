@@ -7,6 +7,9 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -59,14 +62,19 @@ public abstract class TextFile extends NameOnlyImporter {
 	}
 
 	@Override
-	public DeckList importDeck(File from) throws IOException {
-		DeckList deck = readDeck(new Scanner(from));
-		deck.nameProperty().setValue(from.getName().substring(0, from.getName().lastIndexOf('.')));
+	public DeckList importDeck(Path from) throws IOException {
+		Scanner scanner = new Scanner(Files.newBufferedReader(from));
+		DeckList deck = readDeck(scanner);
+		scanner.close();
+		deck.nameProperty().setValue(from.getFileName().toString().substring(0, from.getFileName().toString().lastIndexOf('.')));
 		return deck;
 	}
 
 	public DeckList stringToDeck(String from) throws IOException {
-		return readDeck(new Scanner(from));
+		Scanner scanner = new Scanner(from);
+		DeckList deck = readDeck(scanner);
+		scanner.close();
+		return deck;
 	}
 
 	protected DeckList readDeck(Scanner scanner) throws IOException {
@@ -144,12 +152,13 @@ public abstract class TextFile extends NameOnlyImporter {
 	public String deckToString(DeckList deck) throws IOException {
 		StringWriter writer = new StringWriter();
 		writeDeck(deck, writer);
+		writer.close();
 		return writer.toString();
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, File to) throws IOException {
-		FileWriter writer = new FileWriter(to);
+	public void exportDeck(DeckList deck, Path to) throws IOException {
+		BufferedWriter writer = Files.newBufferedWriter(to);
 		writeDeck(deck, writer);
 		writer.close();
 	}

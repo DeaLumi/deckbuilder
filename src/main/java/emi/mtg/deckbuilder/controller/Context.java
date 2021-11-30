@@ -4,15 +4,10 @@ import com.google.gson.Gson;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.model.Preferences;
-import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;

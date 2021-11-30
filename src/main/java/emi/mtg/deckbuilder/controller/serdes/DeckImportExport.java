@@ -2,8 +2,8 @@ package emi.mtg.deckbuilder.controller.serdes;
 
 import emi.mtg.deckbuilder.model.DeckList;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -34,9 +34,9 @@ public interface DeckImportExport {
 
 	List<String> exportExtensions();
 
-	DeckList importDeck(File from) throws IOException;
+	DeckList importDeck(Path from) throws IOException;
 
-	void exportDeck(DeckList deck, File to) throws IOException;
+	void exportDeck(DeckList deck, Path to) throws IOException;
 
 	EnumSet<Feature> supportedFeatures();
 
