@@ -85,7 +85,7 @@ public class ImageExporter implements DeckImportExport {
 		return EnumSet.of(Feature.OtherZones, Feature.CardArt);
 	}
 
-	private final Alert alert;
+	private Alert alert;
 
 	@FXML
 	protected CheckBox collapseCopies;
@@ -107,7 +107,7 @@ public class ImageExporter implements DeckImportExport {
 	private Map<Zone, ComboBox<CardView.LayoutEngine.Factory>> zoneLayouts = new EnumMap<>(Zone.class);
 	private Map<Zone, ComboBox<CardView.Grouping>> zoneGroupings = new EnumMap<>(Zone.class);
 
-	public ImageExporter() {
+	private void initUI() {
 		alert = AlertBuilder.query(null)
 				.modal(Modality.APPLICATION_MODAL)
 				.buttons(ButtonType.OK, ButtonType.CANCEL)
@@ -145,6 +145,8 @@ public class ImageExporter implements DeckImportExport {
 	}
 
 	private boolean promptForOptions(Collection<Zone> zones) {
+		if (alert == null) initUI();
+
 		int i = 3;
 		for (Zone zone : Zone.values()) {
 			if (zones.contains(zone)) {

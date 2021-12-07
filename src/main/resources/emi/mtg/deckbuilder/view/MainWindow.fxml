@@ -19,8 +19,8 @@
                     <SeparatorMenuItem/>
                     <MenuItem text="Import" onAction="#importDeck"/>
                     <MenuItem text="Export" onAction="#exportDeck"/>
-                    <MenuItem text="Copy for Arena" onAction="#copyArenaList" accelerator="Shortcut+C"/>
-                    <MenuItem text="Paste from Arena" onAction="#pasteArenaList" accelerator="Shortcut+V"/>
+                    <MenuItem text="Copy Decklist" onAction="#copyDecklist" accelerator="Shortcut+C"/>
+                    <MenuItem text="Paste Decklist" onAction="#pasteDecklist" accelerator="Shortcut+V"/>
                     <MenuItem text="Copy Image" onAction="#copyImageToClipboard" accelerator="Shift+Shortcut+C"/>
                     <SeparatorMenuItem/>
                     <CheckMenuItem text="Auto-Validate" fx:id="autoValidateDeck"/>

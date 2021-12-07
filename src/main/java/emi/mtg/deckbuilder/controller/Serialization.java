@@ -10,6 +10,7 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
@@ -36,6 +37,7 @@ public class Serialization {
 			.registerTypeAdapter(CardView.Grouping.class, Serialization.createCardViewGroupingAdapter())
 			.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
 			.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
+			.registerTypeAdapter(DeckImportExport.Textual.class, Serialization.createTextualSerdesAdapter())
 			.registerTypeHierarchyAdapter(Path.class, Serialization.createPathTypeAdapter())
 			.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
 			.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
@@ -91,6 +93,13 @@ public class Serialization {
 				return Format.Freeform;
 			}
 		});
+	}
+
+	public static TypeAdapter<DeckImportExport.Textual> createTextualSerdesAdapter() {
+		return new StringTypeAdapter<>(DeckImportExport::toString, s -> DeckImportExport.TEXTUAL_PROVIDERS.stream()
+				.filter(serdes -> serdes.toString().equals(s))
+				.findAny()
+				.orElse(null));
 	}
 
 	public static TypeAdapter<CardView.Grouping> createCardViewGroupingAdapter() {

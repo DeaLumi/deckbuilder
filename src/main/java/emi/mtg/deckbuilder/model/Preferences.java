@@ -5,6 +5,8 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Serialization;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
+import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
@@ -167,6 +169,7 @@ public class Preferences {
 
 	public WindowBehavior windowBehavior = WindowBehavior.AlwaysAsk;
 	public Theme theme = Theme.Dark;
+	public DeckImportExport.Textual copyPasteFormat = TextFile.Arena.INSTANCE;
 
 	/**
 	 * Card pane preferences

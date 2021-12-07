@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
@@ -317,6 +318,12 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class CopyPastePreference extends ComboBoxPreference<DeckImportExport.Textual> {
+		public CopyPastePreference(String label, Function<Preferences, DeckImportExport.Textual> fromPrefs, Predicate<DeckImportExport.Textual> validate, BiConsumer<Preferences, DeckImportExport.Textual> toPrefs) {
+			super(DeckImportExport.TEXTUAL_PROVIDERS, label, fromPrefs, validate, toPrefs);
+		}
+	}
+
 	private static class SortingPreference extends OneControlPreference<List<CardView.ActiveSorting>, Button> {
 		public SortingPreference(String label, Function<Preferences, List<CardView.ActiveSorting>> fromPrefs, Predicate<List<CardView.ActiveSorting>> validate, BiConsumer<Preferences, List<CardView.ActiveSorting>> toPrefs) {
 			super(
@@ -420,6 +427,32 @@ public class PreferencesDialog extends Alert {
 		return true;
 	};
 
+	private final Predicate<DeckImportExport.Textual> COPY_PASTE_VALIDATOR = serdes -> {
+		if (serdes.importExtensions().isEmpty()) {
+			return AlertBuilder.query(getOwner())
+					.type(AlertType.WARNING)
+					.buttons(ButtonType.OK, ButtonType.CANCEL)
+					.title("Copy Paste Format Warning")
+					.headerText("This format can't support pasted decks.")
+					.contentText(String.join(" ",
+							"The selected copy/paste format only supports exporting decks to your clipboard.",
+							"If you copy a deck this way, you won't be able to paste it back into the deckbuilder."))
+					.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+		} else if (serdes.exportExtensions().isEmpty()) {
+			return AlertBuilder.query(getOwner())
+					.type(AlertType.WARNING)
+					.buttons(ButtonType.OK, ButtonType.CANCEL)
+					.title("Copy Paste Format Warning")
+					.headerText("This format can't copy decks to clipboard.")
+					.contentText(String.join(" ",
+							"The selected copy/paste format only supports importing decks from your clipboard.",
+							"If you paste a deck this way, you won't be able to copy it back to your clipboard."))
+					.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+		} else {
+			return true;
+		}
+	};
+
 	private final Map<String, PrefEntry[]> PREFERENCE_FIELDS = preferenceFields();
 
 	private Map<String, PrefEntry[]> preferenceFields() {
@@ -428,6 +461,7 @@ public class PreferencesDialog extends Alert {
 		map.put("Interface", new PrefEntry[] {
 				reflectField(ThemePreference::new, "Theme", "theme", x -> true),
 				reflectField(WindowBehaviorPreference::new, "Window Behavior", "windowBehavior", x -> true),
+				reflectField(CopyPastePreference::new, "Copy/Paste Format", "copyPasteFormat", COPY_PASTE_VALIDATOR),
 				new PrefSeparator(),
 				reflectField(StringPreference::new, "Default Author", "authorName", x -> true),
 				reflectField(FormatPreference::new, "Default Format", "defaultFormat", x -> true),

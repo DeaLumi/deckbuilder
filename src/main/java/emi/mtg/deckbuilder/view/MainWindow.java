@@ -1052,9 +1052,9 @@ public class MainWindow extends Stage {
 	}
 
 	@FXML
-	protected void copyArenaList() throws IOException {
+	protected void copyDecklist() throws IOException {
 		ClipboardContent content = new ClipboardContent();
-		content.put(DataFormat.PLAIN_TEXT, TextFile.Arena.INSTANCE.deckToString(activeDeck()));
+		content.put(DataFormat.PLAIN_TEXT, Preferences.get().copyPasteFormat.serializeDeck(activeDeck()));
 
 		if (!Clipboard.getSystemClipboard().setContent(content)) {
 			AlertBuilder.notify(MainWindow.this)
@@ -1067,7 +1067,7 @@ public class MainWindow extends Stage {
 	}
 
 	@FXML
-	protected void pasteArenaList() {
+	protected void pasteDecklist() {
 		if (!Clipboard.getSystemClipboard().hasString()) {
 			AlertBuilder.notify(MainWindow.this)
 					.type(Alert.AlertType.ERROR)
@@ -1079,7 +1079,7 @@ public class MainWindow extends Stage {
 		}
 
 		try {
-			DeckList list = TextFile.Arena.INSTANCE.stringToDeck(Clipboard.getSystemClipboard().getString());
+			DeckList list = Preferences.get().copyPasteFormat.deserializeDeck(Clipboard.getSystemClipboard().getString());
 			list.modifiedProperty().set(true);
 			openDeckPane(list);
 		} catch (IOException ioe) {
