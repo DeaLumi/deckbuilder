@@ -2,21 +2,21 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class TextFile extends NameOnlyImporter {
+public abstract class TextFile extends NameOnlyImporter implements DeckImportExport.Textual {
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>[-,A-Za-z0-9 '/]+)(?: \\((?<setCode>[A-Za-z0-9]+)\\)(?: (?<collectorNumber>[A-Za-z0-9]+))?| x(?<postCount>\\d+))?(?![:])$");
 	private static final Pattern ZONE_PATTERN = Pattern.compile("^(?:// )?(?<zoneName>[A-Za-z ]+):?$");
 
@@ -62,22 +62,8 @@ public abstract class TextFile extends NameOnlyImporter {
 	}
 
 	@Override
-	public DeckList importDeck(Path from) throws IOException {
-		Scanner scanner = new Scanner(Files.newBufferedReader(from));
-		DeckList deck = readDeck(scanner);
-		scanner.close();
-		deck.nameProperty().setValue(from.getFileName().toString().substring(0, from.getFileName().toString().lastIndexOf('.')));
-		return deck;
-	}
-
-	public DeckList stringToDeck(String from) throws IOException {
+	public DeckList importDeck(Reader from) throws IOException {
 		Scanner scanner = new Scanner(from);
-		DeckList deck = readDeck(scanner);
-		scanner.close();
-		return deck;
-	}
-
-	protected DeckList readDeck(Scanner scanner) throws IOException {
 		beginImport();
 		name("Imported Deck");
 		author(Preferences.get().authorName);
@@ -135,7 +121,8 @@ public abstract class TextFile extends NameOnlyImporter {
 		}
 	}
 
-	protected void writeDeck(DeckList deck, Writer writer) throws IOException {
+	@Override
+	public void exportDeck(DeckList deck, Writer writer) throws IOException {
 		for (Zone zone : Zone.values()) {
 			if (deck.cards(zone).isEmpty()) {
 				continue;
@@ -147,20 +134,6 @@ public abstract class TextFile extends NameOnlyImporter {
 
 			writeList(deck.cards(zone), writer);
 		}
-	}
-
-	public String deckToString(DeckList deck) throws IOException {
-		StringWriter writer = new StringWriter();
-		writeDeck(deck, writer);
-		writer.close();
-		return writer.toString();
-	}
-
-	@Override
-	public void exportDeck(DeckList deck, Path to) throws IOException {
-		BufferedWriter writer = Files.newBufferedWriter(to);
-		writeDeck(deck, writer);
-		writer.close();
 	}
 
 	public static class PlainText extends TextFile implements Monotype {

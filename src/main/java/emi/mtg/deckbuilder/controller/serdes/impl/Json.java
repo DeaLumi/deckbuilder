@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 
-public class Json implements DeckImportExport.Monotype {
+public class Json implements DeckImportExport.Textual, DeckImportExport.Monotype {
 	@Override
 	public String extension() {
 		return "json";
@@ -22,22 +22,13 @@ public class Json implements DeckImportExport.Monotype {
 	}
 
 	@Override
-	public DeckList importDeck(Path from) throws IOException {
-		BufferedReader reader = Files.newBufferedReader(from);
-
-		DeckList out = Context.get().gson.getAdapter(DeckList.class).fromJson(reader);
-		reader.close();
-
-		return out;
+	public DeckList importDeck(Reader from) throws IOException {
+		return Context.get().gson.getAdapter(DeckList.class).fromJson(from);
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, Path to) throws IOException {
-		BufferedWriter writer = Files.newBufferedWriter(to);
-
-		Context.get().gson.toJson(deck, DeckList.class, writer);
-
-		writer.close();
+	public void exportDeck(DeckList deck, Writer to) throws IOException {
+		Context.get().gson.toJson(deck, DeckList.class, to);
 	}
 
 	@Override

@@ -7,15 +7,15 @@ import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
-public abstract class SeparatedValues implements DeckImportExport {
+public abstract class SeparatedValues implements DeckImportExport.Textual {
 	protected abstract void parseLine(DeckList deck, Zone currentZone, String[] values) throws IOException;
 
 	protected abstract LinkedHashMap<String, BiFunction<CardInstance, Integer, String>> zoneData();
@@ -23,14 +23,12 @@ public abstract class SeparatedValues implements DeckImportExport {
 	protected abstract char separator();
 
 	@Override
-	public DeckList importDeck(Path from) throws IOException {
-		return null; // TODO: Add importer
+	public DeckList importDeck(Reader from) throws IOException {
+		throw new UnsupportedOperationException(); // TODO: Add importer
 	}
 
 	@Override
-	public void exportDeck(DeckList deck, Path to) throws IOException {
-		BufferedWriter writer = Files.newBufferedWriter(to);
-
+	public void exportDeck(DeckList deck, Writer writer) throws IOException {
 		final char separator = separator();
 		int row = 1;
 
@@ -85,8 +83,6 @@ public abstract class SeparatedValues implements DeckImportExport {
 				++row;
 			}
 		}
-
-		writer.close();
 	}
 
 	@Override

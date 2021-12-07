@@ -9,7 +9,6 @@ import emi.mtg.deckbuilder.controller.Tags;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter;
 import emi.mtg.deckbuilder.controller.serdes.impl.Json;
-import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
@@ -486,9 +485,7 @@ public class MainWindow extends Stage {
 		this.importSerdes = new HashMap<>();
 		this.exportSerdes = new HashMap<>();
 
-		Iterator<DeckImportExport> serdes = ServiceLoader.load(DeckImportExport.class, MainApplication.PLUGIN_CLASS_LOADER).iterator();
-		while (serdes.hasNext()) {
-			DeckImportExport s = serdes.next();
+		for (DeckImportExport s : DeckImportExport.DECK_FORMAT_PROVIDERS) {
 			if (!s.importExtensions().isEmpty()) {
 				this.importSerdes.put(new FileChooser.ExtensionFilter(s.toString(), s.importExtensions().stream().map(e -> "*." + e).collect(Collectors.toList())), s);
 			}
