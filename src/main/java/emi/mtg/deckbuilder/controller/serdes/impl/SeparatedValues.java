@@ -175,20 +175,20 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 		protected LinkedHashMap<String, BiFunction<CardInstance, Integer, String>> zoneData() {
 			LinkedHashMap<String, BiFunction<CardInstance, Integer, String>> tmp = new LinkedHashMap<>();
 
-			tmp.put("Qty", (pr, count) -> Integer.toString(count));
-			tmp.put("Name", (pr, count) -> pr.card().name());
-			tmp.put("Set", (pr, count) -> pr.set().code().toUpperCase());
-			tmp.put("No.", (pr, count) -> pr.collectorNumber());
-			tmp.put("Cost Per.", (pr, count) -> "$0.00");
-			tmp.put("Total", (pr, count) -> "=A%1$d*E%1$d");
-			tmp.put("State", (pr, count) -> "");
-			tmp.put("Action", (pr, count) -> "");
-			tmp.put("Notes", (pr, count) -> "");
-			tmp.put("White Proxy", (pr, count) -> "=IF($H%1$d=J$1,$B%1$d,\"\")");
-			tmp.put("Color Proxy", (pr, count) -> "=IF($H%1$d=K$1,$B%1$d,\"\")");
-			tmp.put("Fancy Proxy", (pr, count) -> "=IF($H%1$d=L$1,$B%1$d,\"\")");
-			tmp.put("Buy", (pr, count) -> "=IF($H%1$d=M$1,$B%1$d,\"\")");
-			tmp.put("Buy - Price", (pr, count) -> "=IF($H%1$d<>\"\",$F%1$d,\"\")");
+			tmp.put("Qty", (pr, count) -> Integer.toString(count)); // A
+			tmp.put("Name", (pr, count) -> pr.card().name()); // B
+			tmp.put("Set", (pr, count) -> pr.set().code().toUpperCase()); // C
+			tmp.put("No.", (pr, count) -> pr.collectorNumber()); // D
+			tmp.put("Cost Per.", (pr, count) -> "$0.00"); // E
+			tmp.put("Total", (pr, count) -> "=A%1$d*E%1$d"); // F
+			tmp.put("State", (pr, count) -> ""); // G
+			tmp.put("Action", (pr, count) -> ""); // H
+			tmp.put("Notes", (pr, count) -> ""); // I
+			tmp.put("White Proxy", (pr, count) -> "=IF($H%1$d=J$1,$B%1$d,\"\")"); // J
+			tmp.put("Color Proxy", (pr, count) -> "=IF($H%1$d=K$1,$B%1$d,\"\")"); // K
+			tmp.put("Fancy Proxy", (pr, count) -> "=IF($H%1$d=L$1,$B%1$d,\"\")"); // L
+			tmp.put("Buy", (pr, count) -> "=IF($H%1$d=M$1,CONCATENATE(count, \" \", $B%1$d),\"\")"); // M
+			tmp.put("Buy - Price", (pr, count) -> "=IF($M%1$d<>\"\",$F%1$d,\"\")"); // N
 
 			return tmp;
 		}
