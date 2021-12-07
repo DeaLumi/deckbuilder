@@ -1,6 +1,5 @@
 package emi.mtg.deckbuilder.view.search.omnifilter.filters;
 
-import emi.lib.mtg.Card;
 import emi.lib.mtg.enums.Color;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
@@ -21,9 +20,12 @@ public abstract class ColorFilter implements Omnifilter.Subfilter {
 			return "Find cards by color. Comparison operators perform set comparisons. You can also compare against a number.";
 		}
 
-		@Override
-		protected Color.Combination get(Card.Face face) {
-			return Color.Combination.byColors(face.color());
+		protected Predicate<CardInstance> create(Omnifilter.Operator operator, int size) {
+			return Omnifilter.Operator.faceComparison(operator, f -> f.color().size() - size);
+		}
+
+		protected Predicate<CardInstance> create(Omnifilter.Operator operator, Color.Combination colors) {
+			return Omnifilter.Operator.faceComparison(operator, f -> Color.Combination.COMPARATOR.compare(f.color(), colors).value());
 		}
 	}
 
@@ -38,20 +40,25 @@ public abstract class ColorFilter implements Omnifilter.Subfilter {
 			return "Find cards by color identity, including colors of symbols in the card's text.";
 		}
 
-		@Override
-		protected Color.Combination get(Card.Face face) {
-			return Color.Combination.byColors(face.colorIdentity());
+		protected Predicate<CardInstance> create(Omnifilter.Operator operator, int count) {
+			return Omnifilter.Operator.comparison(operator, ci -> ci.card().colorIdentity().size() - count);
+		}
+
+		protected Predicate<CardInstance> create(Omnifilter.Operator operator, Color.Combination colors) {
+			return Omnifilter.Operator.comparison(operator, ci -> Color.Combination.COMPARATOR.compare(ci.card().colorIdentity(), colors).value());
 		}
 	}
 
-	protected abstract Color.Combination get(Card.Face face);
+	protected abstract Predicate<CardInstance> create(Omnifilter.Operator operator, int count);
+
+	protected abstract Predicate<CardInstance> create(Omnifilter.Operator operator, Color.Combination colors);
 
 	@Override
 	public Predicate<CardInstance> create(Omnifilter.Operator operator, String value) {
 		try {
 			int count = Integer.parseInt(value);
 			if (operator == Omnifilter.Operator.DIRECT) operator = Omnifilter.Operator.EQUALS;
-			return Omnifilter.Operator.faceComparison(operator, f -> get(f).size() - count);
+			return create(operator, count);
 		} catch (NumberFormatException nfe) {
 			// pass
 		}
@@ -59,6 +66,6 @@ public abstract class ColorFilter implements Omnifilter.Subfilter {
 		Color.Combination colors = Color.Combination.byString(value);
 		if (colors == null) throw new IllegalArgumentException("Couldn't recognize color constant \"" + value + "\"");
 		if (operator == Omnifilter.Operator.DIRECT) operator = Omnifilter.Operator.LESS_OR_EQUALS;
-		return Omnifilter.Operator.faceComparison(operator, f -> Color.Combination.COMPARATOR.compare(get(f), colors).value());
+		return create(operator, colors);
 	}
 }
