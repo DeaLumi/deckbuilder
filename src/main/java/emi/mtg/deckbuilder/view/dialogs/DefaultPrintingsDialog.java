@@ -113,6 +113,36 @@ public class DefaultPrintingsDialog extends Dialog<Preferences.DefaultPrintings>
 		sort(ignoredSets);
 	}
 
+	@FXML
+	protected void ignorePromos() {
+		List<Set> transfer = allSets.getItems().stream().filter(s -> s.type() == Set.Type.Promo).collect(Collectors.toList());
+		allSets.getItems().removeAll(transfer);
+		ignoredSets.getItems().addAll(transfer);
+		sort(ignoredSets);
+	}
+
+	@FXML
+	protected void ignoreOther() {
+		List<Set> transfer = allSets.getItems().stream().filter(s -> s.type() == Set.Type.Other).collect(Collectors.toList());
+		allSets.getItems().removeAll(transfer);
+		ignoredSets.getItems().addAll(transfer);
+		sort(ignoredSets);
+	}
+
+	@FXML
+	protected void unIgnoreAll() {
+		allSets.getItems().addAll(ignoredSets.getItems());
+		ignoredSets.getItems().clear();
+		sort(allSets);
+	}
+
+	@FXML
+	protected void unPreferAll() {
+		allSets.getItems().addAll(preferredSets.getItems());
+		preferredSets.getItems().clear();
+		sort(allSets);
+	}
+
 	public DefaultPrintingsDialog(Window host, Preferences.DefaultPrintings source) {
 		setTitle("Default Printings");
 		initOwner(host);
@@ -146,6 +176,7 @@ public class DefaultPrintingsDialog extends Dialog<Preferences.DefaultPrintings>
 		sort(this.allSets);
 		sort(this.ignoredSets);
 
+		this.ignoredSets.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		this.allSets.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
 		setResultConverter(bt -> {

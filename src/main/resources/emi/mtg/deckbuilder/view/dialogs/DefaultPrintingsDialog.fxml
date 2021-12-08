@@ -23,6 +23,10 @@
                     <Region minHeight="16.0"/>
                     <Button text="&lt; Ignore Digital" maxWidth="Infinity" onAction="#ignoreDigital"/>
                     <Button text="&lt; Ignore Remasters" maxWidth="Infinity" onAction="#ignoreRemasters"/>
+                    <Button text="&lt; Ignore Promos" maxWidth="Infinity" onAction="#ignorePromos"/>
+                    <Button text="&lt; Ignore Other" maxWidth="Infinity" onAction="#ignoreOther"/>
+                    <Region minHeight="16.0"/>
+                    <Button text="All &gt;" maxWidth="Infinity" onAction="#unIgnoreAll"/>
                 </VBox>
                 <VBox alignment="CENTER" spacing="8.0">
                     <Label text="All Sets:"/>
@@ -31,6 +35,8 @@
                 <VBox alignment="CENTER" spacing="8.0">
                     <Button text="Prefer &gt;" maxWidth="Infinity" onAction="#preferSets"/>
                     <Button text="&lt; Un-Prefer" maxWidth="Infinity" onAction="#unPreferSets"/>
+                    <Region minHeight="16.0"/>
+                    <Button text="&lt; All" maxWidth="Infinity" onAction="#unPreferAll"/>
                 </VBox>
                 <VBox alignment="CENTER" spacing="8.0">
                     <Label text="Preferred Sets:"/>
