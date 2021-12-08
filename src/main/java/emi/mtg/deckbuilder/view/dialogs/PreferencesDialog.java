@@ -494,8 +494,6 @@ public class PreferencesDialog extends Alert {
 				reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
 				reflectField(PreferVariationPreference::new, "Prefer Variation", "preferVariation", x -> true),
 				reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
-				reflectField(BooleanPreference::new, "Prefer Physical Versions","preferPhysical", x -> true),
-				reflectField(BooleanPreference::new, "Prefer Standard Printing", "preferStandard", x -> true),
 		});
 
 		map.put("Collection & Zones", new PrefEntry[] {
