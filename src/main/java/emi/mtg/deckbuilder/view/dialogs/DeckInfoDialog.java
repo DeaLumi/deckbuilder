@@ -7,6 +7,7 @@ import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
+import javafx.stage.Window;
 
 import java.io.IOException;
 
@@ -23,11 +24,12 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 	@FXML
 	private TextArea descriptionField;
 
-	public DeckInfoDialog(DeckList deck) {
+	public DeckInfoDialog(Window owner, DeckList deck) {
 		setTitle("Deck Info");
 
 		FxUtils.FXML(this, getDialogPane());
 		getDialogPane().setStyle(Preferences.get().theme.style());
+		initOwner(owner);
 
 		deckNameField.setText(deck.nameProperty().getValue());
 		authorField.setText(deck.authorProperty().getValue());

@@ -9,6 +9,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
+import javafx.stage.Screen;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
@@ -45,6 +46,7 @@ public class AlertBuilder {
 
 	private final Alert alert;
 	private boolean buttonsSet, buttonsCustomized;
+	private Screen screen;
 
 	private AlertBuilder() {
 		this(Alert.AlertType.NONE);
@@ -56,7 +58,7 @@ public class AlertBuilder {
 
 	private AlertBuilder(Alert.AlertType alertType, String contentText, ButtonType... buttons) {
 		alert = new Alert(alertType, contentText, buttons);
-		alert.getDialogPane().setStyle("-fx-base: " + Preferences.get().theme.baseHex());
+		alert.getDialogPane().setStyle(Preferences.get().theme.style());
 		this.buttonsSet = buttons != null && buttons.length > 0;
 		this.buttonsCustomized = false;
 	}
@@ -103,6 +105,11 @@ public class AlertBuilder {
 
 	public AlertBuilder modal(Modality modality) {
 		alert.initModality(modality);
+		return this;
+	}
+
+	public AlertBuilder screen(Screen screen) {
+		this.screen = screen;
 		return this;
 	}
 
@@ -191,7 +198,7 @@ public class AlertBuilder {
 	 *                   values for details.
 	 * @return this AlertBuilder, for call chaining.
 	 */
-	public AlertBuilder longRunning(ButtonType button, Runnable preExec, LongRunningOperation operation, Consumer<Alert> onFail, Exceptions exceptions) {
+	public AlertBuilder longRunning(ButtonType button, Consumer<Alert> preExec, LongRunningOperation operation, Consumer<Alert> onFail, Exceptions exceptions) {
 		if (!this.buttonsSet) {
 			throw new IllegalStateException("Buttons haven't been settled!");
 		}
@@ -326,7 +333,7 @@ public class AlertBuilder {
 			// Don't use setOnCloseRequest here since that can clobber other effects.
 			window.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, handleCancel);
 
-			if (preExec != null) preExec.run();
+			if (preExec != null) preExec.accept(alert);
 			lrThread.start();
 		});
 
@@ -335,8 +342,12 @@ public class AlertBuilder {
 		return this;
 	}
 
+	public AlertBuilder longRunning(ButtonType button, Runnable preExec, LongRunningOperation operation, Consumer<Alert> onFail, Exceptions exceptions) {
+		return longRunning(button, dlg -> preExec.run(), operation, onFail, exceptions);
+	}
+
 	public AlertBuilder longRunning(LongRunningOperation op, Exceptions exceptions) {
-		return longRunning(null, null, op, null, exceptions);
+		return longRunning(null, (Consumer<Alert>) null, op, null, exceptions);
 	}
 
 	public AlertBuilder longRunning(LongRunningOperation op) {
@@ -345,10 +356,17 @@ public class AlertBuilder {
 
 	public Alert show() {
 		alert.show();
+		if ((alert.getOwner() == null || Double.isNaN(alert.getOwner().getWidth()) || alert.getOwner().getWidth() <= 0) && screen != null) FxUtils.transfer(alert, screen);
 		return alert;
 	}
 
 	public Optional<ButtonType> showAndWait() {
+		if ((alert.getOwner() == null || Double.isNaN(alert.getOwner().getWidth()) || alert.getOwner().getWidth() <= 0) && screen != null) {
+			alert.show();
+			alert.hide();
+			FxUtils.transfer(alert, screen);
+		}
+
 		Optional<ButtonType> bt = alert.showAndWait();
 
 		if (bt.isPresent() && bt.get().getButtonData().equals(ButtonBar.ButtonData.BIG_GAP)) {

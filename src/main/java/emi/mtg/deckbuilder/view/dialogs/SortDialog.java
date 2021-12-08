@@ -9,6 +9,7 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.ListView;
 import javafx.scene.control.cell.CheckBoxListCell;
+import javafx.stage.Window;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ public class SortDialog extends Dialog<List<CardView.ActiveSorting>> {
 		activeList.getSelectionModel().clearAndSelect(idx);
 	}
 
-	public SortDialog(List<CardView.ActiveSorting> currentSorts) {
+	public SortDialog(Window host, List<CardView.ActiveSorting> currentSorts) {
 		super();
 
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("SortDialog.fxml"));
@@ -91,6 +92,7 @@ public class SortDialog extends Dialog<List<CardView.ActiveSorting>> {
 			throw new Error(e);
 		}
 		getDialogPane().setStyle(Preferences.get().theme.style());
+		initOwner(host);
 
 		List<CardView.Sorting> source = new ArrayList<>(CardView.SORTINGS);
 		source.removeAll(currentSorts.stream().map(s -> s.sorting).collect(Collectors.toSet()));

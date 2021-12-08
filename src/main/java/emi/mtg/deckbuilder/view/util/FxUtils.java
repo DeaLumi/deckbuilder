@@ -3,8 +3,10 @@ package emi.mtg.deckbuilder.view.util;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.MainApplication;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -13,8 +15,12 @@ import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Paint;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.text.Font;
+import javafx.stage.Screen;
+import javafx.stage.Window;
 
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
 
 public class FxUtils {
 	public static <T extends Parent> void FXML(T component) {
@@ -32,6 +38,54 @@ public class FxUtils {
 		} catch (IOException e) {
 			throw new AssertionError(e);
 		}
+	}
+
+	public static Screen screen(double x, double y, double w, double h) {
+		List<Screen> screens = Screen.getScreensForRectangle(x, y, w, h);
+
+		if (screens.size() > 1) {
+			return screens.stream().min(Comparator.comparingDouble(s -> s.getVisualBounds().getMinX())).orElseThrow(AssertionError::new);
+		} else if (screens.size() == 1) {
+			return screens.get(0);
+		} else {
+			return Screen.getPrimary();
+		}
+	}
+
+	public static Screen screen(Window window) {
+		return screen(window.getX(), window.getY(), window.getWidth(), window.getHeight());
+	}
+
+	public static Screen screen(Dialog<?> dialog) {
+		return screen(dialog.getX(), dialog.getY(), dialog.getWidth(), dialog.getHeight());
+	}
+
+	public static void center(Dialog<?> dialog, Screen screen) {
+		Rectangle2D vis = screen.getVisualBounds();
+		dialog.setX(vis.getMinX() + (vis.getWidth() - dialog.getWidth()) / 2.0);
+		dialog.setY(vis.getMinY() + (vis.getHeight() - dialog.getHeight()) / 2.0);
+	}
+
+	public static void transfer(Dialog<?> dialog, Screen screen) {
+		Rectangle2D base = screen(dialog).getVisualBounds();
+		Rectangle2D target = screen.getVisualBounds();
+
+		dialog.setX(dialog.getX() - base.getMinX() + target.getMinX());
+		dialog.setY(dialog.getY() - base.getMinY() + target.getMinY());
+	}
+
+	public static void center(Window window, Screen screen) {
+		Rectangle2D vis = screen.getVisualBounds();
+		window.setX(vis.getMinX() + (vis.getWidth() - window.getWidth()) / 2.0);
+		window.setY(vis.getMinY() + (vis.getHeight() - window.getHeight()) / 2.0);
+	}
+
+	public static void transfer(Window window, Screen screen) {
+		Rectangle2D base = screen(window).getVisualBounds();
+		Rectangle2D target = screen.getVisualBounds();
+
+		window.setX(window.getX() - base.getMinX() + target.getMinX());
+		window.setY(window.getY() - base.getMinY() + target.getMinY());
 	}
 
 	public static String themeCss() {

@@ -13,6 +13,7 @@ import javafx.scene.chart.StackedBarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.stage.Window;
 
 import java.io.IOException;
 import java.util.*;
@@ -197,12 +198,13 @@ public class DeckStatsDialog extends Dialog<Void> {
 		};
 	}
 
-	public DeckStatsDialog(ObservableList<CardInstance> cardList) throws IOException {
+	public DeckStatsDialog(Window window, ObservableList<CardInstance> cardList) throws IOException {
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("DeckStatsDialog.fxml"));
 		loader.setRoot(this);
 		loader.setController(this);
 		loader.load();
 		getDialogPane().setStyle(Preferences.get().theme.style());
+		initOwner(window);
 
 		// TODO: Update data dynamically.
 		CardSummaryData data = cardList.parallelStream().collect(CardSummaryData.COLLECTOR);

@@ -18,6 +18,7 @@ import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.components.DeckPane;
 import emi.mtg.deckbuilder.view.components.DeckTab;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
+import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
@@ -502,6 +503,8 @@ public class MainWindow extends Stage {
 		MainWindow window = new MainWindow(MainWindow.this.owner);
 		window.addDeck(tab.pane().deck());
 		window.show();
+		window.setX(getX() + 24.0);
+		window.setY(getY() + 24.0);
 		tab.reallyForceClose();
 
 		return window;
@@ -567,6 +570,8 @@ public class MainWindow extends Stage {
 			case NewWindow:
 				MainWindow window = new MainWindow(this.owner);
 				window.addDeck(forDeck);
+				window.setX(getX() + 24.0);
+				window.setY(getY() + 24.0);
 				window.show();
 				break;
 			default:
@@ -757,7 +762,7 @@ public class MainWindow extends Stage {
 	protected void showDeckInfoDialog() {
 		final DeckPane pane = activeDeckPane();
 		final Format oldFormat = pane.deck().format();
-		DeckInfoDialog did = new DeckInfoDialog(pane.deck());
+		DeckInfoDialog did = new DeckInfoDialog(this, pane.deck());
 		did.initOwner(this);
 
 		if(did.showAndWait().orElse(false) && !oldFormat.equals(pane.deck().format())) {
@@ -940,7 +945,11 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void showPreferencesDialog() {
-		owner.showPreferences();
+		PreferencesDialog pd = new PreferencesDialog(this);
+
+		if (pd.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+			Preferences.get().changed();
+		}
 	}
 
 	void preferencesChanged(Preferences prefs) {

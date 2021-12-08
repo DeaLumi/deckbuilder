@@ -225,7 +225,7 @@ public class CardPane extends BorderPane {
 
 		MenuItem sortButton = new MenuItem("Sort");
 		sortButton.setOnAction(ae -> {
-			SortDialog dlg = new SortDialog(this.cardView.sort());
+			SortDialog dlg = new SortDialog(getScene().getWindow(), this.cardView.sort());
 			dlg.initOwner(CardPane.this.getScene().getWindow());
 			dlg.showAndWait()
 					.ifPresent(s -> {
@@ -249,7 +249,7 @@ public class CardPane extends BorderPane {
 		MenuItem statisticsButton = new MenuItem("Statistics");
 		statisticsButton.setOnAction(ae -> {
 			try {
-				new DeckStatsDialog(this.cardView.filteredModel).show();
+				new DeckStatsDialog(getScene().getWindow(), this.cardView.filteredModel).show();
 			} catch (IOException e) {
 				throw new RuntimeException(e); // TODO: Handle gracefully
 			}

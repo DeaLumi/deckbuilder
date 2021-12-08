@@ -8,6 +8,7 @@ import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -21,6 +22,7 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.stage.Modality;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
@@ -96,6 +98,7 @@ public class MainApplication extends Application {
 
 	private final Updater updater;
 	private Stage hostStage;
+	private Screen screen;
 
 	public void closeAllWindows() {
 		for (MainWindow child : mainWindows) {
@@ -140,6 +143,19 @@ public class MainApplication extends Application {
 		}
 	}
 
+	private Screen discoverScreen() {
+		java.awt.PointerInfo pointerInfo = java.awt.MouseInfo.getPointerInfo();
+
+		double scx = pointerInfo.getLocation().getX();
+		double scy = pointerInfo.getLocation().getY();
+
+		List<Screen> screens = Screen.getScreensForRectangle(scx, scy, 0, 0);
+
+		if (screens.size() == 1) return screens.get(0);
+
+		return Screen.getPrimary();
+	}
+
 	private static final String LOW_MEMORY_LIMIT = String.join("\n",
 			"Your maximum memory limit is less than 1 GB! " +
 			"You may be running a 32-bit JRE or have configured a low memory limit. " +
@@ -179,6 +195,7 @@ public class MainApplication extends Application {
 	public void start(Stage primaryStage) throws Exception {
 		System.setProperty("file.encoding", "UTF-8");
 
+		this.screen = discoverScreen();
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
 		hostStage.getScene().getStylesheets().add(MainApplication.class.getResource("styles.css").toExternalForm());
@@ -285,12 +302,14 @@ public class MainApplication extends Application {
 				alert.getDialogPane().setExpandableContent(text);
 
 				alert.show();
+				FxUtils.transfer(alert, screen);
 			});
 		});
 
 		try {
 			if (prefs.autoUpdateProgram && updater.needsUpdate()) {
 				AlertBuilder.query(hostStage)
+						.screen(screen)
 						.title("Auto-Update")
 						.headerText("A program update is available.")
 						.contentText("Would you like to update?")
@@ -299,6 +318,7 @@ public class MainApplication extends Application {
 			}
 		} catch (IOException ioe) {
 			AlertBuilder.notify(hostStage)
+					.screen(screen)
 					.type(Alert.AlertType.WARNING)
 					.title("Updater Error")
 					.headerText("Unable to check for updates.")
@@ -309,6 +329,7 @@ public class MainApplication extends Application {
 
 		if (DATA_SOURCES.size() == 0) {
 			AlertBuilder.notify(hostStage)
+					.screen(screen)
 					.type(Alert.AlertType.ERROR)
 					.title("No Data Sources")
 					.headerText("No data source is available!")
@@ -327,6 +348,7 @@ public class MainApplication extends Application {
 		MainWindow window = new MainWindow(this);
 		window.addDeck(new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap()));
 		window.show();
+		FxUtils.transfer(window, screen);
 	}
 
 	private void selectDataSource() {
@@ -344,18 +366,19 @@ public class MainApplication extends Application {
 		combo.getSelectionModel().selectFirst();
 
 		Alert alert = AlertBuilder.query(hostStage)
+				.screen(screen)
 				.buttons(ButtonType.OK, ButtonType.CANCEL)
 				.title(DATA_SOURCES.size() > 1 ? "Select Data Source" : "Loading Data")
 				.headerText(DATA_SOURCES.size() > 1 ? "Select a data source to use." : "Please wait...")
 				.contentNode(grid)
 				.longRunning(ButtonType.OK,
-						() -> {
+						dlg -> {
 							if (Context.instantiated()) return;
 
 							DataSource data = combo.getSelectionModel().getSelectedItem();
 
 							if (Preferences.get().autoUpdateData && data.needsUpdate(Preferences.get().dataPath)) {
-								AlertBuilder.query(hostStage)
+								AlertBuilder.query(dlg.getDialogPane().getScene().getWindow())
 										.title("Auto-Update")
 										.headerText("New card data available.")
 										.contentText("Would you like to update?")
@@ -373,8 +396,7 @@ public class MainApplication extends Application {
 						prg -> Context.get().loadData(prg),
 						dlg -> {
 							if (Preferences.get().autoUpdateData) {
-								if(AlertBuilder.create()
-										.owner(hostStage)
+								if(AlertBuilder.notify(dlg.getDialogPane().getScene().getWindow())
 										.type(Alert.AlertType.ERROR)
 										.buttons(ButtonType.YES, ButtonType.NO)
 										.title("Data Load Error")
@@ -393,6 +415,10 @@ public class MainApplication extends Application {
 
 		alert.getDialogPane().setPrefWidth(350.0);
 
+		alert.show();
+		alert.hide();
+		FxUtils.transfer(alert, screen);
+
 		if(DATA_SOURCES.size() == 1) {
 			Platform.runLater(() -> alert.getDialogPane().lookupButton(ButtonType.OK).executeAccessibleAction(AccessibleAction.FIRE));
 		}
@@ -403,11 +429,14 @@ public class MainApplication extends Application {
 	}
 
 	public void update() {
+		// TODO: Replace this with a longRunning AlertBuilder as in the program startup sequence?
+
 		TextInputDialog uriInput = new TextInputDialog(Preferences.get().updateUri == null ? "" : Preferences.get().updateUri.toString());
 		uriInput.setTitle("Update Source");
 		uriInput.setHeaderText("Update Server URL");
 		uriInput.setContentText("URL:");
 		uriInput.getDialogPane().setExpanded(true);
+		uriInput.getDialogPane().setStyle(Preferences.get().theme.style());
 
 		ProgressBar progress = new ProgressBar(0.0);
 		uriInput.getDialogPane().setExpandableContent(progress);
@@ -439,7 +468,10 @@ public class MainApplication extends Application {
 			ae.consume();
 		});
 
-		uriInput.initOwner(hostStage);
+		uriInput.show();
+		uriInput.hide();
+		FxUtils.transfer(uriInput, screen);
+
 		uriInput.showAndWait();
 	}
 
@@ -461,6 +493,7 @@ public class MainApplication extends Application {
 	public void updateData() {
 		final DataSource data = Context.get().data;
 		if(AlertBuilder.query(hostStage)
+				.screen(screen)
 				.title("Update Data")
 				.headerText(data.needsUpdate(Preferences.get().dataPath) ? "New card data available." : "Data appears fresh.")
 				.contentText(data.needsUpdate(Preferences.get().dataPath) ? "Would you like to update?" : "Would you like to update anyway?")
@@ -474,15 +507,9 @@ public class MainApplication extends Application {
 		}
 	}
 
-	public void showPreferences() {
-		PreferencesDialog pd = new PreferencesDialog(hostStage);
-
-		if (pd.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-			Preferences.get().changed();
-		}
-	}
-
 	public void trimImageDiskCache() {
+		// TODO: Maybe FXML this whole mess. Make it another Dialog and open it from MainWindow.
+
 		GridPane grid = new GridPane();
 		grid.setHgap(8.0);
 		grid.setVgap(8.0);
@@ -510,6 +537,7 @@ public class MainApplication extends Application {
 		grid.add(progress, 0, 2, 2, 1);
 
 		Alert dlg = AlertBuilder.query(hostStage)
+				.screen(screen)
 				.type(Alert.AlertType.CONFIRMATION)
 				.title("Clean Disk Cache")
 				.headerText("Enter cleanup parameters:")
@@ -574,5 +602,6 @@ public class MainApplication extends Application {
 		});
 
 		dlg.show();
+		FxUtils.transfer(dlg, screen);
 	}
 }

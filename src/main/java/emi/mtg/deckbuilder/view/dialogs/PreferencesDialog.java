@@ -330,7 +330,7 @@ public class PreferencesDialog extends Alert {
 					() -> {
 						Button btn = new Button("Configure");
 						btn.setOnAction(ae -> {
-							SortDialog dlg = new SortDialog((List<CardView.ActiveSorting>) btn.getUserData());
+							SortDialog dlg = new SortDialog(btn.getScene().getWindow(), (List<CardView.ActiveSorting>) btn.getUserData());
 							dlg.initModality(Modality.APPLICATION_MODAL);
 							dlg.showAndWait().ifPresent(btn::setUserData);
 						});
@@ -416,7 +416,7 @@ public class PreferencesDialog extends Alert {
 			Files.delete(tmp);
 			return true;
 		} catch (IOException ioe) {
-			AlertBuilder.notify(null)
+			AlertBuilder.notify(getWindow())
 					.type(AlertType.ERROR)
 					.title("Invalid Directory")
 					.headerText("Unable to write to chosen directory.")
@@ -430,7 +430,7 @@ public class PreferencesDialog extends Alert {
 		PATH_WRITABLE_VALIDATOR.test(path);
 
 		if (!path.equals(Preferences.get().imagesPath)) {
-			return AlertBuilder.query(getOwner())
+			return AlertBuilder.query(getWindow())
 					.type(AlertType.WARNING)
 					.buttons(ButtonType.OK, ButtonType.CANCEL)
 					.title("Change Image Path")
@@ -451,7 +451,7 @@ public class PreferencesDialog extends Alert {
 
 	private final Predicate<DeckImportExport.Textual> COPY_PASTE_VALIDATOR = serdes -> {
 		if (serdes.importExtensions().isEmpty()) {
-			return AlertBuilder.query(getOwner())
+			return AlertBuilder.query(getWindow())
 					.type(AlertType.WARNING)
 					.buttons(ButtonType.OK, ButtonType.CANCEL)
 					.title("Copy Paste Format Warning")
@@ -461,7 +461,7 @@ public class PreferencesDialog extends Alert {
 							"If you copy a deck this way, you won't be able to paste it back into the deckbuilder."))
 					.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
 		} else if (serdes.exportExtensions().isEmpty()) {
-			return AlertBuilder.query(getOwner())
+			return AlertBuilder.query(getWindow())
 					.type(AlertType.WARNING)
 					.buttons(ButtonType.OK, ButtonType.CANCEL)
 					.title("Copy Paste Format Warning")
@@ -591,5 +591,9 @@ public class PreferencesDialog extends Alert {
 
 			return bt;
 		});
+	}
+
+	protected Window getWindow() {
+		return getDialogPane().getScene().getWindow();
 	}
 }

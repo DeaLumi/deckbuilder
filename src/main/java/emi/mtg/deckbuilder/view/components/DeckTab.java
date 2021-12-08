@@ -90,7 +90,7 @@ public class DeckTab extends Tab {
 		MenuItem deckInfo = new MenuItem("Deck Info...");
 		deckInfo.setOnAction(ae -> {
 			Format oldFormat = pane().deck().format();
-			if (new DeckInfoDialog(pane().deck()).showAndWait().orElse(false) && !oldFormat.equals(pane().deck().format())) {
+			if (new DeckInfoDialog(pane().getScene().getWindow(), pane().deck()).showAndWait().orElse(false) && !oldFormat.equals(pane().deck().format())) {
 				pane().applyDeck();
 			}
 		});
