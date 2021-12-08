@@ -346,6 +346,28 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class DefaultPrintingsPreference extends OneControlPreference<Preferences.DefaultPrintings, Button> {
+		public DefaultPrintingsPreference(String label, Function<Preferences, Preferences.DefaultPrintings> fromPrefs, Predicate<Preferences.DefaultPrintings> validate, BiConsumer<Preferences, Preferences.DefaultPrintings> toPrefs) {
+			super(
+					() -> {
+						Button btn = new Button("Configure");
+						btn.setOnAction(ae -> {
+							DefaultPrintingsDialog dlg = new DefaultPrintingsDialog(btn.getScene().getWindow(), (Preferences.DefaultPrintings) btn.getUserData());
+							dlg.initModality(Modality.APPLICATION_MODAL);
+							dlg.showAndWait().ifPresent(btn::setUserData);
+						});
+						return btn;
+					},
+					c -> (Preferences.DefaultPrintings) c.getUserData(),
+					Button::setUserData,
+					label,
+					fromPrefs,
+					validate,
+					toPrefs
+			);
+		}
+	}
+
 	@FunctionalInterface
 	private interface TypicalConstructor<T, P extends Preference<T>> {
 		P create(String label, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs);
@@ -468,6 +490,7 @@ public class PreferencesDialog extends Alert {
 		});
 
 		map.put("Printing Selection", new PrefEntry[] {
+				reflectField(DefaultPrintingsPreference::new, "Ignored/Preferred Sets", "defaultPrintings", x -> true),
 				reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
 				reflectField(PreferVariationPreference::new, "Prefer Variation", "preferVariation", x -> true),
 				reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),

@@ -111,6 +111,32 @@ public class Preferences {
 		Variant
 	}
 
+	public static class DefaultPrintings {
+		public final List<String> preferredSets;
+		public final Set<String> ignoredSets;
+
+		protected transient Map<String, Integer> preferredMap;
+
+		public DefaultPrintings() {
+			this(new ArrayList<>(), new HashSet<>());
+		}
+
+		public DefaultPrintings(List<String> preferredSets, Set<String> ignoredSets) {
+			this.preferredSets = preferredSets;
+			this.ignoredSets = ignoredSets;
+			this.preferredMap = null;
+		}
+
+		public int prefPriority(String setCode) {
+			if (preferredMap == null) {
+				preferredMap = new HashMap<>();
+				for (int i = 0; i < preferredSets.size(); ++i) preferredMap.put(preferredSets.get(i).toLowerCase(), i);
+			}
+
+			return preferredMap.getOrDefault(setCode.toLowerCase(), Integer.MAX_VALUE);
+		}
+	}
+
 	public enum Theme {
 		Light (javafx.scene.paint.Color.gray(0.925)),
 		Dark (javafx.scene.paint.Color.gray(0.15));
@@ -191,6 +217,7 @@ public class Preferences {
 
 	// N.B. Preferences get loaded *before* card data, so we can't reference Card.Printings here.
 	public HashMap<String, PreferredPrinting> preferredPrintings = new HashMap<>();
+	public DefaultPrintings defaultPrintings = new DefaultPrintings();
 
 	public PreferAge preferAge = PreferAge.Any;
 	public PreferVariation preferVariation = PreferVariation.Any;
@@ -218,6 +245,7 @@ public class Preferences {
 		if (preferNotPromo) stream = stream.filter(pr -> !pr.promo());
 		if (preferPhysical) stream = stream.filter(pr -> !pr.set().digital());
 		if (preferStandard) stream = stream.filter(pr -> pr.set().type() == emi.lib.mtg.Set.Type.Standard || pr.set().type() == emi.lib.mtg.Set.Type.Precon);
+		if (!defaultPrintings.ignoredSets.isEmpty()) stream = stream.filter(pr -> !defaultPrintings.ignoredSets.contains(pr.set().code()));
 
 		if (preferAge != PreferAge.Any) stream = stream.sorted(preferAge == PreferAge.Newest ?
 				(a1, a2) -> a2.releaseDate().compareTo(a1.releaseDate()) :
@@ -225,6 +253,7 @@ public class Preferences {
 		if (preferVariation != PreferVariation.Any) stream = stream.sorted(preferVariation == PreferVariation.Primary ?
 				(a1, a2) -> a1.variation() - a2.variation() :
 				(a1, a2) -> a2.variation() - a1.variation());
+		if (!defaultPrintings.preferredSets.isEmpty()) stream = stream.sorted(Comparator.comparingInt(a -> defaultPrintings.prefPriority(a.set().code())));
 
 		return stream.findFirst().orElse(null);
 	}
