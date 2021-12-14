@@ -4,11 +4,13 @@ import emi.lib.mtg.Set;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.util.FxUtils;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.ListView;
-import javafx.scene.control.SelectionMode;
+import javafx.geometry.Side;
+import javafx.scene.Node;
+import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Window;
 
 import java.util.*;
@@ -23,6 +25,9 @@ public class DefaultPrintingsDialog extends Dialog<Preferences.DefaultPrintings>
 
 	@FXML
 	protected ListView<emi.lib.mtg.Set> preferredSets;
+
+	protected TextField searchBox;
+	protected ContextMenu searchContextMenu;
 
 	protected void sort(ListView<emi.lib.mtg.Set> which) {
 		which.getItems().sort(Comparator.comparing(Set::releaseDate).reversed());
@@ -179,6 +184,16 @@ public class DefaultPrintingsDialog extends Dialog<Preferences.DefaultPrintings>
 		this.ignoredSets.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		this.allSets.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
+		this.searchBox = new TextField();
+		this.searchBox.setPromptText("Enter search term...");
+		this.searchBox.setOnKeyPressed(this::filterKeyPressed);
+		this.searchBox.textProperty().addListener(this::filterTextChanged);
+		this.searchContextMenu = new ContextMenu(new CustomMenuItem(this.searchBox));
+
+		this.ignoredSets.setOnKeyPressed(this::listViewOnKeyPressed);
+		this.allSets.setOnKeyPressed(this::listViewOnKeyPressed);
+		this.preferredSets.setOnKeyPressed(this::listViewOnKeyPressed);
+
 		setResultConverter(bt -> {
 			if (bt == ButtonType.OK) {
 				return new Preferences.DefaultPrintings(this.preferredSets.getItems().stream().map(s -> s.code().toLowerCase()).collect(Collectors.toList()), this.ignoredSets.getItems().stream().map(s -> s.code().toLowerCase()).collect(Collectors.toSet()));
@@ -186,5 +201,43 @@ public class DefaultPrintingsDialog extends Dialog<Preferences.DefaultPrintings>
 				return source;
 			}
 		});
+	}
+
+	private void listViewOnKeyPressed(KeyEvent ke) {
+		if (this.searchContextMenu.isShowing()) return;
+		if (!ke.getCode().isLetterKey()) return;
+		if (ke.getSource() != this.ignoredSets && ke.getSource() != this.allSets && ke.getSource() != this.preferredSets) return;
+
+		this.searchContextMenu.show((Node) ke.getSource(), Side.TOP, 0, 0);
+		this.searchBox.setText(ke.getCharacter());
+		this.searchBox.setUserData(ke.getSource());
+		this.searchBox.requestFocus();
+		ke.consume();
+	}
+
+	private void filterKeyPressed(KeyEvent ke) {
+		if (ke.getCode() != KeyCode.ESCAPE && ke.getCode() != KeyCode.ENTER) return;
+
+		this.searchBox.setUserData(null);
+		this.searchContextMenu.hide();
+		ke.consume();
+	}
+
+	private void filterTextChanged(ObservableValue<? extends String> text, String old, String newValue) {
+		if (this.searchBox.getUserData() == null || !(this.searchBox.getUserData() instanceof ListView)) return;
+
+		ListView<emi.lib.mtg.Set> setList = (ListView<emi.lib.mtg.Set>) this.searchBox.getUserData();
+
+		final String search = newValue.toLowerCase();
+		emi.lib.mtg.Set set = setList.getItems().stream()
+				.filter(s -> s.name().toLowerCase().contains(search) || s.code().toLowerCase().contains(search))
+				.findFirst()
+				.orElse(null);
+
+		if (set == null) return;
+
+		setList.getSelectionModel().clearSelection();
+		setList.getSelectionModel().select(set);
+		setList.scrollTo(set);
 	}
 }
