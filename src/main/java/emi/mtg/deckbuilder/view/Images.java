@@ -123,7 +123,7 @@ public class Images {
 				'-' + printing.variation();
 
 		if (object instanceof Card.Printing.Face) {
-			file += '-' + face.face().kind().name().toLowerCase();
+			file += '-' + face.kind().name().toLowerCase();
 		}
 
 		file += '.' + CACHE_EXTENSION;

@@ -15,6 +15,7 @@
 - Fixed TSV buy - price column cell references. Still no pricing data, sorry.
 - Color identity omnifilter once again correctly uses the entire card's color identity while filtering.
 - Lands once again correctly include the color identity of their land types.
+- Reversible cards now properly show up as printings of the root card. Sorry, but you can't choose which side is shown.
 
 ### Changes
 
