@@ -45,6 +45,7 @@
                 <Menu text="Help">
                     <MenuItem text="Tips &amp; Tricks" onAction="#showTipsAndTricks"/>
                     <MenuItem text="Search Help" onAction="#showSearchHelp"/>
+                    <MenuItem text="What's New" onAction="#showChangelog"/>
                     <MenuItem text="About" onAction="#showAboutDialog"/>
                     <SeparatorMenuItem/>
                     <Menu text="Debug">

@@ -822,6 +822,11 @@ public class MainWindow extends Stage {
 				.showAndWait();
 	}
 
+	@FXML
+	protected void showChangelog() throws IOException {
+		owner.showChangeLog();
+	}
+
 	private static final String ABOUT_TEXT = String.join("\n",
 			"Developer: Emi (dealuminis@gmail.com)",
 			"Data & Images: Scryfall (www.scryfall.com)",

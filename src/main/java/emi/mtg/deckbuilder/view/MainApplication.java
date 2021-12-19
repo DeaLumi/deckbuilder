@@ -6,9 +6,9 @@ import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
-import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import emi.mtg.deckbuilder.view.util.FxUtils;
+import emi.mtg.deckbuilder.view.util.MicroMarkdown;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -21,18 +21,18 @@ import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
+import javafx.scene.web.WebView;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -349,6 +349,10 @@ public class MainApplication extends Application {
 		window.addDeck(new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap()));
 		window.show();
 		FxUtils.transfer(window, screen);
+
+		if (state.checkUpdated()) {
+			showChangeLog();
+		}
 	}
 
 	private void selectDataSource() {
@@ -603,5 +607,30 @@ public class MainApplication extends Application {
 
 		dlg.show();
 		FxUtils.transfer(dlg, screen);
+	}
+
+	public void showChangeLog() throws IOException {
+		WebView view = new WebView();
+		view.getEngine().setJavaScriptEnabled(false);
+		view.getEngine().setUserStyleSheetLocation(MainApplication.class.getResource("html-styles.css").toExternalForm());
+
+		StringBuilder content = new StringBuilder();
+		content.append("<style>").append(FxUtils.themeCss()).append("</style>\n");
+
+		URL changelogUrl = MainApplication.class.getClassLoader().getResource("META-INF/changelog.md");
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(changelogUrl.openStream(), StandardCharsets.UTF_8))) {
+			String html = new MicroMarkdown(reader).toString();
+			content.append(html);
+		}
+
+		view.getEngine().loadContent(content.toString());
+
+		Alert alert = AlertBuilder.notify(hostStage)
+				.screen(screen)
+				.title("Change Log")
+				.headerText("What's New")
+				.contentNode(view)
+				.show();
+		FxUtils.center(alert, screen);
 	}
 }
