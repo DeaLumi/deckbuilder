@@ -26,6 +26,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -33,6 +36,7 @@ public class Serialization {
 	public static final Gson GSON = new GsonBuilder()
 			.setPrettyPrinting()
 			.setExclusionStrategies()
+			.registerTypeAdapter(Instant.class, Serialization.createInstantAdapter())
 			.registerTypeAdapter(SearchProvider.class, Serialization.createSearchProviderAdapter())
 			.registerTypeAdapter(CardView.Grouping.class, Serialization.createCardViewGroupingAdapter())
 			.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
@@ -78,6 +82,10 @@ public class Serialization {
 
 			return fromString.apply(v);
 		}
+	}
+
+	public static TypeAdapter<Instant> createInstantAdapter() {
+		return new StringTypeAdapter<>(t -> DateTimeFormatter.RFC_1123_DATE_TIME.format(t.atOffset(ZoneOffset.UTC)), s -> Instant.from(DateTimeFormatter.RFC_1123_DATE_TIME.parse(s)));
 	}
 
 	public static TypeAdapter<SearchProvider> createSearchProviderAdapter() {
