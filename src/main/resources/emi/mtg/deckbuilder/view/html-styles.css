@@ -10,3 +10,19 @@ code {
     padding: 2px 4px;
     font-family: monospace;
 }
+
+pre {
+    background-color: rgba(60%, 60%, 60%, 0.2);
+    border: 1px solid rgba(50%, 50%, 50%, 0.2);
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+blockquote {
+    background-color: rgba(40%, 40%, 40%, 0.2);
+    border-width: 1px 1px 1px 4px;
+    border-style: solid;
+    border-color: rgba(50%, 50%, 50%, 0.2) rgba(50%, 50%, 50%, 0.2) rgba(50%, 50%, 50%, 0.2) currentcolor;
+    border-radius: 4px;
+    padding: 4px 8px;
+}

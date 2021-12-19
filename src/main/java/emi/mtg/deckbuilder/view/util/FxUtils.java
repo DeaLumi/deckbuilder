@@ -126,6 +126,11 @@ public class FxUtils {
 		String fontCss = String.format("%fpt %s", font.getSize(), font.getFamily());
 
 		return String.join("\n",
+				":root {",
+				"\t--bg-color: " + bgColor + ";",
+				"\t--fg-color: " + fgColor + ";",
+				"}",
+				"",
 				"body {",
 				"\tuser-select: none;",
 				"\t-webkit-user-select: none;",
