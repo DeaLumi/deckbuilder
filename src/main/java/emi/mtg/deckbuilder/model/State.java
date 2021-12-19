@@ -10,10 +10,23 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 
 public class State {
 	private static final Path PATH = MainApplication.JAR_DIR.resolve("state.json");
 	private static State instance = null;
+
+	private static final Instant MAIN_JAR_MODIFIED_DATE;
+
+	static {
+		Instant modifiedDate;
+		try {
+			modifiedDate = Files.getLastModifiedTime(MainApplication.JAR_PATH).toInstant();
+		} catch (IOException ioe) {
+			modifiedDate = Instant.now();
+		}
+		MAIN_JAR_MODIFIED_DATE = modifiedDate;
+	}
 
 	public static synchronized State instantiate() throws IOException {
 		if (instance == null) {
@@ -47,7 +60,7 @@ public class State {
 		writer.close();
 	}
 
-	public String lastBuildTime = "";
+	public Instant buildTime = Instant.EPOCH;
 
 	public Path lastDeckDirectory = null;
 	public ObservableList<Path> recentDecks = FXCollections.observableArrayList();
@@ -61,5 +74,14 @@ public class State {
 		if (recentDecks.size() > MRU_LIMIT) {
 			recentDecks.remove(MRU_LIMIT, recentDecks.size());
 		}
+	}
+
+	public boolean checkUpdated() {
+		if (MAIN_JAR_MODIFIED_DATE.isAfter(buildTime)) {
+			buildTime = MAIN_JAR_MODIFIED_DATE;
+			return true;
+		}
+
+		return false;
 	}
 }
