@@ -21,7 +21,9 @@ public class State {
 				Reader reader = Files.newBufferedReader(PATH);
 				instance = Serialization.GSON.fromJson(reader, State.class);
 				reader.close();
-			} else {
+			}
+
+			if (instance == null) {
 				instance = new State();
 			}
 		} else {
