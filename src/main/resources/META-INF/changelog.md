@@ -7,6 +7,7 @@
 - Added preference to ignore various sets when selecting which printings to show/add by default.
 
 ### Improvements
+
 - Printing selector has an OK button and its auto mode works properly now.
 
 ### Fixes
