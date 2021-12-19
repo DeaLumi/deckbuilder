@@ -6,6 +6,9 @@
 - Added preference to select preferred copy/paste format, though I do recommend leaving it on MtG:A, since that seems to have broad community support.
 - Added preference to ignore various sets when selecting which printings to show/add by default.
 
+### Improvements
+- Printing selector has an OK button and its auto mode works properly now.
+
 ### Fixes
 
 - Fixed saving and exporting UTF-8 collector numbers (e.g. JP Tamiyo, Collector of Tales).
