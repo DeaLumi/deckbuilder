@@ -3,8 +3,11 @@ package emi.mtg.deckbuilder.view.util;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MicroMarkdown {
 	private static final char[] SPACES = new char[1024];
@@ -30,7 +33,7 @@ public class MicroMarkdown {
 		this.source = source;
 		this.buffer = new StringBuilder(sizeEstimate);
 
-		render(null);
+		render(() -> true, true);
 	}
 
 	protected char ch(int delta) throws IOException {
@@ -76,6 +79,11 @@ public class MicroMarkdown {
 		return position + str.length();
 	}
 
+	protected int insertAt(int at, String str) {
+		buffer.insert(at, str);
+		return position < at ? position : position + str.length();
+	}
+
 	protected int insert(String str) {
 		return insert(0, str);
 	}
@@ -107,7 +115,7 @@ public class MicroMarkdown {
 		int match(int delta) throws IOException;
 	}
 
-	protected void list(int indent, String tag, ListItemMatcher matcher) throws IOException {
+	protected void list(RenderHook parent, int indent, String tag, ListItemMatcher matcher) throws IOException {
 		// 1. Insert a <ul> or <ol> line before the first list item.
 		// 2. Replace the start of each list item with <li>.
 		// 3. Consume until the beginning of the next nonempty line at the same or less indent, then insert </li>.
@@ -122,22 +130,25 @@ public class MicroMarkdown {
 
 		while (countIndent() == indent && (liLen = matcher.match(indent)) > 0) {
 			position += indent;
-			position = indent(2); // Budge over, dangit.
+//			position = indent(2); // Budge over, dangit.
 			position = replace(liLen, "<li>");
+			int start = position;
 
 			AtomicBoolean multiline = new AtomicBoolean();
 
-			render(() -> {
+			render(parent.then(() -> {
 				if (ch() != '\n') return true;
 				if (countIndent(1) <= indent) return false;
 				multiline.set(true);
-				indent(1, 2);
+//				indent(1, 2);
 				return true;
-			});
+			}), false);
 
 			if (multiline.get()) {
+//				position = insertAt(start, "<p>");
 				position = insert("\n");
-				position = indent(indent + 2);
+//				position = indent(indent + 2);
+//				position = insert("</p>");
 			}
 			position = insert("</li>");
 			++position;
@@ -151,8 +162,8 @@ public class MicroMarkdown {
 		return str(delta, "- ") ? 2 : -1;
 	}
 
-	protected void ul(int indent) throws IOException {
-		list(indent, "ul", this::ulMatcher);
+	protected void ul(RenderHook parent, int indent) throws IOException {
+		list(parent, indent, "ul", this::ulMatcher);
 	}
 
 	protected int olMatcher(int delta) throws IOException {
@@ -161,8 +172,8 @@ public class MicroMarkdown {
 		return d != 0 && ch(delta + d) == '.' && ch(delta + d + 1) == ' ' ? d + 2 : -1;
 	}
 
-	protected void ol(int indent) throws IOException {
-		list(indent, "ol", this::olMatcher);
+	protected void ol(RenderHook parent, int indent) throws IOException {
+		list(parent, indent, "ol", this::olMatcher);
 	}
 
 	protected void header(int indent) throws IOException {
@@ -182,33 +193,39 @@ public class MicroMarkdown {
 		replace(3, "<hr/>");
 	}
 
-	protected void blockquote(int indent) throws IOException {
+	protected void blockquote(RenderHook parent, int indent) throws IOException {
 		position = indent(indent);
-		position = insert("<blockquote>\n") - 1;
+		position = insert("<blockquote>\n");
 
-		render(() -> {
+		AtomicInteger lastCheck = new AtomicInteger(position - 1);
+
+		position += indent;
+		buffer.setCharAt(position, ' ');
+		position += 2;
+
+		render(parent.then(() -> {
 			if (ch() != '\n') return true;
 			if (countIndent(1) < indent) return false;
-			if (!str(1 + indent, "> ")) return false;
-			position += 1 + indent;
-			position = replace(2, "  ") - 1;
+			if (lastCheck.get() != position && !str(1 + indent, "> ")) return false;
+			buffer.setCharAt(position + 1 + indent, ' ');
+			lastCheck.set(position);
 			return true;
-		});
+		}), false); // TODO: Blockquotes really need embedded paragraphs. I need to fix those.
 
 		++position;
 		position = indent(indent);
 		position = insert("</blockquote>\n") - 1;
 	}
 
-	protected void codeBlock(int indent) throws IOException {
+	protected void codeBlock(RenderHook parent, int indent) throws IOException {
 		position += indent;
 		position = replace(3, "<pre>") + 1;
 
-		render(() -> {
+		render(parent.then(() -> {
 			if (ch() != '\n') return true;
 			if (countIndent(1) < indent) return false;
 			return !str(1 + indent, "```\n");
-		});
+		}), false);
 
 		position += 1 + indent;
 		position = replace(3, "</pre>");
@@ -223,7 +240,7 @@ public class MicroMarkdown {
 	private final static String[] STRONGEM_START = { "<em>", "<strong>", "<strong><em>" };
 	private final static String[] STRONGEM_END = { "</em>", "</strong>", "</strong></em>" };
 
-	protected void strongEm() throws IOException {
+	protected void strongEm(RenderHook parent) throws IOException {
 		int n = 0;
 		while (ch(n) == '*' || ch(n) == '_') ++n;
 		if (n > STRONGEM_START.length) {
@@ -234,20 +251,20 @@ public class MicroMarkdown {
 		final int nx = n;
 		position = replace(nx, STRONGEM_START[nx - 1]);
 
-		render(() -> {
+		render(parent.then(() -> {
 			int n2 = 0;
 			while (ch(n2) == '*' || ch(n2) == '_') ++n2;
 			return n2 < nx;
-		});
+		}), false);
 
 		position = replace(nx, STRONGEM_END[nx - 1]);
 	}
 
-	protected void link() throws IOException {
+	protected void link(RenderHook parent) throws IOException {
 		++position;
 		int start = position;
 
-		render(() -> ch() != ']');
+		render(parent.then(() -> ch() != ']'), false);
 
 		if (ch(1) != '(') return;
 		int textEnd = position;
@@ -258,11 +275,11 @@ public class MicroMarkdown {
 		position = replace(linkEnd - start + 3, String.format("<a href=\"%s\">%s</a>", buffer.substring(textEnd + 2, linkEnd), buffer.substring(start, textEnd)));
 	}
 
-	protected void ampersand() throws IOException {
+	protected void ampersand(RenderHook parent) throws IOException {
 		int at = position;
 		++position;
 
-		render(() -> ch() != ';' && ch() != '\n');
+		render(parent.then(() -> ch() != ';' && ch() != '\n'), false);
 
 		if (ch() == '\n') {
 			int tmp = position;
@@ -272,45 +289,75 @@ public class MicroMarkdown {
 		}
 	}
 
-	private interface RenderHook {
-		boolean check() throws IOException;
+	protected void paragraph(RenderHook parent, int indent) throws IOException {
+		position += indent;
+		position = insert("<p>");
+
+		render(parent.then(() -> {
+			 if (ch() != '\n') return true;
+			 int x = countIndent(1);
+			 if (x < indent) return false;
+			 if (ch(1 + x) != '\n') return true;
+			 return false;
+		}), false);
+
+		position = insert("</p>");
 	}
 
-	protected void render(RenderHook hook) throws IOException {
+	private interface RenderHook {
+		boolean check() throws IOException;
+
+		default RenderHook then(RenderHook child) {
+			return () -> {
+				boolean x = check();
+				boolean y = child.check();
+				return x && y;
+			};
+		}
+	}
+
+	protected void render(RenderHook hook, boolean paragraphy) throws IOException {
 		try {
+			boolean loop0 = true;
+
 			while (true) {
 				char ch = ch();
 
-				if (hook != null && !hook.check()) return;
+				if (!hook.check()) return;
 
-				if (ch == '\n' || position == 0) {
-					if (position != 0) ++position;
+				if (ch == '\n' || loop0) {
+					if (!loop0) ++position;
+					loop0 = false;
 
 					int x = countIndent();
 
 					if (ulMatcher(x) > 0) {
-						ul(x);
+						ul(hook, x);
 					} else if (olMatcher(x) > 0) {
-						ol(x);
+						ol(hook, x);
 					} else if (x == 0 && str(x, "---\n")) {
 						hr();
 					} else if (ch(x) == '#') {
 						header(x);
 					} else if (ch(x) == '>') {
-						blockquote(x);
+						blockquote(hook, x);
 					} else if (str(x, "```\n")) {
-						codeBlock(x);
+						codeBlock(hook, x);
+					} else if (paragraphy && ch() != '\n') {
+						paragraph(hook, x);
 					}
 				} else if (ch == '`') {
 					inlineCode();
 				} else if (ch == '*' || ch == '_') {
-					strongEm();
+					strongEm(hook);
 				} else if (ch == '[') {
-					link();
+					link(hook);
 				} else if (ch == '&') {
-					ampersand();
+					ampersand(hook);
 				} else if (ch == '<' && !Character.isLetter(ch(1)) && ch(1) != '/') {
 					position = replace(1, "&lt;");
+				} else if (ch == '-' && ch(1) == '-') {
+					position = replace(2, "&mdash;");
 				} else if (ch == '\\') {
 					delete(1);
 					++position;
