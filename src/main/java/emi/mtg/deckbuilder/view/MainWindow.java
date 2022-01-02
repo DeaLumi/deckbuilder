@@ -613,35 +613,6 @@ public class MainWindow extends Stage {
 		openDeck(from.toPath());
 	}
 
-	private static class DeckListWithVariants {
-		private static class Variant {
-			public String name;
-			public String description;
-			public Map<Zone, List<CardInstance>> cards;
-		}
-
-		public String name;
-		public Format format;
-		public String author;
-		public String description;
-		public List<Variant> variants;
-
-		public DeckList toDeckList(Variant var) {
-			return new DeckList(this.name + (var != null && var.name != null && !var.name.isEmpty() ? var.name : ""),
-					this.author,
-					this.format,
-					var != null && var.description != null && !var.description.isEmpty() ? var.description : this.description,
-					var != null && var.cards != null ? var.cards : Collections.emptyMap());
-		}
-	}
-
-	private static final String VARIANTS_QUERY = String.join("\n",
-			"This feature has been deprecated.",
-			"Open all variants separately?");
-
-	private static final String VARIANTS_OPENED = String.join("\n",
-			"You should save each of them separately!");
-
 	protected boolean offerSaveIfModifiedAll() {
 		return allDecks().allMatch(this::offerSaveIfModified);
 	}
