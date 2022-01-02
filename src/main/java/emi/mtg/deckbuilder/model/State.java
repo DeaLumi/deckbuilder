@@ -62,7 +62,8 @@ public class State {
 
 	public Instant buildTime = Instant.EPOCH;
 
-	public Path lastDeckDirectory = null;
+	public Path lastLoadDirectory = null;
+	public Path lastSaveDirectory = null;
 	public ObservableList<Path> recentDecks = FXCollections.observableArrayList();
 
 	public static int MRU_LIMIT = 5;
