@@ -24,7 +24,6 @@ import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
-import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -41,7 +40,6 @@ import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
-import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -808,17 +806,13 @@ public class MainWindow extends Stage {
 	}
 
 	@FXML
-	protected void showSearchHelp() {
+	protected void showSearchHelp() throws IOException {
 		SearchProvider provider = Preferences.get().searchProvider;
-		WebView view = new WebView();
-		view.getEngine().setJavaScriptEnabled(false);
-		view.getEngine().setUserStyleSheetLocation(MainApplication.class.getResource("html-styles.css").toExternalForm());
-		view.getEngine().loadContent("<style>" + FxUtils.themeCss() + "</style>" + provider.usage());
 
 		AlertBuilder.notify(this)
 				.title("Search Help")
 				.headerText(provider.name() + ": Usage")
-				.contentNode(view)
+				.contentMarkdown(provider.usage())
 				.showAndWait();
 	}
 

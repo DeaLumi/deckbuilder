@@ -39,9 +39,8 @@ public class IsFilter implements Omnifilter.Subfilter {
 
 	@Override
 	public String description() {
-		return "Tests for unusual attributes: <ul>\n" +
-				DOCS.entrySet().stream().map(e -> "<li><code>is:" + e.getKey() + "</code> &mdash; " + e.getValue()).collect(Collectors.joining("\n")) +
-				"</ul>";
+		return "Tests for unusual attributes:\n" +
+				DOCS.entrySet().stream().map(e -> "  - `is:" + e.getKey() + "` -- " + e.getValue()).collect(Collectors.joining("\n"));
 	}
 
 	@Override

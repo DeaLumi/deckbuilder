@@ -127,32 +127,35 @@ public class Omnifilter implements SearchProvider {
 	@Override
 	public String usage() {
 		String start = String.join("\n",
-				"<p>A Scryfall-like search tool with some Deckbuilder-specific enhancements.</p>",
-				"<p>Search terms usually take the form prefix-operator-value, e.g. <code>type>=creature</code>. ",
+				"A Scryfall-like search tool with some Deckbuilder-specific enhancements.",
+				"",
+				"Search terms usually take the form prefix-operator-value, e.g. `type>=creature`. ",
 				"Terms with no prefix or operator search within the card's name. ",
-				"Terms can be negated by prefixing them with <code>!</code> or <code>-</code>, ",
-				"combined using <code>and</code> and <code>or</code>, ",
-				"and surrounded by parenthesis as in <code>(X or Y)</code>. ",
-				"Parenthesized terms can also be negated.</p>",
-				"The following operators are supported, though behavior may vary with search prefix:<br/>",
-				"<ul>",
-				"<li><code>:</code> &mdash; Tries to take the obvious meaning. Often equivalent to <code>&gt;=</code></li>",
-				"<li><code>=</code> &mdash; Exact match, e.g. a card's complete name or exact color identity.</li>",
-				"<li><code>!=</code> &mdash; Opposite of exact match, excluding any cards which exactly match the term.</li>",
-				"<li><code>&lt;</code> &mdash; Less than, e.g. a card's color identity lies within the provided term.</li>",
-				"<li><code>&gt;</code> &mdash; Greater than, e.g. a card's rules text contains this word.</li>",
-				"<li><code>&lt;=</code> &mdash; Matches <code>&lt;</code> or <code>=</code></li>",
-				"<li><code>&gt;=</code> &mdash; Matches <code>&gt;</code> or <code>=</code></li>",
-				"</ul>",
-				"The following prefixes are recognized:<br/>");
+				"Terms can be negated by prefixing them with `!` or `-`, ",
+				"combined using `and` and `or`, ",
+				"and surrounded by parenthesis as in `(X or Y)`. ",
+				"Parenthesized terms can also be negated.",
+				"",
+				"The following operators are supported, though behavior may vary with search prefix:",
+				"",
+				"- `:` -- Tries to take the obvious meaning. Often equivalent to `>=`",
+				"- `=` -- Exact match, e.g. a card's complete name or exact color identity.",
+				"- `!=` -- Opposite of exact match, excluding any cards which exactly match the term.",
+				"- `<` -- Less than, e.g. a card's color identity lies within the provided term.",
+				"- `>` -- Greater than, e.g. a card's rules text contains this word.",
+				"- `<=` -- Matches `<` or `=`",
+				"- `>=` -- Matches `>` or `=`",
+				"",
+				"The following prefixes are recognized:",
+				"");
 
 		String filters = SUBFILTER_FACTORIES.values().stream()
 				.distinct()
 				.sorted(Comparator.comparing(f -> f.keys().iterator().next()))
-				.map(f -> "<li>" + f.keys().stream().map(k -> "<code>" + k + "</code>").collect(Collectors.joining(" or ")) + " &mdash; " + f.description() + "</li>")
+				.map(f -> "- " + f.keys().stream().map(k -> "`" + k + "`").collect(Collectors.joining(" or ")) + " -- " + f.description())
 				.collect(Collectors.joining("\n"));
 
-		return start + "\n<ul>" + filters + "\n</ul>\n";
+		return start + "\n" + filters + "\n\n";
 	}
 
 	@Override

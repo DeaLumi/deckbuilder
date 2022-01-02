@@ -15,7 +15,7 @@ public class RulesText implements Omnifilter.Subfilter {
 
 	@Override
 	public String description() {
-		return "Search cards' rules (oracle) text.";
+		return "Search cards' rules (oracle) text. Only responds to the `:` operator.";
 	}
 
 	@Override

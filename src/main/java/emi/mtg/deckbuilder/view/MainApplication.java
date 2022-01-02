@@ -609,27 +609,20 @@ public class MainApplication extends Application {
 		FxUtils.transfer(dlg, screen);
 	}
 
-	public void showChangeLog() throws IOException {
-		WebView view = new WebView();
-		view.getEngine().setJavaScriptEnabled(false);
-		view.getEngine().setUserStyleSheetLocation(MainApplication.class.getResource("html-styles.css").toExternalForm());
-
-		StringBuilder content = new StringBuilder();
-		content.append("<style>").append(FxUtils.themeCss()).append("</style>\n");
-
+	public void showChangeLog() {
 		URL changelogUrl = MainApplication.class.getClassLoader().getResource("META-INF/changelog.md");
+		String html;
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(changelogUrl.openStream(), StandardCharsets.UTF_8))) {
-			String html = new MicroMarkdown(reader).toString();
-			content.append(html);
+			html = new MicroMarkdown(reader).toString();
+		} catch (IOException ioe) {
+			html = "<p>Sorry, we weren't able to load the changelog. Reason:</p>\n\n<p>" + ioe.getLocalizedMessage() + "</p>";
 		}
-
-		view.getEngine().loadContent(content.toString());
 
 		Alert alert = AlertBuilder.notify(hostStage)
 				.screen(screen)
 				.title("Change Log")
 				.headerText("What's New")
-				.contentNode(view)
+				.contentHtml(html)
 				.show();
 		FxUtils.center(alert, screen);
 	}

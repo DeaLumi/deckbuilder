@@ -21,7 +21,7 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.Subfilter {
 
 		@Override
 		public String description() {
-			return "Search cards based on power. Use * or X to find cards with variable power.";
+			return "Search cards based on power. Use &ast; or X to find cards with variable power.";
 		}
 
 		@Override
@@ -43,7 +43,7 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.Subfilter {
 
 		@Override
 		public String description() {
-			return "Search cards based on toughness. Use * or X to find cards with variable toughness.";
+			return "Search cards based on toughness. Use &ast; or X to find cards with variable toughness.";
 		}
 
 		@Override
@@ -65,7 +65,7 @@ public abstract class PowerToughnessLoyalty implements Omnifilter.Subfilter {
 
 		@Override
 		public String description() {
-			return "Search cards based on loyalty. Use * or X to find cards with variable loyalty.";
+			return "Search cards based on loyalty. Use &ast; or X to find cards with variable loyalty.";
 		}
 
 		@Override

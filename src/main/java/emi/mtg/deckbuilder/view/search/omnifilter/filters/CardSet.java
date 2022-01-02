@@ -17,7 +17,7 @@ public class CardSet implements Omnifilter.Subfilter {
 
 	@Override
 	public String description() {
-		return "Find cards printed in the named set, by full name or set code. <code>=</code> will show <i>only</i> printings in that set.";
+		return "Find cards printed in the named set, by full name or set code. `=` will show _only_ printings in that set.";
 	}
 
 	@Override

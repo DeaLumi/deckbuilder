@@ -16,7 +16,7 @@ public class Regex implements Omnifilter.Subfilter {
 
 	@Override
 	public String description() {
-		return "Search cards' rules text with a regular expression.";
+		return "Search cards' rules text with a regular expression. Only responds to the `:` operator.";
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.util;
 
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.view.MainApplication;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -8,11 +9,14 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebView;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Hashtable;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
@@ -91,6 +95,33 @@ public class AlertBuilder {
 	public AlertBuilder contentNode(Node content) {
 		alert.getDialogPane().setContent(content);
 		return this;
+	}
+
+	public AlertBuilder contentHtml(String html) {
+		WebView view = new WebView();
+		view.getEngine().setJavaScriptEnabled(false);
+		view.getEngine().setUserStyleSheetLocation(MainApplication.class.getResource("html-styles.css").toExternalForm());
+
+		StringBuilder content = new StringBuilder(html.length() + 400);
+		content
+				.append("<html>\n  <head>\n    <style>\n")
+				.append(FxUtils.themeCss())
+				.append("    </style>\n  </head>\n  <body>\n")
+				.append(html)
+				.append("  </body>\n</html>");
+
+		view.getEngine().loadContent(content.toString());
+
+		alert.getDialogPane().setContent(view);
+		return this;
+	}
+
+	public AlertBuilder contentMarkdown(String markdown) {
+		try {
+			return contentHtml(new MicroMarkdown(markdown).toString());
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	public AlertBuilder buttons(ButtonType... buttons) {

@@ -26,10 +26,10 @@ public class TextSearch implements SearchProvider {
 	public String usage() {
 		return String.join("\n",
 				"Searches card names, types, and rules texts for the given terms.",
-				"<ul>",
-				"<li>Surround multiple terms in quotation marks to treat them as a single term.</li>",
-				"<li>Tilde (<code>~</code>) and <code>CARDNAME</code> will be substituted for the card's name.</li>",
-				"</ul>");
+				"",
+				"- Surround multiple terms in quotation marks to treat them as a single term.",
+				"- Tilde (`~`) and `CARDNAME` will be substituted for the card's name.",
+				"");
 	}
 
 	private static final Pattern TERM_PATTERN = Pattern.compile("\"([^\"]+)\"|(?<!\")([^ ]+)(?!\")");
