@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.ImageSource;
 import emi.lib.mtg.img.MtgAwtImageUtils;
+import emi.mtg.deckbuilder.util.PluginUtils;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
@@ -24,8 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class Images {
 	public static final double CARD_WIDTH = 220.0;
@@ -67,13 +66,7 @@ public class Images {
 		return th;
 	});
 
-	private static final List<ImageSource> sources;
-
-	static {
-		sources = StreamSupport.stream(ServiceLoader.load(ImageSource.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
-				.sorted(Comparator.comparing(s -> -s.priority()))
-				.collect(Collectors.toList());
-	}
+	private static final List<ImageSource> sources = PluginUtils.providers(ImageSource.class, Comparator.comparing(s -> -s.priority()));
 
 	private final Map<Card.Printing.Face, SoftReference<CompletableFuture<Image>>> faceCache = new HashMap<>();
 	private final Map<Card.Printing, SoftReference<CompletableFuture<Image>>> frontCache = new HashMap<>();

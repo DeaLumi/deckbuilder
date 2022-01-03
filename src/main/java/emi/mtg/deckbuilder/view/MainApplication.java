@@ -9,6 +9,7 @@ import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import emi.mtg.deckbuilder.view.util.FxUtils;
 import emi.mtg.deckbuilder.view.util.MicroMarkdown;
+import emi.mtg.deckbuilder.util.PluginUtils;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -21,7 +22,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
-import javafx.scene.web.WebView;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -31,68 +31,19 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class MainApplication extends Application {
-	private static Path getJarPath() {
-		URL jarUrl = MainApplication.class.getProtectionDomain().getCodeSource().getLocation();
-		Path jarPath;
-		try {
-			jarPath = Paths.get(jarUrl.toURI()).toAbsolutePath();
-		} catch (URISyntaxException urise) {
-			jarPath = Paths.get(jarUrl.getPath()).toAbsolutePath();
-		}
+	public static final Path JAR_PATH = PluginUtils.jarPath(MainApplication.class);
+	public static final Path JAR_DIR = JAR_PATH.getParent();
 
-		return jarPath;
-	}
-
-	public static final Path JAR_PATH = getJarPath();
-	public static final Path JAR_DIR = getJarPath().getParent();
-
-	public static final ClassLoader PLUGIN_CLASS_LOADER;
-
-	static {
-		ClassLoader tmp;
-		try {
-			List<URL> urls = new ArrayList<>();
-
-			if (Files.isDirectory(Paths.get("plugins/"))) {
-				for (Path path : Files.newDirectoryStream(Paths.get("plugins/"), "*.jar")) {
-					urls.add(path.toUri().toURL());
-				}
-			}
-
-			if (Files.isDirectory(JAR_DIR.resolve("plugins/"))) {
-				for (Path path : Files.newDirectoryStream(JAR_DIR.resolve("plugins/"), "*.jar")) {
-					urls.add(path.toUri().toURL());
-				}
-			}
-
-			tmp = new URLClassLoader(urls.toArray(new URL[0]), MainApplication.class.getClassLoader());
-		} catch (IOException ioe) {
-			ioe.printStackTrace();
-			System.err.println("Warning: An IO error occurred while loading plugins...");
-			tmp = MainApplication.class.getClassLoader();
-		}
-		PLUGIN_CLASS_LOADER = tmp;
-	}
-
-	public static final List<DataSource> DATA_SOURCES = findDataSources();
-	private static List<DataSource> findDataSources() {
-		return Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(DataSource.class, PLUGIN_CLASS_LOADER).spliterator(), true)
-				.sorted(Comparator.comparing(Object::toString))
-				.collect(Collectors.toList()));
-	}
+	public static final List<DataSource> DATA_SOURCES = PluginUtils.providers(DataSource.class);
 
 	private final HashSet<MainWindow> mainWindows = new HashSet<>();
 
@@ -244,7 +195,7 @@ public class MainApplication extends Application {
 				}
 			}
 
-			Path file = getJarPath().resolveSibling(String.format("exception-%s.log", Instant.now().toString()).replaceAll(":", "-"));
+			Path file = JAR_PATH.resolveSibling(String.format("exception-%s.log", Instant.now().toString()).replaceAll(":", "-"));
 			try {
 				PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file));
 

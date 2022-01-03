@@ -1,7 +1,7 @@
 package emi.mtg.deckbuilder.controller.serdes;
 
 import emi.mtg.deckbuilder.model.DeckList;
-import emi.mtg.deckbuilder.view.MainApplication;
+import emi.mtg.deckbuilder.util.PluginUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -88,9 +88,12 @@ public interface DeckImportExport {
 		}
 	}
 
-	List<DeckImportExport> DECK_FORMAT_PROVIDERS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(DeckImportExport.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
-			.sorted(Comparator.comparing(DeckImportExport::toString))
-			.collect(Collectors.toList()));
+	static void checkLinkage(DeckImportExport serdes) {
+		serdes.importExtensions();
+		serdes.exportExtensions();
+	}
+
+	List<DeckImportExport> DECK_FORMAT_PROVIDERS = PluginUtils.providers(DeckImportExport.class, DeckImportExport::checkLinkage);
 
 	List<DeckImportExport.Textual> TEXTUAL_PROVIDERS = Collections.unmodifiableList(DECK_FORMAT_PROVIDERS.stream()
 			.filter(s -> s instanceof DeckImportExport.Textual)

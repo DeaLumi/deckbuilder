@@ -6,8 +6,8 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.UniqueList;
 import emi.mtg.deckbuilder.view.Images;
-import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
+import emi.mtg.deckbuilder.util.PluginUtils;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
@@ -37,7 +37,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class CardView extends Canvas {
 	public static class MVec2d implements Comparable<MVec2d> {
@@ -187,23 +186,14 @@ public class CardView extends Canvas {
 		}
 	}
 
-	public static final List<LayoutEngine.Factory> LAYOUT_ENGINES;
-	public static final List<Grouping> GROUPINGS;
-	public static final List<Sorting> SORTINGS;
+	public static final List<LayoutEngine.Factory> LAYOUT_ENGINES = PluginUtils.providers(LayoutEngine.Factory.class);
+	public static final List<Grouping> GROUPINGS = PluginUtils.providers(Grouping.class);
+	public static final List<Sorting> SORTINGS = PluginUtils.providers(Sorting.class);
 
 	public static final List<ActiveSorting> DEFAULT_SORTING, DEFAULT_COLLECTION_SORTING;
 
 	static {
-		LAYOUT_ENGINES = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(LayoutEngine.Factory.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), true)
-				.collect(Collectors.toList()));
-
-		GROUPINGS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(Grouping.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), true)
-				.collect(Collectors.toList()));
-
 		Sorting color = null, mv = null, manaCost = null, name = null, rarity = null;
-
-		SORTINGS = Collections.unmodifiableList(StreamSupport.stream(ServiceLoader.load(Sorting.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
-				.collect(Collectors.toList()));
 
 		for (Sorting sorting : SORTINGS) {
 			switch (sorting.toString()) {

@@ -1,13 +1,11 @@
 package emi.mtg.deckbuilder.view.search;
 
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.MainApplication;
+import emi.mtg.deckbuilder.util.PluginUtils;
 
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 /**
  * Specifies a search provider to respond to searches in the filter bar above card views.
@@ -41,6 +39,6 @@ public interface SearchProvider {
 	 */
 	Predicate<CardInstance> parse(String query) throws IllegalArgumentException;
 
-	Map<String, SearchProvider> SEARCH_PROVIDERS = StreamSupport.stream(ServiceLoader.load(SearchProvider.class, MainApplication.PLUGIN_CLASS_LOADER).spliterator(), false)
+	Map<String, SearchProvider> SEARCH_PROVIDERS = PluginUtils.providers(SearchProvider.class).stream()
 			.collect(Collectors.toMap(SearchProvider::name, v -> v));
 }

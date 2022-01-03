@@ -20,6 +20,7 @@
 - Lands once again correctly include the color identity of their land types.
 - Companions once again are validated correctly. Oops. Sorry about that!
 - Reversible cards now properly show up as printings of the root card. Sorry, but you can't choose which side is shown.
+- Outdated import/export plugins no longer prevent the deckbuilder from launching (I hope!).
 
 ### Changes
 

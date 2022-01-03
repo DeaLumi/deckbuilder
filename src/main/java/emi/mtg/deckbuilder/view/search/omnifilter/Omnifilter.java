@@ -2,8 +2,8 @@ package emi.mtg.deckbuilder.view.search.omnifilter;
 
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
+import emi.mtg.deckbuilder.util.PluginUtils;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -98,7 +98,7 @@ public class Omnifilter implements SearchProvider {
 	private static Map<String, Subfilter> subfilterFactories() {
 		Map<String, Subfilter> map = new HashMap<>();
 
-		for (Subfilter factory : ServiceLoader.load(Subfilter.class, MainApplication.PLUGIN_CLASS_LOADER)) {
+		for (Subfilter factory : PluginUtils.providers(Subfilter.class)) {
 			for (String key : factory.keys()) {
 				if (map.containsKey(key)) throw new AssertionError(String.format("Duplicate omnifilter key: %s (from %s and %s)", key, map.get(key), factory));
 				map.put(key, factory);
