@@ -1010,6 +1010,10 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void exportDeck() {
+		exportDeck(activeDeck());
+	}
+
+	public void exportDeck(DeckList deck) {
 		serdesFileChooser.getExtensionFilters().setAll(exportSerdes.entrySet().stream()
 				.sorted(Comparator.comparing(e -> e.getValue().toString()))
 				.map(Map.Entry::getKey)
@@ -1028,7 +1032,7 @@ public class MainWindow extends Stage {
 		}
 
 		try {
-			exporter.exportDeck(activeDeck(), f.toPath());
+			exporter.exportDeck(deck, f.toPath());
 			State.get().lastSaveDirectory = f.toPath().getParent();
 		} catch (IOException ioe) {
 			ioe.printStackTrace();

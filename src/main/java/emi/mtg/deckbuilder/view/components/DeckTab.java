@@ -106,7 +106,10 @@ public class DeckTab extends Tab {
 			mainWindow().openDeckPane(copy);
 		});
 
-		ContextMenu menu = new ContextMenu(deckInfo, undock, duplicate);
+		MenuItem export = new MenuItem("Export...");
+		export.setOnAction(ae -> mainWindow().exportDeck(pane().deck()));
+
+		ContextMenu menu = new ContextMenu(deckInfo, undock, duplicate, export);
 		setContextMenu(menu);
 	}
 
