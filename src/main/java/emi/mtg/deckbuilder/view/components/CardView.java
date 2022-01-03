@@ -386,12 +386,12 @@ public class CardView extends Canvas {
 
 			mouseMoved(me.getX(), me.getY());
 
-			if (hoverCard != null && hoverCard.lastValidation != null) {
+			if (hoverCard != null && hoverCard.hasTooltip()) {
 				Tooltip.install(this, tooltip);
 				if (!tooltip.isShowing() || hoverCard != lastHoverCard) {
 					tooltip.setX(me.getScreenX());
 					tooltip.setY(me.getScreenY());
-					tooltip.setText(hoverCard.lastValidation.toString());
+					tooltip.setText(hoverCard.tooltip());
 				}
 			} else {
 				tooltip.hide();

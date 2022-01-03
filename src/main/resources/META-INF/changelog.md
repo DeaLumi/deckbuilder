@@ -5,6 +5,7 @@
 - Added the changelog, which you are hopefully now reading! Hi! I hope you're having a great day. :) Happy new year!
 - Added preference to select preferred copy/paste format, though I do recommend leaving it on MtG:A, since that seems to have broad community support.
 - Added preference to ignore various sets when selecting which printings to show/add by default.
+- Expanded card tooltips to include tags (by default) and detailed card text (as a preference).
 
 ### Improvements
 

@@ -508,6 +508,9 @@ public class PreferencesDialog extends Alert {
 				zoneGroupingPreference(Zone.Library),
 				zoneGroupingPreference(Zone.Sideboard),
 				zoneGroupingPreference(Zone.Command),
+				new PrefSeparator(),
+				reflectField(BooleanPreference::new, "Card Info Tooltips", "cardInfoTooltips", x -> true),
+				reflectField(BooleanPreference::new, "Card Tags on Tooltips", "cardTagsTooltips", x -> true),
 		});
 
 		map.put("Paths & Updates", new PrefEntry[] {

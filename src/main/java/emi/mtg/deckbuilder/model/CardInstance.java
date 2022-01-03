@@ -1,18 +1,18 @@
 package emi.mtg.deckbuilder.model;
 
 import emi.lib.mtg.Card;
+import emi.lib.mtg.Mana;
+import emi.lib.mtg.TypeLine;
 import emi.lib.mtg.enums.Rarity;
 import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.Context;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class CardInstance implements Card.Printing, Serializable {
 	public enum Flags {
@@ -123,6 +123,30 @@ public class CardInstance implements Card.Printing, Serializable {
 	@Override
 	public String toString() {
 		return printingToString(printing);
+	}
+
+	public boolean hasTooltip() {
+		return Preferences.get().cardInfoTooltips || (Preferences.get().cardTagsTooltips && !tags().isEmpty()) || lastValidation != null;
+	}
+
+	public String tooltip() {
+		List<String> sections = new ArrayList<>();
+
+		if (Preferences.get().cardInfoTooltips) {
+			sections.add(card().faces().stream().map(f -> f.name() + " " + f.manaCost().toString() + " (" + ((int) f.manaValue()) + ")\n" +
+					f.type().toString() + "\n\n" +
+					f.rules().replaceAll("\n", "\n\n")).collect(Collectors.joining("\n\n//\n\n")));
+		}
+
+		if (Preferences.get().cardTagsTooltips && !tags.isEmpty()) {
+			sections.add("Tags: " + String.join(", ", tags));
+		}
+
+		if (lastValidation != null) {
+			sections.add(lastValidation.toString());
+		}
+
+		return String.join("\n\n", sections);
 	}
 
 	public static String printingToString(Card.Printing pr) {

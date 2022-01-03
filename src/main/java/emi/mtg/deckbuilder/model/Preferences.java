@@ -211,6 +211,9 @@ public class Preferences {
 	public boolean collapseDuplicates = true;
 	public boolean theFutureIsNow = true;
 
+	public boolean cardInfoTooltips = false;
+	public boolean cardTagsTooltips = true;
+
 	/**
 	 * Printing selection preferences
 	 */
