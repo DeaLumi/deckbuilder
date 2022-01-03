@@ -584,6 +584,18 @@ public class MainWindow extends Stage {
 
 		try {
 			DeckList list = primarySerdes.importDeck(from);
+
+			if (list.cards() == null || list.format() == null) {
+				AlertBuilder.notify(this)
+						.type(Alert.AlertType.ERROR)
+						.title("Invalid Deck File")
+						.headerText("The chosen file couldn't be loaded.")
+						.contentText("It may be an older format, or it may not be a Deckbuilder save file.")
+						.modal(Modality.WINDOW_MODAL)
+						.show();
+				return;
+			}
+
 			list.sourceProperty().setValue(from);
 			if (openDeckPane(list)) {
 				State.get().lastLoadDirectory = from.getParent();

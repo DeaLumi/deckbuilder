@@ -10,6 +10,7 @@
 
 - Printing selector has an OK button and its auto mode works properly now.
 - Separated memorized directories for saving/exporting and loading/importing.
+- Added a comprehensible error message when loading a bad JSON file.
 
 ### Fixes
 
