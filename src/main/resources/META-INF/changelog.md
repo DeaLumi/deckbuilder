@@ -8,6 +8,10 @@
 
 - Saving a new deck or saving-as a deck now adds that deck to the "recent decks" list.
 
+### Fixes
+
+- Resolved download issues with Cloudflare intercepting requests to Scryfall's API. Hopefully -- I can't actually control this one.
+
 ## January 2022
 
 ### Features
