@@ -4,6 +4,10 @@
 
 - Added Custom Text Format exporter. It doesn't support import (yet), but should let you export decks for unusual destinations like TCGPlayer (which expects set codes in square brackets).
 
+### Improvements
+
+- Saving a new deck or saving-as a deck now adds that deck to the "recent decks" list.
+
 ## January 2022
 
 ### Features

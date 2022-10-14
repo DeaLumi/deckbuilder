@@ -694,6 +694,7 @@ public class MainWindow extends Stage {
 				deck.modifiedProperty().set(false);
 				deck.sourceProperty().setValue(to);
 				State.get().lastSaveDirectory = activeDeck().source().getParent();
+				State.get().addRecentDeck(to);
 			}
 
 			return true;
