@@ -7,6 +7,7 @@
 ### Improvements
 
 - Saving a new deck or saving-as a deck now adds that deck to the "recent decks" list.
+- Added "is:dual", "is:triome", and "is:fetch" filters.
 
 ### Fixes
 
