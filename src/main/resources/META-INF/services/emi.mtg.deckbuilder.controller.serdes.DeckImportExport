@@ -1,6 +1,7 @@
 emi.mtg.deckbuilder.controller.serdes.impl.MTGO
 emi.mtg.deckbuilder.controller.serdes.impl.TextFile$PlainText
 emi.mtg.deckbuilder.controller.serdes.impl.TextFile$Arena
+emi.mtg.deckbuilder.controller.serdes.impl.TextFile$UserDefined
 emi.mtg.deckbuilder.controller.serdes.impl.Cockatrice
 emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter
 emi.mtg.deckbuilder.controller.serdes.impl.SeparatedValues$CSV

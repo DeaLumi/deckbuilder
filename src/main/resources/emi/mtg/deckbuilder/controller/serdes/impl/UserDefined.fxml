@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<fx:root type="DialogPane" xmlns="http://javafx.com/javafx"
+         xmlns:fx="http://javafx.com/fxml"
+         fx:controller="emi.mtg.deckbuilder.controller.serdes.impl.TextFile$UserDefined">
+    <content>
+            <GridPane vgap="8.0" hgap="8.0">
+                <Label GridPane.rowIndex="0" GridPane.columnIndex="0" GridPane.columnSpan="2">
+                    Enter the format for cards. A preview will be displayed below.
+                </Label>
+
+                <Label GridPane.rowIndex="1" GridPane.columnIndex="0" GridPane.halignment="RIGHT" text="Format:"/>
+                <TextField GridPane.rowIndex="1" GridPane.columnIndex="1" text="{qty} {name} ({set}) {no}" fx:id="cardFormat"/>
+
+                <Label GridPane.rowIndex="2" GridPane.columnIndex="0" GridPane.halignment="RIGHT" text="Preview:"/>
+                <Label GridPane.rowIndex="2" GridPane.columnIndex="1" text="(Loading)" fx:id="cardPreview"/>
+
+                <Label GridPane.rowIndex="3" GridPane.columnIndex="0" GridPane.columnSpan="2" fx:id="helpLabel"/>
+            </GridPane>
+    </content>
+</fx:root>

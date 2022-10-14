@@ -1,3 +1,9 @@
+## 2022
+
+### Features
+
+- Added Custom Text Format exporter. It doesn't support import (yet), but should let you export decks for unusual destinations like TCGPlayer (which expects set codes in square brackets).
+
 ## January 2022
 
 ### Features
