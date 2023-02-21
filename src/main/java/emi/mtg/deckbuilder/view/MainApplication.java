@@ -129,11 +129,11 @@ public class MainApplication extends Application {
 			"At bare minimum, scryfall-0.0.0.jar should be provided!");
 
 	private static final String UPDATE_ERROR = String.join("\n",
-			"The update server may be down, or there may be a problem with",
-			"your internet connection. This shouldn't cause problems for your",
+			"The update server may be down, or there may be a problem with " +
+			"your internet connection. This shouldn't cause problems for your " +
 			"deckbuilding, but you won't be able to get bugfixes etc.",
 			"",
-			"If you're not expecting this, you should let me know,",
+			"If you're not expecting this, you should let me know, " +
 			"in case the server's down and I need to fix that. :^)");
 
 	private static final String DATA_LOAD_ERROR = String.join("\n",
