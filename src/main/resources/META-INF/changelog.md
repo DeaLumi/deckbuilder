@@ -8,10 +8,18 @@
 
 - Saving a new deck or saving-as a deck now adds that deck to the "recent decks" list.
 - Added "is:dual", "is:triome", and "is:fetch" filters.
+- Added power/toughness/loyalty and rarity/set to card tooltips.
+
+### Changes
+
+- Debug options are now hidden behind a preference toggle.
 
 ### Fixes
 
 - Resolved download issues with Cloudflare intercepting requests to Scryfall's API. Hopefully -- I can't actually control this one.
+- Windows now close when their last tab has been removed.
+- Fixed some possible exceptions from dragging tabs around. There are possibly some I've missed though.
+- Added Stickers and Universewalker card types to libmtg and fixed an issue with BFM's right half typeline.
 
 ## January 2022
 
