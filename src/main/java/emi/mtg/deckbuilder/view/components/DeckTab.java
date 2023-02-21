@@ -39,15 +39,10 @@ public class DeckTab extends Tab {
 		this.label.setOnDragDetected(me -> {
 			if (me.getButton() != MouseButton.PRIMARY) return;
 
-			Dragboard db = this.label.startDragAndDrop(TransferMode.MOVE);
+			Dragboard db = getTabPane().startDragAndDrop(TransferMode.MOVE);
 			DeckTab.draggedTab = DeckTab.this;
 			db.setContent(Collections.singletonMap(DRAGGED_TAB, pane().deck().name()));
 			me.consume();
-		});
-
-		this.label.setOnDragDone(de -> {
-			DeckTab.draggedTab = null;
-			de.consume();
 		});
 
 		this.label.setOnMouseClicked(ce -> {

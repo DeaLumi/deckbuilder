@@ -462,6 +462,15 @@ public class MainWindow extends Stage {
 			de.setDropCompleted(true);
 			de.consume();
 		});
+
+		deckTabs.setOnDragDone(de -> {
+			if (deckTabs.getTabs().isEmpty()) {
+				close();
+			}
+
+			DeckTab.draggedTab = null;
+			de.consume();
+		});
 	}
 
 	private void setupImportExport() {
