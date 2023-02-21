@@ -71,6 +71,9 @@ public class MainWindow extends Stage {
 	@FXML
 	private CheckMenuItem autoValidateDeck;
 
+	@FXML
+	private Menu debugMenu;
+
 	private CardPane collection;
 
 	private FileChooser primaryFileChooser;
@@ -336,6 +339,8 @@ public class MainWindow extends Stage {
 	}
 
 	private void setupUI() {
+		debugMenu.setVisible(Preferences.get().showDebugOptions);
+
 		collection = new CardPane("Collection",
 				FXCollections.observableArrayList(),
 				FlowGrid.Factory.INSTANCE,
@@ -949,6 +954,8 @@ public class MainWindow extends Stage {
 				mi.setAccelerator(null);
 			}
 		}
+
+		debugMenu.setVisible(Preferences.get().showDebugOptions);
 	}
 
 	@FXML

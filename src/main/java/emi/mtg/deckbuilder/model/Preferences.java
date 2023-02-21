@@ -196,6 +196,7 @@ public class Preferences {
 	public WindowBehavior windowBehavior = WindowBehavior.AlwaysAsk;
 	public Theme theme = Theme.Dark;
 	public DeckImportExport.Textual copyPasteFormat = TextFile.Arena.INSTANCE;
+	public boolean showDebugOptions = false;
 
 	/**
 	 * Card pane preferences

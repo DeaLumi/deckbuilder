@@ -47,8 +47,7 @@
                     <MenuItem text="Search Help" onAction="#showSearchHelp"/>
                     <MenuItem text="What's New" onAction="#showChangelog"/>
                     <MenuItem text="About" onAction="#showAboutDialog"/>
-                    <SeparatorMenuItem/>
-                    <Menu text="Debug">
+                    <Menu text="Debug" fx:id="debugMenu">
                         <MenuItem text="Remodel" onAction="#remodel"/>
                         <MenuItem text="Create Emergency" onAction="#createEmergency"/>
                         <MenuItem text="Flush Image Caches" onAction="#flushImageCaches"/>

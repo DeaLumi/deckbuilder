@@ -487,6 +487,8 @@ public class PreferencesDialog extends Alert {
 				new PrefSeparator(),
 				reflectField(StringPreference::new, "Default Author", "authorName", x -> true),
 				reflectField(FormatPreference::new, "Default Format", "defaultFormat", x -> true),
+				new PrefSeparator(),
+				reflectField(BooleanPreference::new, "Show Debug Options", "showDebugOptions", x -> true),
 		});
 
 		map.put("Printing Selection", new PrefEntry[] {
