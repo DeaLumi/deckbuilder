@@ -135,7 +135,11 @@ public class CardInstance implements Card.Printing, Serializable {
 		if (Preferences.get().cardInfoTooltips) {
 			sections.add(card().faces().stream().map(f -> f.name() + " " + f.manaCost().toString() + " (" + ((int) f.manaValue()) + ")\n" +
 					f.type().toString() + "\n\n" +
-					f.rules().replaceAll("\n", "\n\n")).collect(Collectors.joining("\n\n//\n\n")));
+					f.rules().replaceAll("\n", "\n\n") +
+					(f.printedPower().isEmpty() ? (f.printedLoyalty().isEmpty() ? "" : "\n\nStarting Loyalty: " + f.printedLoyalty()) : "\n\nP/T: " + f.printedPower() + "/" + f.printedToughness())
+			).collect(Collectors.joining("\n\n//\n\n")));
+
+			sections.add(rarity().toString() + " from " + set().name() + " (" + set().code().toUpperCase() + ")");
 		}
 
 		if (Preferences.get().cardTagsTooltips && !tags.isEmpty()) {
