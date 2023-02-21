@@ -275,6 +275,24 @@ public class Images {
 		return new CacheCleanupResults(deletedFiles, deletedBytes);
 	}
 
+	public void deleteSavedImages(Card.Printing pr) throws IOException {
+		frontCache.remove(pr);
+
+		Path frontPath = pathTo(pr);
+		if (Files.exists(frontPath)) {
+			Files.delete(frontPath);
+		}
+
+		for (Card.Printing.Face prf : pr.faces()) {
+			faceCache.remove(prf);
+
+			Path facePath = pathTo(prf);
+			if (Files.exists(facePath)) {
+				Files.delete(facePath);
+			}
+		}
+	}
+
 	public void flushMemoryCaches() {
 		faceCache.clear();
 		frontCache.clear();

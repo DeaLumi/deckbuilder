@@ -3,6 +3,7 @@
 ### Features
 
 - Added Custom Text Format exporter. It doesn't support import (yet), but should let you export decks for unusual destinations like TCGPlayer (which expects set codes in square brackets).
+- Added a context menu option to delete the saved/cached images of a card.
 
 ### Improvements
 
