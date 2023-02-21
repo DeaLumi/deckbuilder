@@ -41,7 +41,7 @@ public class DeckPane extends SplitPane {
 		deckListChangedListener =  lce -> {
 			if (getAutoValidate()) updateCardStates(deck.validate());
 			deck.modifiedProperty().set(true);
-			if (onDeckChanged != null) onDeckChanged.get().onChanged(lce);
+			if (onDeckChanged.get() != null) onDeckChanged.get().onChanged(lce);
 		};
 
 		applyDeck();
@@ -175,6 +175,12 @@ public class DeckPane extends SplitPane {
 				.collect(Collectors.toList()));
 		setDividerPosition(0, 0.85);
 		if (getAutoValidate()) updateCardStates(deck.validate());
+	}
+
+	public void closing() {
+		paneMap.keySet().stream()
+				.map(deck::cards)
+				.forEach(l -> l.removeListener(deckListChangedListener));
 	}
 
 	private CardView.ContextMenu createDeckContextMenu(CardPane pane, Zone zone) {

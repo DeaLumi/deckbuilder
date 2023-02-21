@@ -136,6 +136,7 @@ public class DeckTab extends Tab {
 
 	protected void reallyForceClose(Event close) {
 		getTabPane().getTabs().remove(DeckTab.this);
+		pane.closing();
 		if (getOnClosed() != null) getOnClosed().handle(close);
 	}
 
