@@ -11,6 +11,7 @@
 - Added "is:dual", "is:triome", and "is:fetch" filters.
 - Added power/toughness/loyalty and rarity/set to card tooltips.
 - You can now drop a deck tab off the application to undock it.
+- Import/export and load/save last-used paths are now separate. No more accidentally overwriting decklists with TTS objects!
 
 ### Changes
 

@@ -1009,7 +1009,7 @@ public class MainWindow extends Stage {
 				.sorted(Comparator.comparing(e -> e.getValue().toString()))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList()));
-		if (State.get().lastLoadDirectory != null) serdesFileChooser.setInitialDirectory(State.get().lastLoadDirectory.toFile());
+		if (State.get().lastImportDirectory != null) serdesFileChooser.setInitialDirectory(State.get().lastImportDirectory.toFile());
 		File f = serdesFileChooser.showOpenDialog(this);
 
 		if (f == null) {
@@ -1025,7 +1025,7 @@ public class MainWindow extends Stage {
 		try {
 			DeckList list = importer.importDeck(f.toPath());
 			if (openDeckPane(list)) {
-				State.get().lastLoadDirectory = f.toPath().getParent();
+				State.get().lastImportDirectory = f.toPath().getParent();
 			}
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
@@ -1049,7 +1049,7 @@ public class MainWindow extends Stage {
 				.sorted(Comparator.comparing(e -> e.getValue().toString()))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList()));
-		if (State.get().lastSaveDirectory != null) serdesFileChooser.setInitialDirectory(State.get().lastSaveDirectory.toFile());
+		if (State.get().lastExportDirectory != null) serdesFileChooser.setInitialDirectory(State.get().lastExportDirectory.toFile());
 		File f = serdesFileChooser.showSaveDialog(this);
 
 		if (f == null) {
@@ -1064,7 +1064,7 @@ public class MainWindow extends Stage {
 
 		try {
 			exporter.exportDeck(deck, f.toPath());
-			State.get().lastSaveDirectory = f.toPath().getParent();
+			State.get().lastExportDirectory = f.toPath().getParent();
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			AlertBuilder.notify(this)

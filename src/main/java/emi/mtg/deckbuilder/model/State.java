@@ -64,6 +64,8 @@ public class State {
 
 	public Path lastLoadDirectory = null;
 	public Path lastSaveDirectory = null;
+	public Path lastImportDirectory = null;
+	public Path lastExportDirectory = null;
 	public ObservableList<Path> recentDecks = FXCollections.observableArrayList();
 
 	public static int MRU_LIMIT = 5;
