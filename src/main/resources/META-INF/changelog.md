@@ -10,6 +10,7 @@
 - Saving a new deck or saving-as a deck now adds that deck to the "recent decks" list.
 - Added "is:dual", "is:triome", and "is:fetch" filters.
 - Added power/toughness/loyalty and rarity/set to card tooltips.
+- You can now drop a deck tab off the application to undock it.
 
 ### Changes
 

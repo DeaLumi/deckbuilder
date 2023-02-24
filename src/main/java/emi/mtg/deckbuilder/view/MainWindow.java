@@ -404,6 +404,7 @@ public class MainWindow extends Stage {
 
 		deckTabs.setOnDragOver(de -> {
 			if (!de.getDragboard().hasContent(DeckTab.DRAGGED_TAB)) return;
+			if (DeckTab.draggedTab == null) return;
 
 			de.acceptTransferModes(TransferMode.MOVE);
 			de.consume();
@@ -463,9 +464,7 @@ public class MainWindow extends Stage {
 			if (!de.getDragboard().hasContent(DeckTab.DRAGGED_TAB)) return;
 			if (DeckTab.draggedTab == null) return;
 
-			if (deckTabs.getTabs().contains(DeckTab.draggedTab)) {
-				if (undock(DeckTab.draggedTab) == null) return;
-			} else {
+			if (!deckTabs.getTabs().contains(DeckTab.draggedTab)) {
 				addDeck(DeckTab.draggedTab.pane().deck());
 				DeckTab.draggedTab.reallyForceClose();
 			}
@@ -475,6 +474,10 @@ public class MainWindow extends Stage {
 		});
 
 		deckTabs.setOnDragDone(de -> {
+			if (!de.isDropCompleted() && de.getAcceptedTransferMode() == null && DeckTab.draggedTab != null && deckTabs.getTabs().contains(DeckTab.draggedTab)) {
+				undock(DeckTab.draggedTab);
+			}
+
 			if (deckTabs.getTabs().isEmpty()) {
 				close();
 			}
