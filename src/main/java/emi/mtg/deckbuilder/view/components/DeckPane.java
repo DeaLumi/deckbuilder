@@ -204,7 +204,12 @@ public class DeckPane extends SplitPane {
 			final Card card = cards.iterator().next();
 			final Set<CardInstance> modify = new HashSet<>(menu.cards.get());
 			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
-				modify.forEach(ci -> ci.printing(pr));
+				modify.forEach(ci -> {
+					if (ci.printing() != pr) {
+						deck().modifiedProperty().set(true);
+						ci.printing(pr);
+					}
+				});
 				pane.view().scheduleRender();
 			});
 		});

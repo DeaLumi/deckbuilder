@@ -560,7 +560,14 @@ public class CardView extends Canvas {
 						if (immutableModel.get()) {
 							Preferences.get().preferredPrintings.put(card.card().fullName(), new Preferences.PreferredPrinting(pr.set().code(), pr.collectorNumber()));
 						} else {
-							modifyingCards.forEach(x -> x.printing(pr));
+							boolean modified = false;
+							for (CardInstance ci : modifyingCards) {
+								if (ci.printing() != pr) {
+									ci.printing(pr);
+									modified = true;
+								}
+							}
+							if (modified) model.set(0, model.get(0)); // Irritating hack to trigger listeners.
 						}
 
 						refreshCardGrouping();

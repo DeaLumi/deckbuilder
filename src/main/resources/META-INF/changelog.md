@@ -23,6 +23,7 @@
 - Windows now close when their last tab has been removed.
 - Fixed some possible exceptions from dragging tabs around. There are possibly some I've missed though.
 - Added Stickers and Universewalker card types to libmtg and fixed an issue with BFM's right half typeline.
+- Changing a printing now marks a deck as modified.
 
 ## January 2022
 
