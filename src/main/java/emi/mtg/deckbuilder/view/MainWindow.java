@@ -842,10 +842,10 @@ public class MainWindow extends Stage {
 			"Feel free to DM me with feedback/issues on Twitter!",
 			"",
 			"Special thanks:",
-			"- MagnetMan, for generously indulging my madness time and time again.",
-			"- SpookySquid, for good ideas and listening to me yell.",
-			"- Fangs, for listening to me yell and good ideas.",
-			"- Vash, Akvar, nobodi, and many others, for feedback and testing.");
+			"\u2022 MagnetMan, for generously indulging my madness time and time again.",
+			"\u2022 SpookySquid, for good ideas and listening to me yell.",
+			"\u2022 Fangs, for listening to me yell and good ideas.",
+			"\u2022 Vash, Akvar, nobodi, and many others, for feedback and testing.");
 
 	@FXML
 	protected void showAboutDialog() {
