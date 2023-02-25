@@ -10,6 +10,9 @@
         <MenuBar>
             <menus>
                 <Menu text="Deck">
+                    <MenuItem text="Undo" disable="true" fx:id="undo" onAction="#doUndo" accelerator="Shortcut+Z"/>
+                    <MenuItem text="Redo" disable="true" fx:id="redo" onAction="#doRedo" accelerator="Shift+Shortcut+Z"/>
+                    <SeparatorMenuItem/>
                     <Menu text="New..." fx:id="newDeckMenu"/> <!-- Children are populated by controller. -->
                     <MenuItem text="Open" onAction="#openDeck" accelerator="Shortcut+O"/>
                     <Menu text="Open Recent..." fx:id="openRecentDeckMenu"/> <!-- Children are populated by controller. -->

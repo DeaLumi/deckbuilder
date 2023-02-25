@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.components;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -22,6 +23,7 @@ import javafx.stage.Modality;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -167,7 +169,15 @@ public class DeckPane extends SplitPane {
 					paneMap.put(z, pane);
 					deck.cards(z).removeListener(deckListChangedListener);
 					deck.cards(z).addListener(deckListChangedListener);
-					pane.view().doubleClick(ci -> pane.changeModel(x -> x.remove(ci)));
+					pane.view().doubleClick(ci -> {
+						DeckChanger.change(
+								deck,
+								String.format("Remove %s from %s", ci.card().name(), z.name()),
+								String.format("Add %s to %s", ci.card().name(), z.name()),
+								l -> l.cards(z).remove(ci), // TODO: These used to be synchronized on the model
+								l -> l.cards(z).add(ci)
+						);
+					});
 					pane.view().contextMenu(createDeckContextMenu(pane, z));
 					pane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
 
@@ -205,12 +215,29 @@ public class DeckPane extends SplitPane {
 			final Card card = cards.iterator().next();
 			final Set<CardInstance> modify = new HashSet<>(menu.cards.get());
 			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
-				modify.forEach(ci -> {
+				boolean modified = false;
+				Consumer<DeckList> doFn = l -> {}, undoFn = l -> {};
+				for (CardInstance ci : modify) {
 					if (ci.printing() != pr) {
-						deck().modifiedProperty().set(true);
-						ci.printing(pr);
+						final Card.Printing old = ci.printing();
+						doFn = doFn.andThen(l -> ci.printing(pr));
+						undoFn = undoFn.andThen(l -> ci.printing(old));
+						modified = true;
 					}
-				});
+				}
+				if (modified) {
+					// Irritating hack to trigger listeners.
+					doFn = doFn.andThen(l -> l.modifiedProperty().set(true));
+					undoFn = undoFn.andThen(l -> l.modifiedProperty().set(true));
+
+					DeckChanger.change(
+							deck,
+							String.format("Use %s from %s", card.name(), pr.set().name()),
+							"Restore Printings",
+							doFn,
+							undoFn
+					);
+				}
 				pane.view().scheduleRender();
 			});
 		});

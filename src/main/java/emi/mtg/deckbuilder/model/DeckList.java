@@ -11,8 +11,26 @@ import javafx.collections.ObservableList;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class DeckList implements Deck {
+	public static class Change {
+		public final String doText, undoText;
+		public final Consumer<DeckList> redo, undo;
+
+		public Change(String doText, String undoText, Consumer<DeckList> redo, Consumer<DeckList> undo) {
+			this.doText = doText;
+			this.undoText = undoText;
+			this.redo = redo;
+			this.undo = undo;
+		}
+
+		@Override
+		public String toString() {
+			return doText;
+		}
+	}
+
 	private static Map<Zone, ObservableList<CardInstance>> emptyDeck() {
 		Map<Zone, ObservableList<CardInstance>> zones = new EnumMap<>(Zone.class);
 
@@ -30,6 +48,7 @@ public class DeckList implements Deck {
 
 	private transient Property<Path> source = new SimpleObjectProperty<>(null);
 	private transient BooleanProperty modified = new SimpleBooleanProperty(false);
+	private transient ListProperty<Change> undoStack = new SimpleListProperty<>(FXCollections.observableArrayList()), redoStack = new SimpleListProperty<>(FXCollections.observableArrayList());
 
 	private Map<Zone, ObservableList<CardInstance>> cards = emptyDeck();
 
@@ -102,6 +121,14 @@ public class DeckList implements Deck {
 
 	public BooleanProperty modifiedProperty() {
 		return modified;
+	}
+
+	public ListProperty<Change> undoStack() {
+		return undoStack;
+	}
+
+	public ListProperty<Change> redoStack() {
+		return redoStack;
 	}
 
 	@Override

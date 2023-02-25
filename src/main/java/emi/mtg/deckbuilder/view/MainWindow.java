@@ -5,6 +5,7 @@ import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.controller.Tags;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter;
@@ -73,6 +74,9 @@ public class MainWindow extends Stage {
 
 	@FXML
 	private Menu debugMenu;
+
+	@FXML
+	private MenuItem undo, redo;
 
 	private CardPane collection;
 
@@ -321,14 +325,19 @@ public class MainWindow extends Stage {
 			MenuItem fillZoneMenuItem = new MenuItem(zone.name());
 			fillZoneMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> activeDeck() != null && activeDeck().format().deckZones().contains(zone), menu.showingProperty()));
 			fillZoneMenuItem.setOnAction(ae -> {
-				activeDeckPane().zonePane(zone).changeModel(model -> {
-					for (CardInstance source : menu.cards) {
-						long count = activeDeck().format().maxCopies - model.parallelStream().filter(ci -> ci.card().equals(source.card())).count(); // TODO: Should count all zones.
-						for (int i = 0; i < count; ++i) {
-							model.add(new CardInstance(source));
-						}
-					}
-				});
+				Map<CardInstance, Long> addCounts = menu.cards.stream().collect(Collectors.toMap(
+						ci -> ci,
+						ci -> activeDeck().format().maxCopies - activeDeck().cards().values().stream().mapToLong(l -> l.stream().filter(c -> ci.card().equals(c.card())).count()).sum()
+				));
+				List<CardInstance> add = addCounts.entrySet().stream().flatMap(cic -> Stream.generate(() -> new CardInstance(cic.getKey())).limit(cic.getValue())).collect(Collectors.toList());
+
+				DeckChanger.change(
+						activeDeck(),
+						addCounts.size() > 1 ? String.format("Add %d Various Cards to %s", add.size(), zone.name()) : String.format("Add %dx %s to %s", add.size(), addCounts.keySet().iterator().next().card().name(), zone.name()),
+						addCounts.size() > 1 ? String.format("Remove %d Various Cards From %s", add.size(), zone.name()) : String.format("Remove %dx %s from %s", add.size(), addCounts.keySet().iterator().next().card().name(), zone.name()),
+						l -> l.cards(zone).addAll(add),
+						l -> l.cards(zone).removeAll(add)
+				);
 			});
 			fillMenu.getItems().add(fillZoneMenuItem);
 		}
@@ -357,9 +366,21 @@ public class MainWindow extends Stage {
 				FlowGrid.Factory.INSTANCE,
 				Preferences.get().collectionGrouping,
 				Preferences.get().collectionSorting);
-		collection.view().immutableModelProperty().set(true);
-		collection.view().doubleClick(ci -> activeDeckPane().zonePane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci))));
-		collection.autoAction.set(ci -> activeDeckPane().zonePane(Zone.Library).changeModel(x -> x.add(new CardInstance(ci))));
+
+		Consumer<CardInstance> addCardToActive = ci -> {
+			DeckList list = activeDeck();
+			CardInstance added = new CardInstance(ci);
+			DeckChanger.change(
+					list,
+					String.format("Add %s to Library", ci.card().name()),
+					String.format("Remove %s from Library", ci.card().name()),
+					l -> l.cards(Zone.Library).add(added), // TODO: These used to be synchronized on the model
+					l -> l.cards(Zone.Library).remove(added)
+			);
+		};
+
+		collection.view().doubleClick(addCardToActive);
+		collection.autoAction.set(addCardToActive);
 
 		collection.view().contextMenu(createCollectionContextMenu());
 
@@ -399,6 +420,11 @@ public class MainWindow extends Stage {
 						return newp.deck().name() + " - Deckbuilder v0.0.0";
 					}
 				}, newp.deck().nameProperty()));
+
+				undo.disableProperty().bind(DeckChanger.canUndo(newp.deck()).not());
+				undo.textProperty().bind(DeckChanger.undoText(newp.deck()));
+				redo.disableProperty().bind(DeckChanger.canRedo(newp.deck()).not());
+				redo.textProperty().bind(DeckChanger.redoText(newp.deck()));
 			}
 		});
 
@@ -605,6 +631,16 @@ public class MainWindow extends Stage {
 		}
 
 		return true;
+	}
+
+	@FXML
+	protected void doUndo() {
+		DeckChanger.undo(activeDeck());
+	}
+
+	@FXML
+	protected void doRedo() {
+		DeckChanger.redo(activeDeck());
 	}
 
 	private void openDeck(Path from) {

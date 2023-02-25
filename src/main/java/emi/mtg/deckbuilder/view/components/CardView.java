@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.components;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
@@ -518,14 +519,28 @@ public class CardView extends Canvas {
 								return clone;
 							})
 							.collect(Collectors.toSet());
-					this.model.addAll(newCards);
+					DeckChanger.change(
+							deck,
+							newCards.size() > 1 ? String.format("Add %d Various Cards to %s", newCards.size(), zone.name()) : String.format("Add %s to %s", newCards.iterator().next().card().name(), zone),
+							newCards.size() > 1 ? String.format("Remove %d Various Cards from %s", newCards.size(), zone.name()) : String.format("Remove %s from %s", newCards.iterator().next().card().name(), zone),
+							l -> this.model.addAll(newCards),
+							l -> this.model.removeAll(newCards)
+					);
 					this.selectedCards.clear();
 					this.selectedCards.addAll(newCards);
 				}
 
 				if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
 					if (CardView.dragSource.deck != null) {
-						CardView.dragSource.model.removeAll(CardView.dragSource.selectedCards);
+						final Set<CardInstance> removed = new HashSet<>(CardView.dragSource.selectedCards);
+						CardView target = CardView.dragSource;
+						DeckChanger.change(
+								target.deck,
+								removed.size() > 1 ? String.format("Remove %d Various Cards from %s", removed.size(), target.zone) : String.format("Remove %s from %s", removed.iterator().next().card().name(), target.zone),
+								removed.size() > 1 ? String.format("Add %d Various Cards to %s", removed.size(), target.zone) : String.format("Add %s to %s", removed.iterator().next().card().name(), target.zone),
+								l -> target.model.removeAll(removed),
+								l -> target.model.addAll(removed)
+						);
 					}
 					CardView.dragSource.selectedCards.clear();
 				}
@@ -566,13 +581,28 @@ public class CardView extends Canvas {
 							Preferences.get().preferredPrintings.put(card.card().fullName(), new Preferences.PreferredPrinting(pr.set().code(), pr.collectorNumber()));
 						} else {
 							boolean modified = false;
+							Consumer<DeckList> doFn = l -> {}, undoFn = l -> {};
 							for (CardInstance ci : modifyingCards) {
 								if (ci.printing() != pr) {
-									ci.printing(pr);
+									final Card.Printing old = ci.printing();
+									doFn = doFn.andThen(l -> ci.printing(pr));
+									undoFn = undoFn.andThen(l -> ci.printing(old));
 									modified = true;
 								}
 							}
-							if (modified) model.set(0, model.get(0)); // Irritating hack to trigger listeners.
+							if (modified) {
+								// Irritating hack to trigger listeners.
+								doFn = doFn.andThen(l -> model.set(0, model.get(0)));
+								undoFn = undoFn.andThen(l -> model.set(0, model.get(0)));
+
+								DeckChanger.change(
+										deck,
+										String.format("Use %s from %s", card.card().name(), pr.set().name()),
+										"Restore Printings",
+										doFn,
+										undoFn
+								);
+							}
 						}
 
 						refreshCardGrouping();
