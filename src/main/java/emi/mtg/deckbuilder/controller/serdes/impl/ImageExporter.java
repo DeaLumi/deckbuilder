@@ -197,7 +197,10 @@ public class ImageExporter implements DeckImportExport {
 		for (Map.Entry<Zone, ObservableList<CardInstance>> zone : deck.cards().entrySet()) {
 			if (zone.getValue().isEmpty()) continue;
 
-			CardView view = new CardView(zone.getValue(),
+			CardView view = new CardView(
+					null,
+					null,
+					zone.getValue(),
 					CardView.LAYOUT_ENGINES.get(0),
 					CardView.GROUPINGS.get(0),
 					CardView.DEFAULT_SORTING);

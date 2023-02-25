@@ -1,8 +1,10 @@
 package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.Card;
+import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.UniqueList;
 import emi.mtg.deckbuilder.view.Images;
@@ -288,6 +290,8 @@ public class CardView extends Canvas {
 		public final SimpleObjectProperty<CardView> view = new SimpleObjectProperty<>();
 	}
 
+	private final DeckList deck;
+	private final Zone zone;
 	final ObservableList<CardInstance> model;
 	final FilteredList<CardInstance> filteredModel;
 	private volatile Group[] groupedModel;
@@ -324,7 +328,6 @@ public class CardView extends Canvas {
 	private final DoubleProperty cardScaleProperty;
 	private final BooleanProperty showEmptyGroupsProperty;
 	private final BooleanProperty collapseDuplicatesProperty;
-	private final BooleanProperty immutableModel;
 	private final BooleanProperty showFlags;
 
 	private static boolean dragModified = false;
@@ -332,11 +335,14 @@ public class CardView extends Canvas {
 
 	private final Tooltip tooltip = new Tooltip();
 
-	public CardView(ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
+	public CardView(DeckList deck, Zone zone, ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
 		setManaged(true);
+
+		this.deck = deck;
+		this.zone = zone;
 
 		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());
@@ -356,7 +362,6 @@ public class CardView extends Canvas {
 		this.scrollMaxX = new SimpleDoubleProperty(100.0);
 		this.scrollMaxY = new SimpleDoubleProperty(100.0);
 
-		this.immutableModel = new SimpleBooleanProperty(false);
 		this.showFlags = new SimpleBooleanProperty(true);
 		this.showFlags.addListener(ce -> scheduleRender());
 
@@ -501,7 +506,7 @@ public class CardView extends Canvas {
 					de.consume();
 				}
 			} else if (CardView.dragSource != null) {
-				if (!immutableModel.get()) {
+				if (deck != null) {
 					Set<CardInstance> newCards = dragSource.selectedCards.stream()
 							.map(ci -> {
 								CardInstance clone = new CardInstance(ci);
@@ -519,7 +524,7 @@ public class CardView extends Canvas {
 				}
 
 				if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-					if (!CardView.dragSource.immutableModel.get()) {
+					if (CardView.dragSource.deck != null) {
 						CardView.dragSource.model.removeAll(CardView.dragSource.selectedCards);
 					}
 					CardView.dragSource.selectedCards.clear();
@@ -549,7 +554,7 @@ public class CardView extends Canvas {
 						return;
 					}
 
-					if (immutableModel.get()) {
+					if (deck == null) {
 						if (filteredModel.stream().anyMatch(ci -> ci.card() == card.card() && ci.printing() != card.printing())) {
 							return; // Other versions are already represented. TODO: I hate this. Bind to CardPane's showVersionsSeparately?
 						}
@@ -557,7 +562,7 @@ public class CardView extends Canvas {
 
 					final List<? extends CardInstance> modifyingCards = hoverGroup.hoverCards(card);
 					PrintingSelectorDialog.show(getScene(), card.card()).ifPresent(pr -> {
-						if (immutableModel.get()) {
+						if (deck == null) {
 							Preferences.get().preferredPrintings.put(card.card().fullName(), new Preferences.PreferredPrinting(pr.set().code(), pr.collectorNumber()));
 						} else {
 							boolean modified = false;
@@ -980,10 +985,6 @@ public class CardView extends Canvas {
 
 	public BooleanProperty showEmptyGroupsProperty() {
 		return showEmptyGroupsProperty;
-	}
-
-	public BooleanProperty immutableModelProperty() {
-		return immutableModel;
 	}
 
 	public BooleanProperty showFlagsProperty() {

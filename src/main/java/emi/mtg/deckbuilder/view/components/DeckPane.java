@@ -157,10 +157,11 @@ public class DeckPane extends SplitPane {
 		getItems().setAll(deck.format().deckZones().stream()
 				.map(z -> {
 					CardPane pane = new CardPane(
-							z.name(),
-							deck.cards(z),
+							deck,
+							z,
 							Piles.Factory.INSTANCE,
-							Preferences.get().zoneGroupings.getOrDefault(z, ManaValue.INSTANCE)
+							Preferences.get().zoneGroupings.getOrDefault(z, ManaValue.INSTANCE),
+							CardView.DEFAULT_SORTING
 					);
 
 					paneMap.put(z, pane);

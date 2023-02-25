@@ -2,7 +2,9 @@ package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.Card;
 import emi.lib.mtg.enums.CardType;
+import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.SortDialog;
@@ -182,10 +184,10 @@ public class CardPane extends BorderPane {
 	public final BooleanProperty showingIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showingVersionsSeparately = new SimpleBooleanProperty(true);
 
-	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
+	private CardPane(String title, DeckList deck, Zone zone, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
 		super();
 
-		this.cardView = new CardView(model, initEngine, initGrouping, sortings);
+		this.cardView = new CardView(deck, zone, model, initEngine, initGrouping, sortings);
 		this.scrollPane = new CardViewScrollPane(this.cardView);
 		setCenter(this.scrollPane);
 
@@ -475,16 +477,16 @@ public class CardPane extends BorderPane {
 		updateStats();
 	}
 
-	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping grouping) {
-		this(title, model, layoutEngine, grouping, CardView.DEFAULT_SORTING);
+	public CardPane(DeckList deck, Zone zone, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
+		this(zone.name(), deck, zone, deck.cards(zone), initEngine, initGrouping, sortings);
+	}
+
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping grouping, List<CardView.ActiveSorting> sortings) {
+		this(title, null, null, model, layoutEngine, grouping, CardView.DEFAULT_SORTING);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {
-		this(title, model, layoutEngine, ManaValue.INSTANCE);
-	}
-
-	public CardPane(String title, ObservableList<CardInstance> model) {
-		this(title, model, Piles.Factory.INSTANCE);
+		this(title, model, layoutEngine, ManaValue.INSTANCE, CardView.DEFAULT_SORTING);
 	}
 
 	public CardView view() {

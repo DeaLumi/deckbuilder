@@ -57,7 +57,6 @@ public class PrintingSelectorDialog extends Dialog<Card.Printing> {
 
 		pane.autoEnabled.set(true);
 
-		pane.view().immutableModelProperty().set(true);
 		pane.showingVersionsSeparately.set(true);
 		pane.setPrefHeight(scene.getHeight() / 1.5);
 		pane.setPrefWidth(scene.getWidth() / 1.5);
