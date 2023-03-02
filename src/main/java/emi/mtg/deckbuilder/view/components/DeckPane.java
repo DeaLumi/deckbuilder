@@ -262,8 +262,20 @@ public class DeckPane extends SplitPane {
 			MenuItem moveItem = new MenuItem(other.toString());
 			moveItem.setOnAction(ae -> {
 				final List<CardInstance> cards = new ArrayList<>(menu.cards);
-				deck.cards(zone).removeAll(cards);
-				deck.cards(other).addAll(cards);
+
+				DeckChanger.change(
+						deck,
+						String.format("Move %d Card%s to %s", cards.size(), cards.size() > 1 ? "s" : "", other),
+						String.format("Move %d Card%s to %s", cards.size(), cards.size() > 1 ? "s" : "", zone),
+						l -> {
+							l.cards(zone).removeAll(cards);
+							l.cards(other).addAll(cards);
+						},
+						l -> {
+							l.cards(other).removeAll(cards);
+							l.cards(zone).removeAll(cards);
+						}
+				);
 			});
 
 			moveMenu.getItems().add(moveItem);
