@@ -173,7 +173,6 @@ public class DeckPane extends SplitPane {
 						DeckChanger.change(
 								deck,
 								String.format("Remove %s from %s", ci.card().name(), z.name()),
-								String.format("Add %s to %s", ci.card().name(), z.name()),
 								l -> l.cards(z).remove(ci), // TODO: These used to be synchronized on the model
 								l -> l.cards(z).add(ci)
 						);
@@ -233,7 +232,6 @@ public class DeckPane extends SplitPane {
 					DeckChanger.change(
 							deck,
 							String.format("Use %s from %s", card.name(), pr.set().name()),
-							"Restore Printings",
 							doFn,
 							undoFn
 					);
@@ -248,7 +246,6 @@ public class DeckPane extends SplitPane {
 			DeckChanger.change(
 					deck,
 					String.format("Remove %s Card%s from %s", cards.size(), cards.size() > 1 ? "s" : "", zone),
-					String.format("Restore %s Card%s to %s", cards.size(), cards.size() > 1 ? "s" : "", zone),
 					l -> l.cards(zone).removeAll(cards),
 					l -> l.cards(zone).addAll(cards)
 			);
@@ -266,7 +263,6 @@ public class DeckPane extends SplitPane {
 				DeckChanger.change(
 						deck,
 						String.format("Move %d Card%s to %s", cards.size(), cards.size() > 1 ? "s" : "", other),
-						String.format("Move %d Card%s to %s", cards.size(), cards.size() > 1 ? "s" : "", zone),
 						l -> {
 							l.cards(zone).removeAll(cards);
 							l.cards(other).addAll(cards);
@@ -295,8 +291,7 @@ public class DeckPane extends SplitPane {
 					.peek(cmi -> cmi.selectedProperty().addListener(x -> {
 						final String tag = cmi.getText();
 						final Set<CardInstance> cards = new HashSet<>(menu.cards);
-						final String add = String.format("Tag %d Card%s as %s", cards.size(), cards.size() > 1 ? "s" : "", tag),
-								remove = String.format("Remove %s Tag from %d Card%s", tag, cards.size(), cards.size() > 1 ? "s" : "");
+						final String add = cards.size() > 1 ? String.format("Tag %d Cards as %s", cards.size(), tag) : String.format("Tag %s as %s", cards.iterator().next().card().name(), tag);
 						final boolean added = cmi.isSelected();
 						final CardView view = menu.view.get();
 						final Consumer<DeckList> addFn = l -> {
@@ -309,8 +304,7 @@ public class DeckPane extends SplitPane {
 
 						DeckChanger.change(
 								deck,
-								added ? add : remove,
-								added ? remove : add,
+								add,
 								added ? addFn : removeFn,
 								added ? removeFn : addFn
 						);
@@ -335,8 +329,7 @@ public class DeckPane extends SplitPane {
 
 				DeckChanger.change(
 						deck,
-						String.format("Tag %d Card%s as %s", cards.size(), cards.size() > 1 ? "s" : "", tag),
-						String.format("Remove %s Tag from %d Card%s", tag, cards.size(), cards.size() > 1 ? "s" : ""),
+						cards.size() > 1 ? String.format("Tag %d Cards as %s", cards.size(), tag) : String.format("Tag %s as %s", cards.iterator().next().card().name(), tag),
 						l -> {
 							cards.forEach(ci -> ci.tags().add(tag));
 							view.regroup();

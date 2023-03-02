@@ -64,8 +64,7 @@ public class DeckTab extends Tab {
 			if (!newName.equals(oldName)) {
 				DeckChanger.change(
 						pane.deck(),
-						String.format("Change Deck Name to %s", newName),
-						String.format("Restore Deck Name to %s", oldName),
+						"Rename Deck",
 						l -> l.nameProperty().setValue(newName),
 						l -> l.nameProperty().setValue(oldName)
 				);

@@ -15,19 +15,18 @@ import java.util.function.Consumer;
 
 public class DeckList implements Deck {
 	public static class Change {
-		public final String doText, undoText;
+		public final String description;
 		public final Consumer<DeckList> redo, undo;
 
-		public Change(String doText, String undoText, Consumer<DeckList> redo, Consumer<DeckList> undo) {
-			this.doText = doText;
-			this.undoText = undoText;
+		public Change(String description, Consumer<DeckList> redo, Consumer<DeckList> undo) {
+			this.description = description;
 			this.redo = redo;
 			this.undo = undo;
 		}
 
 		@Override
 		public String toString() {
-			return doText;
+			return description;
 		}
 	}
 

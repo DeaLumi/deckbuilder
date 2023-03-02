@@ -8,9 +8,9 @@ import javafx.beans.binding.StringBinding;
 import java.util.function.Consumer;
 
 public class DeckChanger {
-	public static void change(DeckList list, String doText, String undoText, Consumer<DeckList> action, Consumer<DeckList> undo) {
+	public static void change(DeckList list, String description, Consumer<DeckList> action, Consumer<DeckList> undo) {
 		list.redoStack().clear();
-		DeckList.Change change = new DeckList.Change(doText, undoText, action, undo);
+		DeckList.Change change = new DeckList.Change(description, action, undo);
 		change.redo.accept(list);
 		list.undoStack().add(change);
 	}
@@ -24,11 +24,11 @@ public class DeckChanger {
 	}
 
 	public static StringBinding undoText(DeckList list) {
-		return Bindings.createStringBinding(() -> list.undoStack().isEmpty() ? "Can't Undo" : list.undoStack().get(list.undoStack().size() - 1).undoText, list.undoStack());
+		return Bindings.createStringBinding(() -> list.undoStack().isEmpty() ? "Can't Undo" : "Undo " + list.undoStack().get(list.undoStack().size() - 1).description, list.undoStack());
 	}
 
 	public static StringBinding redoText(DeckList list) {
-		return Bindings.createStringBinding(() -> list.redoStack().isEmpty() ? "Can't Redo" : list.redoStack().get(list.redoStack().size() - 1).doText, list.redoStack());
+		return Bindings.createStringBinding(() -> list.redoStack().isEmpty() ? "Can't Redo" : "Redo " + list.redoStack().get(list.redoStack().size() - 1).description, list.redoStack());
 	}
 
 	public static void undo(DeckList list) {

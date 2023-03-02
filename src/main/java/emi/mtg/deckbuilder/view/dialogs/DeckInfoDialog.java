@@ -42,7 +42,7 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
 				boolean modified = false;
-				String doString = null, undoString = null;
+				String doString = null;
 
 				final String oldName = deck.name(), oldAuthor = deck.author(), oldDesc = deck.description();
 				final Format oldFormat = deck.format();
@@ -51,26 +51,22 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 				final Format newFormat = formatCombo.getValue();
 
 				if (!oldName.equals(newName)) {
-					doString = modified ? null : String.format("Change Deck Name to %s", newName);
-					undoString = modified ? null : String.format("Restore Deck Name to %s", oldName);
+					doString = modified ? null : "Rename Deck";
 					modified = true;
 				}
 
 				if (!oldAuthor.equals(newAuthor)) {
-					doString = modified ? null : String.format("Change Deck Author to %s", newAuthor);
-					undoString = modified ? null : String.format("Restore Deck Author to %s", oldAuthor);
+					doString = modified ? null : "Change Deck Author";
 					modified = true;
 				}
 
 				if (!oldDesc.equals(newDesc)) {
 					doString = modified ? null : "Update Deck Description";
-					undoString = modified ? null : "Revert Deck Description";
 					modified = true;
 				}
 
 				if (!oldFormat.equals(newFormat)) {
 					doString = modified ? null : String.format("Change Deck Format to %s", newFormat);
-					undoString = modified ? null : String.format("Restore Deck Format to %s", oldFormat);
 					modified = true;
 				}
 
@@ -78,7 +74,6 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 					DeckChanger.change(
 							deck,
 							doString != null ? doString : "Update Deck Info",
-							undoString != null ? undoString : "Revert Deck Info",
 							l -> {
 								l.nameProperty().setValue(newName);
 								l.authorProperty().setValue(newAuthor);

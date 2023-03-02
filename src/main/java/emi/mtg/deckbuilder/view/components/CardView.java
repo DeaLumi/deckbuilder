@@ -521,8 +521,7 @@ public class CardView extends Canvas {
 							.collect(Collectors.toSet());
 					DeckChanger.change(
 							deck,
-							newCards.size() > 1 ? String.format("Add %d Various Cards to %s", newCards.size(), zone.name()) : String.format("Add %s to %s", newCards.iterator().next().card().name(), zone),
-							newCards.size() > 1 ? String.format("Remove %d Various Cards from %s", newCards.size(), zone.name()) : String.format("Remove %s from %s", newCards.iterator().next().card().name(), zone),
+							newCards.size() > 1 ? String.format("Add %d Cards to %s", newCards.size(), zone.name()) : String.format("Add %s to %s", newCards.iterator().next().card().name(), zone),
 							l -> this.model.addAll(newCards),
 							l -> this.model.removeAll(newCards)
 					);
@@ -536,8 +535,7 @@ public class CardView extends Canvas {
 						CardView target = CardView.dragSource;
 						DeckChanger.change(
 								target.deck,
-								removed.size() > 1 ? String.format("Remove %d Various Cards from %s", removed.size(), target.zone) : String.format("Remove %s from %s", removed.iterator().next().card().name(), target.zone),
-								removed.size() > 1 ? String.format("Add %d Various Cards to %s", removed.size(), target.zone) : String.format("Add %s to %s", removed.iterator().next().card().name(), target.zone),
+								removed.size() > 1 ? String.format("Remove %d Cards from %s", removed.size(), target.zone) : String.format("Remove %s from %s", removed.iterator().next().card().name(), target.zone),
 								l -> target.model.removeAll(removed),
 								l -> target.model.addAll(removed)
 						);
@@ -598,7 +596,6 @@ public class CardView extends Canvas {
 								DeckChanger.change(
 										deck,
 										String.format("Use %s from %s", card.card().name(), pr.set().name()),
-										"Restore Printings",
 										doFn,
 										undoFn
 								);
