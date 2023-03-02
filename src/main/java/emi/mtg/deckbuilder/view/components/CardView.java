@@ -167,7 +167,7 @@ public class CardView extends Canvas {
 		String name();
 		boolean supportsModification();
 
-		Group[] groups(List<CardInstance> model);
+		Group[] groups(DeckList list, List<CardInstance> model);
 	}
 
 	public interface Sorting extends Comparator<CardInstance> {
@@ -486,8 +486,9 @@ public class CardView extends Canvas {
 		setOnDragDropped(de -> {
 			if (CardView.dragSource == this) {
 				if (this.grouping.supportsModification()) {
+					DeckChanger.startChangeBatch(this.deck);
+
 					this.selectedCards.forEach(this.hoverGroup.group::add);
-					this.hoverGroup.refilter();
 
 					if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
 						for (Group group : this.groupedModel) {
@@ -498,10 +499,19 @@ public class CardView extends Canvas {
 							for (CardInstance ci : selectedCards) {
 								group.group.remove(ci);
 							}
-
-							group.refilter();
 						}
 					}
+
+					DeckChanger.addBatchedChange(
+							this.deck,
+							l -> { for (Group group : this.groupedModel) group.refilter(); },
+							l -> { for (Group group : this.groupedModel) group.refilter(); }
+					);
+
+					DeckChanger.endChangeBatch(
+							this.deck,
+							"Change Tags"
+					);
 
 					de.setDropCompleted(true);
 					de.consume();
@@ -930,7 +940,7 @@ public class CardView extends Canvas {
 
 	public void grouping(Grouping grouping) {
 		this.grouping = grouping;
-		this.groupedModel = Arrays.stream(this.grouping.groups(this.model))
+		this.groupedModel = Arrays.stream(this.grouping.groups(this.deck, this.model))
 				.map(g -> new Group(g, this.filteredModel, this.sort))
 				.toArray(Group[]::new);
 		layout();

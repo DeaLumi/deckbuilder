@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.groupings;
 
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.util.List;
@@ -44,7 +45,7 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 	private Group[] groups;
 
 	@Override
-	public Group[] groups(List<CardInstance> unused) {
+	public Group[] groups(DeckList list, List<CardInstance> unused) {
 		if (groups == null) {
 			groups = new Group[groupValues().length];
 

@@ -1,21 +1,22 @@
 package emi.mtg.deckbuilder.view.groupings;
 
+import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardView;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class TagGrouping implements CardView.Grouping {
 	public static final TagGrouping INSTANCE = new TagGrouping();
 
 	private static class TagGroup implements CardView.Grouping.Group {
+		private final DeckList list;
 		private final String tag;
 
-		public TagGroup(String tag) {
+		public TagGroup(DeckList list, String tag) {
+			this.list = list;
 			this.tag = tag;
 		}
 
@@ -26,12 +27,24 @@ public class TagGrouping implements CardView.Grouping {
 
 		@Override
 		public void add(CardInstance ci) {
-			ci.tags().add(tag);
+			if (ci.tags().contains(this.tag)) return;
+
+			DeckChanger.addBatchedChange(
+					list,
+					l -> ci.tags().add(tag),
+					l -> ci.tags().remove(tag)
+			);
 		}
 
 		@Override
 		public void remove(CardInstance ci) {
-			ci.tags().remove(tag);
+			if (!ci.tags().contains(this.tag)) return;
+
+			DeckChanger.addBatchedChange(
+					list,
+					l -> ci.tags().remove(tag),
+					l -> ci.tags().add(tag)
+			);
 		}
 
 		@Override
@@ -41,7 +54,11 @@ public class TagGrouping implements CardView.Grouping {
 	}
 
 	private static class Untagged implements CardView.Grouping.Group {
-		public static final Untagged INSTANCE = new Untagged();
+		private final DeckList list;
+
+		public Untagged(DeckList list) {
+			this.list = list;
+		}
 
 		@Override
 		public String toString() {
@@ -50,7 +67,14 @@ public class TagGrouping implements CardView.Grouping {
 
 		@Override
 		public void add(CardInstance ci) {
-			ci.tags().clear();
+			if (ci.tags().isEmpty()) return;
+
+			final Set<String> oldTags = new HashSet<>(ci.tags());
+			DeckChanger.addBatchedChange(
+					list,
+					l -> ci.tags().clear(),
+					l -> ci.tags().addAll(oldTags)
+			);
 		}
 
 		@Override
@@ -75,15 +99,15 @@ public class TagGrouping implements CardView.Grouping {
 	}
 
 	@Override
-	public Group[] groups(List<CardInstance> model) {
+	public Group[] groups(DeckList list, List<CardInstance> model) {
 		Deque<Group> groups = model.stream()
 				.map(CardInstance::tags)
 				.flatMap(Set::stream)
 				.distinct()
 				.sorted()
-				.map(TagGroup::new)
+				.map(tag -> new TagGroup(list, tag))
 				.collect(Collectors.toCollection(LinkedList::new));
-		groups.addFirst(Untagged.INSTANCE);
+		groups.addFirst(new Untagged(list));
 		return groups.toArray(new Group[0]);
 	}
 

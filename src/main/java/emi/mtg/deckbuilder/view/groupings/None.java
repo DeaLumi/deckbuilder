@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.groupings;
 
 import emi.mtg.deckbuilder.model.CardInstance;
+import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardView;
 
 import java.util.List;
@@ -43,7 +44,7 @@ public class None implements CardView.Grouping {
 	}
 
 	@Override
-	public Group[] groups(List<CardInstance> unused) {
+	public Group[] groups(DeckList deck, List<CardInstance> unused) {
 		return GROUPS;
 	}
 
