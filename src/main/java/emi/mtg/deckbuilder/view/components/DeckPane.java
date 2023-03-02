@@ -293,12 +293,27 @@ public class DeckPane extends SplitPane {
 					.map(CheckMenuItem::new)
 					.peek(cmi -> cmi.setSelected(menu.cards.stream().allMatch(ci -> ci.tags().contains(cmi.getText()))))
 					.peek(cmi -> cmi.selectedProperty().addListener(x -> {
-						if (cmi.isSelected()) {
-							menu.cards.forEach(ci -> ci.tags().add(cmi.getText()));
-						} else {
-							menu.cards.forEach(ci -> ci.tags().remove(cmi.getText()));
-						}
-						menu.view.get().refreshCardGrouping();
+						final String tag = cmi.getText();
+						final Set<CardInstance> cards = new HashSet<>(menu.cards);
+						final String add = String.format("Tag %d Card%s as %s", cards.size(), cards.size() > 1 ? "s" : "", tag),
+								remove = String.format("Remove %s Tag from %d Card%s", tag, cards.size(), cards.size() > 1 ? "s" : "");
+						final boolean added = cmi.isSelected();
+						final CardView view = menu.view.get();
+						final Consumer<DeckList> addFn = l -> {
+							cards.forEach(ci -> ci.tags().add(tag));
+							view.refreshCardGrouping();
+						}, removeFn = l -> {
+							cards.forEach(ci -> ci.tags().remove(tag));
+							view.refreshCardGrouping();
+						};
+
+						DeckChanger.change(
+								deck,
+								added ? add : remove,
+								added ? remove : add,
+								added ? addFn : removeFn,
+								added ? removeFn : addFn
+						);
 					}))
 					.collect(Collectors.toList())
 			);
@@ -314,8 +329,24 @@ public class DeckPane extends SplitPane {
 					return;
 				}
 
-				menu.cards.forEach(ci -> ci.tags().add(newTagField.getText()));
-				menu.view.get().regroup();
+				final String tag = newTagField.getText();
+				final Set<CardInstance> cards = new HashSet<>(menu.cards);
+				final CardView view = menu.view.get();
+
+				DeckChanger.change(
+						deck,
+						String.format("Tag %d Card%s as %s", cards.size(), cards.size() > 1 ? "s" : "", tag),
+						String.format("Remove %s Tag from %d Card%s", tag, cards.size(), cards.size() > 1 ? "s" : ""),
+						l -> {
+							cards.forEach(ci -> ci.tags().add(tag));
+							view.regroup();
+						},
+						l -> {
+							cards.forEach(ci -> ci.tags().remove(tag));
+							view.regroup();
+						}
+				);
+
 				menu.hide();
 			});
 
