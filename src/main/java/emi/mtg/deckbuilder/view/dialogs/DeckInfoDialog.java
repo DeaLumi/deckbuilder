@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.lib.mtg.game.Format;
+import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.util.FxUtils;
@@ -41,25 +42,56 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
 				boolean modified = false;
+				String doString = null, undoString = null;
 
-				if (!deck.name().equals(deckNameField.getText())) {
+				final String oldName = deck.name(), oldAuthor = deck.author(), oldDesc = deck.description();
+				final Format oldFormat = deck.format();
+
+				final String newName = deckNameField.getText(), newAuthor = authorField.getText(), newDesc = descriptionField.getText();
+				final Format newFormat = formatCombo.getValue();
+
+				if (!oldName.equals(newName)) {
+					doString = modified ? null : String.format("Change Deck Name to %s", newName);
+					undoString = modified ? null : String.format("Restore Deck Name to %s", oldName);
 					modified = true;
-					deck.nameProperty().setValue(deckNameField.getText());
 				}
 
-				if (!deck.author().equals(authorField.getText())) {
+				if (!oldAuthor.equals(newAuthor)) {
+					doString = modified ? null : String.format("Change Deck Author to %s", newAuthor);
+					undoString = modified ? null : String.format("Restore Deck Author to %s", oldAuthor);
 					modified = true;
-					deck.authorProperty().setValue(authorField.getText());
 				}
 
-				if (!deck.format().equals(formatCombo.getValue())) {
+				if (!oldDesc.equals(newDesc)) {
+					doString = modified ? null : "Update Deck Description";
+					undoString = modified ? null : "Revert Deck Description";
 					modified = true;
-					deck.formatProperty().setValue(formatCombo.getValue());
 				}
 
-				if (!deck.description().equals(descriptionField.getText())) {
+				if (!oldFormat.equals(newFormat)) {
+					doString = modified ? null : String.format("Change Deck Format to %s", newFormat);
+					undoString = modified ? null : String.format("Restore Deck Format to %s", oldFormat);
 					modified = true;
-					deck.descriptionProperty().setValue(descriptionField.getText());
+				}
+
+				if (modified) {
+					DeckChanger.change(
+							deck,
+							doString != null ? doString : "Update Deck Info",
+							undoString != null ? undoString : "Revert Deck Info",
+							l -> {
+								l.nameProperty().setValue(newName);
+								l.authorProperty().setValue(newAuthor);
+								l.formatProperty().setValue(newFormat);
+								l.descriptionProperty().setValue(newDesc);
+							},
+							l -> {
+								l.nameProperty().setValue(oldName);
+								l.authorProperty().setValue(oldAuthor);
+								l.formatProperty().setValue(oldFormat);
+								l.descriptionProperty().setValue(oldDesc);
+							}
+					);
 				}
 
 				return modified;

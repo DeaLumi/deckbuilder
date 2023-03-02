@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.game.Format;
+import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.MainWindow;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
@@ -58,9 +59,16 @@ public class DeckTab extends Tab {
 		});
 
 		this.textField.setOnAction(ae -> {
-			if (!pane.deck().name().equals(DeckTab.this.textField.getText())) {
-				pane.deck().nameProperty().setValue(DeckTab.this.textField.getText());
-				pane.deck().modifiedProperty().set(true);
+			final String oldName = pane.deck().name();
+			final String newName = DeckTab.this.textField.getText();
+			if (!newName.equals(oldName)) {
+				DeckChanger.change(
+						pane.deck(),
+						String.format("Change Deck Name to %s", newName),
+						String.format("Restore Deck Name to %s", oldName),
+						l -> l.nameProperty().setValue(newName),
+						l -> l.nameProperty().setValue(oldName)
+				);
 			}
 			DeckTab.this.setGraphic(DeckTab.this.label);
 			ae.consume();
