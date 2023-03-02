@@ -66,7 +66,7 @@ public class DeckInfoDialog extends Dialog<Boolean> {
 				}
 
 				if (!oldFormat.equals(newFormat)) {
-					doString = modified ? null : String.format("Change Deck Format to %s", newFormat);
+					doString = modified ? null : "Change Deck Format";
 					modified = true;
 				}
 

@@ -333,7 +333,7 @@ public class MainWindow extends Stage {
 
 				DeckChanger.change(
 						activeDeck(),
-						addCounts.size() > 1 ? String.format("Add %d Cards to %s", add.size(), zone.name()) : String.format("Add %dx %s to %s", add.size(), addCounts.keySet().iterator().next().card().name(), zone.name()),
+						String.format("Add %d Card%s", add.size(), add.size() > 1 ? "s" : ""),
 						l -> l.cards(zone).addAll(add),
 						l -> l.cards(zone).removeAll(add)
 				);
@@ -371,7 +371,7 @@ public class MainWindow extends Stage {
 			CardInstance added = new CardInstance(ci);
 			DeckChanger.change(
 					list,
-					String.format("Add %s to Library", ci.card().name()),
+					String.format("Add %s", ci.card().name()),
 					l -> l.cards(Zone.Library).add(added), // TODO: These used to be synchronized on the model
 					l -> l.cards(Zone.Library).remove(added)
 			);

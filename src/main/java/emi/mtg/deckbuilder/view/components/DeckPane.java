@@ -172,7 +172,7 @@ public class DeckPane extends SplitPane {
 					pane.view().doubleClick(ci -> {
 						DeckChanger.change(
 								deck,
-								String.format("Remove %s from %s", ci.card().name(), z.name()),
+								String.format("Remove %s", ci.card().name()),
 								l -> l.cards(z).remove(ci), // TODO: These used to be synchronized on the model
 								l -> l.cards(z).add(ci)
 						);
@@ -231,7 +231,7 @@ public class DeckPane extends SplitPane {
 
 					DeckChanger.change(
 							deck,
-							String.format("Use %s from %s", card.name(), pr.set().name()),
+							String.format("Change %d Printing%s", modify.size(), modify.size() > 1 ? "s" : ""),
 							doFn,
 							undoFn
 					);
@@ -245,7 +245,7 @@ public class DeckPane extends SplitPane {
 			final List<CardInstance> cards = new ArrayList<>(menu.cards);
 			DeckChanger.change(
 					deck,
-					String.format("Remove %s Card%s from %s", cards.size(), cards.size() > 1 ? "s" : "", zone),
+					String.format("Remove %d Card%s", cards.size(), cards.size() > 1 ? "s" : ""),
 					l -> l.cards(zone).removeAll(cards),
 					l -> l.cards(zone).addAll(cards)
 			);
@@ -262,7 +262,7 @@ public class DeckPane extends SplitPane {
 
 				DeckChanger.change(
 						deck,
-						String.format("Move %d Card%s to %s", cards.size(), cards.size() > 1 ? "s" : "", other),
+						String.format("Move %d Card%s", cards.size(), cards.size() > 1 ? "s" : ""),
 						l -> {
 							l.cards(zone).removeAll(cards);
 							l.cards(other).addAll(cards);
@@ -291,7 +291,6 @@ public class DeckPane extends SplitPane {
 					.peek(cmi -> cmi.selectedProperty().addListener(x -> {
 						final String tag = cmi.getText();
 						final Set<CardInstance> cards = new HashSet<>(menu.cards);
-						final String add = cards.size() > 1 ? String.format("Tag %d Cards as %s", cards.size(), tag) : String.format("Tag %s as %s", cards.iterator().next().card().name(), tag);
 						final boolean added = cmi.isSelected();
 						final CardView view = menu.view.get();
 						final Consumer<DeckList> addFn = l -> {
@@ -304,7 +303,7 @@ public class DeckPane extends SplitPane {
 
 						DeckChanger.change(
 								deck,
-								add,
+								"Change Tags",
 								added ? addFn : removeFn,
 								added ? removeFn : addFn
 						);
@@ -329,7 +328,7 @@ public class DeckPane extends SplitPane {
 
 				DeckChanger.change(
 						deck,
-						cards.size() > 1 ? String.format("Tag %d Cards as %s", cards.size(), tag) : String.format("Tag %s as %s", cards.iterator().next().card().name(), tag),
+						"Add Tags",
 						l -> {
 							cards.forEach(ci -> ci.tags().add(tag));
 							view.regroup();

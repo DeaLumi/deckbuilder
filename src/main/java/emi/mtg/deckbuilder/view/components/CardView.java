@@ -521,7 +521,7 @@ public class CardView extends Canvas {
 							.collect(Collectors.toSet());
 					DeckChanger.change(
 							deck,
-							newCards.size() > 1 ? String.format("Add %d Cards to %s", newCards.size(), zone.name()) : String.format("Add %s to %s", newCards.iterator().next().card().name(), zone),
+							String.format("Add %d Card%s", newCards.size(), newCards.size() > 1 ? "s" : ""),
 							l -> this.model.addAll(newCards),
 							l -> this.model.removeAll(newCards)
 					);
@@ -535,7 +535,7 @@ public class CardView extends Canvas {
 						CardView target = CardView.dragSource;
 						DeckChanger.change(
 								target.deck,
-								removed.size() > 1 ? String.format("Remove %d Cards from %s", removed.size(), target.zone) : String.format("Remove %s from %s", removed.iterator().next().card().name(), target.zone),
+								String.format("Remove %d Card%s", removed.size(), removed.size() > 1 ? "s" : ""),
 								l -> target.model.removeAll(removed),
 								l -> target.model.addAll(removed)
 						);
@@ -590,12 +590,12 @@ public class CardView extends Canvas {
 							}
 							if (modified) {
 								// Irritating hack to trigger listeners.
-								doFn = doFn.andThen(l -> model.set(0, model.get(0)));
-								undoFn = undoFn.andThen(l -> model.set(0, model.get(0)));
+								doFn = doFn.andThen(l -> model.set(0, model.get(0))).andThen(l -> scheduleRender());
+								undoFn = undoFn.andThen(l -> model.set(0, model.get(0))).andThen(l -> scheduleRender());
 
 								DeckChanger.change(
 										deck,
-										String.format("Use %s from %s", card.card().name(), pr.set().name()),
+										String.format("Change %d Printing%s", modifyingCards.size(), modifyingCards.size() > 1 ? "s" : ""),
 										doFn,
 										undoFn
 								);
