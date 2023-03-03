@@ -1,7 +1,6 @@
 package emi.mtg.deckbuilder.view.components;
 
 import emi.lib.mtg.Card;
-import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.CardInstance;
@@ -292,7 +291,6 @@ public class CardView extends Canvas {
 	}
 
 	private final DeckList deck;
-	private final Zone zone;
 	final ObservableList<CardInstance> model;
 	final FilteredList<CardInstance> filteredModel;
 	private volatile Group[] groupedModel;
@@ -336,14 +334,13 @@ public class CardView extends Canvas {
 
 	private final Tooltip tooltip = new Tooltip();
 
-	public CardView(DeckList deck, Zone zone, ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
+	public CardView(DeckList deck, ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
 		setManaged(true);
 
 		this.deck = deck;
-		this.zone = zone;
 
 		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());

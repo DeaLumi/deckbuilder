@@ -199,7 +199,6 @@ public class ImageExporter implements DeckImportExport {
 
 			CardView view = new CardView(
 					null,
-					null,
 					zone.getValue(),
 					CardView.LAYOUT_ENGINES.get(0),
 					CardView.GROUPINGS.get(0),

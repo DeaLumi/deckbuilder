@@ -187,7 +187,7 @@ public class CardPane extends BorderPane {
 	private CardPane(String title, DeckList deck, Zone zone, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
 		super();
 
-		this.cardView = new CardView(deck, zone, model, initEngine, initGrouping, sortings);
+		this.cardView = new CardView(deck, model, initEngine, initGrouping, sortings);
 		this.scrollPane = new CardViewScrollPane(this.cardView);
 		setCenter(this.scrollPane);
 
