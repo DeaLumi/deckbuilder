@@ -174,6 +174,17 @@ public class CardView extends Canvas {
 	}
 
 	public static class ActiveSorting {
+		public static Comparator<CardInstance> merge(List<ActiveSorting> sorts) {
+			if (sorts == null || sorts.isEmpty()) throw new IllegalArgumentException("At least one sort must be specified.");
+
+			Comparator<CardInstance> sort = (c1, c2) -> 0;
+			for (ActiveSorting element : sorts) {
+				sort = sort.thenComparing(element.descending.get() ? element.sorting.reversed() : element.sorting);
+			}
+
+			return sort;
+		}
+
 		public final Sorting sorting;
 		public SimpleBooleanProperty descending;
 
@@ -370,7 +381,7 @@ public class CardView extends Canvas {
 		this.contextMenu = null;
 
 		this.sortingElements = sorts;
-		this.sort = convertSorts(sorts);
+		this.sort = ActiveSorting.merge(sorts);
 		this.grouping = grouping;
 
 		this.model = model;
@@ -957,20 +968,6 @@ public class CardView extends Canvas {
 		}
 	}
 
-	private Comparator<CardInstance> convertSorts(List<ActiveSorting> sorts) {
-		List<ActiveSorting> s = sorts;
-		if (s == null) {
-			s = Collections.emptyList();
-		}
-
-		Comparator<CardInstance> sort = (c1, c2) -> 0;
-		for (ActiveSorting element : s) {
-			sort = sort.thenComparing(element.descending.get() ? element.sorting.reversed() : element.sorting);
-		}
-
-		return sort;
-	}
-
 	private synchronized void sort(List<ActiveSorting> sorts, boolean sync) {
 		if (!sync) {
 			final List<ActiveSorting> finalized = sorts;
@@ -982,7 +979,7 @@ public class CardView extends Canvas {
 				}
 
 				this.sortingElements = sorts;
-				this.sort = convertSorts(sorts);
+				this.sort = ActiveSorting.merge(sorts);
 
 				for (Group g : groupedModel) {
 					g.setSort(this.sort);
