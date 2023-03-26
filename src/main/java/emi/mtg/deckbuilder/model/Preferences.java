@@ -185,7 +185,7 @@ public class Preferences {
 	public final Path dataPath = MainApplication.JAR_DIR.resolve("data/").toAbsolutePath();
 	public final Path imagesPath = MainApplication.JAR_DIR.resolve("images/").toAbsolutePath();
 
-	public URI updateUri = URI.create("http://emi.sly.io/deckbuilder-nodata.zip");
+	public URI updateUri = URI.create("http://cloudpost.app:8443/deckbuilder-nodata.zip");
 	public boolean autoUpdateData = true;
 	public boolean autoUpdateProgram = true;
 

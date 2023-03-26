@@ -17,6 +17,7 @@
 ### Changes
 
 - Debug options are now hidden behind a preference toggle.
+- Changed the default update URL to a personal domain name which won't lapse. Only fresh installs will catch this, though!
 
 ### Fixes
 
