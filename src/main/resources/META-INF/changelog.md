@@ -3,6 +3,7 @@
 ### Improvements
 
 - Battle is now a recognized type, and their front faces are rotated appropriately.
+- New game formats on Scryfall shouldn't brick the deckbuilder. You won't be able to brew those formats with validation, though -- if we're missing a format you want to deckbuild for, shoot me a message!
 
 ### Fixes
 
