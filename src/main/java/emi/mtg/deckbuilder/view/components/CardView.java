@@ -449,10 +449,10 @@ public class CardView extends Canvas {
 			}
 
 			if (view != null) {
-				db.setDragView(Context.get().images.getThumbnail(view.printing()).thenApply(img -> {
-					db.setDragView(img);
+				Context.get().images.getThumbnail(view.printing()).thenApply(img -> {
+					db.setDragView(img, -8.0, -8.0);
 					return img;
-				}).getNow(Images.LOADING_CARD));
+				}).getNow(Images.LOADING_CARD);
 			}
 
 			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, selectedCards.toString()));
