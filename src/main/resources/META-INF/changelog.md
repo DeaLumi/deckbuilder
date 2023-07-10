@@ -1,3 +1,9 @@
+## 2023 July
+
+### Fixes
+
+- Fixed an issue preventing dragging cards directly into tagged groups of a deck.
+
 ## 2022
 
 ### Features

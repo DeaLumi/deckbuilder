@@ -526,6 +526,7 @@ public class CardView extends Canvas {
 				}
 			} else if (CardView.dragSource != null) {
 				if (deck != null) {
+					DeckChanger.startChangeBatch(deck);
 					Set<CardInstance> newCards = dragSource.selectedCards.stream()
 							.map(ci -> {
 								CardInstance clone = new CardInstance(ci);
@@ -537,12 +538,12 @@ public class CardView extends Canvas {
 								return clone;
 							})
 							.collect(Collectors.toSet());
-					DeckChanger.change(
+					DeckChanger.addBatchedChange(
 							deck,
-							String.format("Add %d Card%s", newCards.size(), newCards.size() > 1 ? "s" : ""),
 							l -> this.model.addAll(newCards),
 							l -> this.model.removeAll(newCards)
 					);
+					DeckChanger.endChangeBatch(deck, String.format("Add %d Card%s", newCards.size(), newCards.size() > 1 ? "s" : ""));
 					this.selectedCards.clear();
 					this.selectedCards.addAll(newCards);
 				}
