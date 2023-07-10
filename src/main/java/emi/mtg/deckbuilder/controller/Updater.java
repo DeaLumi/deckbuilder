@@ -36,7 +36,7 @@ public class Updater {
 	private static final String BASH_SCRIPT =
 			"#!/bin/sh\n" +
 			"sleep 3\n" +
-			(test ? "" : "cp -r \"%4$s/\" \"%2$s\"\n")+
+			(test ? "" : "cp -r \"%4$s/.\" \"%2$s\"\n")+
 			"rm -rf \"%4$s\"\n" +
 			"rm \"$0\"\n" +
 			"nohup \"%1$s\" -jar \"%3$s\" &\n";
