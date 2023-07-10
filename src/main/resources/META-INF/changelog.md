@@ -3,6 +3,7 @@
 ### Fixes
 
 - Fixed an issue preventing dragging cards directly into tagged groups of a deck.
+- Saved sortings are correctly applied to the default views again.
 
 ## 2022
 

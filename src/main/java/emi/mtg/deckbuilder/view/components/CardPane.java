@@ -482,7 +482,7 @@ public class CardPane extends BorderPane {
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping grouping, List<CardView.ActiveSorting> sortings) {
-		this(title, null, null, model, layoutEngine, grouping, CardView.DEFAULT_SORTING);
+		this(title, null, null, model, layoutEngine, grouping, sortings);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {
