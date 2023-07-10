@@ -15,6 +15,7 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
@@ -80,9 +81,21 @@ public class CardZoomPreview {
 		Scene scene = new Scene(new Group(this.row));
 		scene.setFill(Color.TRANSPARENT);
 
+		scene.setOnMouseDragged(this::checkShouldClose);
+		scene.setOnMouseMoved(this::checkShouldClose);
+		scene.setOnMouseDragReleased(this::checkShouldClose);
+
 		this.stage.setScene(scene);
 		this.stage.show();
 		this.resizeStage();
+	}
+
+	private void checkShouldClose(MouseEvent me) {
+		 if (!me.isMiddleButtonDown()
+			|| !this.start.contains(me.getScreenX(), me.getScreenY())
+			|| imageViewList.stream().noneMatch(v -> v.contains(v.screenToLocal(me.getScreenX(), me.getScreenY())))) {
+			 this.stage.close();
+		}
 	}
 
 	private void resizeStage() {
