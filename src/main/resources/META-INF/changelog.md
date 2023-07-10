@@ -1,5 +1,9 @@
 ## 2023 July
 
+### Improvements
+
+- Battle is now a recognized type, and their front faces are rotated appropriately.
+
 ### Fixes
 
 - Fixed an issue preventing dragging cards directly into tagged groups of a deck.
