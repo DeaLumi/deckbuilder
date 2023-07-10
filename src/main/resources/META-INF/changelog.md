@@ -8,6 +8,7 @@
 
 - Fixed an issue preventing dragging cards directly into tagged groups of a deck.
 - Saved sortings are correctly applied to the default views again.
+- Updated to Scryfall plugin to support addition of "mutate" and "prototype" card frames.
 
 ## 2022
 
