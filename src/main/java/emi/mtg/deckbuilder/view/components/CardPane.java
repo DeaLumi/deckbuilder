@@ -347,7 +347,7 @@ public class CardPane extends BorderPane {
 
 		try {
 			for (CardInstance ci : cardView.filteredModel) {
-				Card.Face front = ci.card().face(Card.Face.Kind.Front);
+				Card.Face front = ci.card().front();
 				if (front != null && front.type().is(CardType.Creature)) {
 					creature.incrementAndGet();
 				} else if (front != null && front.type().is(CardType.Land)) {

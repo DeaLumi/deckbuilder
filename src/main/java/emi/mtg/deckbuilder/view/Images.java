@@ -112,11 +112,11 @@ public class Images {
 
 		String parent = String.format("s%s", printing.set().code().toLowerCase());
 
-		file = file.toLowerCase().replaceAll("[-/!&()'\",]", "").replaceAll("\\s+", "-") +
+		file = file.toLowerCase().replaceAll("[-/!&()'\",:?]", "").replaceAll("\\s+", "-") +
 				'-' + printing.variation();
 
 		if (object instanceof Card.Printing.Face) {
-			file += '-' + face.kind().name().toLowerCase();
+			file += '-' + face.face().name().replaceAll("[-/!&()'\",:?]", "").replaceAll("\\s+", "-").toLowerCase(); // TODO: This change loses all cached face names.
 		}
 
 		file += '.' + CACHE_EXTENSION;

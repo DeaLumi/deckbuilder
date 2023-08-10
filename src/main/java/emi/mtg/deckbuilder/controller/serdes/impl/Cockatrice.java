@@ -151,7 +151,7 @@ public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Mon
 				Element cardEl = cardsElMap.computeIfAbsent(c, x -> {
 					Element el = xml.createElement("card");
 					el.setAttribute("number", "0");
-					el.setAttribute("name", x.face(Card.Face.Kind.Front) != null ? x.face(Card.Face.Kind.Front).name() : c.name());
+					el.setAttribute("name", x.front() != null ? x.front().name() : c.name()); // TODO: Cockatrice uses some weird naming conventions.
 					zoneEl.appendChild(el);
 					return el;
 				});

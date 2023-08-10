@@ -23,11 +23,15 @@ public class IsFilter implements Omnifilter.Subfilter {
 
 		opts.put("commander", ci -> Commander.isCommander(ci.card()));
 		docs.put("commander", "Finds legendary creatures and cards with \"This can be your commander.\"");
-		opts.put("split", ci -> ci.card().face(Card.Face.Kind.Right) != null);
+		opts.put("split", ci -> ci.mainFaces().size() >= 2);
 		docs.put("split", "Finds cards with a left (or top) and right face.");
-		opts.put("dfc", ci -> ci.card().face(Card.Face.Kind.Transformed) != null);
-		docs.put("dfc", "Finds two-faced cards (transforming and MDFCs).");
-		opts.put("flip", ci -> ci.card().face(Card.Face.Kind.Flipped) != null);
+		opts.put("tdfc", ci -> !ci.card().transformedFaces().isEmpty());
+		docs.put("tdfc", "Finds transforming two-faced cards.");
+		opts.put("mdfc", ci -> ci.faces().stream().anyMatch(f -> f.onBack() && (f.face().type().is(emi.lib.mtg.enums.CardType.Land) || !f.face().manaCost().isEmpty())));
+		docs.put("mdfc", "Finds modal dual-faced cards.");
+		opts.put("dfc", ci -> ci.faces().stream().anyMatch(Card.Printing.Face::onBack));
+		docs.put("dfc", "Finds dual-faced cards (transforming, modal, or otherwise).");
+		opts.put("flip", ci -> ci.card().flipped() != null); // TODO: This will fail if a flip face is ever not available by default (no cards like this exist yet).
 		docs.put("flip", "Finds cards which flip over (rotating 180 degrees).");
 		opts.put("permanent", ci -> ci.card().faces().stream().anyMatch(f -> f.type().isPermanent()));
 		docs.put("permanent", "Finds cards which are permanents.");
@@ -38,8 +42,8 @@ public class IsFilter implements Omnifilter.Subfilter {
 		opts.put("fetch", ci -> ci.card().front() != null && ci.card().front().type().is(emi.lib.mtg.enums.CardType.Land) && FETCH_PATTERN.matcher(ci.card().front().rules()).find());
 		docs.put("fetch", "Finds lands which are sacrificed to search for other lands to put onto the battlefield.");
 
-		OPTS = opts;
-		DOCS = docs;
+		OPTS = Collections.unmodifiableMap(opts);
+		DOCS = Collections.unmodifiableMap(docs);
 	}
 
 	@Override

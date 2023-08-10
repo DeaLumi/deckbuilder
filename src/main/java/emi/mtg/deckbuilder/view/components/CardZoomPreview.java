@@ -24,10 +24,10 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 public class CardZoomPreview {
 	private static final double DURATION = 150;
@@ -41,18 +41,10 @@ public class CardZoomPreview {
 	public CardZoomPreview(Rectangle2D start, Card.Printing printing) throws ExecutionException, InterruptedException {
 		this.start = start;
 
-		List<Card.Printing.Face> faces = new ArrayList<>();
-
 		// work out the images
-		if (printing.face(Card.Face.Kind.Transformed) != null) {
-			faces.addAll(Arrays.asList(printing.face(Card.Face.Kind.Front), printing.face(Card.Face.Kind.Transformed)));
-		} else if (printing.face(Card.Face.Kind.Left) != null) {
-			faces.addAll(Arrays.asList(printing.face(Card.Face.Kind.Left), printing.face(Card.Face.Kind.Right)));
-		} else if (printing.face(Card.Face.Kind.Flipped) != null) {
-			faces.addAll(Arrays.asList(printing.face(Card.Face.Kind.Front), printing.face(Card.Face.Kind.Flipped)));
-		} else {
-			faces.add(printing.face(Card.Face.Kind.Front));
-		}
+		List<Card.Printing.Face> faces = printing.faces().stream()
+				.filter(f -> printing.faces().stream().noneMatch(other -> f != other && other.contains(f)))
+				.collect(Collectors.toList());
 
 		this.stage = new Stage(StageStyle.TRANSPARENT);
 

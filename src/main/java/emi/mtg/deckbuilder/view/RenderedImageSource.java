@@ -284,12 +284,10 @@ public class RenderedImageSource implements ImageSource {
 
 	@Override
 	public BufferedImage open(Card.Printing printing) throws IOException {
-		if (printing.face(Card.Face.Kind.Front) != null) {
-			return open(printing.face(Card.Face.Kind.Front));
-		} else if (printing.face(Card.Face.Kind.Left) != null) {
-			return open(printing.face(Card.Face.Kind.Left));
-		} else {
+		if (printing.card().mainFaces().isEmpty()) {
 			return null;
+		} else {
+			return open(printing.face(printing.card().mainFaces().iterator().next()));
 		}
 	}
 

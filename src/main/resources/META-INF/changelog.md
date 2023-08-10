@@ -1,3 +1,9 @@
+## 2023 August
+
+### Improvements
+
+- Better backend handling of faces-as-printed. You won't notice a difference, probably. :)
+
 ## 2023 July
 
 ### Improvements

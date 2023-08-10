@@ -297,9 +297,7 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		private Card.Printing randomPrinting() {
 			return Context.get().data.printings()
 					.parallelStream()
-					.filter(pr -> pr.card().face(Card.Face.Kind.Transformed) != null
-							|| pr.card().face(Card.Face.Kind.Flipped) != null
-							|| pr.card().face(Card.Face.Kind.Other) != null)
+					.filter(pr -> pr.card().faces().size() != pr.card().mainFaces().size())
 					.findAny().orElseThrow(() -> new NoSuchElementException("Unable to find any DFC printing! Bwuh!?"));
 		}
 
