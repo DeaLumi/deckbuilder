@@ -29,10 +29,11 @@ import java.util.stream.Stream;
 
 public class DeckPane extends SplitPane {
 	private final EnumMap<Zone, CardPane> paneMap;
+	private CardPane cutCardsPane;
 	private final DeckList deck;
 	private BooleanProperty autoValidate;
 	private ObjectProperty<ListChangeListener<CardInstance>> onDeckChanged;
-	private BooleanProperty showSideboard;
+	private BooleanProperty showSideboard, showCutboard;
 
 	private final ListChangeListener<CardInstance> deckListChangedListener;
 
@@ -138,6 +139,44 @@ public class DeckPane extends SplitPane {
 		showSideboardProperty().set(showSideboard);
 	}
 
+	public BooleanProperty showCutboardProperty() {
+		if (showCutboard == null) {
+			showCutboard = new BooleanPropertyBase() {
+				@Override
+				protected void invalidated() {
+					if (getShowCutboard()) {
+						if (!getItems().contains(cutCardsPane)) {
+							getItems().add(cutCardsPane);
+							setDividerPosition(getItems().size() - 2, 0.9);
+						}
+					} else {
+						getItems().remove(cutCardsPane);
+					}
+				}
+
+				@Override
+				public Object getBean() {
+					return DeckPane.this;
+				}
+
+				@Override
+				public String getName() {
+					return "showCutboard";
+				}
+			};
+		}
+
+		return showCutboard;
+	}
+
+	public boolean getShowCutboard() {
+		return showCutboard != null && showCutboard.get();
+	}
+
+	public void setShowCutboard(boolean showCutboard) {
+		showCutboardProperty().set(showCutboard);
+	}
+
 	public ObjectProperty<ListChangeListener<CardInstance>> onDeckChangedProperty() {
 		if (onDeckChanged == null) {
 			onDeckChanged = new SimpleObjectProperty<>(null);
@@ -239,6 +278,27 @@ public class DeckPane extends SplitPane {
 				.collect(Collectors.toList()));
 		setDividerPosition(0, 0.85);
 		if (getAutoValidate()) updateCardStates(deck.validate());
+
+		cutCardsPane = new CardPane(
+				"Cut Cards",
+				deck,
+				deck.cutCards(),
+				Piles.Factory.INSTANCE,
+				ManaValue.INSTANCE, // TODO: Pref for cut cards panes?
+				CardView.DEFAULT_SORTING
+		);
+		deck.cutCards().removeListener(deckListChangedListener);
+		deck.cutCards().addListener(deckListChangedListener);
+		cutCardsPane.view().doubleClick(ci -> {
+			DeckChanger.change(
+				deck,
+				String.format("Remove %s", ci.card().name()),
+				l -> l.cutCards().remove(ci), // TODO: These used to be synchronized on the model
+				l -> l.cutCards().add(ci)
+			);
+		});
+		// TODO: Add a context menu.
+		cutCardsPane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
 	}
 
 	public void closing() {

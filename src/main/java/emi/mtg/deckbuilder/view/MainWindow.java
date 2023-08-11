@@ -70,7 +70,7 @@ public class MainWindow extends Stage {
 	private TabPane deckTabs;
 
 	@FXML
-	private ToggleButton showSideboardToggle;
+	private ToggleButton showSideboardToggle, showCutboardToggle;
 
 	@FXML
 	private CheckMenuItem autoValidateDeck;
@@ -581,6 +581,7 @@ public class MainWindow extends Stage {
 		});
 
 		tab.pane().showSideboardProperty().bind(showSideboardToggle.selectedProperty());
+		tab.pane().showCutboardProperty().bind(showCutboardToggle.selectedProperty());
 		deckTabs.getTabs().add(tab);
 		deckTabs.getSelectionModel().select(tab);
 

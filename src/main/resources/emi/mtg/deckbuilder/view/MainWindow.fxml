@@ -68,6 +68,7 @@
                 <Group StackPane.alignment="TOP_RIGHT">
                     <HBox style="-fx-padding: 1;">
                         <ToggleButton text="SB" fx:id="showSideboardToggle"/>
+                        <ToggleButton text="CB" fx:id="showCutboardToggle"/>
                     </HBox>
                 </Group>
             </StackPane>

@@ -50,6 +50,7 @@ public class DeckList implements Deck {
 	private transient ListProperty<Change> undoStack = new SimpleListProperty<>(FXCollections.observableArrayList()), redoStack = new SimpleListProperty<>(FXCollections.observableArrayList());
 
 	private Map<Zone, ObservableList<CardInstance>> cards = emptyDeck();
+	private ObservableList<CardInstance> cutCards = FXCollections.observableArrayList();
 
 	private DeckList() {
 
@@ -137,6 +138,10 @@ public class DeckList implements Deck {
 
 	public Map<Zone, ObservableList<CardInstance>> cards() {
 		return cards;
+	}
+
+	public ObservableList<CardInstance> cutCards() {
+		return cutCards;
 	}
 
 	public Map<CardInstance, AtomicInteger> printingHisto(Zone zone) {

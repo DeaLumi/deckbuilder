@@ -184,7 +184,7 @@ public class CardPane extends BorderPane {
 	public final BooleanProperty showingIllegalCards = new SimpleBooleanProperty(true);
 	public final BooleanProperty showingVersionsSeparately = new SimpleBooleanProperty(true);
 
-	private CardPane(String title, DeckList deck, Zone zone, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, DeckList deck, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
 		super();
 
 		this.cardView = new CardView(deck, model, initEngine, initGrouping, sortings);
@@ -478,11 +478,11 @@ public class CardPane extends BorderPane {
 	}
 
 	public CardPane(DeckList deck, Zone zone, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
-		this(zone.name(), deck, zone, deck.cards(zone), initEngine, initGrouping, sortings);
+		this(zone.name(), deck, deck.cards(zone), initEngine, initGrouping, sortings);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping grouping, List<CardView.ActiveSorting> sortings) {
-		this(title, null, null, model, layoutEngine, grouping, sortings);
+		this(title, null, model, layoutEngine, grouping, sortings);
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {

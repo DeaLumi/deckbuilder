@@ -3,6 +3,7 @@
 ### Features
 
 - Added a toggle to hide or show the sideboard. Also added sideboards to Commander and Brawl decks.
+- Added a "cutboard" for if you wanna hang onto cut cards to show what you thought about.
 
 ### Improvements
 
