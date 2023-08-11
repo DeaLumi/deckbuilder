@@ -32,6 +32,7 @@ public class DeckPane extends SplitPane {
 	private final DeckList deck;
 	private BooleanProperty autoValidate;
 	private ObjectProperty<ListChangeListener<CardInstance>> onDeckChanged;
+	private BooleanProperty showSideboard;
 
 	private final ListChangeListener<CardInstance> deckListChangedListener;
 
@@ -82,6 +83,59 @@ public class DeckPane extends SplitPane {
 
 	public void setAutoValidate(boolean autoValidate) {
 		autoValidateProperty().set(autoValidate);
+	}
+
+	public BooleanProperty showSideboardProperty() {
+		if (showSideboard == null) {
+			showSideboard = new BooleanPropertyBase() {
+				@Override
+				protected void invalidated() {
+					if (getShowSideboard()) {
+						if (zonePane(Zone.Sideboard) != null && !getItems().contains(zonePane(Zone.Sideboard))) {
+							int i = 0;
+							Iterator<Map.Entry<Zone, CardPane>> paneIter = paneMap.entrySet().iterator();
+							Map.Entry<Zone, CardPane> last = null;
+							while (paneIter.hasNext()) {
+								Map.Entry<Zone, CardPane> next = paneIter.next();
+								if (!getItems().contains(next.getValue())) continue;
+
+								if ((last == null || last.getKey().ordinal() > Zone.Sideboard.ordinal()) && next.getKey().ordinal() > Zone.Sideboard.ordinal()) {
+									break;
+								}
+
+								last = next;
+								++i;
+							}
+
+							getItems().add(i, zonePane(Zone.Sideboard));
+							setDividerPosition(i > 0 ? i - 1 : 0, i > 0 ? 0.9 : 0.1);
+						}
+					} else {
+						if (zonePane(Zone.Sideboard) != null) getItems().remove(zonePane(Zone.Sideboard));
+					}
+				}
+
+				@Override
+				public Object getBean() {
+					return DeckPane.this;
+				}
+
+				@Override
+				public String getName() {
+					return "showSideboard";
+				}
+			};
+		}
+
+		return showSideboard;
+	}
+
+	public boolean getShowSideboard() {
+		return showSideboard != null && showSideboard.get();
+	}
+
+	public void setShowSideboard(boolean showSideboard) {
+		showSideboardProperty().set(showSideboard);
 	}
 
 	public ObjectProperty<ListChangeListener<CardInstance>> onDeckChangedProperty() {

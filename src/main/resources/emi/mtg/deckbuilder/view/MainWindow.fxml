@@ -5,6 +5,7 @@
 
 <?import javafx.scene.input.KeyCodeCombination?>
 
+<?import javafx.scene.Group?>
 <fx:root type="BorderPane" fx:controller="emi.mtg.deckbuilder.view.MainWindow" xmlns:fx="http://javafx.com/fxml">
     <top>
         <MenuBar>
@@ -61,8 +62,15 @@
     </top>
     <center>
         <SplitPane orientation="VERTICAL" fx:id="collectionSplitter">
-            <TabPane fx:id="deckTabs">
-            </TabPane>
+            <StackPane>
+                <TabPane fx:id="deckTabs">
+                </TabPane>
+                <Group StackPane.alignment="TOP_RIGHT">
+                    <HBox style="-fx-padding: 1;">
+                        <ToggleButton text="SB" fx:id="showSideboardToggle"/>
+                    </HBox>
+                </Group>
+            </StackPane>
         </SplitPane>
     </center>
 </fx:root>

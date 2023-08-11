@@ -1,5 +1,9 @@
 ## 2023 August
 
+### Features
+
+- Added a toggle to hide or show the sideboard. Also added sideboards to Commander and Brawl decks.
+
 ### Improvements
 
 - Better backend handling of faces-as-printed. You won't notice a difference, probably. :)
