@@ -6,10 +6,8 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.TransformationList;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -41,32 +39,32 @@ public class UniqueList<T> extends TransformationList<T, T> {
 	 *
 	 * @param source the wrapped list
 	 * @param hashExtractor a function which returns, for a given element, that element's "identity".
-	 * @param preference if true, this element is 'preferred'. The first preferred copy of the element will be retained.
+	 * @param comparer Given two elements, returns which one is preferable to keep. Others will be dropped.
 	 */
-	public UniqueList(ObservableList<? extends T> source, Function<T, Object> hashExtractor, Predicate<T> preference) {
+	public UniqueList(ObservableList<? extends T> source, Function<T, Object> hashExtractor, BinaryOperator<T> comparer) {
 		super(source);
 
 		this.filtered = new ArrayList<>();
 		this.witness = new HashMap<>();
 		this.reverse = new HashMap<>();
 
-		preferenceProperty().set(preference);
+		comparerProperty().set(comparer);
 		extractorProperty().set(hashExtractor);
 	}
 
 	public UniqueList(ObservableList<? extends T> source, Function<T, Object> extractor) {
-		this(source, extractor, t -> true);
+		this(source, extractor, (a, b) -> a);
 	}
 
 	public UniqueList(ObservableList<? extends T> source) {
-		this(source, x -> x, t -> true);
+		this(source, x -> x, (a, b) -> a);
 	}
 
-	private ObjectProperty<Predicate<T>> preference;
+	private ObjectProperty<BinaryOperator<T>> comparer;
 
-	public final ObjectProperty<Predicate<T>> preferenceProperty() {
-		if (preference == null) {
-			preference = new ObjectPropertyBase<Predicate<T>>() {
+	public final ObjectProperty<BinaryOperator<T>> comparerProperty() {
+		if (comparer == null) {
+			comparer = new ObjectPropertyBase<BinaryOperator<T>>() {
 				@Override
 				protected void invalidated() {
 					refilter();
@@ -79,12 +77,12 @@ public class UniqueList<T> extends TransformationList<T, T> {
 
 				@Override
 				public String getName() {
-					return "preference";
+					return "comparator";
 				}
 			};
 		}
 
-		return preference;
+		return comparer;
 	}
 
 	private ObjectProperty<Function<T, Object>> extractor;
@@ -114,7 +112,7 @@ public class UniqueList<T> extends TransformationList<T, T> {
 
 	protected void refilter() {
 		// This is to prevent refiltering when we're still creating our properties in constructor.
-		if (preference == null || extractor == null) return;
+		if (comparer == null || extractor == null) return;
 
 		if (hasListeners()) {
 			beginChange();
@@ -126,7 +124,7 @@ public class UniqueList<T> extends TransformationList<T, T> {
 		reverse.clear();
 
 		final Function<T, Object> extract = extractor.get();
-		final Predicate<T> prefer = preference.get();
+		final BinaryOperator<T> prefer = comparer.get();
 
 		int i = 0;
 		for (final T next : getSource()) {
@@ -141,7 +139,7 @@ public class UniqueList<T> extends TransformationList<T, T> {
 				witness.put(key, elem);
 			}
 
-			if (elem.preferredIndex < 0 && prefer.test(next)) {
+			if (elem.preferredIndex < 0 || prefer.apply(getSource().get(elem.preferredIndex), next) == next) {
 				elem.preferredIndex = i;
 			}
 
