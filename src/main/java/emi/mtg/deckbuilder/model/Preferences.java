@@ -237,7 +237,7 @@ public class Preferences {
 
 	public Format defaultFormat = Format.Standard;
 	public String authorName = "";
-	public SimpleBooleanProperty removeToCutboard = new SimpleBooleanProperty(true);
+	public SimpleBooleanProperty removeToCutboard = new SimpleBooleanProperty(false);
 
 	/**
 	 * Instance utilities (e.g. simplifying accessors)

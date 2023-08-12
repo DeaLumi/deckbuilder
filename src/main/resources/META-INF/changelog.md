@@ -3,7 +3,7 @@
 ### Features
 
 - Added a toggle to hide or show the sideboard. Also added sideboards to Commander and Brawl decks.
-- Added a "cutboard" for if you wanna hang onto cut cards to show what you thought about. A preference controls whether cards you double-click are automatically sent here. (Note that cards you drag out of the deck are always just removed!)
+- Added a "cutboard" for if you wanna hang onto cut cards to show what you thought about. Click the "CB" button to show or hide it. Enable the new "Remove Cards to Cutboard" preference to have double-clicked cards moved there first instead of removing them.
 
 ### Improvements
 
