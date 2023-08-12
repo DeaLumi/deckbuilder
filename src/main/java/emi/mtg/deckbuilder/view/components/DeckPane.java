@@ -12,7 +12,6 @@ import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.Piles;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
@@ -311,7 +310,7 @@ public class DeckPane extends SplitPane {
 				l -> l.cutCards().add(ci)
 			);
 		});
-		// TODO: Add a context menu.
+		cutCardsPane.view().contextMenu(createCutboardContextMenu());
 		cutCardsPane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
 	}
 
@@ -433,6 +432,16 @@ public class DeckPane extends SplitPane {
 		menu.addTagsMenu();
 		menu.getItems().add(removeAllMenuItem);
 		menu.addSeparator()
+				.addCleanupImages();
+
+		return menu;
+	}
+
+	private CardView.ContextMenu createCutboardContextMenu() {
+		CardView.ContextMenu menu = new CardView.ContextMenu();
+
+		menu.addTagsMenu()
+				.addSeparator()
 				.addCleanupImages();
 
 		return menu;
