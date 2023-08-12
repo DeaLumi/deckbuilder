@@ -22,6 +22,8 @@ import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
@@ -32,6 +34,7 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Screen;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -300,6 +303,29 @@ public class CardView extends Canvas {
 		public final SetProperty<CardInstance> cards = new SimpleSetProperty<>();
 		public final SimpleObjectProperty<CardView.Group> group = new SimpleObjectProperty<>();
 		public final SimpleObjectProperty<CardView> view = new SimpleObjectProperty<>();
+
+		public ContextMenu addCleanupImages() {
+			MenuItem deleteImages = new MenuItem("Delete Saved Images");
+			deleteImages.setOnAction(ae -> {
+				try {
+					for (CardInstance ci : cards) {
+						for (Card.Printing pr : ci.card().printings()) {
+							Context.get().images.deleteSavedImages(pr);
+						}
+					}
+				} catch (IOException e) {
+					e.printStackTrace(); // These aren't fatal as far as I'm concerned...
+				}
+			});
+			this.getItems().add(deleteImages);
+
+			return this;
+		}
+
+		public ContextMenu addSeparator() {
+			this.getItems().add(new SeparatorMenuItem());
+			return this;
+		}
 	}
 
 	private final DeckList deck;

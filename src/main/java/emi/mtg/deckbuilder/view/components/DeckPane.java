@@ -503,6 +503,9 @@ public class DeckPane extends SplitPane {
 
 		menu.getItems().add(removeAllMenuItem);
 
+		menu.addSeparator()
+				.addCleanupImages();
+
 		return menu;
 	}
 

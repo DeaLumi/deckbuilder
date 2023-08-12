@@ -347,18 +347,10 @@ public class MainWindow extends Stage {
 			fillMenu.getItems().add(fillZoneMenuItem);
 		}
 
-		MenuItem deleteImages = new MenuItem("Delete Saved Images");
-		deleteImages.setOnAction(ae -> {
-			menu.cards.forEach(ci -> {
-				try {
-					Context.get().images.deleteSavedImages(ci.printing());
-				} catch (IOException e) {
-					e.printStackTrace(); // These aren't fatal as far as I'm concerned...
-				}
-			});
-		});
+		menu.getItems().addAll(changePrintingMenuItem, tagsMenu, fillMenu);
 
-		menu.getItems().addAll(changePrintingMenuItem, tagsMenu, fillMenu, deleteImages);
+		menu.addSeparator()
+				.addCleanupImages();
 
 		return menu;
 	}
