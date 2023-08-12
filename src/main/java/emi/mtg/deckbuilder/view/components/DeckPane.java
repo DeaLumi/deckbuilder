@@ -222,6 +222,8 @@ public class DeckPane extends SplitPane {
 				((CardPane) zonePane).view().scheduleRender();
 			}
 		}
+
+		deck.cutCards().forEach(ci -> ci.flags.clear());
 	}
 
 	public Set<Card> fullCards() {
