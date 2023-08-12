@@ -17,6 +17,7 @@ import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.beans.property.Property;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -42,6 +43,7 @@ public class Serialization {
 			.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
 			.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
 			.registerTypeAdapter(DeckImportExport.Textual.class, Serialization.createTextualSerdesAdapter())
+			.registerTypeAdapter(SimpleBooleanProperty.class, Serialization.createBooleanPropertyTypeAdapter())
 			.registerTypeHierarchyAdapter(Path.class, Serialization.createPathTypeAdapter())
 			.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
 			.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
@@ -195,6 +197,20 @@ public class Serialization {
 						.map(sorting -> new CardView.ActiveSorting(sorting, s.startsWith("+")))
 						.orElse(null)
 		);
+	}
+
+	private static TypeAdapter<SimpleBooleanProperty> createBooleanPropertyTypeAdapter() {
+		return new TypeAdapter<SimpleBooleanProperty>() {
+			@Override
+			public void write(JsonWriter out, SimpleBooleanProperty value) throws IOException {
+				out.value(value.get());
+			}
+
+			@Override
+			public SimpleBooleanProperty read(JsonReader in) throws IOException {
+				return new SimpleBooleanProperty(in.nextBoolean());
+			}
+		};
 	}
 
 	public static TypeAdapterFactory createPropertyTypeAdapterFactory() {

@@ -12,6 +12,7 @@ import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
+import javafx.beans.property.SimpleBooleanProperty;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -233,6 +234,7 @@ public class Preferences {
 
 	public Format defaultFormat = Format.Standard;
 	public String authorName = "";
+	public SimpleBooleanProperty removeToCutboard = new SimpleBooleanProperty(true);
 
 	/**
 	 * Instance utilities (e.g. simplifying accessors)

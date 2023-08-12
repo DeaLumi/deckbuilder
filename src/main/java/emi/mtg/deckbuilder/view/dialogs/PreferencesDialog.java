@@ -8,6 +8,7 @@ import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import javafx.beans.property.Property;
 import javafx.event.ActionEvent;
 import javafx.geometry.*;
 import javafx.scene.Node;
@@ -401,6 +402,15 @@ public class PreferencesDialog extends Alert {
 				});
 	}
 
+	private static <T, P extends Preference<T>> P propertyField(TypicalConstructor<T, P> constructor, String label, Function<Preferences, Property<T>> get, Predicate<T> validate) {
+		return constructor.create(
+				label,
+				prefs -> get.apply(prefs).getValue(),
+				validate,
+				(prefs, val) -> get.apply(prefs).setValue(val)
+		);
+	}
+
 	private static GroupingPreference zoneGroupingPreference(Zone zone) {
 		return new GroupingPreference(
 				String.format("%s Grouping", zone.name()),
@@ -487,6 +497,7 @@ public class PreferencesDialog extends Alert {
 				new PrefSeparator(),
 				reflectField(StringPreference::new, "Default Author", "authorName", x -> true),
 				reflectField(FormatPreference::new, "Default Format", "defaultFormat", x -> true),
+				propertyField(BooleanPreference::new, "Remove Cards to Cutboard", p -> p.removeToCutboard, x -> true),
 				new PrefSeparator(),
 				reflectField(BooleanPreference::new, "Show Debug Options", "showDebugOptions", x -> true),
 		});

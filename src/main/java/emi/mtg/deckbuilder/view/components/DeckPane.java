@@ -4,14 +4,12 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.DeckChanger;
-import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.Piles;
-import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
@@ -19,7 +17,6 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.stage.Modality;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -263,12 +260,27 @@ public class DeckPane extends SplitPane {
 					deck.cards(z).removeListener(deckListChangedListener);
 					deck.cards(z).addListener(deckListChangedListener);
 					pane.view().doubleClick(ci -> {
-						DeckChanger.change(
-								deck,
-								String.format("Remove %s", ci.card().name()),
-								l -> l.cards(z).remove(ci), // TODO: These used to be synchronized on the model
-								l -> l.cards(z).add(ci)
-						);
+						if (Preferences.get().removeToCutboard.get()) {
+							DeckChanger.change(
+									deck,
+									String.format("Cut %s", ci.card().name()),
+									l -> {
+										l.cards(z).remove(ci);
+										l.cutCards().add(ci);
+									},
+									l -> {
+										l.cutCards().remove(ci);
+										l.cards(z).add(ci);
+									}
+							);
+						} else {
+							DeckChanger.change(
+									deck,
+									String.format("Remove %s", ci.card().name()),
+									l -> l.cards(z).remove(ci), // TODO: These used to be synchronized on the model
+									l -> l.cards(z).add(ci)
+							);
+						}
 					});
 					pane.view().contextMenu(createDeckContextMenu(pane, z));
 					pane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
@@ -355,14 +367,30 @@ public class DeckPane extends SplitPane {
 		});
 
 		MenuItem removeAllMenuItem = new MenuItem("Remove All");
+		removeAllMenuItem.textProperty().bind(Bindings.when(Preferences.get().removeToCutboard).then("Cut All").otherwise("Remove All"));
 		removeAllMenuItem.setOnAction(ae -> {
 			final List<CardInstance> cards = new ArrayList<>(menu.cards);
-			DeckChanger.change(
-					deck,
-					String.format("Remove %d Card%s", cards.size(), cards.size() > 1 ? "s" : ""),
-					l -> l.cards(zone).removeAll(cards),
-					l -> l.cards(zone).addAll(cards)
-			);
+			if (Preferences.get().removeToCutboard.get()) {
+				DeckChanger.change(
+						deck,
+						String.format("Cut %d Card%s", cards.size(), cards.size() > 1 ? "s" : ""),
+						l -> {
+							l.cards(zone).removeAll(cards);
+							l.cutCards().addAll(cards);
+						},
+						l -> {
+							l.cutCards().removeAll(cards);
+							l.cards(zone).addAll(cards);
+						}
+				);
+			} else {
+				DeckChanger.change(
+						deck,
+						String.format("Remove %d Card%s", cards.size(), cards.size() > 1 ? "s" : ""),
+						l -> l.cards(zone).removeAll(cards),
+						l -> l.cards(zone).addAll(cards)
+				);
+			}
 		});
 
 		Menu moveMenu = new Menu("Move To");

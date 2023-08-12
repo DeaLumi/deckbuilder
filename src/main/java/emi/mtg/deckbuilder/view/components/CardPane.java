@@ -9,7 +9,6 @@ import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog;
 import emi.mtg.deckbuilder.view.dialogs.SortDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
-import emi.mtg.deckbuilder.view.layouts.Piles;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.application.Platform;
 import javafx.beans.binding.DoubleBinding;
