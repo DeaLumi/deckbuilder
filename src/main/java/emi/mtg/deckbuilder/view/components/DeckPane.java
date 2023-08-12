@@ -421,78 +421,6 @@ public class DeckPane extends SplitPane {
 			moveMenu.getItems().add(moveItem);
 		}
 
-		Menu tagsMenu = new Menu("Tags");
-
-		menu.setOnShowing(e -> {
-			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
-			tagCBs.setAll(deck.cards(zone).stream()
-					.map(CardInstance::tags)
-					.flatMap(Set::stream)
-					.distinct()
-					.sorted()
-					.map(CheckMenuItem::new)
-					.peek(cmi -> cmi.setSelected(menu.cards.stream().allMatch(ci -> ci.tags().contains(cmi.getText()))))
-					.peek(cmi -> cmi.selectedProperty().addListener(x -> {
-						final String tag = cmi.getText();
-						final Set<CardInstance> cards = new HashSet<>(menu.cards);
-						final boolean added = cmi.isSelected();
-						final CardView view = menu.view.get();
-						final Consumer<DeckList> addFn = l -> {
-							cards.forEach(ci -> ci.tags().add(tag));
-							view.refreshCardGrouping();
-						}, removeFn = l -> {
-							cards.forEach(ci -> ci.tags().remove(tag));
-							view.refreshCardGrouping();
-						};
-
-						DeckChanger.change(
-								deck,
-								"Change Tags",
-								added ? addFn : removeFn,
-								added ? removeFn : addFn
-						);
-					}))
-					.collect(Collectors.toList())
-			);
-			tagCBs.add(new SeparatorMenuItem());
-
-			TextField newTagField = new TextField();
-			CustomMenuItem newTagMenuItem = new CustomMenuItem(newTagField);
-			newTagMenuItem.setHideOnClick(false);
-			newTagField.setPromptText("New tag...");
-			newTagField.setOnAction(ae -> {
-				if (newTagField.getText().isEmpty()) {
-					ae.consume();
-					return;
-				}
-
-				final String tag = newTagField.getText();
-				final Set<CardInstance> cards = new HashSet<>(menu.cards);
-				final CardView view = menu.view.get();
-
-				DeckChanger.change(
-						deck,
-						"Add Tags",
-						l -> {
-							cards.forEach(ci -> ci.tags().add(tag));
-							view.regroup();
-						},
-						l -> {
-							cards.forEach(ci -> ci.tags().remove(tag));
-							view.regroup();
-						}
-				);
-
-				menu.hide();
-			});
-
-			tagCBs.add(newTagMenuItem);
-
-			tagsMenu.getItems().setAll(tagCBs);
-		});
-
-		menu.getItems().addAll(changePrintingMenuItem, tagsMenu);
-
 		if (moveMenu.getItems().size() == 1) {
 			MenuItem item = moveMenu.getItems().get(0);
 			item.setText("Move to " + item.getText());
@@ -501,8 +429,9 @@ public class DeckPane extends SplitPane {
 			menu.getItems().add(moveMenu);
 		}
 
+		menu.getItems().addAll(changePrintingMenuItem);
+		menu.addTagsMenu();
 		menu.getItems().add(removeAllMenuItem);
-
 		menu.addSeparator()
 				.addCleanupImages();
 

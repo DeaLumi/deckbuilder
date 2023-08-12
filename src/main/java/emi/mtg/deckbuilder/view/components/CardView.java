@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.components;
 import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckChanger;
+import emi.mtg.deckbuilder.controller.Tags;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
@@ -22,9 +23,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.input.*;
@@ -319,6 +318,115 @@ public class CardView extends Canvas {
 			});
 			this.getItems().add(deleteImages);
 
+			return this;
+		}
+
+		public ContextMenu addTagsMenu() {
+			Menu tagsMenu = new Menu("Tags");
+
+			this.setOnShowing(e -> {
+				ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
+				tagCBs.setAll(view.get().model.stream()
+						.map(CardInstance::tags)
+						.flatMap(Set::stream)
+						.distinct()
+						.sorted()
+						.map(CheckMenuItem::new)
+						.peek(cmi -> cmi.setSelected(this.cards.stream().allMatch(ci -> ci.tags().contains(cmi.getText()))))
+						.peek(cmi -> cmi.selectedProperty().addListener(x -> {
+							final String tag = cmi.getText();
+							final Set<CardInstance> cards = new HashSet<>(this.cards);
+							final boolean added = cmi.isSelected();
+							final CardView view = this.view.get();
+
+							if (view.deck != null) {
+								final Consumer<DeckList> addFn = l -> {
+									cards.forEach(ci -> ci.tags().add(tag));
+									view.refreshCardGrouping();
+								}, removeFn = l -> {
+									cards.forEach(ci -> ci.tags().remove(tag));
+									view.refreshCardGrouping();
+								};
+
+								DeckChanger.change(
+										view.deck,
+										"Change Tags",
+										added ? addFn : removeFn,
+										added ? removeFn : addFn
+								);
+							} else {
+								final Tags tags = Context.get().tags;
+								if (added) {
+									cards.stream()
+											.peek(ci -> ci.tags().add(tag))
+											.map(CardInstance::card)
+											.distinct()
+											.forEach(c -> tags.add(c, tag));
+								} else {
+									cards.stream()
+											.peek(ci -> ci.tags().remove(tag))
+											.map(CardInstance::card)
+											.distinct()
+											.forEach(c -> tags.remove(c, tag));
+
+									if (tags.cards(tag) != null && tags.cards(tag).isEmpty()) {
+										tags.tags().remove(tag);
+									}
+								}
+								view.refreshCardGrouping();
+							}
+						}))
+						.collect(Collectors.toList())
+				);
+				tagCBs.add(new SeparatorMenuItem());
+
+				TextField newTagField = new TextField();
+				CustomMenuItem newTagMenuItem = new CustomMenuItem(newTagField);
+				newTagMenuItem.setHideOnClick(false);
+				newTagField.setPromptText("New tag...");
+				newTagField.setOnAction(ae -> {
+					if (newTagField.getText().isEmpty()) {
+						ae.consume();
+						return;
+					}
+
+					final String tag = newTagField.getText();
+					final Set<CardInstance> cards = new HashSet<>(this.cards);
+					final CardView view = this.view.get();
+
+					if (view.deck != null) {
+						DeckChanger.change(
+								view.deck,
+								"Add Tags",
+								l -> {
+									cards.forEach(ci -> ci.tags().add(tag));
+									view.regroup();
+								},
+								l -> {
+									cards.forEach(ci -> ci.tags().remove(tag));
+									view.regroup();
+								}
+						);
+					} else {
+						final Tags tags = Context.get().tags;
+						tags.add(tag);
+						cards.stream()
+								.peek(ci -> ci.tags().add(tag))
+								.map(CardInstance::card)
+								.distinct()
+								.forEach(c -> tags.add(c, tag));
+						view.regroup();
+					}
+
+					this.hide();
+				});
+
+				tagCBs.add(newTagMenuItem);
+
+				tagsMenu.getItems().setAll(tagCBs);
+			});
+
+			this.getItems().add(tagsMenu);
 			return this;
 		}
 

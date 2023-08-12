@@ -270,60 +270,6 @@ public class MainWindow extends Stage {
 			});
 		});
 
-		Menu tagsMenu = new Menu("Tags");
-
-		menu.showingProperty().addListener(showing -> {
-			final Tags tags = Context.get().tags;
-			ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
-			tagCBs.setAll(tags.tags().stream()
-					.map(CheckMenuItem::new)
-					.peek(cmi -> cmi.setSelected(menu.cards.stream().allMatch(ci -> tags.tags(ci.card()).contains(cmi.getText()))))
-					.peek(cmi -> cmi.selectedProperty().addListener((cmiObj, wasSelected, isSelected) -> {
-						if (isSelected) {
-							menu.cards.forEach(ci -> {
-								ci.tags().add(cmi.getText());
-								tags.add(ci.card(), cmi.getText());
-							});
-						} else {
-							menu.cards.forEach(ci -> {
-								ci.tags().remove(cmi.getText());
-								tags.remove(ci.card(), cmi.getText());
-							});
-
-							if (tags.cards(cmi.getText()) == null || tags.cards(cmi.getText()).isEmpty()) {
-								tags.tags().remove(cmi.getText());
-							}
-						}
-						collection.view().refreshCardGrouping();
-					}))
-					.collect(Collectors.toList())
-			);
-			tagCBs.add(new SeparatorMenuItem());
-
-			TextField newTagField = new TextField();
-			CustomMenuItem newTagMenuItem = new CustomMenuItem(newTagField);
-			newTagMenuItem.setHideOnClick(false);
-			newTagField.setPromptText("New tag...");
-			newTagField.setOnAction(ae -> {
-				if (newTagField.getText().isEmpty()) {
-					ae.consume();
-					return;
-				}
-
-				tags.add(newTagField.getText());
-				menu.cards.forEach(ci -> {
-					ci.tags().add(newTagField.getText());
-					tags.add(ci.card(), newTagField.getText());
-				});
-				collection.view().regroup();
-				menu.hide();
-			});
-
-			tagCBs.add(newTagMenuItem);
-
-			tagsMenu.getItems().setAll(tagCBs);
-		});
-
 		Menu fillMenu = new Menu("Fill");
 		fillMenu.visibleProperty().bind(menu.cards.emptyProperty().not());
 
@@ -347,7 +293,9 @@ public class MainWindow extends Stage {
 			fillMenu.getItems().add(fillZoneMenuItem);
 		}
 
-		menu.getItems().addAll(changePrintingMenuItem, tagsMenu, fillMenu);
+		menu.getItems().add(changePrintingMenuItem);
+		menu.addTagsMenu();
+		menu.getItems().add(fillMenu);
 
 		menu.addSeparator()
 				.addCleanupImages();
