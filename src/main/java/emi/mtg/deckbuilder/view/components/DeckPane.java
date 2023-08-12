@@ -296,7 +296,7 @@ public class DeckPane extends SplitPane {
 				deck,
 				deck.cutCards(),
 				Piles.Factory.INSTANCE,
-				ManaValue.INSTANCE, // TODO: Pref for cut cards panes?
+				Preferences.get().cutboardGrouping.get(),
 				CardView.DEFAULT_SORTING
 		);
 		deck.cutCards().removeListener(deckListChangedListener);

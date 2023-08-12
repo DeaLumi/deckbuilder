@@ -420,6 +420,15 @@ public class PreferencesDialog extends Alert {
 		);
 	}
 
+	private static GroupingPreference cutboardGroupingPreference() {
+		return new GroupingPreference(
+				"Cutboard Grouping",
+				prefs -> prefs.cutboardGrouping.get(),
+				x -> true,
+				(prefs, g) -> prefs.cutboardGrouping.set(g)
+		);
+	}
+
 	private final Predicate<Path> PATH_WRITABLE_VALIDATOR = path -> {
 		try {
 			Path tmp = Files.createTempFile(path, "probe-", ".tmp");
@@ -521,6 +530,7 @@ public class PreferencesDialog extends Alert {
 				zoneGroupingPreference(Zone.Library),
 				zoneGroupingPreference(Zone.Sideboard),
 				zoneGroupingPreference(Zone.Command),
+				cutboardGroupingPreference(),
 				new PrefSeparator(),
 				reflectField(BooleanPreference::new, "Card Info Tooltips", "cardInfoTooltips", x -> true),
 				reflectField(BooleanPreference::new, "Card Tags on Tooltips", "cardTagsTooltips", x -> true),

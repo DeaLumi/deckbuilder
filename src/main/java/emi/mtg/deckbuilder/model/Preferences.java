@@ -9,10 +9,12 @@ import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
+import emi.mtg.deckbuilder.view.groupings.None;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -209,6 +211,7 @@ public class Preferences {
 	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
 	public List<CardView.ActiveSorting> collectionSorting = CardView.DEFAULT_COLLECTION_SORTING;
 	public Map<Zone, CardView.Grouping> zoneGroupings = new HashMap<>();
+	public SimpleObjectProperty<CardView.Grouping> cutboardGrouping = new SimpleObjectProperty<>(None.INSTANCE);
 
 	public boolean collapseDuplicates = true;
 	public boolean theFutureIsNow = true;
