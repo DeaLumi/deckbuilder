@@ -507,9 +507,16 @@ public class MainWindow extends Stage {
 	}
 
 	public DeckTab addDeck(DeckList deck) {
+		if (deck == null) return null;
+
 		// If the new deck isn't empty, and the active deck is and is unmodified (e.g. is entirely new), and we only have one... close it.
 		if (deckTabs.getTabs().size() == 1 && activeDeck().isEmpty() && !activeDeck().modified() && !deck.isEmpty()) {
 			activeTab().reallyForceClose();
+		}
+
+		// If the new deck has a sideboard, and the sideboard is currently hidden, show the sideboard.
+		if (deck.cards(Zone.Sideboard) != null && !deck.cards(Zone.Sideboard).isEmpty() && !showSideboardToggle.isSelected()) {
+			showSideboardToggle.setSelected(true);
 		}
 
 		DeckPane pane = new DeckPane(deck);
