@@ -651,6 +651,7 @@ public class CardView extends Canvas {
 						}
 					}
 
+					// I know this looks weird, but the `group.add` and `group.remove` above add the actual batched changes.
 					DeckChanger.addBatchedChange(
 							this.deck,
 							l -> { for (Group group : this.groupedModel) group.refilter(); },
@@ -667,8 +668,34 @@ public class CardView extends Canvas {
 				}
 			} else if (CardView.dragSource != null) {
 				if (deck != null) {
-					DeckChanger.startChangeBatch(deck);
-					Set<CardInstance> newCards = dragSource.selectedCards.stream()
+					Set<CardInstance> oldCards = new HashSet<>(CardView.dragSource.selectedCards);
+
+					if (de.getAcceptedTransferMode() == TransferMode.MOVE && CardView.dragSource.deck != null) {
+						final CardView source = CardView.dragSource;
+						final DeckList sourceDeck = source.deck;
+						final ObservableList<CardInstance> sourceModel = source.model;
+						DeckChanger.startChangeBatch(sourceDeck);
+
+						if (source.grouping.supportsModification() && this.hoverGroup != null && this.grouping.supportsModification()) {
+							for (Grouping.Group oldGroup : source.groups) {
+								for (CardInstance oldCard : source.selectedCards) {
+									oldGroup.remove(oldCard);
+								}
+							}
+						}
+
+						DeckChanger.addBatchedChange(
+								sourceDeck,
+								l -> sourceModel.removeAll(oldCards),
+								l -> sourceModel.addAll(oldCards)
+						);
+
+						if (sourceDeck != this.deck) DeckChanger.endChangeBatch(sourceDeck, String.format("Remove %d Card%s", oldCards.size(), oldCards.size() > 1 ? "s" : ""));
+						source.selectedCards.clear();
+					}
+
+					if (dragSource.deck != deck) DeckChanger.startChangeBatch(deck);
+					Set<CardInstance> newCards = oldCards.stream()
 							.map(ci -> {
 								CardInstance clone = new CardInstance(ci);
 
@@ -679,28 +706,16 @@ public class CardView extends Canvas {
 								return clone;
 							})
 							.collect(Collectors.toSet());
+
+					final ObservableList<CardInstance> thisModel = this.model;
 					DeckChanger.addBatchedChange(
 							deck,
-							l -> this.model.addAll(newCards),
-							l -> this.model.removeAll(newCards)
+							l -> thisModel.addAll(newCards),
+							l -> thisModel.removeAll(newCards)
 					);
-					DeckChanger.endChangeBatch(deck, String.format("Add %d Card%s", newCards.size(), newCards.size() > 1 ? "s" : ""));
+					DeckChanger.endChangeBatch(deck, String.format("%s %d Card%s", dragSource.deck != deck ? "Add" : "Move", newCards.size(), newCards.size() > 1 ? "s" : ""));
 					this.selectedCards.clear();
 					this.selectedCards.addAll(newCards);
-				}
-
-				if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-					if (CardView.dragSource.deck != null) {
-						final Set<CardInstance> removed = new HashSet<>(CardView.dragSource.selectedCards);
-						CardView target = CardView.dragSource;
-						DeckChanger.change(
-								target.deck,
-								String.format("Remove %d Card%s", removed.size(), removed.size() > 1 ? "s" : ""),
-								l -> target.model.removeAll(removed),
-								l -> target.model.addAll(removed)
-						);
-					}
-					CardView.dragSource.selectedCards.clear();
 				}
 
 				de.setDropCompleted(true);

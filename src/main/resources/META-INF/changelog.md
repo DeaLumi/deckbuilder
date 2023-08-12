@@ -11,6 +11,10 @@
 - Added "Delete Saved Images" to cards in deck zones, and made it affect all printings of a card.
 - When you add a non-empty deck to a window, if the window only contains an empty unmodified (e.g. new) deck, that tab will be closed.
 
+### Fixes
+
+- Dragging cards from one zone to a tag group in another will remove now old tags if you don't hold shift.
+
 ## 2023 July
 
 ### Improvements
