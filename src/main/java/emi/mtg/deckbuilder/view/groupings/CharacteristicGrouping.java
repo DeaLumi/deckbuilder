@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.groupings;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardView;
+import javafx.collections.ListChangeListener;
 
 import java.util.List;
 
@@ -43,6 +44,12 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 	public abstract String extract(CardInstance ci);
 
 	private Group[] groups;
+
+	@Override
+	public boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change) {
+		// Characteristics groupings have a fixed set of possible values and never require regrouping.
+		return false;
+	}
 
 	@Override
 	public Group[] groups(DeckList list, List<CardInstance> unused) {

@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.groupings;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardView;
+import javafx.collections.ListChangeListener;
 
 import java.util.List;
 
@@ -41,6 +42,11 @@ public class None implements CardView.Grouping {
 	@Override
 	public String toString() {
 		return name();
+	}
+
+	@Override
+	public boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change) {
+		return false;
 	}
 
 	@Override

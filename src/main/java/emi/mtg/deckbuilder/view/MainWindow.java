@@ -311,7 +311,10 @@ public class MainWindow extends Stage {
 				}
 
 				tags.add(newTagField.getText());
-				menu.cards.forEach(ci -> tags.add(ci.card(), newTagField.getText()));
+				menu.cards.forEach(ci -> {
+					ci.tags().add(newTagField.getText());
+					tags.add(ci.card(), newTagField.getText());
+				});
 				collection.view().regroup();
 				menu.hide();
 			});

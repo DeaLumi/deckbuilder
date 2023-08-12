@@ -4,6 +4,7 @@ import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardView;
+import javafx.collections.ListChangeListener;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -96,6 +97,26 @@ public class TagGrouping implements CardView.Grouping {
 	@Override
 	public String toString() {
 		return name();
+	}
+
+	@Override
+	public boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change) {
+		Set<String> currentTags = Arrays.stream(existing)
+				.filter(g -> g instanceof TagGroup)
+				.map(g -> ((TagGroup) g).tag)
+				.collect(Collectors.toSet());
+
+		while (change.next()) {
+			if (change.wasAdded() || change.wasUpdated()) {
+				for (CardInstance ci : change.getList().subList(change.getFrom(), change.getTo())) {
+					for (String tag : ci.tags()) {
+						if (!currentTags.contains(tag)) return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 
 	@Override

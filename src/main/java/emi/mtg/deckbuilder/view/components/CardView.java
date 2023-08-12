@@ -166,6 +166,7 @@ public class CardView extends Canvas {
 		String name();
 		boolean supportsModification();
 
+		boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change);
 		Group[] groups(DeckList list, List<CardInstance> model);
 	}
 
@@ -304,6 +305,7 @@ public class CardView extends Canvas {
 	private final DeckList deck;
 	final ObservableList<CardInstance> model;
 	final FilteredList<CardInstance> filteredModel;
+	private volatile Grouping.Group[] groups;
 	private volatile Group[] groupedModel;
 
 	private LayoutEngine engine;
@@ -386,6 +388,11 @@ public class CardView extends Canvas {
 
 		this.model = model;
 		this.filteredModel = model.filtered(x -> true);
+		this.filteredModel.addListener((ListChangeListener<CardInstance>) lce -> {
+			if (this.grouping.requireRegroup(this.groups, lce)) {
+				this.regroup();
+			}
+		});
 
 		this.collapseDuplicatesProperty.addListener((a, b, c) -> layout());
 
@@ -949,7 +956,8 @@ public class CardView extends Canvas {
 
 	public void grouping(Grouping grouping) {
 		this.grouping = grouping;
-		this.groupedModel = Arrays.stream(this.grouping.groups(this.deck, this.model))
+		this.groups = this.grouping.groups(this.deck, this.model);
+		this.groupedModel = Arrays.stream(this.groups)
 				.map(g -> new Group(g, this.filteredModel, this.sort))
 				.toArray(Group[]::new);
 		layout();
