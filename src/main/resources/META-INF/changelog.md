@@ -8,6 +8,7 @@
 ### Improvements
 
 - Better backend handling of faces-as-printed. You won't notice a difference, probably. :)
+- When you add a non-empty deck to a window, if the window only contains an empty unmodified (e.g. new) deck, that tab will be closed.
 
 ## 2023 July
 

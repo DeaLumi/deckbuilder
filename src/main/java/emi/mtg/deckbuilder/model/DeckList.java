@@ -144,6 +144,10 @@ public class DeckList implements Deck {
 		return cutCards;
 	}
 
+	public boolean isEmpty() {
+		return cutCards().isEmpty() && cards.values().stream().allMatch(List::isEmpty);
+	}
+
 	public Map<CardInstance, AtomicInteger> printingHisto(Zone zone) {
 		Map<Card.Printing, AtomicInteger> tmp = new LinkedHashMap<>();
 		Map<CardInstance, AtomicInteger> replace = new HashMap<>();

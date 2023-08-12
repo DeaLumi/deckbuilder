@@ -507,6 +507,11 @@ public class MainWindow extends Stage {
 	}
 
 	public DeckTab addDeck(DeckList deck) {
+		// If the new deck isn't empty, and the active deck is and is unmodified (e.g. is entirely new), and we only have one... close it.
+		if (deckTabs.getTabs().size() == 1 && activeDeck().isEmpty() && !activeDeck().modified() && !deck.isEmpty()) {
+			activeTab().reallyForceClose();
+		}
+
 		DeckPane pane = new DeckPane(deck);
 		pane.autoValidateProperty().bind(autoValidateDeck.selectedProperty());
 		pane.setOnDeckChanged(lce -> updateCollectionState());
