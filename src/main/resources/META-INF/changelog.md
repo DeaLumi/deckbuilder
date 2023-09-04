@@ -1,3 +1,9 @@
+## 2023 September
+
+### Fixes
+
+- Fixed a number of DFCs not showing up due to a bug in the changes to the Scryfall plugin.
+
 ## 2023 August
 
 ### Features

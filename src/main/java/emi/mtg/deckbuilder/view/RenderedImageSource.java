@@ -287,7 +287,7 @@ public class RenderedImageSource implements ImageSource {
 		if (printing.card().mainFaces().isEmpty()) {
 			return null;
 		} else {
-			return open(printing.face(printing.card().mainFaces().iterator().next()));
+			return open(printing.faces(printing.card().mainFaces().iterator().next()).iterator().next());
 		}
 	}
 

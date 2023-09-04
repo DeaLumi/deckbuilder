@@ -65,8 +65,8 @@ public class CardInstance implements Card.Printing, Serializable {
 	}
 
 	@Override
-	public Face face(Card.Face face) {
-		return printing.face(face);
+	public Set<? extends Face> faces(Card.Face face) {
+		return printing.faces(face);
 	}
 
 	@Override
