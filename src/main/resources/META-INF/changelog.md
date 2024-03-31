@@ -1,3 +1,9 @@
+## 2024 April
+
+### Features
+
+- Added validation of Doctor's Companion, Choose a Background, and Create a Character partner abilities.
+
 ## 2023 September
 
 ### Fixes
