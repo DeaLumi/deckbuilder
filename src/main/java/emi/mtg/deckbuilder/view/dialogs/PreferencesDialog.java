@@ -113,16 +113,20 @@ public class PreferencesDialog extends Alert {
 			for (int i = 0; i < this.options.length; ++i) {
 				E e = this.options[i];
 				if (e == none) continue;
+				int b = i - ((none != null && i > none.ordinal()) ? 1 : 0);
+				int leftRadius = b > 0 ? 0 : 4;
+				int rightRadius = b < this.buttons.length - 1 ? 0 : 4;
 
 				ToggleButton btn = new ToggleButton(e.toString());
 				btn.setUserData(e);
 				btn.setToggleGroup(this.toggleGroup);
 				btn.setMaxWidth(Double.MAX_VALUE);
+				btn.setStyle(String.format("-fx-background-radius: %1$d %2$d %2$d %1$d;", leftRadius, rightRadius));
 				HBox.setHgrow(btn, Priority.ALWAYS);
-				this.buttons[i - ((none != null && i > none.ordinal()) ? 1 : 0)] = btn;
+				this.buttons[b] = btn;
 			}
 
-			this.box = new HBox(8.0);
+			this.box = new HBox(0.0);
 			this.box.getChildren().setAll(buttons);
 			this.box.setAlignment(Pos.BASELINE_CENTER);
 		}
