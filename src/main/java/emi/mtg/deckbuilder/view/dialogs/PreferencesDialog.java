@@ -90,31 +90,49 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
-	private static class MultiOptionPreference<E extends Enum<E>> extends Preference<E> {
+	private static class EnumeratedPreference<E extends Enum<E>> extends Preference<E> {
+		private final E none;
 		private final E[] options;
 		private final ToggleGroup toggleGroup;
 		private final ToggleButton[] buttons;
 		private final HBox box;
 
-		public MultiOptionPreference(String label, Function<Preferences, E> fromPrefs, Predicate<E> validate, BiConsumer<Preferences, E> toPrefs, Class<E> cls) {
+		public EnumeratedPreference(String label, Function<Preferences, E> fromPrefs, Predicate<E> validate, BiConsumer<Preferences, E> toPrefs, E[] options, E none) {
 			super(label, fromPrefs, validate, toPrefs);
 
+			this.none = none;
 			this.toggleGroup = new ToggleGroup();
+			if (none == null) {
+				this.toggleGroup.selectedToggleProperty().addListener((obs, old, newval) -> {
+					if (newval == null) old.setSelected(true);
+				});
+			}
 
-			this.options = cls.getEnumConstants();
-			this.buttons = new ToggleButton[this.options.length - 1];
-			for (int i = 1; i < this.options.length; ++i) {
+			this.options = options;
+			this.buttons = new ToggleButton[this.options.length - (none != null ? 1 : 0)];
+			for (int i = 0; i < this.options.length; ++i) {
 				E e = this.options[i];
+				if (e == none) continue;
+
 				ToggleButton btn = new ToggleButton(e.toString());
+				btn.setUserData(e);
 				btn.setToggleGroup(this.toggleGroup);
 				btn.setMaxWidth(Double.MAX_VALUE);
 				HBox.setHgrow(btn, Priority.ALWAYS);
-				this.buttons[i - 1] = btn;
+				this.buttons[i - ((none != null && i > none.ordinal()) ? 1 : 0)] = btn;
 			}
 
 			this.box = new HBox(8.0);
 			this.box.getChildren().setAll(buttons);
 			this.box.setAlignment(Pos.BASELINE_CENTER);
+		}
+
+		public EnumeratedPreference(String label, Function<Preferences, E> fromPrefs, Predicate<E> validate, BiConsumer<Preferences, E> toPrefs, E none) {
+			this(label, fromPrefs, validate, toPrefs, ((Class<E>) none.getClass()).getEnumConstants(), none);
+		}
+
+		public EnumeratedPreference(String label, Function<Preferences, E> fromPrefs, Predicate<E> validate, BiConsumer<Preferences, E> toPrefs, E[] options) {
+			this(label, fromPrefs, validate, toPrefs, options, null);
 		}
 
 		@Override
@@ -124,37 +142,36 @@ public class PreferencesDialog extends Alert {
 
 		@Override
 		void toGui(E value) {
-			for (int i = 0; i < this.buttons.length; ++i) {
-				this.buttons[i].setSelected(value == this.options[i + 1]);
+			for (ToggleButton button : this.buttons) {
+				button.setSelected(value == button.getUserData());
 			}
 		}
 
 		@Override
 		E fromGui() {
-			for (int i = 0; i < this.buttons.length; ++i) {
-				if (this.buttons[i].isSelected()) {
-					return this.options[i + 1];
-				}
+			if (this.toggleGroup.getSelectedToggle() != null) {
+				return (E) this.toggleGroup.getSelectedToggle().getUserData();
+			} else {
+				return none;
 			}
-			return this.options[0];
 		}
 	}
 
-	private static class PreferAgePreference extends MultiOptionPreference<Preferences.PreferAge> {
+	private static class PreferAgePreference extends EnumeratedPreference<Preferences.PreferAge> {
 		public PreferAgePreference(String label, Function<Preferences, Preferences.PreferAge> fromPrefs, Predicate<Preferences.PreferAge> validate, BiConsumer<Preferences, Preferences.PreferAge> toPrefs) {
-			super(label, fromPrefs, validate, toPrefs, Preferences.PreferAge.class);
+			super(label, fromPrefs, validate, toPrefs, Preferences.PreferAge.Any);
 		}
 	}
 
-	private static class PreferVariationPreference extends MultiOptionPreference<Preferences.PreferVariation> {
+	private static class PreferVariationPreference extends EnumeratedPreference<Preferences.PreferVariation> {
 		public PreferVariationPreference(String label, Function<Preferences, Preferences.PreferVariation> fromPrefs, Predicate<Preferences.PreferVariation> validate, BiConsumer<Preferences, Preferences.PreferVariation> toPrefs) {
-			super(label, fromPrefs, validate, toPrefs, Preferences.PreferVariation.class);
+			super(label, fromPrefs, validate, toPrefs, Preferences.PreferVariation.Any);
 		}
 	}
 
-	private static class WindowBehaviorPreference extends MultiOptionPreference<Preferences.WindowBehavior> {
+	private static class WindowBehaviorPreference extends EnumeratedPreference<Preferences.WindowBehavior> {
 		public WindowBehaviorPreference(String label, Function<Preferences, Preferences.WindowBehavior> fromPrefs, Predicate<Preferences.WindowBehavior> validate, BiConsumer<Preferences, Preferences.WindowBehavior> toPrefs) {
-			super(label, fromPrefs, validate, toPrefs, Preferences.WindowBehavior.class);
+			super(label, fromPrefs, validate, toPrefs, Preferences.WindowBehavior.AlwaysAsk);
 		}
 	}
 
