@@ -50,21 +50,17 @@ public class Serialization {
 			.registerTypeAdapterFactory(Serialization.createPreferredPrintingAdapterFactory())
 			.create();
 
-	private static class StringTypeAdapter<T> extends TypeAdapter<T> {
-		protected final Function<T, String> toString;
-		protected final Function<String, T> fromString;
+	public abstract static class StringTypeAdapter<T> extends TypeAdapter<T> {
+		protected abstract String toString(T value) throws IOException;
 
-		public StringTypeAdapter(Function<T, String> toString, Function<String, T> fromString) {
-			this.toString = toString;
-			this.fromString = fromString;
-		}
+		protected abstract T fromString(String value) throws IOException;
 
 		@Override
 		public void write(JsonWriter out, T value) throws IOException {
 			if (value == null) {
 				out.nullValue();
 			} else {
-				out.value(toString.apply(value));
+				out.value(toString(value));
 			}
 		}
 
@@ -82,20 +78,40 @@ public class Serialization {
 					throw new IOException("JSON file error: Expected string or name, got " + in.peek().name());
 			}
 
-			return fromString.apply(v);
+			return fromString(v);
+		}
+	}
+
+	private static class FunctionalStringTypeAdapter<T> extends StringTypeAdapter<T> {
+		protected final Function<T, String> toString;
+		protected final Function<String, T> fromString;
+
+		public FunctionalStringTypeAdapter(Function<T, String> toString, Function<String, T> fromString) {
+			this.toString = toString;
+			this.fromString = fromString;
+		}
+
+		@Override
+		protected String toString(T value) throws IOException {
+			return toString.apply(value);
+		}
+
+		@Override
+		protected T fromString(String value) throws IOException {
+			return fromString.apply(value);
 		}
 	}
 
 	public static TypeAdapter<Instant> createInstantAdapter() {
-		return new StringTypeAdapter<>(t -> DateTimeFormatter.RFC_1123_DATE_TIME.format(t.atOffset(ZoneOffset.UTC)), s -> Instant.from(DateTimeFormatter.RFC_1123_DATE_TIME.parse(s)));
+		return new FunctionalStringTypeAdapter<>(t -> DateTimeFormatter.RFC_1123_DATE_TIME.format(t.atOffset(ZoneOffset.UTC)), s -> Instant.from(DateTimeFormatter.RFC_1123_DATE_TIME.parse(s)));
 	}
 
 	public static TypeAdapter<SearchProvider> createSearchProviderAdapter() {
-		return new StringTypeAdapter<>(SearchProvider::name, SearchProvider.SEARCH_PROVIDERS::get);
+		return new FunctionalStringTypeAdapter<>(SearchProvider::name, SearchProvider.SEARCH_PROVIDERS::get);
 	}
 
 	public static TypeAdapter<Format> createFormatAdapter() {
-		return new StringTypeAdapter<>(Format::name, s -> {
+		return new FunctionalStringTypeAdapter<>(Format::name, s -> {
 			if ("EDH".equals(s)) s = "Commander";
 			try {
 				return Format.valueOf(s);
@@ -106,14 +122,14 @@ public class Serialization {
 	}
 
 	public static TypeAdapter<DeckImportExport.Textual> createTextualSerdesAdapter() {
-		return new StringTypeAdapter<>(DeckImportExport::toString, s -> DeckImportExport.TEXTUAL_PROVIDERS.stream()
+		return new FunctionalStringTypeAdapter<>(DeckImportExport::toString, s -> DeckImportExport.TEXTUAL_PROVIDERS.stream()
 				.filter(serdes -> serdes.toString().equals(s))
 				.findAny()
 				.orElse(null));
 	}
 
 	public static TypeAdapter<CardView.Grouping> createCardViewGroupingAdapter() {
-		return new StringTypeAdapter<>(CardView.Grouping::name, s -> CardView.GROUPINGS.stream()
+		return new FunctionalStringTypeAdapter<>(CardView.Grouping::name, s -> CardView.GROUPINGS.stream()
 				.filter(g -> "Converted Mana Cost".equals(s) ? g instanceof emi.mtg.deckbuilder.view.groupings.ManaValue : g.name().equals(s))
 				.findAny()
 				.orElseGet(() -> {
@@ -123,7 +139,7 @@ public class Serialization {
 	}
 
 	public static TypeAdapter<Card> createCardAdapter() {
-		return new StringTypeAdapter<>(Card::fullName, NameOnlyImporter::findCard);
+		return new FunctionalStringTypeAdapter<>(Card::fullName, NameOnlyImporter::findCard);
 	}
 
 	public static TypeAdapterFactory createCardPrintingAdapterFactory() {
@@ -132,14 +148,55 @@ public class Serialization {
 			public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
 				if (CardInstance.class.isAssignableFrom(type.getRawType())) {
 					return gson.getDelegateAdapter(this, type);
-				} else if (Card.Printing.class.isAssignableFrom(type.getRawType())){
-					return (TypeAdapter<T>) new StringTypeAdapter<>(p -> CardInstance.printingToString(p), i -> {
-						try {
-							return CardInstance.stringToPrinting(i);
-						} catch (IllegalArgumentException iae) {
-							return Context.get().data.printing(UUID.fromString(i));
+				} else if (Card.Printing.class.isAssignableFrom(type.getRawType())) {
+					return new StringTypeAdapter<T>() {
+						@Override
+						public T fromString(String i) throws IOException {
+							try {
+								CardInstance.PrintingReference ref = CardInstance.PrintingReference.valueOf(i);
+								emi.lib.mtg.Set set = Context.get().data.set(ref.setCode);
+
+								if (set != null) {
+									emi.lib.mtg.Card.Printing pr = set.printing(ref.collectorNumber);
+									if (pr != null && ref.cardName.equals(pr.card().name())) return (T) pr;
+
+									System.err.printf("No exact match for %s in %s; trying by card name.%n", ref, set.name());
+
+									// Either the set has no printing by that collector number, or the printing by that
+									// collector number is of a different card. Either way, we're in the rough. Try to
+									// find any card with the same name in the set.
+									pr = set.printings().stream()
+											.filter(pr2 -> ref.cardName.equals(pr2.card().name()))
+											.findAny()
+											.orElse(null);
+
+									if (pr != null) return (T) pr;
+								}
+
+								System.err.printf("Unable to locate set/card matching %s; trying by card name only.%n", ref);
+
+								// Either the set wasn't matched or had no card by this name.
+								// Locate the card the hard way, and return the preferred printing.
+								emi.lib.mtg.Card card = Context.get().data.cards().stream()
+										.filter(c -> ref.cardName.equals(c.name()))
+										.findAny()
+										.orElse(null);
+
+								if (card != null) {
+									return (T) Preferences.get().preferredPrinting(card);
+								}
+
+								throw new IOException("Unable to find any card/printing matching " + ref + "; are we in the right universe?");
+							} catch (IllegalArgumentException iae) {
+								return (T) Context.get().data.printing(UUID.fromString(i));
+							}
 						}
-					});
+
+						@Override
+						protected String toString(T pr) throws IOException {
+							return new CardInstance.PrintingReference((Card.Printing) pr).toString();
+						}
+					};
 				} else {
 					return null;
 				}
@@ -185,11 +242,11 @@ public class Serialization {
 	}
 
 	public static TypeAdapter<Path> createPathTypeAdapter() {
-		return new StringTypeAdapter<>(Path::toString, Paths::get);
+		return new FunctionalStringTypeAdapter<>(Path::toString, Paths::get);
 	}
 
 	public static TypeAdapter<CardView.ActiveSorting> createActiveSortingTypeAdapter() {
-		return new StringTypeAdapter<>(
+		return new FunctionalStringTypeAdapter<>(
 				v -> String.format("%s%s", v.descending.get() ? "+" : "-", v.toString()),
 				s -> CardView.SORTINGS.stream()
 						.filter(n -> s.endsWith("Converted Mana Cost") ? n instanceof emi.mtg.deckbuilder.view.sortings.ManaValue : s.substring(1).equals(n.toString()))

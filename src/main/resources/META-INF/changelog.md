@@ -7,6 +7,7 @@
 ### Improvements
 
 - Added a "While Open" option to the cutboard behavior. If chosen, cards will be removed entirely while the cutboard is hidden, or sent to the cutboard while it's shown.
+- Made the default JSON format more resilient against Scryfall changing collector numbers/set codes. If it can't find the exact card, it will try to use your preferred printing of a card with that name.
 
 ## 2023 September
 
