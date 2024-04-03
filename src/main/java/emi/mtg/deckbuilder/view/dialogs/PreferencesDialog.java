@@ -334,6 +334,12 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class CutboardBehaviorPreference extends EnumeratedPreference<Preferences.CutboardBehavior> {
+		public CutboardBehaviorPreference(String label, Function<Preferences, Preferences.CutboardBehavior> fromPrefs, Predicate<Preferences.CutboardBehavior> validate, BiConsumer<Preferences, Preferences.CutboardBehavior> toPrefs) {
+			super(label, fromPrefs, validate, toPrefs, Preferences.CutboardBehavior.values());
+		}
+	}
+
 	private static class ThemePreference extends ComboBoxPreference<Preferences.Theme> {
 		public ThemePreference(String label, Function<Preferences, Preferences.Theme> fromPrefs, Predicate<Preferences.Theme> validate, BiConsumer<Preferences, Preferences.Theme> toPrefs) {
 			super(Preferences.Theme.values(), label, fromPrefs, validate, toPrefs);
@@ -527,7 +533,7 @@ public class PreferencesDialog extends Alert {
 				new PrefSeparator(),
 				reflectField(StringPreference::new, "Default Author", "authorName", x -> true),
 				reflectField(FormatPreference::new, "Default Format", "defaultFormat", x -> true),
-				propertyField(BooleanPreference::new, "Remove Cards to Cutboard", p -> p.removeToCutboard, x -> true),
+				propertyField(CutboardBehaviorPreference::new, "Remove Cards to Cutboard", p -> p.cutboardBehavior, x -> true),
 				new PrefSeparator(),
 				reflectField(BooleanPreference::new, "Show Debug Options", "showDebugOptions", x -> true),
 		});

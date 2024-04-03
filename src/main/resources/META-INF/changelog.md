@@ -4,6 +4,10 @@
 
 - Added validation of Doctor's Companion, Choose a Background, and Create a Character partner abilities.
 
+### Improvements
+
+- Added a "While Open" option to the cutboard behavior. If chosen, cards will be removed entirely while the cutboard is hidden, or sent to the cutboard while it's shown.
+
 ## 2023 September
 
 ### Fixes

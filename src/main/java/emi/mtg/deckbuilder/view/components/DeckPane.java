@@ -11,7 +11,9 @@ import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.Piles;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.*;
+import javafx.beans.value.ObservableObjectValue;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
@@ -30,6 +32,7 @@ public class DeckPane extends SplitPane {
 	private BooleanProperty autoValidate;
 	private ObjectProperty<ListChangeListener<CardInstance>> onDeckChanged;
 	private BooleanProperty showSideboard, showCutboard;
+	private BooleanBinding useCutboard;
 
 	private final ListChangeListener<CardInstance> deckListChangedListener;
 
@@ -43,6 +46,9 @@ public class DeckPane extends SplitPane {
 			deck.modifiedProperty().set(true);
 			if (onDeckChanged.get() != null) onDeckChanged.get().onChanged(lce);
 		};
+
+		useCutboard = Bindings.equal(Preferences.CutboardBehavior.Always, (ObservableObjectValue<?>) Preferences.get().cutboardBehavior)
+				.or(Bindings.equal(Preferences.CutboardBehavior.WhenOpen, (ObservableObjectValue<?>) Preferences.get().cutboardBehavior).and(showCutboardProperty()));
 
 		applyDeck();
 	}
@@ -261,7 +267,7 @@ public class DeckPane extends SplitPane {
 					deck.cards(z).removeListener(deckListChangedListener);
 					deck.cards(z).addListener(deckListChangedListener);
 					pane.view().doubleClick(ci -> {
-						if (Preferences.get().removeToCutboard.get()) {
+						if (useCutboard.get()) {
 							DeckChanger.change(
 									deck,
 									String.format("Cut %s", ci.card().name()),
@@ -368,10 +374,10 @@ public class DeckPane extends SplitPane {
 		});
 
 		MenuItem removeAllMenuItem = new MenuItem("Remove All");
-		removeAllMenuItem.textProperty().bind(Bindings.when(Preferences.get().removeToCutboard).then("Cut All").otherwise("Remove All"));
+		removeAllMenuItem.textProperty().bind(Bindings.when(useCutboard).then("Cut All").otherwise("Remove All"));
 		removeAllMenuItem.setOnAction(ae -> {
 			final List<CardInstance> cards = new ArrayList<>(menu.cards);
-			if (Preferences.get().removeToCutboard.get()) {
+			if (useCutboard.get()) {
 				DeckChanger.change(
 						deck,
 						String.format("Cut %d Card%s", cards.size(), cards.size() > 1 ? "s" : ""),

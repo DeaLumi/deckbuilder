@@ -13,7 +13,7 @@ import emi.mtg.deckbuilder.view.groupings.None;
 import emi.mtg.deckbuilder.view.groupings.Rarity;
 import emi.mtg.deckbuilder.view.search.omnifilter.Omnifilter;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
-import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
 
 import java.io.IOException;
@@ -181,6 +181,23 @@ public class Preferences {
 		}
 	}
 
+	public enum CutboardBehavior {
+		Never ("Never"),
+		WhenOpen ("When Open"),
+		Always ("Always");
+
+		public final String text;
+
+		CutboardBehavior(String text) {
+			this.text = text;
+		}
+
+		@Override
+		public String toString() {
+			return text;
+		}
+	}
+
 	/**
 	 * Critical operation preferences
 	 */
@@ -237,7 +254,7 @@ public class Preferences {
 
 	public Format defaultFormat = Format.Standard;
 	public String authorName = "";
-	public SimpleBooleanProperty removeToCutboard = new SimpleBooleanProperty(false);
+	public Property<CutboardBehavior> cutboardBehavior = new SimpleObjectProperty<>(CutboardBehavior.WhenOpen);
 
 	/**
 	 * Instance utilities (e.g. simplifying accessors)
