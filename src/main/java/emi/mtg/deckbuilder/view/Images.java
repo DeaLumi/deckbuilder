@@ -100,7 +100,7 @@ public class Images {
 			face = (Card.Printing.Face) object;
 			printing = face.printing();
 
-			file = face.face().name();
+			file = face.printing().card().fullName();
 		} else if (object instanceof Card.Printing) {
 			face = null;
 			printing = (Card.Printing) object;
@@ -112,11 +112,11 @@ public class Images {
 
 		String parent = String.format("s%s", printing.set().code().toLowerCase());
 
-		file = file.toLowerCase().replaceAll("[-/!&()'\",:?]", "").replaceAll("\\s+", "-") +
+		file = file.toLowerCase().replaceAll("[^a-z0-9 ]+", "").replaceAll("\\s+", "-") +
 				'-' + printing.variation();
 
 		if (object instanceof Card.Printing.Face) {
-			file += '-' + face.face().name().replaceAll("[-/!&()'\",:?]", "").replaceAll("\\s+", "-").toLowerCase(); // TODO: This change loses all cached face names.
+			file += '-' + face.face().name().toLowerCase().replaceAll("[^a-z0-9 ]+", "").replaceAll("\\s+", "-"); // TODO: This change loses all cached face names.
 		}
 
 		file += '.' + CACHE_EXTENSION;

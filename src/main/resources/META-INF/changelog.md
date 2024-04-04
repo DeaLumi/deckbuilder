@@ -9,6 +9,11 @@
 - Added a "While Open" option to the cutboard behavior. If chosen, cards will be removed entirely while the cutboard is hidden, or sent to the cutboard while it's shown.
 - Made the default JSON format more resilient against Scryfall changing collector numbers/set codes. If it can't find the exact card, it will try to use your preferred printing of a card with that name.
 
+### Fixes
+
+- Fixed a bug where both faces of DFCs were using the same underlying card data. Hopefully I'm done changing that code now; it's a mess.
+- Fixed the naming of DFC backface images. I recommend cleaning up your image cache after this change.
+
 ## 2023 September
 
 ### Fixes
