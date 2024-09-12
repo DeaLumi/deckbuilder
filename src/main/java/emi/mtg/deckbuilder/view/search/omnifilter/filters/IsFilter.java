@@ -27,7 +27,7 @@ public class IsFilter implements Omnifilter.Subfilter {
 		docs.put("split", "Finds cards with a left (or top) and right face.");
 		opts.put("tdfc", ci -> !ci.card().transformedFaces().isEmpty());
 		docs.put("tdfc", "Finds transforming two-faced cards.");
-		opts.put("mdfc", ci -> ci.faces().stream().anyMatch(f -> f.onBack() && (f.face().type().is(emi.lib.mtg.enums.CardType.Land) || !f.face().manaCost().isEmpty())));
+		opts.put("mdfc", ci -> ci.card().transformedFaces().isEmpty() && ci.faces().stream().anyMatch(f -> f.onBack() && ci.card().front() != f.face()));
 		docs.put("mdfc", "Finds modal dual-faced cards.");
 		opts.put("dfc", ci -> ci.faces().stream().anyMatch(Card.Printing.Face::onBack));
 		docs.put("dfc", "Finds dual-faced cards (transforming, modal, or otherwise).");
