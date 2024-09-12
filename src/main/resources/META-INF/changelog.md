@@ -4,6 +4,7 @@
 
 - Added `{L}` and `{D}` mana symbols and `Poly` card type added in MB2.
 - Added `Kindred` card type replacing deprecated `Tribal` card type.
+- Fixed `is:tdfc` returning no results.
 
 ## 2024 April
 
