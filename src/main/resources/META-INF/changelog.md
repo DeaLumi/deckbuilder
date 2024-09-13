@@ -6,6 +6,7 @@
 - Added `Kindred` card type replacing deprecated `Tribal` card type.
 - Fixed `is:tdfc` returning no results.
 - Fixed `is:mdfc` including some transforming DFCs and other stuff.
+- Planes and Phenomenon cards are now rotated to be readable. (My neck is grateful.)
 
 ## 2024 April
 
