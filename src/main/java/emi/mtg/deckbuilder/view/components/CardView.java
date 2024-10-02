@@ -557,16 +557,36 @@ public class CardView extends Canvas {
 	private class ZoomBehavior {
 		private CardInstance zoomedCard;
 		private CardZoomPreview zoomPreview;
-		private boolean mouse3Down;
+		private boolean zoomKeyDown, mouse3Down;
 
 		public ZoomBehavior() {
+			CardView.this.addEventHandler(KeyEvent.KEY_PRESSED, this::keyPressed);
+			CardView.this.addEventHandler(KeyEvent.KEY_RELEASED, this::keyReleased);
 			CardView.this.addEventHandler(MouseEvent.MOUSE_PRESSED, this::mousePressed);
 			CardView.this.addEventHandler(MouseEvent.MOUSE_RELEASED, this::mouseReleased);
 			CardView.this.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::mouseDraggedOrMoved);
 			CardView.this.addEventHandler(MouseEvent.MOUSE_MOVED, this::mouseDraggedOrMoved);
 			this.zoomPreview = null;
 			this.zoomedCard = null;
-			this.mouse3Down = false;
+			this.zoomKeyDown = this.mouse3Down = false;
+		}
+
+		private void keyPressed(KeyEvent ke) {
+			if (zoomKeyDown) return;
+			if (ke.getCode() != KeyCode.Z) return;
+			zoomKeyDown = true;
+
+			if (!mouse3Down) mouseDraggedOrMoved(ke);
+			ke.consume();
+		}
+
+		private void keyReleased(KeyEvent ke) {
+			if (!zoomKeyDown) return;
+			if (ke.getCode() != KeyCode.Z) return;
+			zoomKeyDown = false;
+
+			if (!mouse3Down) endPreview();
+			ke.consume();
 		}
 
 		private void mousePressed(MouseEvent me) {
@@ -575,7 +595,7 @@ public class CardView extends Canvas {
 			if (CardView.this.hoverCard == null) return; // Pan instead
 			mouse3Down = true;
 
-			mouseDraggedOrMoved(me);
+			if (!zoomKeyDown) mouseDraggedOrMoved(me);
 			me.consume();
 		}
 
@@ -584,12 +604,12 @@ public class CardView extends Canvas {
 			if (me.getButton() != MouseButton.MIDDLE) return;
 			mouse3Down = false;
 
-			endPreview();
+			if (!zoomKeyDown) endPreview();
 			me.consume();
 		}
 
 		private void mouseDraggedOrMoved(InputEvent ie) {
-			if (!mouse3Down) return;
+			if (!zoomKeyDown && !mouse3Down) return;
 
 			showPreview(ie);
 			ie.consume();

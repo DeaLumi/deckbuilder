@@ -1,5 +1,9 @@
 ## 2024 October
 
+### Improvements
+
+- You can finally zoom in on cards by holding the Z key. You have no idea how much work this took in the background.
+
 ### Fixes
 
 - Added `{L}` and `{D}` mana symbols and `Poly` card type added in MB2.
