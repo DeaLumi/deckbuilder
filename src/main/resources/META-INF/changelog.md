@@ -11,6 +11,7 @@
 - Fixed `is:tdfc` returning no results.
 - Fixed `is:mdfc` including some transforming DFCs and other stuff.
 - Planes and Phenomenon cards are now rotated to be readable. (My neck is grateful.)
+- You can once again drag cards onto the collection to just remove them from deck. Sorry!
 
 ## 2024 April
 

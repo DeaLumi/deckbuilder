@@ -418,33 +418,33 @@ public class CardView extends Canvas {
 					de.consume();
 				}
 			} else if (CardView.dragSource != null) {
-				if (CardView.this.deck != null) { // TODO: Breaks dropping onto the collection to remove cards
-					Set<CardInstance> oldCards = new HashSet<>(CardView.dragSource.selectedCards);
+				Set<CardInstance> oldCards = new HashSet<>(CardView.dragSource.selectedCards);
 
-					if (de.getAcceptedTransferMode() == TransferMode.MOVE && CardView.dragSource.deck != null) {
-						final CardView source = CardView.dragSource;
-						final DeckList sourceDeck = source.deck;
-						final ObservableList<CardInstance> sourceModel = source.model;
-						DeckChanger.startChangeBatch(sourceDeck);
+				if (de.getAcceptedTransferMode() == TransferMode.MOVE && CardView.dragSource.deck != null) {
+					final CardView source = CardView.dragSource;
+					final DeckList sourceDeck = source.deck;
+					final ObservableList<CardInstance> sourceModel = source.model;
+					DeckChanger.startChangeBatch(sourceDeck);
 
-						if (source.grouping.supportsModification() && CardView.this.hoverGroup != null && CardView.this.grouping.supportsModification()) {
-							for (Grouping.Group oldGroup : source.groups) {
-								for (CardInstance oldCard : source.selectedCards) {
-									oldGroup.remove(oldCard);
-								}
+					if (source.grouping.supportsModification() && CardView.this.hoverGroup != null && CardView.this.grouping.supportsModification()) {
+						for (Grouping.Group oldGroup : source.groups) {
+							for (CardInstance oldCard : source.selectedCards) {
+								oldGroup.remove(oldCard);
 							}
 						}
-
-						DeckChanger.addBatchedChange(
-								sourceDeck,
-								l -> sourceModel.removeAll(oldCards),
-								l -> sourceModel.addAll(oldCards)
-						);
-
-						if (sourceDeck != CardView.this.deck) DeckChanger.endChangeBatch(sourceDeck, String.format("Remove %d Card%s", oldCards.size(), oldCards.size() > 1 ? "s" : ""));
-						source.selectedCards.clear();
 					}
 
+					DeckChanger.addBatchedChange(
+							sourceDeck,
+							l -> sourceModel.removeAll(oldCards),
+							l -> sourceModel.addAll(oldCards)
+					);
+
+					if (sourceDeck != CardView.this.deck) DeckChanger.endChangeBatch(sourceDeck, String.format("Remove %d Card%s", oldCards.size(), oldCards.size() > 1 ? "s" : ""));
+					source.selectedCards.clear();
+				}
+
+				if (CardView.this.deck != null) {
 					if (CardView.dragSource.deck != CardView.this.deck) DeckChanger.startChangeBatch(CardView.this.deck);
 					Set<CardInstance> newCards = oldCards.stream()
 							.map(ci -> {
@@ -460,11 +460,12 @@ public class CardView extends Canvas {
 
 					final ObservableList<CardInstance> thisModel = CardView.this.model;
 					DeckChanger.addBatchedChange(
-							deck,
+							CardView.this.deck,
 							l -> thisModel.addAll(newCards),
 							l -> thisModel.removeAll(newCards)
 					);
-					DeckChanger.endChangeBatch(deck, String.format("%s %d Card%s", CardView.dragSource.deck != deck ? "Add" : "Move", newCards.size(), newCards.size() > 1 ? "s" : ""));
+					DeckChanger.endChangeBatch(CardView.this.deck, String.format("%s %d Card%s", CardView.dragSource.deck != deck ? "Add" : "Move", newCards.size(), newCards.size() > 1 ? "s" : ""));
+
 					CardView.this.selectedCards.clear();
 					CardView.this.selectedCards.addAll(newCards);
 				}
