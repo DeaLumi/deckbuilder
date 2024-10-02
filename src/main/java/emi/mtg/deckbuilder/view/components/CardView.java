@@ -157,11 +157,11 @@ public class CardView extends Canvas {
 		MVec2d coordinatesOf(int card, MVec2d buffer);
 		int cardAt(MVec2d point, int groupSize);
 
-		boolean cardInSelection(MVec2d cardPos, MVec2d min, MVec2d max);
+		boolean cardInSelection(MVec2d cardPos, MVec2d min, MVec2d max, int groupSize);
 
-		default boolean cardInSelection(int card, MVec2d min, MVec2d max, MVec2d buffer) {
+		default boolean cardInSelection(int card, MVec2d min, MVec2d max, MVec2d buffer, int groupSize) {
 			buffer = coordinatesOf(card, buffer);
-			return cardInSelection(buffer, min, max);
+			return cardInSelection(buffer, min, max, groupSize);
 		}
 	}
 
@@ -1174,7 +1174,7 @@ public class CardView extends Canvas {
 			localMax.set(groupedModel[i].groupBounds.pos).negate().plus(max);
 
 			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
-				if (engine.cardInSelection(j, localMin, localMax, buffer)) {
+				if (engine.cardInSelection(groupedModel[i].model().size(), localMin, localMax, buffer, j)) {
 					selectedCards.addAll(groupedModel[i].hoverCards(groupedModel[i].model().get(j)));
 				}
 			}
@@ -1705,7 +1705,7 @@ public class CardView extends Canvas {
 				if (selectedCards.contains(ci)) {
 					states.add(CardView.CardState.Selected);
 				} else if (selectBehavior.selecting) {
-					if (engine.cardInSelection(abs, dragStartLocal, dragEndLocal)) {
+					if (engine.cardInSelection(abs, dragStartLocal, dragEndLocal, groupedModel[i].model().size())) {
 						states.add(CardView.CardState.Selected);
 					}
 				}

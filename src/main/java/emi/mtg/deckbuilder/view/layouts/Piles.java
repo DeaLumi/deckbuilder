@@ -114,7 +114,11 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public boolean cardInSelection(CardView.MVec2d cardPos, CardView.MVec2d min, CardView.MVec2d max) {
-		return cardPos.x + parent.cardWidth() >= min.x && cardPos.x <= max.x && cardPos.y + parent.cardHeight() * OVERLAP_FACTOR >= min.y && cardPos.y <= max.y;
+	public boolean cardInSelection(CardView.MVec2d cardPos, CardView.MVec2d min, CardView.MVec2d max, int groupSize) {
+		double p = parent.cardPadding();
+		double h = parent.cardHeight();
+		boolean last = cardPos.y >= p + (h * OVERLAP_FACTOR) * (groupSize - 1);
+
+		return cardPos.x + parent.cardWidth() >= min.x && cardPos.x <= max.x && cardPos.y + parent.cardHeight() * OVERLAP_FACTOR + (last ? h : 0) >= min.y && cardPos.y <= max.y;
 	}
 }
