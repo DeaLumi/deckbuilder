@@ -156,7 +156,13 @@ public class CardView extends Canvas {
 
 		MVec2d coordinatesOf(int card, MVec2d buffer);
 		int cardAt(MVec2d point, int groupSize);
-		boolean cardInSelection(MVec2d loc, double x1, double y1, double x2, double y2);
+
+		boolean cardInSelection(MVec2d cardPos, MVec2d min, MVec2d max);
+
+		default boolean cardInSelection(int card, MVec2d min, MVec2d max, MVec2d buffer) {
+			buffer = coordinatesOf(card, buffer);
+			return cardInSelection(buffer, min, max);
+		}
 	}
 
 	public interface Grouping {
@@ -492,14 +498,14 @@ public class CardView extends Canvas {
 
 	private class SelectBehavior {
 		private boolean selecting;
-		private volatile double startX, startY, selectX, selectY, selectW, selectH;
+		private volatile double startX, startY, selectX, selectY, selectW, selectH, selectX2, selectY2;
 
 		public SelectBehavior() {
 			CardView.this.addEventHandler(MouseEvent.MOUSE_PRESSED, this::mousePressed);
 			CardView.this.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::mouseDragged);
 			CardView.this.addEventHandler(MouseEvent.MOUSE_RELEASED, this::mouseReleased);
 			this.selecting = false;
-			this.startX = this.startY = this.selectX = this.selectY = this.selectW = this.selectH = Double.NaN;
+			this.startX = this.startY = this.selectX = this.selectY = this.selectW = this.selectH = this.selectX2 = this.selectY2 = Double.NaN;
 		}
 
 		private void mousePressed(MouseEvent me) {
@@ -512,8 +518,8 @@ public class CardView extends Canvas {
 			}
 
 			this.selecting = true;
-			startX = selectX = me.getX() + CardView.this.scrollX.get();
-			startY = selectY = me.getY() + CardView.this.scrollY.get();
+			startX = selectX = selectX2 = me.getX() + CardView.this.scrollX.get();
+			startY = selectY = selectY2 = me.getY() + CardView.this.scrollY.get();
 			selectW = 0;
 			selectH = 0;
 			me.consume();
@@ -526,17 +532,21 @@ public class CardView extends Canvas {
 
 			if (absX < startX) {
 				selectX = absX;
+				selectX2 = startX;
 				selectW = startX - selectX;
 			} else {
 				selectX = startX;
+				selectX2 = absX;
 				selectW = absX - startX;
 			}
 
 			if (absY < startY) {
 				selectY = absY;
+				selectY2 = startY;
 				selectH = startY - selectY;
 			} else {
 				selectY = startY;
+				selectY2 = absY;
 				selectH = absY - startY;
 			}
 
@@ -1151,22 +1161,20 @@ public class CardView extends Canvas {
 	private Set<CardInstance> cardsInBounds(double x1, double y1, double x2, double y2) {
 		Set<CardInstance> selectedCards = new HashSet<>();
 
-		double x1s = Math.min(x1, x2);
-		double y1s = Math.min(y1, y2);
-		double x2s = Math.max(x1, x2);
-		double y2s = Math.max(y1, y2);
+		MVec2d min = new MVec2d(Math.min(x1, x2), Math.min(y1, y2)),
+				max = new MVec2d(Math.max(x1, x2), Math.max(y1, y2));
 
-		MVec2d loc = new MVec2d();
+		MVec2d localMin = new MVec2d(), localMax = new MVec2d(), buffer = new MVec2d();
 		for (int i = 0; i < groupedModel.length; ++i) {
 			if (groupedModel[i] == null) {
 				continue;
 			}
 
-			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
-				loc = engine.coordinatesOf(j, loc);
-				loc = loc.plus(groupedModel[i].groupBounds.pos);
+			localMin.set(groupedModel[i].groupBounds.pos).negate().plus(min);
+			localMax.set(groupedModel[i].groupBounds.pos).negate().plus(max);
 
-				if (engine.cardInSelection(loc, x1s, y1s, x2s, y2s)) {
+			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
+				if (engine.cardInSelection(j, localMin, localMax, buffer)) {
 					selectedCards.addAll(groupedModel[i].hoverCards(groupedModel[i].model().get(j)));
 				}
 			}
@@ -1605,10 +1613,9 @@ public class CardView extends Canvas {
 		MVec2d loc = new MVec2d(), abs = new MVec2d();
 		MVec2d scroll = new MVec2d(-scrollX.get(), -scrollY.get());
 
-		double dragBoxX1 = selectBehavior.selectX;
-		double dragBoxY1 = selectBehavior.selectY;
-		double dragBoxX2 = selectBehavior.selectX + selectBehavior.selectW;
-		double dragBoxY2 = selectBehavior.selectY + selectBehavior.selectH;
+		MVec2d dragStart = new MVec2d(selectBehavior.selectX, selectBehavior.selectY),
+				dragEnd = new MVec2d(selectBehavior.selectX2, selectBehavior.selectY2),
+				dragStartLocal = new MVec2d(), dragEndLocal = new MVec2d(), buffer = new MVec2d();
 
 		if (hoverGroup != null) {
 			renderMap.hoverGroupBounds.pos.set(hoverGroup.groupBounds.pos).plus(scroll);
@@ -1622,6 +1629,9 @@ public class CardView extends Canvas {
 			}
 
 			final Bounds bounds = groupedModel[i].groupBounds;
+
+			dragStartLocal.set(bounds.pos).negate().plus(dragStart);
+			dragEndLocal.set(bounds.pos).negate().plus(dragEnd);
 
 			if (bounds.pos.x == 0 && bounds.pos.y == 0 && (bounds.dim.x == 0 || bounds.dim.y == 0)) {
 				continue;
@@ -1643,8 +1653,7 @@ public class CardView extends Canvas {
 
 			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
 				abs = engine.coordinatesOf(j, abs);
-				abs = abs.plus(groupedModel[i].groupBounds.pos);
-				loc = loc.set(abs).plus(scroll);
+				loc = loc.set(abs).plus(groupedModel[i].groupBounds.pos).plus(scroll);
 
 				if (loc.x < -cardWidth() || loc.x > getWidth() || loc.y < -cardHeight() || loc.y > getHeight()) {
 					continue;
@@ -1696,7 +1705,7 @@ public class CardView extends Canvas {
 				if (selectedCards.contains(ci)) {
 					states.add(CardView.CardState.Selected);
 				} else if (selectBehavior.selecting) {
-					if (engine.cardInSelection(abs, dragBoxX1, dragBoxY1, dragBoxX2, dragBoxY2)) {
+					if (engine.cardInSelection(abs, dragStartLocal, dragEndLocal)) {
 						states.add(CardView.CardState.Selected);
 					}
 				}

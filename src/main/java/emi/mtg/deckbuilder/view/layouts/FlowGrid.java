@@ -127,7 +127,7 @@ public class FlowGrid implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public boolean cardInSelection(CardView.MVec2d loc, double x1, double y1, double x2, double y2) {
-		return loc.x + parent.cardWidth() >= x1 && loc.x <= x2 && loc.y + parent.cardHeight() >= y1 && loc.y <= y2;
+	public boolean cardInSelection(CardView.MVec2d cardPos, CardView.MVec2d min, CardView.MVec2d max) {
+		return cardPos.x + parent.cardWidth() >= min.x && cardPos.x <= max.x && cardPos.y + parent.cardHeight() >= min.y && cardPos.y <= max.y;
 	}
 }
