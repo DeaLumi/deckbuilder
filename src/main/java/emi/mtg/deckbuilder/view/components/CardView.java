@@ -152,7 +152,7 @@ public class CardView extends Canvas {
 			LayoutEngine create(CardView parent);
 		}
 
-		void layoutGroups(Group[] groups, boolean includeEmpty);
+		void layoutGroups(Bounds boundingBox, Group[] groups, boolean includeEmpty);
 
 		MVec2d coordinatesOf(int card, MVec2d buffer);
 		int cardAt(MVec2d point, int groupSize);
@@ -1404,37 +1404,16 @@ public class CardView extends Canvas {
 			return;
 		}
 
-		engine.layoutGroups(groupedModel, showEmptyGroupsProperty.get());
+		Bounds boundingBox = new Bounds();
+		engine.layoutGroups(boundingBox, groupedModel, showEmptyGroupsProperty.get());
 
-		MVec2d low = new MVec2d(), high = new MVec2d();
+		scrollMinX.set(boundingBox.pos.x);
+		scrollMinY.set(boundingBox.pos.y);
+		scrollMaxX.set(boundingBox.dim.x - getWidth());
+		scrollMaxY.set(boundingBox.dim.y - getHeight());
 
-		for (int i = 0; i < groupedModel.length; ++i) {
-			final Bounds bounds = groupedModel[i].groupBounds;
-
-			if (bounds.pos.x < low.x) {
-				low.x = bounds.pos.x;
-			}
-
-			if (bounds.pos.y < low.y) {
-				low.y = bounds.pos.y;
-			}
-
-			if (bounds.pos.x + bounds.dim.x > high.x) {
-				high.x = bounds.pos.x + bounds.dim.x;
-			}
-
-			if (bounds.pos.y + bounds.dim.y > high.y) {
-				high.y = bounds.pos.y + bounds.dim.y;
-			}
-		}
-
-		scrollMinX.set(low.x);
-		scrollMinY.set(low.y);
-		scrollMaxX.set(high.x - getWidth());
-		scrollMaxY.set(high.y - getHeight());
-
-		scrollX.set(Math.max(low.x, Math.min(scrollX.get(), high.x - getWidth())));
-		scrollY.set(Math.max(low.y, Math.min(scrollY.get(), high.y - getHeight())));
+		scrollX.set(Math.max(boundingBox.pos.x, Math.min(scrollX.get(), boundingBox.pos.x - getWidth())));
+		scrollY.set(Math.max(boundingBox.pos.y, Math.min(scrollY.get(), boundingBox.pos.y - getHeight())));
 
 		scheduleRender();
 	}

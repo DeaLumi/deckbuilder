@@ -31,7 +31,7 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public void layoutGroups(CardView.Group[] groups, boolean showEmpty) {
+	public void layoutGroups(CardView.Bounds boundingBox, CardView.Group[] groups, boolean showEmpty) {
 		double p = parent.cardPadding();
 		double w = parent.cardWidth();
 		double h = parent.cardHeight();
@@ -72,6 +72,9 @@ public class Piles implements CardView.LayoutEngine {
 
 			x += groups[i].groupBounds.dim.x;
 		}
+
+		boundingBox.pos.set(0, 0);
+		boundingBox.dim.set(x, height);
 	}
 
 	@Override
