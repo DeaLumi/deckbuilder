@@ -4,6 +4,7 @@
 
 - You can finally zoom in on cards by holding the Z key. You have no idea how much work this took in the background.
 - Selection in piles views is more precise -- the selection has to overlap with the name line of the card to include it.
+- Selection in all views is now unaffected by scrolling, so you can select whole swathes of cards if you really want to.
 
 ### Fixes
 
