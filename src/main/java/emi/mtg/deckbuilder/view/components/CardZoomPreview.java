@@ -9,44 +9,47 @@ import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
+import javafx.event.Event;
+import javafx.event.EventType;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
-import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class CardZoomPreview {
+public class CardZoomPreview extends Stage {
 	private static final double DURATION = 150;
 
-	private final Stage stage;
+	private final CardView owner;
 	private final Rectangle2D start;
 	private final List<ImageView> imageViewList;
 	private final HBox row;
 	private ParallelTransition runningAnimation;
 
-	public CardZoomPreview(Rectangle2D start, Card.Printing printing) throws ExecutionException, InterruptedException {
+	public CardZoomPreview(CardView owner, Rectangle2D start, Card.Printing printing) throws ExecutionException, InterruptedException {
+		super(StageStyle.TRANSPARENT);
+
 		this.start = start;
+		this.owner = owner;
 
 		// work out the images
 		List<Card.Printing.Face> faces = printing.faces().stream()
 				.filter(f -> printing.faces().stream().noneMatch(other -> f != other && other.contains(f)))
 				.collect(Collectors.toList());
-
-		this.stage = new Stage(StageStyle.TRANSPARENT);
 
 		this.imageViewList = new ArrayList<>(faces.size());
 
@@ -71,23 +74,62 @@ public class CardZoomPreview {
 		this.row.setOpacity(0.0);
 
 		Scene scene = new Scene(new Group(this.row));
-		scene.setFill(Color.TRANSPARENT);
+		scene.setFill(null);
 
-		scene.setOnMouseDragged(this::checkShouldClose);
-		scene.setOnMouseMoved(this::checkShouldClose);
-		scene.setOnMouseDragReleased(this::checkShouldClose);
+		scene.addEventFilter(EventType.ROOT, this::passToParent);
 
-		this.stage.setScene(scene);
-		this.stage.show();
+		this.initOwner(owner.getScene().getWindow());
+		this.setAlwaysOnTop(true);
+		this.setScene(scene);
+		this.show();
 		this.resizeStage();
 	}
 
-	private void checkShouldClose(MouseEvent me) {
-		 if (!me.isMiddleButtonDown()
-			|| !this.start.contains(me.getScreenX(), me.getScreenY())
-			|| imageViewList.stream().noneMatch(v -> v.contains(v.screenToLocal(me.getScreenX(), me.getScreenY())))) {
-			 this.stage.close();
+	private static final Set<EventType<?>> RETAINED_EVENTS = Collections.unmodifiableSet(Stream.of(
+			MouseEvent.MOUSE_ENTERED,
+			MouseEvent.MOUSE_ENTERED_TARGET,
+			MouseEvent.MOUSE_EXITED,
+			MouseEvent.MOUSE_EXITED_TARGET
+	).collect(Collectors.toSet()));
+
+	private void passToParent(Event event) {
+		// Special handling for mouse events to remap based on screen.
+		if (RETAINED_EVENTS.contains(event.getEventType())) return;
+
+		if (event instanceof MouseEvent) {
+			MouseEvent me = (MouseEvent) event;
+			double screenX = me.getScreenX(), screenY = me.getScreenY();
+			// Documentation incorrectly states this should be in local coordinates if new source is a node.
+			// In fact, it should always be in scene coordinates, unless I want to construct the pick result myself.
+			Point2D newSceneCoords = owner.localToScene(owner.screenToLocal(screenX, screenY));
+
+			event = new MouseEvent(
+					owner,
+					owner,
+					me.getEventType(),
+					newSceneCoords.getX(),
+					newSceneCoords.getY(),
+					screenX,
+					screenY,
+					me.getButton(),
+					me.getClickCount(),
+					me.isShiftDown(),
+					me.isControlDown(),
+					me.isAltDown(),
+					me.isMetaDown(),
+					me.isPrimaryButtonDown(),
+					me.isMiddleButtonDown(),
+					me.isSecondaryButtonDown(),
+					me.isSynthesized(),
+					me.isPopupTrigger(),
+					me.isStillSincePress(),
+					null
+			);
+		} else {
+			event = event.copyFor(owner, owner);
 		}
+
+		owner.fireEvent(event);
 	}
 
 	private void resizeStage() {
@@ -120,10 +162,10 @@ public class CardZoomPreview {
 				endUnbound.getHeight()
 		);
 
-		this.stage.setX(end.getMinX());
-		this.stage.setY(end.getMinY());
-		this.stage.setWidth(end.getWidth());
-		this.stage.setHeight(end.getHeight());
+		this.setX(end.getMinX());
+		this.setY(end.getMinY());
+		this.setWidth(end.getWidth());
+		this.setHeight(end.getHeight());
 
 		ScaleTransition st = new ScaleTransition(Duration.millis(DURATION));
 		st.setFromX(start.getWidth() / end.getWidth());
@@ -148,6 +190,6 @@ public class CardZoomPreview {
 
 	public void close() {
 		this.runningAnimation.stop();
-		this.stage.close();
+		super.close();
 	}
 }

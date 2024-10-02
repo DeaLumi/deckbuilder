@@ -253,6 +253,403 @@ public class CardView extends Canvas {
 		);
 	}
 
+	private class PanBehavior {
+		private final MVec2d panStart, scrollStart;
+
+		public PanBehavior() {
+			CardView.this.addEventHandler(MouseEvent.MOUSE_PRESSED, this::mousePressed);
+			CardView.this.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::mouseDragged);
+			CardView.this.addEventHandler(MouseEvent.MOUSE_RELEASED, this::mouseReleased);
+			this.panStart = new MVec2d(Double.NaN, Double.NaN);
+			this.scrollStart = new MVec2d(Double.NaN, Double.NaN);
+		}
+
+		void mousePressed(MouseEvent me) {
+			if (me.getButton() != MouseButton.MIDDLE) return;
+			if (CardView.this.hoverCard != null) return;
+
+			panStart.set(me.getX(), me.getY());
+			scrollStart.set(CardView.this.scrollX.get(), CardView.this.scrollY.get());
+
+			me.consume();
+		}
+
+		void mouseDragged(MouseEvent me) {
+			if (Double.isNaN(panStart.x) || Double.isNaN(panStart.y)) return;
+
+			CardView.this.scrollX.set(Math.max(CardView.this.scrollMinX.get(), Math.min(scrollStart.x - (me.getX() - panStart.x), CardView.this.scrollMaxX.get())));
+			CardView.this.scrollY.set(Math.max(CardView.this.scrollMinY.get(), Math.min(scrollStart.y - (me.getY() - panStart.y), CardView.this.scrollMaxY.get())));
+
+			me.consume();
+			CardView.this.scheduleRender();
+		}
+
+		void mouseReleased(MouseEvent me) {
+			if (Double.isNaN(panStart.x) || Double.isNaN(panStart.y)) return;
+
+			panStart.set(Double.NaN, Double.NaN);
+			scrollStart.set(Double.NaN, Double.NaN);
+
+			me.consume();
+		}
+	}
+
+	private class DragAndDropBehavior {
+		private boolean dragging;
+
+		public DragAndDropBehavior() {
+			CardView.this.addEventHandler(MouseEvent.MOUSE_PRESSED, this::mousePressed);
+			CardView.this.addEventHandler(MouseEvent.DRAG_DETECTED, this::dragDetected);
+			CardView.this.addEventHandler(DragEvent.DRAG_OVER, this::dragOver);
+			CardView.this.addEventHandler(DragEvent.DRAG_DROPPED, this::dragDropped);
+			CardView.this.addEventHandler(DragEvent.DRAG_DONE, this::dragDone);
+			this.dragging = false;
+		}
+
+		void mousePressed(MouseEvent me) {
+			if (me.getButton() != MouseButton.PRIMARY) return;
+			if (me.isAltDown()) return;
+			if (CardView.this.hoverCard == null) return;
+
+			if (!CardView.this.selectedCards.contains(CardView.this.hoverCard)) {
+				if (!me.isControlDown()) CardView.this.selectedCards.clear();
+				CardView.this.selectedCards.add(CardView.this.hoverCard);
+			}
+
+			dragging = true;
+			me.consume();
+		}
+
+		void dragDetected(MouseEvent me) {
+			if (!dragging) return;
+			if (me.getButton() != MouseButton.PRIMARY) return;
+
+			CardView.this.selectedCards.retainAll(CardView.this.model);
+
+			if (CardView.this.selectedCards.isEmpty()) {
+				return;
+			}
+
+			Dragboard db = CardView.this.startDragAndDrop(TransferMode.ANY);
+
+			CardInstance view;
+			if (CardView.this.hoverCard != null) {
+				view = CardView.this.hoverCard;
+			} else {
+				view = CardView.this.selectedCards.iterator().next();
+			}
+
+			if (view != null) {
+				Context.get().images.getThumbnail(view.printing()).thenApply(img -> {
+					db.setDragView(img, -8.0, -8.0);
+					return img;
+				}).getNow(Images.LOADING_CARD);
+			}
+
+			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, CardView.this.selectedCards.toString()));
+			CardView.dragModified = me.isControlDown();
+			CardView.dragSource = CardView.this;
+			me.consume();
+		}
+
+		void dragOver(DragEvent de) {
+			if (CardView.dragSource == CardView.this) {
+				// TODO Should I check dragging here?
+				CardView.this.mouseMoved(de.getX(), de.getY()); // TODO BEHAVIOR
+
+				if (CardView.this.hoverGroup != null && !CardView.this.selectedCards.stream().allMatch(CardView.this.hoverGroup.group::contains)) {
+					if (CardView.dragModified) {
+						de.acceptTransferModes(TransferMode.LINK);
+					} else {
+						de.acceptTransferModes(TransferMode.MOVE);
+					}
+				} else if (CardView.this.hoverGroup != null) {
+					de.acceptTransferModes(); // TODO: If we ever allow rearranging within groups.
+				} else {
+					// Don't accept.
+				}
+				de.consume();
+			} else if (CardView.dragSource != null) {
+				CardView.this.mouseMoved(de.getX(), de.getY()); // TODO BEHAVIOR
+
+				if (CardView.dragModified) {
+					de.acceptTransferModes(TransferMode.COPY);
+				} else {
+					de.acceptTransferModes(TransferMode.MOVE);
+				}
+				de.consume();
+			} else {
+				// TODO: Accept transfer from other programs/areas?
+			}
+		}
+
+		void dragDropped(DragEvent de) {
+			if (CardView.dragSource == CardView.this) {
+				if (CardView.this.grouping.supportsModification()) {
+					DeckChanger.startChangeBatch(CardView.this.deck);
+
+					CardView.this.selectedCards.forEach(CardView.this.hoverGroup.group::add);
+
+					if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
+						for (Group group : CardView.this.groupedModel) {
+							if (group == hoverGroup) {
+								continue;
+							}
+
+							for (CardInstance ci : selectedCards) {
+								group.group.remove(ci);
+							}
+						}
+					}
+
+					// I know this looks weird, but the `group.add` and `group.remove` above add the actual batched changes.
+					DeckChanger.addBatchedChange(
+							CardView.this.deck,
+							l -> { for (Group group : CardView.this.groupedModel) group.refilter(); },
+							l -> { for (Group group : CardView.this.groupedModel) group.refilter(); }
+					);
+
+					DeckChanger.endChangeBatch(
+							CardView.this.deck,
+							"Change Tags"
+					);
+
+					de.setDropCompleted(true);
+					de.consume();
+				}
+			} else if (CardView.dragSource != null) {
+				if (CardView.this.deck != null) { // TODO: Breaks dropping onto the collection to remove cards
+					Set<CardInstance> oldCards = new HashSet<>(CardView.dragSource.selectedCards);
+
+					if (de.getAcceptedTransferMode() == TransferMode.MOVE && CardView.dragSource.deck != null) {
+						final CardView source = CardView.dragSource;
+						final DeckList sourceDeck = source.deck;
+						final ObservableList<CardInstance> sourceModel = source.model;
+						DeckChanger.startChangeBatch(sourceDeck);
+
+						if (source.grouping.supportsModification() && CardView.this.hoverGroup != null && CardView.this.grouping.supportsModification()) {
+							for (Grouping.Group oldGroup : source.groups) {
+								for (CardInstance oldCard : source.selectedCards) {
+									oldGroup.remove(oldCard);
+								}
+							}
+						}
+
+						DeckChanger.addBatchedChange(
+								sourceDeck,
+								l -> sourceModel.removeAll(oldCards),
+								l -> sourceModel.addAll(oldCards)
+						);
+
+						if (sourceDeck != CardView.this.deck) DeckChanger.endChangeBatch(sourceDeck, String.format("Remove %d Card%s", oldCards.size(), oldCards.size() > 1 ? "s" : ""));
+						source.selectedCards.clear();
+					}
+
+					if (CardView.dragSource.deck != CardView.this.deck) DeckChanger.startChangeBatch(CardView.this.deck);
+					Set<CardInstance> newCards = oldCards.stream()
+							.map(ci -> {
+								CardInstance clone = new CardInstance(ci);
+
+								if (CardView.this.hoverGroup != null && CardView.this.grouping.supportsModification()) {
+									CardView.this.hoverGroup.group.add(clone);
+								}
+
+								return clone;
+							})
+							.collect(Collectors.toSet());
+
+					final ObservableList<CardInstance> thisModel = CardView.this.model;
+					DeckChanger.addBatchedChange(
+							deck,
+							l -> thisModel.addAll(newCards),
+							l -> thisModel.removeAll(newCards)
+					);
+					DeckChanger.endChangeBatch(deck, String.format("%s %d Card%s", CardView.dragSource.deck != deck ? "Add" : "Move", newCards.size(), newCards.size() > 1 ? "s" : ""));
+					CardView.this.selectedCards.clear();
+					CardView.this.selectedCards.addAll(newCards);
+				}
+
+				de.setDropCompleted(true);
+				de.consume();
+			} else {
+				// TODO: Accept transfer from other programs/areas?
+			}
+
+			CardView.this.layout();
+		}
+
+		void dragDone(DragEvent de) {
+			if (de.isConsumed()) return;
+
+			if (CardView.dragSource != null) {
+				CardView.dragSource = null;
+				de.consume();
+			}
+		}
+	}
+
+	private class SelectBehavior {
+		private boolean selecting;
+		private volatile double startX, startY, selectX, selectY, selectW, selectH;
+
+		public SelectBehavior() {
+			CardView.this.addEventHandler(MouseEvent.MOUSE_PRESSED, this::mousePressed);
+			CardView.this.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::mouseDragged);
+			CardView.this.addEventHandler(MouseEvent.MOUSE_RELEASED, this::mouseReleased);
+			this.selecting = false;
+			this.startX = this.startY = this.selectX = this.selectY = this.selectW = this.selectH = Double.NaN;
+		}
+
+		private void mousePressed(MouseEvent me) {
+			if (me.getButton() != MouseButton.PRIMARY) return;
+			if (me.isAltDown()) return;
+			if (CardView.this.hoverCard != null) return;
+
+			if (!me.isControlDown()) {
+				CardView.this.selectedCards.clear();
+			}
+
+			// TODO: Handle scrolling.
+			this.selecting = true;
+			startX = selectX = me.getX();
+			startY = selectY = me.getY();
+			selectW = 0;
+			selectH = 0;
+			me.consume();
+		}
+
+		private void mouseDragged(MouseEvent me) {
+			if (!selecting) return;
+
+			// TODO: Handle scrolling.
+			if (me.getX() < startX) {
+				selectX = me.getX();
+				selectW = startX - selectX;
+			} else {
+				selectX = startX;
+				selectW = me.getX() - startX;
+			}
+
+			if (me.getY() < startY) {
+				selectY = me.getY();
+				selectH = startY - selectY;
+			} else {
+				selectY = startY;
+				selectH = me.getY() - startY;
+			}
+
+			CardView.this.scheduleRender();
+			me.consume(); // TODO: Is this necessary?
+		}
+
+		private void mouseReleased(MouseEvent me) {
+			if (!selecting) return;
+
+			// TODO: Handle scrolling.
+			if (!me.isControlDown()) CardView.this.selectedCards.clear();
+			CardView.this.selectedCards.addAll(CardView.this.cardsInBounds(selectX, selectY, selectX + selectW, selectY + selectH));
+
+			selecting = false;
+			startX = startY = selectX = selectY = selectW = selectH = Double.NaN;
+		}
+	}
+
+	private class ZoomBehavior {
+		private CardInstance zoomedCard;
+		private CardZoomPreview zoomPreview;
+		private boolean mouse3Down;
+
+		public ZoomBehavior() {
+			CardView.this.addEventHandler(MouseEvent.MOUSE_PRESSED, this::mousePressed);
+			CardView.this.addEventHandler(MouseEvent.MOUSE_RELEASED, this::mouseReleased);
+			CardView.this.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::mouseDraggedOrMoved);
+			CardView.this.addEventHandler(MouseEvent.MOUSE_MOVED, this::mouseDraggedOrMoved);
+			this.zoomPreview = null;
+			this.zoomedCard = null;
+			this.mouse3Down = false;
+		}
+
+		private void mousePressed(MouseEvent me) {
+			if (mouse3Down) return;
+			if (me.getButton() != MouseButton.MIDDLE) return;
+			if (CardView.this.hoverCard == null) return; // Pan instead
+			mouse3Down = true;
+
+			mouseDraggedOrMoved(me);
+			me.consume();
+		}
+
+		private void mouseReleased(MouseEvent me) {
+			if (!mouse3Down) return;
+			if (me.getButton() != MouseButton.MIDDLE) return;
+			mouse3Down = false;
+
+			endPreview();
+			me.consume();
+		}
+
+		private void mouseDraggedOrMoved(InputEvent ie) {
+			if (!mouse3Down) return;
+
+			showPreview(ie);
+			ie.consume();
+		}
+
+		private void endPreview() {
+			if (zoomPreview != null) {
+				zoomPreview.close();
+				zoomPreview = null;
+				zoomedCard = null;
+			}
+		}
+
+		private synchronized void showPreview(InputEvent ie) {
+			CardInstance ci;
+			int idx;
+			if (!(ie instanceof MouseEvent)) {
+				ci = hoverCard;
+				idx = hoverCardGroupIdx;
+			} else {
+				MouseEvent me = (MouseEvent) ie;
+				if (me.getPickResult().getIntersectedNode() != CardView.this) {
+					ci = null;
+					idx = -1;
+				} else {
+					CardHitResult search = cardAt(me.getX(), me.getY());
+					ci = search.card;
+					idx = search.index;
+				}
+			}
+
+			if (zoomedCard == ci) {
+				return;
+			}
+
+			zoomedCard = ci;
+
+			if (zoomPreview != null) {
+				zoomPreview.close();
+			}
+
+			if (zoomedCard != null) {
+				MVec2d zoomLoc = new MVec2d(0.0, 0.0);
+				CardView.this.engine.coordinatesOf(idx, zoomLoc);
+				zoomLoc.plus(-scrollX.get(), -scrollY.get());
+				javafx.geometry.Point2D point = CardView.this.localToScreen(0.0, 0.0);
+				zoomLoc.plus(point.getX(), point.getY());
+
+				Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
+
+				try {
+					zoomPreview = new CardZoomPreview(CardView.this, start, zoomedCard.printing());
+					getScene().getWindow().requestFocus(); // Steal focus back from the zoom preview.
+				} catch (InterruptedException | ExecutionException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
 	public class Group {
 		public final Bounds groupBounds, labelBounds;
 		public final Grouping.Group group;
@@ -449,24 +846,15 @@ public class CardView extends Canvas {
 
 	private final DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
 
-	private enum DragMode {
-		None,
-		DragAndDrop,
-		Panning,
-		Zooming,
-		Selecting
-	}
-
-	private volatile DragMode dragMode = DragMode.None;
-	private volatile double dragStartX, dragStartY;
-	private volatile double lastDragX, lastDragY;
+	private final PanBehavior panBehavior;
+	private final DragAndDropBehavior dragAndDropBehavior;
+	private final SelectBehavior selectBehavior;
+	private final ZoomBehavior zoomBehavior;
 
 	private Group hoverGroup;
 	private CardInstance hoverCard;
+	private volatile int hoverCardGroupIdx;
 	public final ObservableSet<CardInstance> selectedCards = FXCollections.observableSet(new HashSet<>());
-
-	private CardInstance zoomedCard;
-	private CardZoomPreview zoomPreview;
 
 	private Consumer<CardInstance> doubleClick;
 	private ContextMenu contextMenu;
@@ -512,6 +900,7 @@ public class CardView extends Canvas {
 
 		this.hoverCard = null;
 		this.hoverGroup = null;
+		this.hoverCardGroupIdx = -1;
 
 		this.doubleClick = ci -> {};
 		this.contextMenu = null;
@@ -533,10 +922,17 @@ public class CardView extends Canvas {
 		grouping(grouping);
 		layout(layout);
 
+		this.panBehavior = new PanBehavior();
+		this.dragAndDropBehavior = new DragAndDropBehavior();
+		this.selectBehavior = new SelectBehavior();
+		this.zoomBehavior = new ZoomBehavior();
+
 		this.scrollX.addListener(e -> scheduleRender());
 		this.scrollY.addListener(e -> scheduleRender());
 
 		setOnMouseMoved(me -> {
+			if (me.isConsumed()) return;
+
 			CardInstance lastHoverCard = hoverCard;
 
 			mouseMoved(me.getX(), me.getY());
@@ -557,9 +953,12 @@ public class CardView extends Canvas {
 		});
 
 		setOnMouseExited(me -> {
+			if (me.isConsumed()) return;
+
 			if (hoverGroup != null) {
 				hoverGroup = null;
 				hoverCard = null;
+				hoverCardGroupIdx = -1;
 
 				scheduleRender();
 			}
@@ -567,174 +966,9 @@ public class CardView extends Canvas {
 			me.consume();
 		});
 
-		setOnDragDetected(de -> {
-			if (de.getButton() != MouseButton.PRIMARY) {
-				return;
-			}
-
-			selectedCards.retainAll(this.model);
-
-			if (selectedCards.isEmpty()) {
-				return;
-			}
-
-			Dragboard db = this.startDragAndDrop(TransferMode.ANY);
-
-			CardInstance view;
-			if (selectedCards.size() == 1) {
-				view = selectedCards.iterator().next();
-			} else if (hoverCard != null) {
-				view = hoverCard;
-			} else {
-				view = null;
-			}
-
-			if (view != null) {
-				Context.get().images.getThumbnail(view.printing()).thenApply(img -> {
-					db.setDragView(img, -8.0, -8.0);
-					return img;
-				}).getNow(Images.LOADING_CARD);
-			}
-
-			db.setContent(Collections.singletonMap(DataFormat.PLAIN_TEXT, selectedCards.toString()));
-			CardView.dragModified = de.isControlDown();
-			CardView.dragSource = this;
-			de.consume();
-		});
-
-		setOnDragOver(de -> {
-			if (CardView.dragSource == this) {
-				mouseMoved(de.getX(), de.getY());
-
-				if (hoverGroup != null && !selectedCards.stream().allMatch(hoverGroup.group::contains)) {
-					if (CardView.dragModified) {
-						de.acceptTransferModes(TransferMode.LINK);
-					} else {
-						de.acceptTransferModes(TransferMode.MOVE);
-					}
-				} else if (hoverGroup != null) {
-					de.acceptTransferModes(); // TODO: If we ever allow rearranging within groups.
-				} else {
-					// Don't accept.
-				}
-				de.consume();
-			} else if (CardView.dragSource != null) {
-				mouseMoved(de.getX(), de.getY());
-
-				if (CardView.dragModified) {
-					de.acceptTransferModes(TransferMode.COPY);
-				} else {
-					de.acceptTransferModes(TransferMode.MOVE);
-				}
-				de.consume();
-			} else {
-				// TODO: Accept transfer from other programs/areas?
-			}
-		});
-
-		setOnDragDropped(de -> {
-			if (CardView.dragSource == this) {
-				if (this.grouping.supportsModification()) {
-					DeckChanger.startChangeBatch(this.deck);
-
-					this.selectedCards.forEach(this.hoverGroup.group::add);
-
-					if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-						for (Group group : this.groupedModel) {
-							if (group == hoverGroup) {
-								continue;
-							}
-
-							for (CardInstance ci : selectedCards) {
-								group.group.remove(ci);
-							}
-						}
-					}
-
-					// I know this looks weird, but the `group.add` and `group.remove` above add the actual batched changes.
-					DeckChanger.addBatchedChange(
-							this.deck,
-							l -> { for (Group group : this.groupedModel) group.refilter(); },
-							l -> { for (Group group : this.groupedModel) group.refilter(); }
-					);
-
-					DeckChanger.endChangeBatch(
-							this.deck,
-							"Change Tags"
-					);
-
-					de.setDropCompleted(true);
-					de.consume();
-				}
-			} else if (CardView.dragSource != null) {
-				if (deck != null) {
-					Set<CardInstance> oldCards = new HashSet<>(CardView.dragSource.selectedCards);
-
-					if (de.getAcceptedTransferMode() == TransferMode.MOVE && CardView.dragSource.deck != null) {
-						final CardView source = CardView.dragSource;
-						final DeckList sourceDeck = source.deck;
-						final ObservableList<CardInstance> sourceModel = source.model;
-						DeckChanger.startChangeBatch(sourceDeck);
-
-						if (source.grouping.supportsModification() && this.hoverGroup != null && this.grouping.supportsModification()) {
-							for (Grouping.Group oldGroup : source.groups) {
-								for (CardInstance oldCard : source.selectedCards) {
-									oldGroup.remove(oldCard);
-								}
-							}
-						}
-
-						DeckChanger.addBatchedChange(
-								sourceDeck,
-								l -> sourceModel.removeAll(oldCards),
-								l -> sourceModel.addAll(oldCards)
-						);
-
-						if (sourceDeck != this.deck) DeckChanger.endChangeBatch(sourceDeck, String.format("Remove %d Card%s", oldCards.size(), oldCards.size() > 1 ? "s" : ""));
-						source.selectedCards.clear();
-					}
-
-					if (dragSource.deck != deck) DeckChanger.startChangeBatch(deck);
-					Set<CardInstance> newCards = oldCards.stream()
-							.map(ci -> {
-								CardInstance clone = new CardInstance(ci);
-
-								if (this.hoverGroup != null && this.grouping.supportsModification()) {
-									this.hoverGroup.group.add(clone);
-								}
-
-								return clone;
-							})
-							.collect(Collectors.toSet());
-
-					final ObservableList<CardInstance> thisModel = this.model;
-					DeckChanger.addBatchedChange(
-							deck,
-							l -> thisModel.addAll(newCards),
-							l -> thisModel.removeAll(newCards)
-					);
-					DeckChanger.endChangeBatch(deck, String.format("%s %d Card%s", dragSource.deck != deck ? "Add" : "Move", newCards.size(), newCards.size() > 1 ? "s" : ""));
-					this.selectedCards.clear();
-					this.selectedCards.addAll(newCards);
-				}
-
-				de.setDropCompleted(true);
-				de.consume();
-			} else {
-				// TODO: Accept transfer from other programs/areas?
-			}
-
-			layout();
-		});
-
-		setOnDragDone(de -> {
-			if (CardView.dragSource != null) {
-				CardView.dragSource = null;
-				de.consume();
-			}
-		});
-
 		setOnMouseClicked(me -> {
+			if (me.isConsumed()) return;
+
 			if (me.getButton() == MouseButton.PRIMARY) {
 				if (me.isAltDown()) {
 					final CardInstance card = hoverCard;
@@ -780,7 +1014,7 @@ public class CardView extends Canvas {
 						refreshCardGrouping();
 					});
 				} else if (me.getClickCount() % 2 == 0) {
-					CardInstance ci = cardAt(me.getX(), me.getY());
+					CardInstance ci = cardAt(me.getX(), me.getY()).card;
 
 					if (ci != null) {
 						this.doubleClick.accept(ci);
@@ -806,6 +1040,8 @@ public class CardView extends Canvas {
 		});
 
 		setOnMousePressed(me -> {
+			if (me.isConsumed()) return;
+
 			this.requestFocus();
 			mouseMoved(me.getX(), me.getY());
 
@@ -813,96 +1049,24 @@ public class CardView extends Canvas {
 				this.contextMenu.hide();
 			}
 
-			dragStartX = lastDragX = me.getX();
-			dragStartY = lastDragY = me.getY();
-
-			if (me.getButton() == MouseButton.PRIMARY) {
-				if (!me.isAltDown()) {
-					if (hoverCard == null) {
-						if (!me.isControlDown()) {
-							selectedCards.clear();
-						}
-
-						dragMode = DragMode.Selecting;
-					} else {
-						dragMode = DragMode.DragAndDrop;
-
-						if (!selectedCards.contains(hoverCard)) {
-							if (!me.isControlDown()) {
-								selectedCards.clear();
-							}
-							selectedCards.add(hoverCard);
-						}
-					}
-				}
-			} else if (me.getButton() == MouseButton.SECONDARY) {
-				dragMode = DragMode.None;
-
+			if (me.getButton() == MouseButton.SECONDARY) {
 				if (hoverCard != null && !selectedCards.contains(hoverCard)) {
 					if (!me.isControlDown()) {
 						selectedCards.clear();
 					}
 					selectedCards.addAll(hoverGroup.hoverCards(hoverCard));
 				}
-			} else if (me.getButton() == MouseButton.MIDDLE) {
-				if (hoverCard == null) {
-					dragMode = DragMode.Panning;
-				} else {
-					dragMode = DragMode.Zooming;
-					showPreview(me);
-				}
 			}
 		});
 
 		setOnMouseDragged(me -> {
-			switch (dragMode) {
-				case None:
-					break;
-				case DragAndDrop:
-					break;
-				case Panning:
-					scrollX.set(Math.max(scrollMinX.get(), Math.min(scrollX.get() - (me.getX() - lastDragX), scrollMaxX.get())));
-					scrollY.set(Math.max(scrollMinY.get(), Math.min(scrollY.get() - (me.getY() - lastDragY), scrollMaxY.get())));
-					break;
-				case Selecting:
-					break;
-				case Zooming:
-					showPreview(me);
-					break;
-			}
-
-			lastDragX = me.getX();
-			lastDragY = me.getY();
+			if (me.isConsumed()) return;
 
 			scheduleRender();
 		});
 
 		setOnMouseReleased(me -> {
-			switch (dragMode) {
-				case None:
-				case DragAndDrop:
-				case Panning:
-				case Zooming:
-					break;
-				case Selecting:
-					if (!me.isControlDown()) {
-						selectedCards.clear();
-					}
-					selectedCards.addAll(cardsInBounds(dragStartX, dragStartY, me.getX(), me.getY()));
-					break;
-			}
-
-			lastDragX = -1;
-			lastDragY = -1;
-			dragStartX = -1;
-			dragStartY = -1;
-			dragMode = DragMode.None;
-
-			if (zoomPreview != null) {
-				zoomPreview.close();
-				zoomPreview = null;
-				zoomedCard = null;
-			}
+			if (me.isConsumed()) return;
 
 			scheduleRender();
 		});
@@ -938,6 +1102,7 @@ public class CardView extends Canvas {
 
 		if (newHoverGroup == null) {
 			hoverCard = null;
+			hoverCardGroupIdx = -1;
 			if (rerender) {
 				scheduleRender();
 			}
@@ -954,44 +1119,10 @@ public class CardView extends Canvas {
 		}
 
 		hoverCard = newHoverCard;
+		hoverCardGroupIdx = newHoverIdx;
 
 		if (rerender) {
 			scheduleRender();
-		}
-	}
-
-	private synchronized void showPreview(MouseEvent me) {
-		CardInstance ci;
-		if (me.getPickResult().getIntersectedNode() != this) {
-			ci = null;
-		} else {
-			ci = cardAt(me.getX(), me.getY());
-		}
-
-		if (zoomedCard == ci) {
-			return;
-		}
-
-		zoomedCard = ci;
-
-		if (zoomPreview != null) {
-			zoomPreview.close();
-		}
-
-		if (zoomedCard != null) {
-			MVec2d zoomLoc = cardCoordinatesOf(me.getX(), me.getY());
-			if (zoomLoc == null) {
-				zoomLoc = new MVec2d(me.getX(), me.getY());
-			}
-			zoomLoc.plus(me.getScreenX() - me.getX(), me.getScreenY() - me.getY());
-
-			Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
-
-			try {
-				zoomPreview = new CardZoomPreview(start, zoomedCard.printing());
-			} catch (InterruptedException | ExecutionException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 
@@ -1037,41 +1168,21 @@ public class CardView extends Canvas {
 		return selectedCards;
 	}
 
-	private MVec2d cardCoordinatesOf(double x, double y) {
-		if (this.engine == null || filteredModel.size() == 0) {
-			return null;
+	private static class CardHitResult {
+		public final Group group;
+		public final int index;
+		public final CardInstance card;
+
+		public CardHitResult(Group group, int index, CardInstance card) {
+			this.group = group;
+			this.index = index;
+			this.card = card;
 		}
-
-		MVec2d point = new MVec2d(x + scrollX.get(), y + scrollY.get());
-
-		Group group = null;
-		for (Group g : groupedModel) {
-			if (g.groupBounds.contains(point)) {
-				group = g;
-				break;
-			}
-		}
-
-		if (group == null || group.model().isEmpty()) {
-			return null;
-		}
-
-		point.plus(group.groupBounds.pos.copy().negate());
-		int card = this.engine.cardAt(point, group.model().size());
-
-		if (card < 0) {
-			return null;
-		}
-
-		this.engine.coordinatesOf(card, point);
-		point.plus(group.groupBounds.pos);
-		point.plus(-scrollX.get(), -scrollY.get());
-		return point;
 	}
 
-	private CardInstance cardAt(double x, double y) {
+	private CardHitResult cardAt(double x, double y) {
 		if (this.engine == null || filteredModel.size() == 0) {
-			return null;
+			return new CardHitResult(null, -1, null);
 		}
 
 		MVec2d point = new MVec2d(x + scrollX.get(), y + scrollY.get());
@@ -1085,17 +1196,17 @@ public class CardView extends Canvas {
 		}
 
 		if (group == null || group.model().isEmpty()) {
-			return null;
+			return new CardHitResult(group, -1, null);
 		}
 
 		point.plus(group.groupBounds.pos.copy().negate());
 		int card = this.engine.cardAt(point, group.model().size());
 
 		if (card < 0) {
-			return null;
+			return new CardHitResult(group, -1, null);
 		}
 
-		return group.model().get(card);
+		return new CardHitResult(group, card, group.model().get(card));
 	}
 
 	public void layout(LayoutEngine.Factory factory) {
@@ -1459,11 +1570,11 @@ public class CardView extends Canvas {
 			}
 		}
 
-		if (dragMode == DragMode.Selecting) {
-			double x = Math.min(dragStartX, lastDragX);
-			double y = Math.min(dragStartY, lastDragY);
-			double w = Math.max(dragStartX, lastDragX) - x;
-			double h = Math.max(dragStartY, lastDragY) - y;
+		if (selectBehavior.selecting) {
+			double x = selectBehavior.selectX;
+			double y = selectBehavior.selectY;
+			double w = selectBehavior.selectW;
+			double h = selectBehavior.selectH;
 
 			gfx.setFill(Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25));
 			gfx.fillRect(x, y, w, h);
@@ -1487,10 +1598,10 @@ public class CardView extends Canvas {
 		MVec2d loc = new MVec2d();
 		MVec2d scroll = new MVec2d(-scrollX.get(), -scrollY.get());
 
-		double dragBoxX1 = Math.min(dragStartX, lastDragX);
-		double dragBoxY1 = Math.min(dragStartY, lastDragY);
-		double dragBoxX2 = Math.max(dragStartX, lastDragX);
-		double dragBoxY2 = Math.max(dragStartY, lastDragY);
+		double dragBoxX1 = selectBehavior.selectX;
+		double dragBoxY1 = selectBehavior.selectY;
+		double dragBoxX2 = selectBehavior.selectX + selectBehavior.selectW;
+		double dragBoxY2 = selectBehavior.selectY + selectBehavior.selectH;
 
 		if (hoverGroup != null) {
 			renderMap.hoverGroupBounds.pos.set(hoverGroup.groupBounds.pos).plus(scroll);
@@ -1576,7 +1687,7 @@ public class CardView extends Canvas {
 
 				if (selectedCards.contains(ci)) {
 					states.add(CardView.CardState.Selected);
-				} else if (dragMode == DragMode.Selecting) {
+				} else if (selectBehavior.selecting) {
 					if (cardInBounds(loc, dragBoxX1, dragBoxY1, dragBoxX2, dragBoxY2)) {
 						states.add(CardView.CardState.Selected);
 					}
