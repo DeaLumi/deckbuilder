@@ -125,4 +125,9 @@ public class FlowGrid implements CardView.LayoutEngine {
 
 		return idx < 0 || idx >= groupSize ? -1 : idx;
 	}
+
+	@Override
+	public boolean cardInSelection(CardView.MVec2d loc, double x1, double y1, double x2, double y2) {
+		return loc.x + parent.cardWidth() >= x1 && loc.x <= x2 && loc.y + parent.cardHeight() >= y1 && loc.y <= y2;
+	}
 }

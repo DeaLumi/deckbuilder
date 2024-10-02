@@ -156,6 +156,7 @@ public class CardView extends Canvas {
 
 		MVec2d coordinatesOf(int card, MVec2d buffer);
 		int cardAt(MVec2d point, int groupSize);
+		boolean cardInSelection(MVec2d loc, double x1, double y1, double x2, double y2);
 	}
 
 	public interface Grouping {
@@ -1147,10 +1148,6 @@ public class CardView extends Canvas {
 		}
 	}
 
-	private boolean cardInBounds(MVec2d loc, double x1, double y1, double x2, double y2) {
-		return loc.x + cardWidth() >= x1 && loc.x <= x2 && loc.y + cardHeight() >= y1 && loc.y <= y2;
-	}
-
 	private Set<CardInstance> cardsInBounds(double x1, double y1, double x2, double y2) {
 		Set<CardInstance> selectedCards = new HashSet<>();
 
@@ -1180,7 +1177,7 @@ public class CardView extends Canvas {
 					continue;
 				}
 
-				if (cardInBounds(loc, x1s, y1s, x2s, y2s)) {
+				if (engine.cardInSelection(loc, x1s, y1s, x2s, y2s)) {
 					selectedCards.addAll(groupedModel[i].hoverCards(groupedModel[i].model().get(j)));
 				}
 			}
@@ -1709,7 +1706,7 @@ public class CardView extends Canvas {
 				if (selectedCards.contains(ci)) {
 					states.add(CardView.CardState.Selected);
 				} else if (selectBehavior.selecting) {
-					if (cardInBounds(loc, dragBoxX1, dragBoxY1, dragBoxX2, dragBoxY2)) {
+					if (engine.cardInSelection(loc, dragBoxX1, dragBoxY1, dragBoxX2, dragBoxY2)) {
 						states.add(CardView.CardState.Selected);
 					}
 				}
