@@ -557,9 +557,8 @@ public class CardView extends Canvas {
 		private void mouseReleased(MouseEvent me) {
 			if (!selecting) return;
 
-			// TODO: Handle scrolling.
 			if (!me.isControlDown()) CardView.this.selectedCards.clear();
-			CardView.this.selectedCards.addAll(CardView.this.cardsInBounds(selectX, selectY, selectX + selectW, selectY + selectH));
+			CardView.this.selectedCards.addAll(CardView.this.cardsInBounds(selectX, selectY, selectX2, selectY2));
 
 			selecting = false;
 			startX = startY = selectX = selectY = selectW = selectH = Double.NaN;
@@ -1174,7 +1173,7 @@ public class CardView extends Canvas {
 			localMax.set(groupedModel[i].groupBounds.pos).negate().plus(max);
 
 			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
-				if (engine.cardInSelection(groupedModel[i].model().size(), localMin, localMax, buffer, j)) {
+				if (engine.cardInSelection(j, localMin, localMax, buffer, groupedModel[i].model().size())) {
 					selectedCards.addAll(groupedModel[i].hoverCards(groupedModel[i].model().get(j)));
 				}
 			}
