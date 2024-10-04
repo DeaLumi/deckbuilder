@@ -23,13 +23,14 @@ import java.util.Comparator;
 import java.util.List;
 
 public class FxUtils {
-	public static <T extends Parent> void FXML(T component) {
+	public static <T> void FXML(T component) {
 		FXML(component, component);
 	}
 
-	public static <T extends Parent> void FXML(Object controller, T component) {
+	public static <T> void FXML(Object controller, T component) {
 		FXMLLoader loader = new FXMLLoader();
 		loader.setRoot(component);
+		loader.setController(controller);
 		loader.setControllerFactory(theClass -> controller);
 
 		String fileName = controller.getClass().getSimpleName() + ".fxml";

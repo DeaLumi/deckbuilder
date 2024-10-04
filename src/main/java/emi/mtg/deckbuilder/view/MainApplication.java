@@ -6,7 +6,9 @@ import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
+import emi.mtg.deckbuilder.view.dialogs.DebugConsole;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import emi.mtg.deckbuilder.view.util.AppendOnlyViewableText;
 import emi.mtg.deckbuilder.view.util.FxUtils;
 import emi.mtg.deckbuilder.view.util.MicroMarkdown;
 import emi.mtg.deckbuilder.util.PluginUtils;
@@ -40,6 +42,13 @@ import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
 public class MainApplication extends Application {
+	public static final AppendOnlyViewableText stdout = new AppendOnlyViewableText(1024), stderr = new AppendOnlyViewableText(1024), stdboth = new AppendOnlyViewableText(2048);
+
+	static {
+		System.setOut(stdout.new Tee(stdboth.new Tee(System.out)));
+		System.setErr(stderr.new Tee(stdboth.new Tee(System.err)));
+	}
+
 	public static final Path JAR_PATH = PluginUtils.jarPath(MainApplication.class);
 	public static final Path JAR_DIR = JAR_PATH.getParent();
 
@@ -576,5 +585,9 @@ public class MainApplication extends Application {
 				.contentHtml(html)
 				.show();
 		FxUtils.center(alert, screen);
+	}
+
+	public void showDebugConsole() {
+		new DebugConsole().show();
 	}
 }

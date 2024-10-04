@@ -18,6 +18,7 @@ import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.components.DeckPane;
 import emi.mtg.deckbuilder.view.components.DeckTab;
+import emi.mtg.deckbuilder.view.dialogs.DebugConsole;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
@@ -1140,5 +1141,10 @@ public class MainWindow extends Stage {
 	@FXML
 	protected void trimImageDiskCache() {
 		owner.trimImageDiskCache();
+	}
+
+	@FXML
+	protected void showDebug() {
+		new DebugConsole().show();
 	}
 }

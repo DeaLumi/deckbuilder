@@ -52,6 +52,7 @@
                     <MenuItem text="What's New" onAction="#showChangelog"/>
                     <MenuItem text="About" onAction="#showAboutDialog"/>
                     <Menu text="Debug" fx:id="debugMenu">
+                        <MenuItem text="Show Debug Console" onAction="#showDebug"/>
                         <MenuItem text="Remodel" onAction="#remodel"/>
                         <MenuItem text="Create Emergency" onAction="#createEmergency"/>
                         <MenuItem text="Flush Image Caches" onAction="#flushImageCaches"/>
