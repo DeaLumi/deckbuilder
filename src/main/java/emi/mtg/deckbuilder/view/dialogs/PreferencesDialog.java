@@ -654,12 +654,16 @@ public class PreferencesDialog extends Alert {
 		return Collections.unmodifiableMap(map);
 	}
 
+	private final List<PrefEntry> prefEntries;
+
 	public PreferencesDialog(Window owner) {
 		super(AlertType.CONFIRMATION);
 		initOwner(owner);
 		setTitle("Deck Builder Preferences");
 		setHeaderText("Update Preferences");
 		getDialogPane().setStyle(Preferences.get().theme.style());
+
+		this.prefEntries = new ArrayList<>();
 
 		TabPane tabs = new TabPane();
 		tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
@@ -679,6 +683,8 @@ public class PreferencesDialog extends Alert {
 				if (entry instanceof Preference) {
 					((Preference<?>) entry).init();
 				}
+
+				this.prefEntries.add(entry);
 			}
 
 			StackPane pane = new StackPane(grid);
@@ -691,8 +697,7 @@ public class PreferencesDialog extends Alert {
 		getDialogPane().setContent(tabs);
 
 		getDialogPane().lookupButton(ButtonType.OK).addEventFilter(ActionEvent.ACTION, ae -> {
-			List<String> invalidPrefs = PREFERENCE_FIELDS.values().stream()
-					.flatMap(Arrays::stream)
+			List<String> invalidPrefs = prefEntries.stream()
 					.filter(f -> f instanceof Preference)
 					.map(f -> (Preference<?>) f)
 					.filter(f -> !f.validate())
@@ -706,8 +711,7 @@ public class PreferencesDialog extends Alert {
 
 		setResultConverter(bt -> {
 			if (bt.equals(ButtonType.OK)) {
-				PREFERENCE_FIELDS.values().stream()
-						.flatMap(Arrays::stream)
+				prefEntries.stream()
 						.filter(f -> f instanceof Preference)
 						.map(f -> (Preference<?>) f)
 						.forEach(Preference::save);
