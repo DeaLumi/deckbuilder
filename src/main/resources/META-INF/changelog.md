@@ -3,6 +3,7 @@
 ### Features
 
 - Added a preference to control automatic data loading. Disable it to see your options for data sources. (There's probably only one.)
+- Added plugin preferences. External plugins can now provide some simple controls over their behavior.
 
 ### Improvements
 

@@ -1,9 +1,6 @@
 package emi.mtg.deckbuilder.controller;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -15,6 +12,7 @@ import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.util.InstanceMap;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
@@ -37,22 +35,29 @@ import java.util.UUID;
 import java.util.function.Function;
 
 public class Serialization {
-	public static final Gson GSON = new GsonBuilder()
-			.setPrettyPrinting()
-			.setExclusionStrategies()
-			.registerTypeAdapter(Instant.class, Serialization.createInstantAdapter())
-			.registerTypeAdapter(SearchProvider.class, Serialization.createSearchProviderAdapter())
-			.registerTypeAdapter(CardView.Grouping.class, Serialization.createCardViewGroupingAdapter())
-			.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
-			.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
-			.registerTypeAdapter(DeckImportExport.Textual.class, Serialization.createTextualSerdesAdapter())
-			.registerTypeAdapter(SimpleBooleanProperty.class, Serialization.createBooleanPropertyTypeAdapter())
-			.registerTypeAdapter(DataSource.class, Serialization.createDataSourceNameAdapter())
-			.registerTypeHierarchyAdapter(Path.class, Serialization.createPathTypeAdapter())
-			.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
-			.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
-			.registerTypeAdapterFactory(Serialization.createPreferredPrintingAdapterFactory())
-			.create();
+	public static final Gson GSON;
+	static {
+		GsonBuilder builder = new GsonBuilder()
+				.setPrettyPrinting()
+				.setExclusionStrategies()
+				.registerTypeAdapter(Instant.class, Serialization.createInstantAdapter())
+				.registerTypeAdapter(SearchProvider.class, Serialization.createSearchProviderAdapter())
+				.registerTypeAdapter(CardView.Grouping.class, Serialization.createCardViewGroupingAdapter())
+				.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
+				.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
+				.registerTypeAdapter(DeckImportExport.Textual.class, Serialization.createTextualSerdesAdapter())
+				.registerTypeAdapter(SimpleBooleanProperty.class, Serialization.createBooleanPropertyTypeAdapter())
+				.registerTypeAdapter(DataSource.class, Serialization.createDataSourceNameAdapter())
+				.registerTypeHierarchyAdapter(Path.class, Serialization.createPathTypeAdapter())
+				.registerTypeAdapterFactory(Serialization.createInstanceMapTypeAdapterFactory())
+				.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
+				.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
+				.registerTypeAdapterFactory(Serialization.createPreferredPrintingAdapterFactory());
+
+		Preferences.registerPluginTypeAdapters(builder);
+
+		GSON = builder.create();
+	};
 
 	public abstract static class StringTypeAdapter<T> extends TypeAdapter<T> {
 		protected abstract String toString(T value) throws IOException;
@@ -309,6 +314,10 @@ public class Serialization {
 				throw new NoSuchElementException("Unknown data source " + value + " -- have your plugins changed?");
 			}
 		};
+	}
+
+	public static TypeAdapterFactory createInstanceMapTypeAdapterFactory() {
+		return new InstanceMap.TypeAdapterFactory();
 	}
 
 	public static TypeAdapterFactory createPropertyTypeAdapterFactory() {

@@ -694,6 +694,123 @@ public class PreferencesDialog extends Alert {
 			tabs.getTabs().add(new Tab(tab.getKey(), pane));
 		}
 
+		TabPane preferencesTabs = new TabPane();
+		preferencesTabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+		preferencesTabs.getStyleClass().add(TabPane.STYLE_CLASS_FLOATING);
+
+		// Plugin preferences
+		for (Preferences.Plugin plugin : Preferences.get().pluginPreferences.values()) {
+			GridPane grid = new GridPane();
+			grid.setHgap(10.0);
+			grid.setVgap(10.0);
+			grid.setMaxWidth(GridPane.USE_PREF_SIZE);
+			grid.setMaxHeight(GridPane.USE_PREF_SIZE);
+
+			int i = -1;
+			for (Map.Entry<Field, Preferences.Plugin.Preference> preference : Preferences.Plugin.preferenceFields(plugin).entrySet()) {
+				Field field = preference.getKey();
+				field.setAccessible(true);
+				Preferences.Plugin.Preference info = preference.getValue();
+
+				Tooltip tooltip = info.tooltip().isEmpty() ? null : new Tooltip(info.tooltip());
+				if (tooltip != null) tooltip.setFont(Font.font(12.0));
+
+				Preference<?> prefEntry;
+				if (field.getType().isEnum() || info.options().length > 0) {
+					Object[] options = field.getType().isEnum() ? field.getType().getEnumConstants() : info.options();
+					Object none = null;
+
+					if (!info.noneOption().isEmpty()) {
+						if (field.getType().isEnum()) {
+							for (Object obj : field.getType().getEnumConstants()) {
+								if (info.noneOption().equals(((Enum<?>) obj).name())) {
+									none = obj;
+									break;
+								}
+							}
+						} else {
+							for (Object option : options) {
+								if (info.noneOption().equals(option)) {
+									none = option;
+									break;
+								}
+							}
+						}
+
+						if (none == null) {
+							System.err.printf(
+									"Plugin %s declares an enumerated preference %s (%s.%s) with a noneOption %s that doesn't match any of its options (%s)!%n",
+									plugin.name(),
+									info.value(),
+									field.getDeclaringClass().getCanonicalName(), field.getName(),
+									info.noneOption(),
+									Arrays.toString(info.options())
+							);
+							continue;
+						}
+					}
+
+					if (info.buttonBar()) {
+						prefEntry = new ButtonBarPref<>(
+								info.value(),
+								tooltip,
+								(FromPrefs<Object>) prefs -> field.get(plugin),
+								x -> true,
+								(ToPrefs<Object>) (prefs, val) -> field.set(plugin, val),
+								options,
+								none
+						);
+					} else {
+						prefEntry = new ComboBoxPreference<>(
+								options,
+								info.value(),
+								tooltip,
+								(FromPrefs<Object>) prefs -> field.get(plugin),
+								x -> true,
+								(ToPrefs<Object>) (prefs, val) -> field.set(plugin, val)
+						);
+					}
+				} else if (field.getType() == String.class) {
+					prefEntry = new StringPreference(
+							info.value(),
+							tooltip,
+							(FromPrefs<String>) prefs -> (String) field.get(plugin),
+							x -> true,
+							(ToPrefs<String>) (prefs, val) -> field.set(plugin, val)
+					);
+				} else if (field.getType() == boolean.class) {
+					prefEntry = new BooleanPreference(
+							info.value(),
+							tooltip,
+							(FromPrefs<Boolean>) prefs -> field.getBoolean(plugin),
+							x -> true,
+							(ToPrefs<Boolean>) (prefs, val) -> field.set(plugin, val)
+					);
+				} else {
+					System.err.printf(
+							"Plugin %s declares a preference %s (%s.%s) with an unhandled field type %s!%n",
+							plugin.name(),
+							info.value(),
+							field.getDeclaringClass().getCanonicalName(), field.getName(),
+							field.getType()
+					);
+					continue;
+				}
+
+				prefEntry.installGui(grid, ++i);
+				prefEntry.init();
+				this.prefEntries.add(prefEntry);
+			}
+
+			StackPane pane = new StackPane(grid);
+			pane.setPadding(new Insets(10.0));
+			StackPane.setAlignment(grid, Pos.CENTER);
+
+			preferencesTabs.getTabs().add(new Tab(plugin.name(), pane));
+		}
+
+		tabs.getTabs().add(new Tab("Plugins", preferencesTabs));
+
 		getDialogPane().setContent(tabs);
 
 		getDialogPane().lookupButton(ButtonType.OK).addEventFilter(ActionEvent.ACTION, ae -> {

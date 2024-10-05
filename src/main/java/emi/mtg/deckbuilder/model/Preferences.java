@@ -1,5 +1,7 @@
 package emi.mtg.deckbuilder.model;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.InstanceCreator;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
@@ -8,6 +10,8 @@ import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.Serialization;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.TextFile;
+import emi.mtg.deckbuilder.util.InstanceMap;
+import emi.mtg.deckbuilder.util.PluginUtils;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.groupings.None;
@@ -20,15 +24,75 @@ import javafx.beans.property.SimpleObjectProperty;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Preferences {
+	/**
+	 * Preferences plugin for plugin preferences.
+	 */
+	public interface Plugin {
+		@Target(ElementType.FIELD)
+		@Retention(RetentionPolicy.RUNTIME)
+		@interface Preference {
+			/**
+			 * @return A label for the preference in the preferences dialog.
+			 */
+			String value();
+
+			/**
+			 * @return A list of options. Only applies if the field type is String. Turns control into combo box or button bar.
+			 */
+			String[] options() default {};
+
+			/**
+			 * @return Option if no other option is selected. Only applies if buttonBar applies and is true.
+			 */
+			String noneOption() default "";
+
+			/**
+			 * @return True to use a button bar instead of a combo box. Only applies if field type is String or enum.
+			 */
+			boolean buttonBar() default false;
+
+			/**
+			 * @return Tooltip to display to the user when hovering over the label, to explain what the preference does.
+			 */
+			String tooltip() default "";
+		}
+
+		/**
+		 * The name for this preferences plugin. Should really be unique. Please be unique.
+		 * @return A unique name for this preferences plugin.
+		 */
+		String name();
+
+		static Map<Field, Preference> preferenceFields(Plugin plugin) {
+			return Arrays.stream(plugin.getClass().getDeclaredFields())
+					.filter(f -> (f.getModifiers() & Modifier.TRANSIENT) == 0)
+					.filter(f -> f.getAnnotation(Preference.class) != null)
+					.collect(Collectors.toMap(f -> f, f -> f.getAnnotation(Preference.class)));
+		}
+	}
+
+	public static void registerPluginTypeAdapters(GsonBuilder builder) {
+		for (Plugin plugin : PLUGINS) {
+			builder.registerTypeAdapter(plugin.getClass(), (InstanceCreator) type -> plugin);
+		}
+	}
+
 	/**
 	 * Static utilities
 	 */
@@ -36,6 +100,8 @@ public class Preferences {
 	private static final Path PATH = MainApplication.JAR_DIR.resolve("preferences.json");
 	private static Preferences instance = null;
 	private static final Set<WeakReference<Consumer<Preferences>>> LISTENERS = new HashSet<>();
+
+	private static final List<Plugin> PLUGINS = PluginUtils.providers(Plugin.class);
 
 	public static synchronized Preferences instantiate() throws IOException {
 		if (instance == null) {
@@ -47,6 +113,13 @@ public class Preferences {
 
 			if (instance == null) {
 				instance = new Preferences();
+			}
+
+			// Ensure all plugins have a presence in the preferences.
+			for (Plugin plugin : PLUGINS) {
+				if (!instance.pluginPreferences.containsKey(plugin.getClass())) {
+					instance.pluginPreferences.put(plugin.getClass(), plugin);
+				}
 			}
 		} else {
 			throw new IllegalStateException("Preferences have already been initialized!");
@@ -64,6 +137,9 @@ public class Preferences {
 	}
 
 	public static void save() throws IOException {
+		// Ensure all plugins have entries.
+		for (Plugin plugin : PLUGINS) get().plugin(plugin.getClass());
+
 		Writer writer = Files.newBufferedWriter(PATH);
 		Serialization.GSON.toJson(get(), writer);
 		writer.close();
@@ -261,6 +337,12 @@ public class Preferences {
 	public Property<CutboardBehavior> cutboardBehavior = new SimpleObjectProperty<>(CutboardBehavior.WhenOpen);
 
 	/**
+	 * Plugins' preferences
+	 */
+
+	public final InstanceMap<Plugin> pluginPreferences = PLUGINS.stream().collect(Collectors.toMap(Plugin::getClass, p -> p, (a, b) -> b, InstanceMap::new));
+
+	/**
 	 * Instance utilities (e.g. simplifying accessors)
 	 */
 
@@ -298,5 +380,21 @@ public class Preferences {
 		}
 
 		deferredPreferredPrintings.clear();
+	}
+
+	public <T extends Plugin> T plugin(Class<T> type) {
+		if (!pluginPreferences.containsKey(type)) {
+			// See if the known plugins list has an element -- if so, insist upon it.
+			for (Plugin plugin : PLUGINS) {
+				if (plugin.getClass() == type) {
+					pluginPreferences.put(type, plugin);
+					return (T) plugin;
+				}
+			}
+
+			throw new NoSuchElementException("No such plugin type: " + type);
+		}
+
+		return (T) pluginPreferences.get(type);
 	}
 }

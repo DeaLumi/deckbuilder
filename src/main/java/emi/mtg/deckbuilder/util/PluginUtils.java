@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class PluginUtils {
-	private static final ClassLoader PLUGIN_CLASS_LOADER;
+	public static final ClassLoader PLUGIN_CLASS_LOADER;
 
 	static {
 		Path jarDir = jarPath(MainApplication.class).getParent();
