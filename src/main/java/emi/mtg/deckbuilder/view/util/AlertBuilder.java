@@ -20,6 +20,7 @@ import java.io.UncheckedIOException;
 import java.util.Hashtable;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
@@ -316,9 +317,9 @@ public class AlertBuilder {
 						alert.setResult(btn);
 						alert.close();
 					});
-				} catch (Exception e) {
+				} catch (Throwable e) {
 					result = false;
-					exc = e;
+					exc = new ExecutionException(e);
 				}
 
 				if (!result) {

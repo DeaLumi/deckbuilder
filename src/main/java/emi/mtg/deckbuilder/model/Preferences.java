@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.model;
 
 import emi.lib.mtg.Card;
+import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
@@ -201,6 +202,9 @@ public class Preferences {
 	/**
 	 * Critical operation preferences
 	 */
+
+	public final DataSource dataSource = null;
+	public boolean autoLoadData = true;
 
 	public final Path dataPath = MainApplication.JAR_DIR.resolve("data/").toAbsolutePath();
 	public final Path imagesPath = MainApplication.JAR_DIR.resolve("images/").toAbsolutePath();

@@ -30,6 +30,7 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -287,7 +288,7 @@ public class MainApplication extends Application {
 					.showAndWait();
 		}
 
-		if (DATA_SOURCES.size() == 0) {
+		if (DATA_SOURCES.isEmpty()) {
 			AlertBuilder.notify(hostStage)
 					.screen(screen)
 					.type(Alert.AlertType.ERROR)
@@ -316,30 +317,54 @@ public class MainApplication extends Application {
 	}
 
 	private void selectDataSource() {
-		Label label = new Label(DATA_SOURCES.size() > 1 ? "Please select a data source:" : "Using data from:");
-		ComboBox<DataSource> combo = new ComboBox<>(FXCollections.observableArrayList(DATA_SOURCES.toArray(new DataSource[0])));
+		// HACK: Use reflection to circumvent final.
+		final Field dataSourceField;
+		DataSource preferredSource;
+		try {
+			dataSourceField = Preferences.class.getDeclaredField("dataSource");
+			dataSourceField.setAccessible(true);
+			preferredSource = (DataSource) dataSourceField.get(Preferences.get());
+		} catch (NoSuchFieldException | IllegalAccessException iae) {
+			throw new AssertionError(iae);
+		}
+		boolean autoLoad = Preferences.get().autoLoadData;
+
+		Label label = new Label(autoLoad ? "Please select a data source:" : "Using data from:");
+
+		ComboBox<DataSource> dataSourceCombo = new ComboBox<>(FXCollections.observableArrayList(DATA_SOURCES.toArray(new DataSource[0])));
+		dataSourceCombo.setMaxWidth(Double.MAX_VALUE);
+		if (preferredSource != null) {
+			dataSourceCombo.getSelectionModel().select(preferredSource);
+		} else {
+			dataSourceCombo.getSelectionModel().selectFirst();
+		}
+
+		CheckBox autoLoadCheckbox = new CheckBox("Automatically load preferred data source");
+		autoLoadCheckbox.setSelected(autoLoad);
+
 		GridPane grid = new GridPane();
 		grid.setHgap(10.0);
+		grid.setVgap(10.0);
 		grid.setMaxWidth(Double.MAX_VALUE);
-		combo.setMaxWidth(Double.MAX_VALUE);
-		GridPane.setHgrow(combo, Priority.ALWAYS);
+		GridPane.setHgrow(dataSourceCombo, Priority.ALWAYS);
 		GridPane.setHgrow(label, Priority.NEVER);
-		GridPane.setFillWidth(combo, true);
+		GridPane.setColumnSpan(autoLoadCheckbox, 2);
+		GridPane.setFillWidth(dataSourceCombo, true);
 		grid.add(label, 0, 0);
-		grid.add(combo, 1, 0);
-		combo.getSelectionModel().selectFirst();
+		grid.add(dataSourceCombo, 1, 0);
+		grid.add(autoLoadCheckbox, 0, 1);
 
 		Alert alert = AlertBuilder.query(hostStage)
 				.screen(screen)
 				.buttons(ButtonType.OK, ButtonType.CANCEL)
-				.title(DATA_SOURCES.size() > 1 ? "Select Data Source" : "Loading Data")
-				.headerText(DATA_SOURCES.size() > 1 ? "Select a data source to use." : "Please wait...")
+				.title("Select Data Source")
+				.headerText("Select a data source to use.")
 				.contentNode(grid)
 				.longRunning(ButtonType.OK,
 						dlg -> {
 							if (Context.instantiated()) return;
 
-							DataSource data = combo.getSelectionModel().getSelectedItem();
+							DataSource data = dataSourceCombo.getSelectionModel().getSelectedItem();
 
 							if (Preferences.get().autoUpdateData && data.needsUpdate(Preferences.get().dataPath)) {
 								AlertBuilder.query(dlg.getDialogPane().getScene().getWindow())
@@ -352,12 +377,23 @@ public class MainApplication extends Application {
 
 							try {
 								Context.instantiate(data);
-								combo.setDisable(true);
+								dataSourceCombo.setDisable(true);
 							} catch (IOException e) {
 								throw new RuntimeException(e);
 							}
+
+							dlg.setTitle("Loading Data");
+							dlg.setHeaderText("Please wait...");
 						},
-						prg -> Context.get().loadData(prg),
+						prg -> {
+							boolean success = Context.get().loadData(prg);
+
+							// HACK: Use reflection to circumvent final.
+							dataSourceField.set(Preferences.get(), Context.get().data);
+							Preferences.get().autoLoadData = autoLoadCheckbox.isSelected();
+
+							return success;
+						},
 						dlg -> {
 							if (Preferences.get().autoUpdateData) {
 								if(AlertBuilder.notify(dlg.getDialogPane().getScene().getWindow())
@@ -383,7 +419,7 @@ public class MainApplication extends Application {
 		alert.hide();
 		FxUtils.transfer(alert, screen);
 
-		if(DATA_SOURCES.size() == 1) {
+		if (autoLoad) {
 			Platform.runLater(() -> alert.getDialogPane().lookupButton(ButtonType.OK).executeAccessibleAction(AccessibleAction.FIRE));
 		}
 

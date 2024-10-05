@@ -9,11 +9,13 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import emi.lib.mtg.Card;
+import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.beans.property.Property;
@@ -30,6 +32,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -44,6 +47,7 @@ public class Serialization {
 			.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
 			.registerTypeAdapter(DeckImportExport.Textual.class, Serialization.createTextualSerdesAdapter())
 			.registerTypeAdapter(SimpleBooleanProperty.class, Serialization.createBooleanPropertyTypeAdapter())
+			.registerTypeAdapter(DataSource.class, Serialization.createDataSourceNameAdapter())
 			.registerTypeHierarchyAdapter(Path.class, Serialization.createPathTypeAdapter())
 			.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
 			.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
@@ -266,6 +270,43 @@ public class Serialization {
 			@Override
 			public SimpleBooleanProperty read(JsonReader in) throws IOException {
 				return new SimpleBooleanProperty(in.nextBoolean());
+			}
+		};
+	}
+
+	public static TypeAdapter<DataSource> createDataSourceNameAdapter() {
+		return new TypeAdapter<DataSource>() {
+
+			@Override
+			public void write(JsonWriter out, DataSource value) throws IOException {
+				out.value(value.toString());
+			}
+
+			@Override
+			public DataSource read(JsonReader in) throws IOException {
+				String value;
+				switch (in.peek()) {
+					case NAME:
+						value = in.nextName();
+						break;
+					case STRING:
+						value = in.nextString();
+						break;
+					case NULL:
+						return null;
+					default:
+						throw new IOException("DataSource must be a string or name!");
+				}
+
+				if (value == null || value.isEmpty()) return null;
+
+				for (DataSource source : MainApplication.DATA_SOURCES) {
+					if (value.equals(source.toString())) {
+						return source;
+					}
+				}
+
+				throw new NoSuchElementException("Unknown data source " + value + " -- have your plugins changed?");
 			}
 		};
 	}

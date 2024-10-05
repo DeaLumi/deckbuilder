@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.view.dialogs;
 
+import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
@@ -352,6 +353,12 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class DataSourcePreference extends ComboBoxPreference<DataSource> {
+		public DataSourcePreference(String label, Function<Preferences, DataSource> fromPrefs, Predicate<DataSource> validate, BiConsumer<Preferences, DataSource> toPrefs) {
+			super(MainApplication.DATA_SOURCES, label, fromPrefs, validate, toPrefs);
+		}
+	}
+
 	private static class SortingPreference extends OneControlPreference<List<CardView.ActiveSorting>, Button> {
 		public SortingPreference(String label, Function<Preferences, List<CardView.ActiveSorting>> fromPrefs, Predicate<List<CardView.ActiveSorting>> validate, BiConsumer<Preferences, List<CardView.ActiveSorting>> toPrefs) {
 			super(
@@ -564,6 +571,9 @@ public class PreferencesDialog extends Alert {
 		});
 
 		map.put("Paths & Updates", new PrefEntry[] {
+				reflectField(DataSourcePreference::new, "Data Source (Requires Restart)", "dataSource", x -> true),
+				reflectField(BooleanPreference::new, "Automatically Load", "autoLoadData", x -> true),
+				new PrefSeparator(),
 				reflectField(PathPreference::new, "Data Path", "dataPath", PATH_WRITABLE_VALIDATOR),
 				reflectField(PathPreference::new, "Images Path", "imagesPath", IMAGES_PATH_VALIDATOR),
 				new PrefSeparator(),
