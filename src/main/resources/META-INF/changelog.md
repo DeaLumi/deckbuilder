@@ -1,5 +1,9 @@
 ## 2024 October
 
+### Features
+
+- Added a preference to control automatic data loading. Disable it to see your options for data sources. (There's probably only one.)
+
 ### Improvements
 
 - You can finally zoom in on cards by holding the Z key. You have no idea how much work this took in the background.
