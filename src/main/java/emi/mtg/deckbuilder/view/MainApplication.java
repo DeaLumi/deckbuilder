@@ -329,7 +329,7 @@ public class MainApplication extends Application {
 		}
 		boolean autoLoad = Preferences.get().autoLoadData;
 
-		Label label = new Label(autoLoad ? "Please select a data source:" : "Using data from:");
+		Label label = new Label("Please select a data source:");
 
 		ComboBox<DataSource> dataSourceCombo = new ComboBox<>(FXCollections.observableArrayList(DATA_SOURCES.toArray(new DataSource[0])));
 		dataSourceCombo.setMaxWidth(Double.MAX_VALUE);
@@ -384,6 +384,7 @@ public class MainApplication extends Application {
 
 							dlg.setTitle("Loading Data");
 							dlg.setHeaderText("Please wait...");
+							label.setText("Using data from:");
 						},
 						prg -> {
 							boolean success = Context.get().loadData(prg);
