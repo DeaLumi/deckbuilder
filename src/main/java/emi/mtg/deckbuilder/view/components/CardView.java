@@ -275,6 +275,7 @@ public class CardView extends Canvas {
 			if (me.getButton() != MouseButton.MIDDLE) return;
 			if (CardView.this.hoverCard != null) return;
 
+			CardView.this.requestFocus();
 			panStart.set(me.getX(), me.getY());
 			scrollStart.set(CardView.this.scrollX.get(), CardView.this.scrollY.get());
 
@@ -323,6 +324,7 @@ public class CardView extends Canvas {
 				CardView.this.selectedCards.add(CardView.this.hoverCard);
 			}
 
+			CardView.this.requestFocus();
 			dragging = true;
 			me.consume();
 		}
@@ -517,6 +519,7 @@ public class CardView extends Canvas {
 				CardView.this.selectedCards.clear();
 			}
 
+			CardView.this.requestFocus();
 			this.selecting = true;
 			startX = selectX = selectX2 = me.getX() + CardView.this.scrollX.get();
 			startY = selectY = selectY2 = me.getY() + CardView.this.scrollY.get();
@@ -678,7 +681,7 @@ public class CardView extends Canvas {
 
 				try {
 					zoomPreview = new CardZoomPreview(CardView.this, start, zoomedCard.printing());
-					getScene().getWindow().requestFocus(); // Steal focus back from the zoom preview.
+					requestFocus();
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
 				}
