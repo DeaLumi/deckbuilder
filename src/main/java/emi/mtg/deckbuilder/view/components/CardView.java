@@ -636,19 +636,23 @@ public class CardView extends Canvas {
 
 		private synchronized void showPreview(InputEvent ie) {
 			CardInstance ci;
+			Group group;
 			int idx;
 			if (!(ie instanceof MouseEvent)) {
 				ci = hoverCard;
 				idx = hoverCardGroupIdx;
+				group = hoverGroup;
 			} else {
 				MouseEvent me = (MouseEvent) ie;
 				if (me.getPickResult().getIntersectedNode() != CardView.this) {
 					ci = null;
 					idx = -1;
+					group = null;
 				} else {
 					CardHitResult search = cardAt(me.getX(), me.getY());
 					ci = search.card;
 					idx = search.index;
+					group = search.group;
 				}
 			}
 
@@ -665,6 +669,7 @@ public class CardView extends Canvas {
 			if (zoomedCard != null) {
 				MVec2d zoomLoc = new MVec2d(0.0, 0.0);
 				CardView.this.engine.coordinatesOf(idx, zoomLoc);
+				zoomLoc.plus(group.groupBounds.pos.x, group.groupBounds.pos.y);
 				zoomLoc.plus(-scrollX.get(), -scrollY.get());
 				javafx.geometry.Point2D point = CardView.this.localToScreen(0.0, 0.0);
 				zoomLoc.plus(point.getX(), point.getY());
