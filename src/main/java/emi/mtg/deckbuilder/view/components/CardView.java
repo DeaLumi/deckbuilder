@@ -903,7 +903,7 @@ public class CardView extends Canvas {
 	private static boolean dragModified = false;
 	private static CardView dragSource = null;
 
-	private final Tooltip tooltip = new Tooltip();
+	private final Tooltip tooltip;
 
 	public CardView(DeckList deck, ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
@@ -965,6 +965,11 @@ public class CardView extends Canvas {
 
 		this.scrollX.addListener(e -> scheduleRender());
 		this.scrollY.addListener(e -> scheduleRender());
+
+		this.tooltip = new Tooltip();
+		this.tooltip.setFont(Font.font(12.0));
+		this.tooltip.setMaxWidth(512.0);
+		this.tooltip.setWrapText(true);
 
 		setOnMouseMoved(me -> {
 			if (me.isConsumed()) return;
