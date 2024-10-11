@@ -23,6 +23,7 @@
 - Planes and Phenomenon cards are now rotated to be readable. (My neck is grateful.)
 - You can once again drag cards onto the collection to just remove them from deck. Sorry!
 - Brawl decks now correctly require exactly 60 cards, rather than exactly 100. (Look, I mostly play EDH...)
+- Decks in the "recent decks" list that have been moved or deleted are now automatically removed.
 
 ## 2024 April
 

@@ -94,6 +94,7 @@ public class MainWindow extends Stage {
 
 	private final ListChangeListener<Object> mruChangedListener = e -> {
 		this.openRecentDeckMenu.getItems().setAll(State.get().recentDecks.stream()
+				.filter(Files::exists)
 				.map(path -> {
 					MenuItem item = new MenuItem(path.toAbsolutePath().toString());
 					item.setOnAction(ae -> openDeck(path));
@@ -604,6 +605,17 @@ public class MainWindow extends Stage {
 
 	private void openDeck(Path from) {
 		if (from == null) return;
+
+		if (!Files.exists(from)) {
+			AlertBuilder.notify(this)
+					.type(Alert.AlertType.ERROR)
+					.title("File Not Found")
+					.headerText("The chosen file doesn't exist.")
+					.contentText("It may have been moved or deleted.")
+					.modal(Modality.WINDOW_MODAL)
+					.show();
+			return;
+		}
 
 		try {
 			DeckList list = primarySerdes.importDeck(from);

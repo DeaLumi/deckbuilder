@@ -73,6 +73,7 @@ public class State {
 	public void addRecentDeck(Path path) {
 		recentDecks.remove(path);
 		recentDecks.add(0, path);
+		recentDecks.removeIf(f -> !Files.exists(f));
 
 		if (recentDecks.size() > MRU_LIMIT) {
 			recentDecks.remove(MRU_LIMIT, recentDecks.size());
