@@ -865,14 +865,14 @@ public class MainWindow extends Stage {
 		collection.view().scheduleRender();
 	}
 
-	private void updateCardStates(Format.ValidationResult result) {
+	private void updateCardStates(Format.Validator.Result result) {
 		activeDeckPane().updateCardStates(result);
 		updateCollectionState();
 	}
 
 	@FXML
 	protected void validateDeckAndNotify() {
-		Format.ValidationResult result = activeDeck().validate();
+		Format.Validator.Result result = activeDeck().validate();
 		updateCardStates(result);
 
 		if (result.deckErrors.isEmpty() &&

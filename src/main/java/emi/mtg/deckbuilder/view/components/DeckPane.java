@@ -194,12 +194,12 @@ public class DeckPane extends SplitPane {
 		onDeckChangedProperty().set(listener);
 	}
 
-	public void updateCardStates(Format.ValidationResult result) {
+	public void updateCardStates(Format.Validator.Result result) {
 		Stream<CardInstance> stream = deck.cards().values().stream()
 				.flatMap(ObservableList::stream);
 
 		stream.forEach(ci -> {
-			Format.ValidationResult.CardResult cr = ci.lastValidation = (result == null ? null : result.cards.get(ci));
+			Format.Validator.Result.CardResult cr = ci.lastValidation = (result == null ? null : result.cards.get(ci));
 
 			if (cr == null) {
 				ci.flags.clear();

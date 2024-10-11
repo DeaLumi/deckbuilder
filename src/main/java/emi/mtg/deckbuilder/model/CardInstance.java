@@ -24,7 +24,7 @@ public class CardInstance implements Card.Printing, Serializable {
 	}
 
 	public transient final EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
-	public transient Format.ValidationResult.CardResult lastValidation = null;
+	public transient Format.Validator.Result.CardResult lastValidation = null;
 	private final Set<String> tags = new HashSet<>();
 	private Card.Printing printing;
 
