@@ -1084,14 +1084,14 @@ public class CardView extends Canvas {
 		});
 
 		setOnMousePressed(me -> {
-			if (me.isConsumed()) return;
-
 			this.requestFocus();
 			mouseMoved(me.getX(), me.getY());
 
 			if (this.contextMenu != null) {
 				this.contextMenu.hide();
 			}
+
+			if (me.isConsumed()) return;
 
 			if (me.getButton() == MouseButton.SECONDARY) {
 				if (hoverCard != null && !selectedCards.contains(hoverCard)) {
