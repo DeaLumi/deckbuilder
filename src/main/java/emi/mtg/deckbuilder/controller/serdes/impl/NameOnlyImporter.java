@@ -144,7 +144,7 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 			for (Format candidate : Format.values()) {
 				if (!candidate.deckZones().containsAll(deckCards.keySet())) continue;
 
-				Format.ValidationResult res = candidate.validate(deck);
+				Format.Validator.Result res = candidate.validate(deck);
 				int errors = res.deckErrors.size() +
 						res.zoneErrors.values().stream().mapToInt(Set::size).sum() +
 						res.cards.values().stream().mapToInt(cr -> cr.errors.size()).sum();
