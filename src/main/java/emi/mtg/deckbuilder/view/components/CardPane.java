@@ -164,6 +164,7 @@ public class CardPane extends BorderPane {
 	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().flatMap(f -> f.type().cardTypes().stream()).allMatch(CardType::constructed);
 
 	private final MenuButton deckMenuButton;
+	private final ProgressBar filterProgress;
 	private final TextField filter;
 	private final AutoCompleter filterAutoComplete;
 	private final Tooltip filterErrorTooltip;
@@ -283,6 +284,12 @@ public class CardPane extends BorderPane {
 
 		StackPane filterStack = new StackPane();
 
+		filterProgress = new ProgressBar();
+		filterProgress.setProgress(0.0);
+		filterProgress.getStyleClass().add("inlaid");
+		filterProgress.setMinSize(ProgressBar.USE_PREF_SIZE, ProgressBar.USE_PREF_SIZE);
+		filterProgress.setMaxSize(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+
 		filter = new TextField();
 		filter.setPromptText(Preferences.get().searchProvider.name() + "...");
 		filter.setMinSize(TextField.USE_PREF_SIZE, TextField.USE_PREF_SIZE);
@@ -324,7 +331,7 @@ public class CardPane extends BorderPane {
 		});
 		searchProviderCombo.visibleProperty().bind(filter.widthProperty().greaterThan(searchProviderCombo.widthProperty().multiply(2)));
 
-		filterStack.getChildren().setAll(filter, searchProviderCombo);
+		filterStack.getChildren().setAll(filterProgress, filter, searchProviderCombo);
 		StackPane.setAlignment(searchProviderCombo, Pos.CENTER_RIGHT);
 
 		autoToggle = new ToggleButton("Auto");
@@ -448,6 +455,16 @@ public class CardPane extends BorderPane {
 			return;
 		}
 
+		final boolean clearTooltip = filter.getStyle().contains("#ff8080");
+		Platform.runLater(() -> {
+			if (clearTooltip) {
+				Tooltip.uninstall(filter, filterErrorTooltip);
+				filter.getTooltip().setText("");
+			}
+			filter.setStyle("-fx-background-color: transparent;");
+			filterProgress.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
+		});
+
 		final Predicate<CardInstance> finalFilter;
 		try {
 			finalFilter = calculateFilter();
@@ -458,14 +475,6 @@ public class CardPane extends BorderPane {
 				filter.setStyle("-fx-control-inner-background: #ff8080;");
 			});
 			return;
-		}
-
-		if (filter.getStyle().contains("#ff8080")) {
-			Platform.runLater(() -> {
-				Tooltip.uninstall(filter, filterErrorTooltip);
-				filter.getTooltip().setText("");
-				filter.setStyle("");
-			});
 		}
 
 		changeModel(x -> this.cardView.filteredModel.setPredicate(finalFilter));
@@ -490,6 +499,8 @@ public class CardPane extends BorderPane {
 		Platform.runLater(() -> {
 			if (clear) filter.setText("");
 			focusTarget.requestFocus();
+			filterProgress.setProgress(0.0);
+			filter.setStyle("");
 		});
 
 		updateStats();

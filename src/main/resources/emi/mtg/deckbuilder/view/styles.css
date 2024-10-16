@@ -37,3 +37,19 @@
     -fx-alignment: baseline-right;
     -fx-text-fill: -db-color;
 }
+
+.progress-bar.inlaid {
+    -fx-indeterminate-bar-length: 120;
+}
+
+.progress-bar.inlaid > .track {
+    /* Mimics the appearance of a .text-input. */
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 3, 2;
+    -fx-padding: 0.333333em 0.583em 0.333333em 0.583em; /* 4 7 4 7 */
+    -fx-background-color: linear-gradient(to bottom, derive(-fx-text-box-border, -10%), -fx-text-box-border), linear-gradient(from 0px 0px to 0px 5px, derive(-fx-control-inner-background, -9%), -fx-control-inner-background);
+}
+
+.progress-bar.inlaid > .bar {
+    -fx-background-insets: 2, 2, 2, 2;
+}
