@@ -19,3 +19,21 @@
 .tab-pane:focused > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
     -fx-border-radius: 0 0 0 0;
 }
+
+.combo-box.overlaid {
+    -fx-background-color: transparent;
+    -db-color: derive(-fx-control-inner-background, -50%);
+}
+
+.combo-box.overlaid > .arrow-button {
+    -fx-border-color: transparent transparent transparent linear-gradient(transparent, transparent 20%, -db-color 21%, -db-color 79%, transparent 80%, transparent);
+}
+
+.combo-box.overlaid > .arrow-button > .arrow {
+    -fx-background-color: -db-color;
+}
+
+.combo-box.overlaid > .list-cell {
+    -fx-alignment: baseline-right;
+    -fx-text-fill: -db-color;
+}

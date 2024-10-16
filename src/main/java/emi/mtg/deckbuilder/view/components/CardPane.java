@@ -11,6 +11,7 @@ import emi.mtg.deckbuilder.view.dialogs.SortDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.*;
 import javafx.collections.ListChangeListener;
@@ -19,12 +20,11 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
@@ -176,8 +176,7 @@ public class CardPane extends BorderPane {
 	private final CheckMenuItem findOtherCards;
 	private final ToggleButton autoToggle;
 
-	private final Consumer<Preferences> prefsListener;
-
+	public final ObjectProperty<SearchProvider> searchProvider = new SimpleObjectProperty<>(Preferences.get().searchProvider);
 	public final ObjectProperty<Consumer<CardInstance>> autoAction = new SimpleObjectProperty<>(null);
 	public final BooleanProperty autoEnabled = new SimpleBooleanProperty(true);
 	public final BooleanProperty showingIllegalCards = new SimpleBooleanProperty(true);
@@ -282,10 +281,12 @@ public class CardPane extends BorderPane {
 				collapseDuplicates
 		);
 
+		StackPane filterStack = new StackPane();
+
 		filter = new TextField();
 		filter.setPromptText(Preferences.get().searchProvider.name() + "...");
 		filter.setMinSize(TextField.USE_PREF_SIZE, TextField.USE_PREF_SIZE);
-		Preferences.listen(prefsListener = prefs -> filter.setPromptText(prefs.searchProvider.name() + "..."));
+		filter.promptTextProperty().bind(Bindings.createStringBinding(() -> searchProvider.get().name(), searchProvider).concat("..."));
 
 		filterAutoComplete = new AutoCompleter(filter, name -> {
 			if (name.length() > 3) {
@@ -307,6 +308,25 @@ public class CardPane extends BorderPane {
 		Tooltip.uninstall(filter, filterErrorTooltip);
 		filter.getTooltip().setText("");
 
+		ComboBox<SearchProvider> searchProviderCombo = new ComboBox<>();
+		searchProviderCombo.getItems().setAll(SearchProvider.SEARCH_PROVIDERS.values());
+		searchProviderCombo.getSelectionModel().select(Preferences.get().searchProvider);
+		searchProvider.bind(searchProviderCombo.getSelectionModel().selectedItemProperty());
+		searchProviderCombo.getStyleClass().add("overlaid");
+		searchProviderCombo.addEventFilter(MouseEvent.ANY, me -> {
+			if (me.getX() <= searchProviderCombo.getWidth() - 28) {
+				searchProviderCombo.setCursor(Cursor.TEXT);
+				filter.fireEvent(me.copyFor(me.getSource(), filter));
+				me.consume();
+			} else {
+				searchProviderCombo.setCursor(Cursor.HAND);
+			}
+		});
+		searchProviderCombo.visibleProperty().bind(filter.widthProperty().greaterThan(searchProviderCombo.widthProperty().multiply(2)));
+
+		filterStack.getChildren().setAll(filter, searchProviderCombo);
+		StackPane.setAlignment(searchProviderCombo, Pos.CENTER_RIGHT);
+
 		autoToggle = new ToggleButton("Auto");
 		autoToggle.visibleProperty().bind(autoAction.isNotNull());
 		autoToggle.managedProperty().bind(autoToggle.visibleProperty());
@@ -324,11 +344,11 @@ public class CardPane extends BorderPane {
 		controlBar.setPadding(new Insets(4.0));
 		controlBar.setAlignment(Pos.CENTER_LEFT);
 		controlBar.getChildren().add(deckMenuButton);
-		controlBar.getChildren().add(filter);
+		controlBar.getChildren().add(filterStack);
 		controlBar.getChildren().add(autoToggle);
 		controlBar.getChildren().add(deckStats);
 		HBox.setHgrow(deckMenuButton, Priority.NEVER);
-		HBox.setHgrow(filter, Priority.SOMETIMES);
+		HBox.setHgrow(filterStack, Priority.SOMETIMES);
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
 
@@ -395,8 +415,7 @@ public class CardPane extends BorderPane {
 		if (filter.getText().isEmpty()) {
 			compositeFilter = c -> true;
 		} else {
-			SearchProvider provider = Preferences.get().searchProvider;
-			compositeFilter = provider.parse(filter.getText());
+			compositeFilter = searchProvider.get().parse(filter.getText());
 		}
 
 		if (!findOtherCards.isSelected()) {
