@@ -293,6 +293,7 @@ public class Preferences {
 	 * Overall user interface preferences
 	 */
 
+	public boolean startMaximized = false;
 	public WindowBehavior windowBehavior = WindowBehavior.AlwaysAsk;
 	public Theme theme = Theme.Dark;
 	public DeckImportExport.Textual copyPasteFormat = TextFile.Arena.INSTANCE;

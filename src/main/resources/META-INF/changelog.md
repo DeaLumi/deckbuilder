@@ -5,6 +5,7 @@
 - Added a preference to control automatic data loading. Disable it to see your options for data sources. (There's probably only one.)
 - Added plugin preferences. External plugins can now provide some simple controls over their behavior.
 - The Scryfall plugin now provides an option to use MessagePack for serialization/deserialization, instead of JSON. MessagePack loses the benefit of JSON's human-readability, but saves a little hard drive space and seems to load decently faster. I'd recommend giving it a try!
+- Added a preference to maximize the deckbuilder on startup.
 
 ### Improvements
 

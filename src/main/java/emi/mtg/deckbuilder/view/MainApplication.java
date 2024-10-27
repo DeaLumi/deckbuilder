@@ -310,6 +310,7 @@ public class MainApplication extends Application {
 		window.addDeck(new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap()));
 		window.show();
 		FxUtils.transfer(window, screen);
+		if (Preferences.get().startMaximized) Platform.runLater(() -> window.setMaximized(true));
 
 		if (state.checkUpdated()) {
 			showChangeLog();

@@ -604,6 +604,7 @@ public class PreferencesDialog extends Alert {
 
 		map.put("Interface", new PrefEntry[] {
 				reflectField(ThemePreference::new, "Theme", "theme", x -> true),
+				reflectField(BooleanPreference::new, "Start Maximized", "startMaximized", x -> true),
 				reflectField(WindowBehaviorPreference::new, "Window Behavior", "windowBehavior", x -> true),
 				reflectField(CopyPastePreference::new, "Copy/Paste Format", "copyPasteFormat", COPY_PASTE_VALIDATOR),
 				new PrefSeparator(),
