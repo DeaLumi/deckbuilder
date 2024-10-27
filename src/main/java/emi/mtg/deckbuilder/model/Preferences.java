@@ -218,25 +218,35 @@ public class Preferences {
 	}
 
 	public enum Theme {
-		Light (javafx.scene.paint.Color.gray(0.925)),
-		Dark (javafx.scene.paint.Color.gray(0.15));
+		Light (javafx.scene.paint.Color.gray(0.925), javafx.scene.paint.Color.color(0, 0.588, 0.788)),
+		Dark (javafx.scene.paint.Color.gray(0.15), javafx.scene.paint.Color.color(0.500, 0, 0.700));
 
 		public final javafx.scene.paint.Color base;
+		public final javafx.scene.paint.Color accent;
 
-		Theme(javafx.scene.paint.Color base) {
+		Theme(javafx.scene.paint.Color base, javafx.scene.paint.Color accent) {
 			this.base = base;
+			this.accent = accent;
 		}
 
 		public String baseHex() {
 			return hex(base);
 		}
 
+		public String accentHex() {
+			return hex(accent);
+		}
+
 		public String style() {
-			return String.format("-fx-base: %s;", baseHex());
+			return String.format("-fx-base: %s; -fx-accent: %s; -fx-focus-color: %s; -fx-faint-focus-color: %s",
+					baseHex(),
+					accentHex(),
+					hex(accent.deriveColor(0.0, 1.0, 1.25, 1.0)),
+					hex(accent.deriveColor(0.0, 1.0, 1.25, 0.13)));
 		}
 
 		public static String hex(javafx.scene.paint.Color color) {
-			return String.format("#%02x%02x%02x", (int) (color.getRed() * 255.0), (int) (color.getBlue() * 255.0), (int) (color.getBlue() * 255.0));
+			return String.format("#%02x%02x%02x%02x", (int) (color.getRed() * 255.0), (int) (color.getGreen() * 255.0), (int) (color.getBlue() * 255.0), (int) (color.getOpacity() * 255.0));
 		}
 	}
 

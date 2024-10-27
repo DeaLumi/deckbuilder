@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class CardView extends Canvas {
@@ -1430,17 +1431,17 @@ public class CardView extends Canvas {
 		scheduleRender();
 	}
 
-	public enum CardState {
-		Full (Color.TRANSPARENT, Color.color(0.0f, 0.0f, 0.0f, 0.5f)),
-		Hover (Color.DODGERBLUE, Color.TRANSPARENT),
-		Selected (Color.DODGERBLUE, Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25)),
-		Flagged (Color.RED, Color.TRANSPARENT),
-		Warning (Color.ORANGE, Color.TRANSPARENT),
-		Notice (Color.LIGHTGREEN, Color.TRANSPARENT);
+	private enum CardState {
+		Full (() -> Color.TRANSPARENT, () -> Color.color(0.0f, 0.0f, 0.0f, 0.5f)),
+		Hover (() -> Preferences.get().theme.accent.deriveColor(0.0, 1.0, 1.25, 1.0), () -> Color.TRANSPARENT),
+		Selected (() -> Preferences.get().theme.accent.deriveColor(0.0, 1.0, 1.25, 1.0), () -> Preferences.get().theme.accent.deriveColor(0.0, 1.0, 1.25, 0.25)),
+		Flagged (() -> Color.RED, () -> Color.TRANSPARENT),
+		Warning (() -> Color.ORANGE, () -> Color.TRANSPARENT),
+		Notice (() -> Color.LIGHTGREEN, () -> Color.TRANSPARENT);
 
-		public final Color outlineColor, fillColor;
+		public final Supplier<Color> outlineColor, fillColor;
 
-		CardState(Color outlineColor, Color fillColor) {
+		CardState(Supplier<Color> outlineColor, Supplier<Color> fillColor) {
 			this.outlineColor = outlineColor;
 			this.fillColor = fillColor;
 		}
@@ -1546,17 +1547,19 @@ public class CardView extends Canvas {
 
 			for (CardState state : CardView.CardState.values()) {
 				if (str.getValue().state.contains(state)) {
-					if (!drewFill && state.fillColor != Color.TRANSPARENT) {
+					Color fill = state.fillColor.get(), outline = state.outlineColor.get();
+
+					if (!drewFill && fill != Color.TRANSPARENT) {
 						drewFill = true;
 
-						gfx.setFill(state.fillColor);
+						gfx.setFill(fill);
 						gfx.fillRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 8.0, cw / 8.0);
 					}
 
-					if (!drewOutline && state.outlineColor != Color.TRANSPARENT) {
+					if (!drewOutline && outline != Color.TRANSPARENT) {
 						drewOutline = true;
 
-						gfx.setStroke(state.outlineColor);
+						gfx.setStroke(outline);
 						gfx.setLineWidth(6.0);
 						gfx.strokeRoundRect(str.getKey().x, str.getKey().y, cw, ch, cw / 12.0, cw / 12.0);
 					}
@@ -1582,10 +1585,10 @@ public class CardView extends Canvas {
 			double w = selectBehavior.selectW;
 			double h = selectBehavior.selectH;
 
-			gfx.setFill(Color.DODGERBLUE.deriveColor(0.0, 1.0, 1.0, 0.25));
+			gfx.setFill(Preferences.get().theme.accent.deriveColor(0, 1.0, 1.25, 0.25));
 			gfx.fillRect(x, y, w, h);
 
-			gfx.setStroke(Color.DODGERBLUE);
+			gfx.setStroke(Preferences.get().theme.accent);
 			gfx.setFill(Color.TRANSPARENT);
 			gfx.setLineWidth(2.0);
 			gfx.strokeRect(x, y, w, h);
