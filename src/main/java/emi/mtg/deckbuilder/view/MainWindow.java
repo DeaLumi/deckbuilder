@@ -211,6 +211,9 @@ public class MainWindow extends Stage {
 
 		ci.flags.clear();
 		ci.flags.add(CardInstance.Flags.Unlimited);
+
+		if (format == Format.Freeform) return; // Don't do any collection flagging for freeform.
+
 		switch (ci.card().legality(format)) {
 			case Legal:
 			case Restricted:
@@ -281,7 +284,7 @@ public class MainWindow extends Stage {
 			fillZoneMenuItem.setOnAction(ae -> {
 				Map<CardInstance, Long> addCounts = menu.cards.stream().collect(Collectors.toMap(
 						ci -> ci,
-						ci -> activeDeck().format().maxCopies - activeDeck().cards().values().stream().mapToLong(l -> l.stream().filter(c -> ci.card().equals(c.card())).count()).sum()
+						ci -> activeDeck().format().cardCount.maxCopies - activeDeck().cards().values().stream().mapToLong(l -> l.stream().filter(c -> ci.card().equals(c.card())).count()).sum()
 				));
 				List<CardInstance> add = addCounts.entrySet().stream().flatMap(cic -> Stream.generate(() -> new CardInstance(cic.getKey())).limit(cic.getValue())).collect(Collectors.toList());
 

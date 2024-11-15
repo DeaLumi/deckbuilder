@@ -29,6 +29,7 @@
 - Brawl decks now correctly require exactly 60 cards, rather than exactly 100. (Look, I mostly play EDH...)
 - Decks in the "recent decks" list that have been moved or deleted are now automatically removed.
 - Unknown companion abilities will no longer cause uncaught exceptions. (They aren't verified though, sorry.)
+- Freeform no longer performs any card legality validation. (So much changed under the hood, you have *no* idea.)
 
 ## 2024 April
 

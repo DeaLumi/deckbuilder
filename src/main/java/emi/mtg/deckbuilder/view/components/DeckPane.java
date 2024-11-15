@@ -239,7 +239,7 @@ public class DeckPane extends SplitPane {
 				.flatMap(ObservableList::stream)
 				.map(CardInstance::card)
 				.forEach(c -> {
-					if (histo.computeIfAbsent(c, x -> new AtomicInteger(0)).incrementAndGet() >= deck.format().maxCopies) {
+					if (histo.computeIfAbsent(c, x -> new AtomicInteger(0)).incrementAndGet() >= deck.format().cardCount.maxCopies) {
 						fullCards.add(c);
 					}
 				});
