@@ -104,19 +104,6 @@ public class MainApplication extends Application {
 		}
 	}
 
-	private Screen discoverScreen() {
-		java.awt.PointerInfo pointerInfo = java.awt.MouseInfo.getPointerInfo();
-
-		double scx = pointerInfo.getLocation().getX();
-		double scy = pointerInfo.getLocation().getY();
-
-		List<Screen> screens = Screen.getScreensForRectangle(scx, scy, 0, 0);
-
-		if (screens.size() == 1) return screens.get(0);
-
-		return Screen.getPrimary();
-	}
-
 	private static final String LOW_MEMORY_LIMIT = String.join("\n",
 			"Your maximum memory limit is less than 1 GB! " +
 			"You may be running a 32-bit JRE or have configured a low memory limit. " +
@@ -156,7 +143,7 @@ public class MainApplication extends Application {
 	public void start(Stage primaryStage) throws Exception {
 		System.setProperty("file.encoding", "UTF-8");
 
-		this.screen = discoverScreen();
+		this.screen = FxUtils.pointerScreen();
 		this.hostStage = primaryStage;
 		hostStage.setScene(new Scene(new Group()));
 		hostStage.getScene().getStylesheets().add(MainApplication.class.getResource("styles.css").toExternalForm());

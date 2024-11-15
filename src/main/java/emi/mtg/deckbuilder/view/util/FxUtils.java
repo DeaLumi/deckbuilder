@@ -18,6 +18,7 @@ import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Window;
 
+import java.awt.*;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
@@ -39,6 +40,11 @@ public class FxUtils {
 		} catch (IOException e) {
 			throw new AssertionError(e);
 		}
+	}
+
+	public static Screen pointerScreen() {
+		PointerInfo pointerInfo = MouseInfo.getPointerInfo();
+		return screen(pointerInfo.getLocation().getX(), pointerInfo.getLocation().getY(), 0, 0);
 	}
 
 	public static Screen screen(double x, double y, double w, double h) {
