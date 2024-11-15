@@ -165,7 +165,7 @@ public class MainWindow extends Stage {
 			try {
 				primarySerdes.exportDeck(deck, Files.createTempFile(
 						MainApplication.JAR_DIR,
-						String.format("emergency-save-%s-", deck.name()), ".json"));
+						String.format("emergency-save-%s-", deck.fileSafeName()), ".json"));
 			} catch (IOException ioe) {
 				exceptions.add(ioe);
 			}

@@ -76,6 +76,10 @@ public class DeckList implements Deck {
 		return name.getValue();
 	}
 
+	public String fileSafeName() {
+		return name.getValue().replaceAll("[^A-Za-z0-9]", "-");
+	}
+
 	public Property<String> nameProperty() {
 		return name;
 	}
