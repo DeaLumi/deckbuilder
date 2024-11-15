@@ -28,6 +28,7 @@
 - You can once again drag cards onto the collection to just remove them from deck. Sorry!
 - Brawl decks now correctly require exactly 60 cards, rather than exactly 100. (Look, I mostly play EDH...)
 - Decks in the "recent decks" list that have been moved or deleted are now automatically removed.
+- Unknown companion abilities will no longer cause uncaught exceptions. (They aren't verified though, sorry.)
 
 ## 2024 April
 
