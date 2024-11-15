@@ -8,7 +8,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.TextArea;
 import javafx.stage.Modality;
-import javafx.stage.Window;
 
 public class DebugConsole extends Dialog<Void> {
     @FXML
@@ -18,7 +17,7 @@ public class DebugConsole extends Dialog<Void> {
         FxUtils.FXML(this);
         getDialogPane().setStyle(Preferences.get().theme.style());
 
-        initModality(Modality.APPLICATION_MODAL);
+        initModality(Modality.NONE);
         setResizable(true);
 
         Platform.runLater(() -> log.setText(MainApplication.stdboth.get().toString()));
