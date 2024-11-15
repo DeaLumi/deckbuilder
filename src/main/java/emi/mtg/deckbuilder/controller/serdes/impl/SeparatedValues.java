@@ -187,7 +187,7 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 			tmp.put("White Proxy", (pr, count) -> "=IF($H%1$d=J$1,$B%1$d,\"\")"); // J
 			tmp.put("Color Proxy", (pr, count) -> "=IF($H%1$d=K$1,$B%1$d,\"\")"); // K
 			tmp.put("Fancy Proxy", (pr, count) -> "=IF($H%1$d=L$1,$B%1$d,\"\")"); // L
-			tmp.put("Buy", (pr, count) -> "=IF($H%1$d=M$1,CONCATENATE(count, \" \", $B%1$d),\"\")"); // M
+			tmp.put("Buy", (pr, count) -> "=IF($H%1$d=M$1,CONCATENATE($A%1$d, \" \", $B%1$d),\"\")"); // M
 			tmp.put("Buy - Price", (pr, count) -> "=IF($M%1$d<>\"\",$F%1$d,\"\")"); // N
 
 			return tmp;

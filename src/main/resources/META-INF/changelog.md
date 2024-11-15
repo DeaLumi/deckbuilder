@@ -30,6 +30,7 @@
 - Decks in the "recent decks" list that have been moved or deleted are now automatically removed.
 - Unknown companion abilities will no longer cause uncaught exceptions. (They aren't verified though, sorry.)
 - Freeform no longer performs any card legality validation. (So much changed under the hood, you have *no* idea.)
+- Buylist TSV export now correctly references the "count" column rather than just putting the word "count" in there. (Google Sheets was *very* confused.)
 
 ## 2024 April
 
