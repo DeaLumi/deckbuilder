@@ -238,7 +238,7 @@ public class Preferences {
 		}
 
 		public String style() {
-			return String.format("-fx-base: %s; -fx-accent: %s; -fx-focus-color: %s; -fx-faint-focus-color: %s",
+			return String.format("-fx-base: %s; -fx-accent: %s; -fx-focus-color: %s; -fx-faint-focus-color: %s;",
 					baseHex(),
 					accentHex(),
 					hex(accent.deriveColor(0.0, 1.0, 1.25, 1.0)),
