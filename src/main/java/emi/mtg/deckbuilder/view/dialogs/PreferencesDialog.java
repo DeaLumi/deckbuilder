@@ -718,7 +718,6 @@ public class PreferencesDialog extends Alert {
 				Preferences.Plugin.Preference info = preference.getValue();
 
 				Tooltip tooltip = info.tooltip().isEmpty() ? null : new Tooltip(info.tooltip());
-				if (tooltip != null) tooltip.setFont(Font.font(12.0));
 
 				Preference<?> prefEntry;
 				if (field.getType().isEnum() || info.options().length > 0) {

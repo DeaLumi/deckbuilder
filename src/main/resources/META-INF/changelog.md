@@ -18,6 +18,7 @@
 - Search provider selection is now shown on the search bar itself (as long as it's wide enough). Easy access to Scryfall's `function:` tag search!
 - The search bar now shows an indication when a search is ongoing.
 - Card tooltips now contain the collector number of the card.
+- Tooltips are universally a little larger/more readable.
 
 ### Fixes
 

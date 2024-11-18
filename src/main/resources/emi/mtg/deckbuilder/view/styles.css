@@ -1,4 +1,9 @@
 
+.tooltip {
+    -fx-font-size: 1.0em;
+    -fx-wrap-text: true;
+}
+
 .toggle-button {
     -fx-color: derive(-fx-base, 25%);
 }

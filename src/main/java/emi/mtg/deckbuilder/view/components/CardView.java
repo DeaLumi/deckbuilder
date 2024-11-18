@@ -971,9 +971,7 @@ public class CardView extends Canvas {
 		this.scrollY.addListener(e -> scheduleRender());
 
 		this.tooltip = new Tooltip();
-		this.tooltip.setFont(Font.font(12.0));
 		this.tooltip.setMaxWidth(512.0);
-		this.tooltip.setWrapText(true);
 
 		setOnMouseMoved(me -> {
 			if (me.isConsumed()) return;
