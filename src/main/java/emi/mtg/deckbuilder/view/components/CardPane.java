@@ -450,6 +450,8 @@ public class CardPane extends BorderPane {
 
 	public void updateFilter() {
 		if (Platform.isFxApplicationThread()) {
+			// This is a little weird, but as this situation should be avoidable at compile-time, yet can be trivially
+			// recovered, just dump a stack trace so if I ever see it I can fix it.
 			new IllegalStateException("updateFilter() called from FX application thread!").printStackTrace(System.err);
 			ForkJoinPool.commonPool().submit(this::updateFilter);
 			return;

@@ -13,6 +13,7 @@ import emi.mtg.deckbuilder.controller.serdes.impl.NameOnlyImporter;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.InstanceMap;
+import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
@@ -58,6 +59,7 @@ public class Serialization {
 
 		GSON = builder.create();
 	};
+	public static final Slog LOG = MainApplication.LOG.child("Serialization");
 
 	public abstract static class StringTypeAdapter<T> extends TypeAdapter<T> {
 		protected abstract String toString(T value) throws IOException;
@@ -142,7 +144,7 @@ public class Serialization {
 				.filter(g -> "Converted Mana Cost".equals(s) ? g instanceof emi.mtg.deckbuilder.view.groupings.ManaValue : g.name().equals(s))
 				.findAny()
 				.orElseGet(() -> {
-					System.err.println(String.format("Couldn't find grouping factory %s! Did a plugin go away? Defaulting to CMC...", s));
+					LOG.err("Couldn't find grouping factory %s! Did a plugin go away? Defaulting to CMC...", s);
 					return emi.mtg.deckbuilder.view.groupings.ManaValue.INSTANCE;
 				}));
 	}
@@ -169,7 +171,7 @@ public class Serialization {
 									emi.lib.mtg.Card.Printing pr = set.printing(ref.collectorNumber);
 									if (pr != null && ref.cardName.equals(pr.card().name())) return (T) pr;
 
-									System.err.printf("No exact match for %s in %s; trying by card name.%n", ref, set.name());
+									LOG.err("No exact match for %s in %s; trying by card name.%n", ref, set.name());
 
 									// Either the set has no printing by that collector number, or the printing by that
 									// collector number is of a different card. Either way, we're in the rough. Try to
@@ -182,7 +184,7 @@ public class Serialization {
 									if (pr != null) return (T) pr;
 								}
 
-								System.err.printf("Unable to locate set/card matching %s; trying by card name only.%n", ref);
+								LOG.err("Unable to locate set/card matching %s; trying by card name only.%n", ref);
 
 								// Either the set wasn't matched or had no card by this name.
 								// Locate the card the hard way, and return the preferred printing.
@@ -337,7 +339,7 @@ public class Serialization {
 				TypeAdapter<?> inner = gson.getAdapter(TypeToken.get(innerType));
 
 				if (inner == null) {
-					System.err.println("Can't create property type adapter for un-adapted inner type " + innerType.getTypeName());
+					LOG.err("Can't create property type adapter for un-adapted inner type " + innerType.getTypeName());
 					return null; // Can't deserialize without inner type...
 				}
 
@@ -377,7 +379,7 @@ public class Serialization {
 				TypeAdapter<?> adapter = gson.getAdapter(TypeToken.get(innerType));
 
 				if (adapter == null) {
-					System.err.println("Can't create observable list type adapter for un-adapted inner type " + innerType.getTypeName());
+					LOG.err("Can't create observable list type adapter for un-adapted inner type " + innerType.getTypeName());
 					return null; // Can't deserialize without inner type...
 				}
 

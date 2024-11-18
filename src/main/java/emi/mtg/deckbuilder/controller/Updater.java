@@ -1,6 +1,7 @@
 package emi.mtg.deckbuilder.controller;
 
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class Updater {
+	private static final Slog LOG = MainApplication.LOG.child("Updater");
 	private static final boolean test = false;
 
 	// Script parameters:
@@ -148,7 +150,7 @@ public class Updater {
 		URLConnection connection = Preferences.get().updateUri.toURL().openConnection();
 
 		if (!(connection instanceof HttpURLConnection)) {
-			System.err.println("Can't check for updates -- not an HTTP connection...");
+			LOG.err("Can't check for updates -- not an HTTP connection...");
 			return false;
 		}
 

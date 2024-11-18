@@ -8,6 +8,8 @@ import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.util.Slog;
+import emi.mtg.deckbuilder.view.MainApplication;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -44,6 +46,7 @@ public class MTGO implements DeckImportExport.Monotype {
 
 	@Override
 	public DeckList importDeck(Path from) throws IOException {
+		Slog log = MainApplication.LOG.child("MTGO import " + from.toString());
 		Document xml;
 
 		List<CardInstance> library = new ArrayList<>(),
@@ -88,7 +91,7 @@ public class MTGO implements DeckImportExport.Monotype {
 
 				printing = Preferences.get().preferredPrinting(card);
 				if (printing == null) printing = card.printings().iterator().next();
-				System.err.println("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name; using preferred printing. This won't export back to MTGO.");
+				log.err("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name; using preferred printing. This won't export back to MTGO.");
 			}
 
 			for (int n = 0; n < qty; ++n) {

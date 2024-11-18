@@ -6,6 +6,7 @@ import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
+import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.dialogs.DebugConsole;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import emi.mtg.deckbuilder.view.util.AppendOnlyViewableText;
@@ -44,6 +45,8 @@ import java.util.concurrent.ForkJoinPool;
 
 public class MainApplication extends Application {
 	public static final AppendOnlyViewableText stdout = new AppendOnlyViewableText(1024), stderr = new AppendOnlyViewableText(1024), stdboth = new AppendOnlyViewableText(2048);
+
+	public static final Slog LOG = new Slog("App");
 
 	static {
 		System.setOut(stdout.new Tee(stdboth.new Tee(System.out)));

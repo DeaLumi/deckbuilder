@@ -5,7 +5,9 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.MainApplication;
+import emi.mtg.deckbuilder.view.MainWindow;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
@@ -657,7 +659,7 @@ public class PreferencesDialog extends Alert {
 
 	private final List<PrefEntry> prefEntries;
 
-	public PreferencesDialog(Window owner) {
+	public PreferencesDialog(MainWindow owner) {
 		super(AlertType.CONFIRMATION);
 		initOwner(owner);
 		setTitle("Deck Builder Preferences");
@@ -699,6 +701,8 @@ public class PreferencesDialog extends Alert {
 		preferencesTabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 		preferencesTabs.getStyleClass().add(TabPane.STYLE_CLASS_FLOATING);
 
+		Slog log = owner.log.child("PreferencesDialog");
+
 		// Plugin preferences
 		for (Preferences.Plugin plugin : Preferences.get().pluginPreferences.values()) {
 			GridPane grid = new GridPane();
@@ -739,7 +743,7 @@ public class PreferencesDialog extends Alert {
 						}
 
 						if (none == null) {
-							System.err.printf(
+							log.err(
 									"Plugin %s declares an enumerated preference %s (%s.%s) with a noneOption %s that doesn't match any of its options (%s)!%n",
 									plugin.name(),
 									info.value(),
@@ -788,7 +792,7 @@ public class PreferencesDialog extends Alert {
 							(ToPrefs<Boolean>) (prefs, val) -> field.set(plugin, val)
 					);
 				} else {
-					System.err.printf(
+					log.err(
 							"Plugin %s declares a preference %s (%s.%s) with an unhandled field type %s!%n",
 							plugin.name(),
 							info.value(),

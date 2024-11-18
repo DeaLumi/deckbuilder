@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.controller.serdes;
 
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.util.PluginUtils;
+import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -89,8 +90,7 @@ public interface DeckImportExport {
 	}
 
 	static void checkLinkage(DeckImportExport serdes) {
-		serdes.importExtensions();
-		serdes.exportExtensions();
+		MainApplication.LOG.log("Checking linkage for %s: Input format = %s, output format = %s", serdes, serdes.importExtensions(), serdes.exportExtensions());
 	}
 
 	List<DeckImportExport> DECK_FORMAT_PROVIDERS = PluginUtils.providers(DeckImportExport.class, DeckImportExport::checkLinkage);

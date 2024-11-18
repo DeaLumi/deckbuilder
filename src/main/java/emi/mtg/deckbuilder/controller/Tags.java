@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import emi.lib.mtg.Card;
+import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -72,14 +73,12 @@ public class Tags {
 				Collection<Card> namedCards = context.data.cards().stream().filter(c -> c.name().equals(cardName)).collect(Collectors.toSet());
 
 				if (namedCards.isEmpty()) {
-					System.err.println("Warning: Tags file " + from.toString() + " refers to unknown card " + cardName + " -- are we in the right universe?");
+					MainApplication.LOG.err("Warning: Tags file %s refers to unknown card %s -- are we in the right universe?", from, cardName);
 				}
 
 				cards.addAll(namedCards);
 			}
 			reader.endArray();
-
-			System.out.flush();
 		}
 		reader.endObject();
 

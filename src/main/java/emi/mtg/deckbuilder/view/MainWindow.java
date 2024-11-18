@@ -14,6 +14,7 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
+import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.components.CardPane;
 import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.components.DeckPane;
@@ -92,6 +93,8 @@ public class MainWindow extends Stage {
 	private final MainApplication owner;
 	private final Consumer<Preferences> prefsListener;
 
+	public final Slog log;
+
 	private final ListChangeListener<Object> mruChangedListener = e -> {
 		this.openRecentDeckMenu.getItems().setAll(State.get().recentDecks.stream()
 				.filter(Files::exists)
@@ -105,6 +108,9 @@ public class MainWindow extends Stage {
 
 	public MainWindow(MainApplication owner) {
 		super();
+
+		this.log = MainApplication.LOG.child("Win");
+		this.titleProperty().addListener((old, title, change) -> this.log.rename(title == null ? "Win" : title));
 
 		this.owner = owner;
 		this.owner.registerMainWindow(this);
@@ -142,10 +148,17 @@ public class MainWindow extends Stage {
 		Preferences.listen(prefsListener = this::preferencesChanged);
 
 		ForkJoinPool.commonPool().submit(() -> {
-			collection.filter().setText(Preferences.get().defaultQuery);
-			collection.updateFilter();
-			collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
-			collection.loading().set(false);
+			try {
+				log.start().log("Preparing collection...");
+				collection.filter().setText(Preferences.get().defaultQuery);
+				collection.updateFilter();
+				collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
+				collection.loading().set(false);
+				log.log("Collection ready in %.3f seconds", log.elapsed());
+			} catch (Throwable t) {
+				log.err("Unable to ready collection!");
+				t.printStackTrace();
+			}
 		});
 	}
 

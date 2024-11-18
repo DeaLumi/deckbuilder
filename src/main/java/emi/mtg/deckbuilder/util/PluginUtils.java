@@ -39,7 +39,7 @@ public class PluginUtils {
 			tmp = new URLClassLoader(urls.toArray(new URL[0]), MainApplication.class.getClassLoader());
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
-			System.err.println("Warning: An IO error occurred while loading plugins...");
+			MainApplication.LOG.err("Warning: An IO error occurred while loading plugins...");
 			tmp = MainApplication.class.getClassLoader();
 		}
 		PLUGIN_CLASS_LOADER = tmp;
