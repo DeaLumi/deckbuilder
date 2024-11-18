@@ -862,7 +862,7 @@ public class MainWindow extends Stage {
 			"Time Spiral SVG: Keyrune (keyrune.andrewgioia.com)",
 			"",
 			"Source code is almost available on GitHub, I swear.",
-			"Feel free to DM me with feedback/issues on Twitter!",
+			"Feel free to e-mail me with feedback/issues!",
 			"",
 			"Special thanks:",
 			"\u2022 MagnetMan, for generously indulging my madness time and time again.",

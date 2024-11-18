@@ -34,6 +34,7 @@
 - Freeform no longer performs any card legality validation. (So much changed under the hood, you have *no* idea.)
 - Buylist TSV export now correctly references the "count" column rather than just putting the word "count" in there. (Google Sheets was *very* confused.)
 - Fixed a possible cascade-failure when emergency saving a deck with invalid characters in its name.
+- About dialog no longer tells you to contact me on Twitter. (I highly recommend leaving that place alone.)
 
 ## 2024 April
 
