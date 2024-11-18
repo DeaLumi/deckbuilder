@@ -144,7 +144,7 @@ public class CardInstance implements Card.Printing, Serializable {
 					(f.printedPower().isEmpty() ? (f.printedLoyalty().isEmpty() ? "" : "\n\nStarting Loyalty: " + f.printedLoyalty()) : "\n\nP/T: " + f.printedPower() + "/" + f.printedToughness())
 			).collect(Collectors.joining("\n\n//\n\n")));
 
-			sections.add(rarity().toString() + " from " + set().name() + " (" + set().code().toUpperCase() + ")");
+			sections.add(rarity().toString() + " #" +  collectorNumber() + " from " + set().name() + " (" + set().code().toUpperCase() + ")");
 		}
 
 		if (Preferences.get().cardTagsTooltips && !tags.isEmpty()) {
