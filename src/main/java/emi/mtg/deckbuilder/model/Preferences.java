@@ -306,7 +306,7 @@ public class Preferences {
 	public boolean startMaximized = false;
 	public WindowBehavior windowBehavior = WindowBehavior.AlwaysAsk;
 	public Theme theme = Theme.Dark;
-	public DeckImportExport.Textual copyPasteFormat = TextFile.Arena.INSTANCE;
+	public DeckImportExport.CopyPaste copyPasteFormat = TextFile.Arena.INSTANCE;
 	public boolean showDebugOptions = false;
 
 	/**

@@ -3,6 +3,8 @@ package emi.mtg.deckbuilder.controller.serdes;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.util.PluginUtils;
 import emi.mtg.deckbuilder.view.MainApplication;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +58,13 @@ public interface DeckImportExport {
 		}
 	}
 
-	interface Textual extends DeckImportExport {
+	interface CopyPaste extends DeckImportExport {
+		DeckList importDeck(Clipboard from) throws IOException;
+
+		void exportDeck(DeckList deck, ClipboardContent clipboard) throws IOException;
+	}
+
+	interface Textual extends DeckImportExport, CopyPaste {
 		DeckList importDeck(Reader from) throws IOException;
 		void exportDeck(DeckList deck, Writer to) throws IOException;
 
@@ -87,6 +95,15 @@ public interface DeckImportExport {
 				return sink.toString();
 			}
 		}
+
+		default DeckList importDeck(Clipboard from) throws IOException {
+			if (!from.hasContent(javafx.scene.input.DataFormat.PLAIN_TEXT)) throw new IOException("Clipboard does not contain a deck!");
+			return deserializeDeck((String) from.getContent(javafx.scene.input.DataFormat.PLAIN_TEXT));
+		}
+
+		default void exportDeck(DeckList deck, ClipboardContent to) throws IOException {
+			to.put(javafx.scene.input.DataFormat.PLAIN_TEXT, serializeDeck(deck));
+		}
 	}
 
 	static void checkLinkage(DeckImportExport serdes) {
@@ -95,8 +112,8 @@ public interface DeckImportExport {
 
 	List<DeckImportExport> DECK_FORMAT_PROVIDERS = PluginUtils.providers(DeckImportExport.class, DeckImportExport::checkLinkage);
 
-	List<DeckImportExport.Textual> TEXTUAL_PROVIDERS = Collections.unmodifiableList(DECK_FORMAT_PROVIDERS.stream()
-			.filter(s -> s instanceof DeckImportExport.Textual)
-			.map(s -> (DeckImportExport.Textual) s)
+	List<DeckImportExport.CopyPaste> COPYPASTE_PROVIDERS = Collections.unmodifiableList(DECK_FORMAT_PROVIDERS.stream()
+			.filter(s -> s instanceof DeckImportExport.CopyPaste)
+			.map(s -> (DeckImportExport.CopyPaste) s)
 			.collect(Collectors.toList()));
 }

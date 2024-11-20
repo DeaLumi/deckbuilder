@@ -412,9 +412,9 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
-	private static class CopyPastePreference extends ComboBoxPreference<DeckImportExport.Textual> {
-		public CopyPastePreference(String label, Tooltip tooltip, Function<Preferences, DeckImportExport.Textual> fromPrefs, Predicate<DeckImportExport.Textual> validate, BiConsumer<Preferences, DeckImportExport.Textual> toPrefs) {
-			super(DeckImportExport.TEXTUAL_PROVIDERS, label, tooltip, fromPrefs, validate, toPrefs);
+	private static class CopyPastePreference extends ComboBoxPreference<DeckImportExport.CopyPaste> {
+		public CopyPastePreference(String label, Tooltip tooltip, Function<Preferences, DeckImportExport.CopyPaste> fromPrefs, Predicate<DeckImportExport.CopyPaste> validate, BiConsumer<Preferences, DeckImportExport.CopyPaste> toPrefs) {
+			super(DeckImportExport.COPYPASTE_PROVIDERS, label, tooltip, fromPrefs, validate, toPrefs);
 		}
 	}
 
@@ -573,7 +573,7 @@ public class PreferencesDialog extends Alert {
 		return true;
 	};
 
-	private final Predicate<DeckImportExport.Textual> COPY_PASTE_VALIDATOR = serdes -> {
+	private final Predicate<DeckImportExport.CopyPaste> COPY_PASTE_VALIDATOR = serdes -> {
 		if (serdes.importExtensions().isEmpty()) {
 			return AlertBuilder.query(getWindow())
 					.type(AlertType.WARNING)

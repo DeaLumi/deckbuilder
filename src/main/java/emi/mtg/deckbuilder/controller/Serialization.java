@@ -46,7 +46,7 @@ public class Serialization {
 				.registerTypeAdapter(CardView.Grouping.class, Serialization.createCardViewGroupingAdapter())
 				.registerTypeAdapter(CardView.ActiveSorting.class, Serialization.createActiveSortingTypeAdapter())
 				.registerTypeAdapter(Format.class, Serialization.createFormatAdapter())
-				.registerTypeAdapter(DeckImportExport.Textual.class, Serialization.createTextualSerdesAdapter())
+				.registerTypeAdapter(DeckImportExport.CopyPaste.class, Serialization.createCopyPasteSerdesAdapter())
 				.registerTypeAdapter(SimpleBooleanProperty.class, Serialization.createBooleanPropertyTypeAdapter())
 				.registerTypeAdapter(DataSource.class, Serialization.createDataSourceNameAdapter())
 				.registerTypeHierarchyAdapter(Path.class, Serialization.createPathTypeAdapter())
@@ -132,8 +132,8 @@ public class Serialization {
 		});
 	}
 
-	public static TypeAdapter<DeckImportExport.Textual> createTextualSerdesAdapter() {
-		return new FunctionalStringTypeAdapter<>(DeckImportExport::toString, s -> DeckImportExport.TEXTUAL_PROVIDERS.stream()
+	public static TypeAdapter<DeckImportExport.CopyPaste> createCopyPasteSerdesAdapter() {
+		return new FunctionalStringTypeAdapter<>(Object::toString, s -> DeckImportExport.COPYPASTE_PROVIDERS.stream()
 				.filter(serdes -> serdes.toString().equals(s))
 				.findAny()
 				.orElse(null));

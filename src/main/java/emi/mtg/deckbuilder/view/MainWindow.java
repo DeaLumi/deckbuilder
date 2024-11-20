@@ -1103,7 +1103,9 @@ public class MainWindow extends Stage {
 	@FXML
 	protected void copyDecklist() throws IOException {
 		ClipboardContent content = new ClipboardContent();
-		content.put(DataFormat.PLAIN_TEXT, Preferences.get().copyPasteFormat.serializeDeck(activeDeck()));
+		Preferences.get().copyPasteFormat.exportDeck(activeDeck(), content);
+
+		if (content.isEmpty()) return;
 
 		if (!Clipboard.getSystemClipboard().setContent(content)) {
 			AlertBuilder.notify(MainWindow.this)
@@ -1117,18 +1119,21 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void pasteDecklist() {
-		if (!Clipboard.getSystemClipboard().hasString()) {
+		Set<DataFormat> formats = new HashSet<>(Clipboard.getSystemClipboard().getContentTypes());
+
+		// TODO: CopyPaste serdes need to express their supported DataFormat(s)
+		if (!formats.contains(DataFormat.PLAIN_TEXT)) {
 			AlertBuilder.notify(MainWindow.this)
 					.type(Alert.AlertType.ERROR)
-					.title("No Clipboard Content")
+					.title("No Supported Clipboard Content")
 					.headerText("Nothing to paste!")
-					.contentText("Your clipboard appears to be empty.")
+					.contentText("Your clipboard doesn't seem to contain any " + Preferences.get().copyPasteFormat.toString() + " data.")
 					.showAndWait();
 			return;
 		}
 
 		try {
-			DeckList list = Preferences.get().copyPasteFormat.deserializeDeck(Clipboard.getSystemClipboard().getString());
+			DeckList list = Preferences.get().copyPasteFormat.importDeck(Clipboard.getSystemClipboard());
 			list.modifiedProperty().set(true);
 			openDeckPane(list);
 		} catch (IOException ioe) {
