@@ -10,6 +10,7 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.MainApplication;
+import javafx.scene.input.DataFormat;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -34,9 +35,18 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class MTGO implements DeckImportExport.Monotype {
+	private static final DataFormat MTGO = DataFormat.singleton(
+			"Magic: the Gathering Online",
+			"dek",
+			"application/xml",
+			"Deck file for Magic: the Gathering Online, also known as Magic Online with Digital Objects (MODO).",
+			javafx.scene.input.DataFormat.PLAIN_TEXT,
+			String.class
+	);
+
 	@Override
-	public String extension() {
-		return "dek";
+	public DataFormat format() {
+		return MTGO;
 	}
 
 	@Override

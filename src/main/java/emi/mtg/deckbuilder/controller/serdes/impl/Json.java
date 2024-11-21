@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.controller.serdes.impl;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.DeckList;
+import javafx.scene.input.DataFormat;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -11,9 +12,18 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 
 public class Json implements DeckImportExport.Textual, DeckImportExport.Monotype {
+	private static final DataFormat JSON = DataFormat.singleton(
+			"Deck Builder JSON",
+			"json",
+			"application/json",
+			"Deck Builder deck list file, a variant of JSON.",
+			javafx.scene.input.DataFormat.PLAIN_TEXT,
+			String.class
+	);
+
 	@Override
-	public String extension() {
-		return "json";
+	public DataFormat format() {
+		return JSON;
 	}
 
 	@Override

@@ -574,7 +574,7 @@ public class PreferencesDialog extends Alert {
 	};
 
 	private final Predicate<DeckImportExport.CopyPaste> COPY_PASTE_VALIDATOR = serdes -> {
-		if (serdes.importExtensions().isEmpty()) {
+		if (serdes.importFormat() == null) {
 			return AlertBuilder.query(getWindow())
 					.type(AlertType.WARNING)
 					.buttons(ButtonType.OK, ButtonType.CANCEL)
@@ -584,7 +584,7 @@ public class PreferencesDialog extends Alert {
 							"The selected copy/paste format only supports exporting decks to your clipboard.",
 							"If you copy a deck this way, you won't be able to paste it back into the deckbuilder."))
 					.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
-		} else if (serdes.exportExtensions().isEmpty()) {
+		} else if (serdes.exportFormat() == null) {
 			return AlertBuilder.query(getWindow())
 					.type(AlertType.WARNING)
 					.buttons(ButtonType.OK, ButtonType.CANCEL)

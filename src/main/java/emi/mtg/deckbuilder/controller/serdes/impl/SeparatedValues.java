@@ -10,12 +10,50 @@ import emi.mtg.deckbuilder.model.DeckList;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 public abstract class SeparatedValues implements DeckImportExport.Textual {
+	private enum SVDataFormat implements DataFormat {
+		CSV ("csv", "text/csv", "Comma-separated plaintext spreadsheet."),
+		TSV ("tsv", "text/tsv", "Tab-separated plaintext spreadsheet."),
+		Buylist("tsv", "text/tsv", "Tab-separated plaintext with columns for planning the construction of a paper deck.");
+
+		private final String extension, mime, description;
+
+		SVDataFormat(String extension, String mime, String description) {
+			this.extension = extension;
+			this.mime = mime;
+			this.description = description;
+		}
+
+		@Override
+		public String extension() {
+			return extension;
+		}
+
+		@Override
+		public String mime() {
+			return mime;
+		}
+
+		@Override
+		public String description() {
+			return description;
+		}
+
+		@Override
+		public javafx.scene.input.DataFormat fxFormat() {
+			return javafx.scene.input.DataFormat.PLAIN_TEXT;
+		}
+
+		@Override
+		public Class<?> javaType() {
+			return String.class;
+		}
+	}
+
 	protected abstract void parseLine(DeckList deck, Zone currentZone, String[] values) throws IOException;
 
 	protected abstract LinkedHashMap<String, BiFunction<CardInstance, Integer, String>> zoneData();
@@ -91,8 +129,8 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 	}
 
 	@Override
-	public final List<String> importExtensions() {
-		return Collections.emptyList(); // TODO: Add importer
+	public final DataFormat importFormat() {
+		return null; // TODO: Add importer
 	}
 
 	public static abstract class BasicValues extends SeparatedValues {
@@ -133,8 +171,8 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 		}
 
 		@Override
-		public List<String> exportExtensions() {
-			return Collections.singletonList("csv");
+		public DataFormat exportFormat() {
+			return SVDataFormat.CSV;
 		}
 
 		@Override
@@ -150,8 +188,8 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 		}
 
 		@Override
-		public List<String> exportExtensions() {
-			return Collections.singletonList("tsv");
+		public DataFormat exportFormat() {
+			return SVDataFormat.TSV;
 		}
 
 		@Override
@@ -167,8 +205,8 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 		}
 
 		@Override
-		public List<String> exportExtensions() {
-			return Collections.singletonList("tsv");
+		public DataFormat exportFormat() {
+			return SVDataFormat.Buylist;
 		}
 
 		@Override

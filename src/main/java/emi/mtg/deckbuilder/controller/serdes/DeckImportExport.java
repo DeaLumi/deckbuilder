@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public interface DeckImportExport {
 	enum Feature {
@@ -36,9 +35,62 @@ public interface DeckImportExport {
 		}
 	}
 
-	List<String> importExtensions();
+	interface DataFormat {
+		String name();
 
-	List<String> exportExtensions();
+		String extension();
+
+		String mime();
+
+		String description();
+
+		javafx.scene.input.DataFormat fxFormat();
+
+		Class<?> javaType();
+
+		static DataFormat singleton(String name, String extension, String mime, String description, javafx.scene.input.DataFormat fxFormat, Class<?> javaType) {
+			return new DataFormat() {
+				@Override
+				public String name() {
+					return name;
+				}
+
+				@Override
+				public String toString() {
+					return name;
+				}
+
+				@Override
+				public String extension() {
+					return extension;
+				}
+
+				@Override
+				public String mime() {
+					return mime;
+				}
+
+				@Override
+				public String description() {
+					return description;
+				}
+
+				@Override
+				public javafx.scene.input.DataFormat fxFormat() {
+					return fxFormat;
+				}
+
+				@Override
+				public Class<?> javaType() {
+					return javaType;
+				}
+			};
+		}
+	}
+
+	DataFormat importFormat();
+
+	DataFormat exportFormat();
 
 	DeckList importDeck(Path from) throws IOException;
 
@@ -47,14 +99,16 @@ public interface DeckImportExport {
 	EnumSet<Feature> supportedFeatures();
 
 	interface Monotype extends DeckImportExport {
-		String extension();
+		DataFormat format();
 
-		default List<String> importExtensions() {
-			return Collections.singletonList(extension());
+		@Override
+		default DataFormat importFormat() {
+			return format();
 		}
 
-		default List<String> exportExtensions() {
-			return Collections.singletonList(extension());
+		@Override
+		default DataFormat exportFormat() {
+			return format();
 		}
 	}
 
@@ -97,17 +151,18 @@ public interface DeckImportExport {
 		}
 
 		default DeckList importDeck(Clipboard from) throws IOException {
-			if (!from.hasContent(javafx.scene.input.DataFormat.PLAIN_TEXT)) throw new IOException("Clipboard does not contain a deck!");
-			return deserializeDeck((String) from.getContent(javafx.scene.input.DataFormat.PLAIN_TEXT));
+			if (!String.class.isAssignableFrom(importFormat().javaType())) throw new AssertionError("Textual formats must have String-based javaType!");
+			if (!from.hasContent(importFormat().fxFormat())) throw new IOException("Clipboard does not contain a deck!");
+			return deserializeDeck((String) from.getContent(importFormat().fxFormat()));
 		}
 
 		default void exportDeck(DeckList deck, ClipboardContent to) throws IOException {
-			to.put(javafx.scene.input.DataFormat.PLAIN_TEXT, serializeDeck(deck));
+			to.put(exportFormat().fxFormat(), serializeDeck(deck));
 		}
 	}
 
 	static void checkLinkage(DeckImportExport serdes) {
-		MainApplication.LOG.log("Checking linkage for %s: Input format = %s, output format = %s", serdes, serdes.importExtensions(), serdes.exportExtensions());
+		MainApplication.LOG.log("Checking linkage for %s: Input formats = %s, output formats = %s", serdes, serdes.importFormat(), serdes.exportFormat());
 	}
 
 	List<DeckImportExport> DECK_FORMAT_PROVIDERS = PluginUtils.providers(DeckImportExport.class, DeckImportExport::checkLinkage);

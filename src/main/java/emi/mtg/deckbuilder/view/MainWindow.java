@@ -501,11 +501,11 @@ public class MainWindow extends Stage {
 		this.exportSerdes = new HashMap<>();
 
 		for (DeckImportExport s : DeckImportExport.DECK_FORMAT_PROVIDERS) {
-			if (!s.importExtensions().isEmpty()) {
-				this.importSerdes.put(new FileChooser.ExtensionFilter(s.toString(), s.importExtensions().stream().map(e -> "*." + e).collect(Collectors.toList())), s);
+			if (s.importFormat() != null) {
+				this.importSerdes.put(new FileChooser.ExtensionFilter(s.toString(), "*." + s.importFormat().extension()), s);
 			}
-			if (!s.exportExtensions().isEmpty()) {
-				this.exportSerdes.put(new FileChooser.ExtensionFilter(s.toString(), s.exportExtensions().stream().map(e -> "*." + e).collect(Collectors.toList())), s);
+			if (s.exportFormat() != null) {
+				this.exportSerdes.put(new FileChooser.ExtensionFilter(s.toString(), "*." + s.exportFormat().extension()), s);
 			}
 		}
 	}
@@ -764,7 +764,7 @@ public class MainWindow extends Stage {
 
 	private boolean warnAboutSerdes(DeckImportExport serdes) {
 		EnumSet<DeckImportExport.Feature> unsupportedFeatures = EnumSet.complementOf(serdes.supportedFeatures());
-		if (unsupportedFeatures.isEmpty() && !serdes.importExtensions().isEmpty() && !serdes.exportExtensions().isEmpty()) return false;
+		if (unsupportedFeatures.isEmpty() && serdes.importFormat() != null && serdes.exportFormat() != null) return false;
 
 		StringBuilder builder = new StringBuilder();
 
@@ -774,9 +774,9 @@ public class MainWindow extends Stage {
 			builder.append(" \u2022 ").append(feature.toString()).append('\n');
 		}
 
-		if (serdes.importExtensions().isEmpty()) {
+		if (serdes.importFormat() == null) {
 			builder.append('\n').append("Additionally, you will not be able to re-import from this file.");
-		} else if (serdes.exportExtensions().isEmpty()) {
+		} else if (serdes.exportFormat() == null) {
 			builder.append('\n').append("Additionally, you will not be able to re-export to this file.");
 		}
 
@@ -1121,8 +1121,7 @@ public class MainWindow extends Stage {
 	protected void pasteDecklist() {
 		Set<DataFormat> formats = new HashSet<>(Clipboard.getSystemClipboard().getContentTypes());
 
-		// TODO: CopyPaste serdes need to express their supported DataFormat(s)
-		if (!formats.contains(DataFormat.PLAIN_TEXT)) {
+		if (!formats.contains(Preferences.get().copyPasteFormat.importFormat().fxFormat())) {
 			AlertBuilder.notify(MainWindow.this)
 					.type(Alert.AlertType.ERROR)
 					.title("No Supported Clipboard Content")

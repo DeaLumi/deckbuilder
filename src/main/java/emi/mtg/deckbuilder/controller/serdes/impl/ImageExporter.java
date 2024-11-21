@@ -47,17 +47,52 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
 public abstract class ImageExporter implements DeckImportExport, DeckImportExport.CopyPaste {
-	@Override
-	public List<String> importExtensions() {
-		return Collections.emptyList();
+	public enum ImageFormat implements DeckImportExport.DataFormat {
+		JPG("jpg", "image/jpeg", "Exports a JPEG file. When copying to clipboard, a temporary file is saved until the program exits."),
+		PNG("png", "image/png", "Exports a PNG file. Image data is saved directly to clipboard."),
+		;
+
+		public final String extension, mime, description;
+
+		ImageFormat(String extension, String mime, String description) {
+			this.extension = extension;
+			this.mime = mime;
+			this.description = description;
+		}
+
+		@Override
+		public String extension() {
+			return extension;
+		}
+
+		@Override
+		public String mime() {
+			return mime;
+		}
+
+		@Override
+		public String description() {
+			return description;
+		}
+
+		@Override
+		public javafx.scene.input.DataFormat fxFormat() {
+			return javafx.scene.input.DataFormat.IMAGE;
+		}
+
+		@Override
+		public Class<?> javaType() {
+			return javafx.scene.image.Image.class;
+		}
 	}
 
 	@Override
-	public List<String> exportExtensions() {
-		return Collections.singletonList(extension());
+	public ImageFormat importFormat() {
+		return null;
 	}
 
-	public abstract String extension();
+	@Override
+	public abstract ImageFormat exportFormat();
 
 	@Override
 	public DeckList importDeck(Path from) {
@@ -71,7 +106,7 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 	@Override
 	public void exportDeck(DeckList deck, Path to) throws IOException {
 		if (!UI.promptForOptions(deck.format().deckZones())) return;
-		ImageExporter.writeSafeImage(deckToImage(deck), extension(), to);
+		ImageExporter.writeSafeImage(deckToImage(deck), exportFormat(), to);
 	}
 
 	@Override
@@ -102,8 +137,8 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 		}
 
 		@Override
-		public String extension() {
-			return "png";
+		public ImageFormat exportFormat() {
+			return ImageFormat.PNG;
 		}
 
 		@Override
@@ -120,15 +155,15 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 		}
 
 		@Override
-		public String extension() {
-			return "jpg";
+		public ImageFormat exportFormat() {
+			return ImageFormat.JPG;
 		}
 
 		@Override
 		public void exportDeck(DeckList deck, ClipboardContent to) throws IOException {
 			if (!UI.promptForOptions(deck.format().deckZones())) return;
 			Path tmp = Files.createTempFile(deck.fileSafeName() + "-", ".jpg");
-			writeSafeImage(deckToImage(deck), extension(), tmp);
+			writeSafeImage(deckToImage(deck), exportFormat(), tmp);
 			to.putFiles(Collections.singletonList(tmp.toFile()));
 			tmp.toFile().deleteOnExit(); // TODO: Is this really what I want? I wish I could make it live until the system shuts down...
 		}
@@ -288,20 +323,20 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 		return scene.snapshot(null);
 	}
 
-	private static void writeSafeImage(WritableImage fxImg, String format, OutputStream stream) throws IOException {
+	private static void writeSafeImage(WritableImage fxImg, String extension, OutputStream stream) throws IOException {
 		BufferedImage img = SwingFXUtils.fromFXImage(fxImg, null);
 		BufferedImage buffer = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.OPAQUE);
 		buffer.createGraphics().drawImage(img, 0, 0, null);
-		ImageIO.write(buffer, format, stream);
+		ImageIO.write(buffer, extension, stream);
 	}
 
-	private static void writeSafeImage(WritableImage fxImg, String format, Path target) throws IOException {
+	private static void writeSafeImage(WritableImage fxImg, ImageFormat format, Path target) throws IOException {
 		try (OutputStream output = Files.newOutputStream(target)) {
-			writeSafeImage(fxImg, format, output);
+			writeSafeImage(fxImg, format.extension(), output);
 		}
 	}
 
-	public static void deckToImageFile(DeckList deck, BiConsumer<Zone, CardView> viewModifier, String format, Path to) throws IOException {
+	private static void deckToImageFile(DeckList deck, BiConsumer<Zone, CardView> viewModifier, ImageFormat format, Path to) throws IOException {
 		writeSafeImage(deckToImage(deck, viewModifier), format, to);
 	}
 }

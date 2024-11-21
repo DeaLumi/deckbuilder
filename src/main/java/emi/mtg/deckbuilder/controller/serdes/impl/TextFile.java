@@ -15,6 +15,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.input.DataFormat;
 import javafx.stage.Modality;
 
 import java.io.IOException;
@@ -29,6 +30,46 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class TextFile extends NameOnlyImporter implements DeckImportExport.Textual {
+	private enum TextDataFormat implements DataFormat {
+		PlainText ("txt", "text/plain", "Simple list of card names and quantities, e.g. \"4 Island\""),
+		Arena ("txt", "text/plain", "MtG: Arena text format, consisting of lines like \"4 Island (UST) 213\""),
+		UserDefined ("txt", "text/plain", "User-defined plaintext format. You'll be prompted for how to format the line."),
+		;
+
+		private final String extension, mime, description;
+
+		TextDataFormat(String extension, String mime, String description) {
+			this.extension = extension;
+			this.mime = mime;
+			this.description = description;
+		}
+
+		@Override
+		public String extension() {
+			return extension;
+		}
+
+		@Override
+		public String mime() {
+			return mime;
+		}
+
+		@Override
+		public String description() {
+			return description;
+		}
+
+		@Override
+		public javafx.scene.input.DataFormat fxFormat() {
+			return javafx.scene.input.DataFormat.PLAIN_TEXT;
+		}
+
+		@Override
+		public Class<?> javaType() {
+			return String.class;
+		}
+	}
+
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>[-,A-Za-z0-9 '/]+)(?: \\((?<setCode>[A-Za-z0-9]+)\\)(?: (?<collectorNumber>[A-Za-z0-9]+))?| x(?<postCount>\\d+))?(?![:])$");
 	private static final Pattern ZONE_PATTERN = Pattern.compile("^(?:// )?(?<zoneName>[A-Za-z ]+):?$");
 
@@ -161,8 +202,8 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		}
 
 		@Override
-		public String extension() {
-			return "txt";
+		public DataFormat format() {
+			return TextDataFormat.PlainText;
 		}
 
 		@Override
@@ -199,8 +240,8 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		}
 
 		@Override
-		public String extension() {
-			return "txt";
+		public DataFormat format() {
+			return TextDataFormat.Arena;
 		}
 
 		@Override
@@ -340,13 +381,13 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		}
 
 		@Override
-		public List<String> importExtensions() {
-			return Collections.emptyList();
+		public DataFormat importFormat() {
+			return null; // TODO
 		}
 
 		@Override
-		public List<String> exportExtensions() {
-			return Collections.singletonList("txt");
+		public DataFormat exportFormat() {
+			return TextDataFormat.UserDefined;
 		}
 
 		@Override

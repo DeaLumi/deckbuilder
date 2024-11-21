@@ -46,9 +46,18 @@ public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Mon
 		return Collections.unmodifiableMap(tmp);
 	}
 
+	private static final DataFormat COCKATRICE = DataFormat.singleton(
+			"Cockatrice",
+			"cod",
+			"application/xml",
+			"Cockatrice XML deck file.",
+			javafx.scene.input.DataFormat.PLAIN_TEXT,
+			String.class
+	);
+
 	@Override
-	public String extension() {
-		return "cod";
+	public DataFormat format() {
+		return COCKATRICE;
 	}
 
 	@Override
