@@ -6,7 +6,6 @@ import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckChanger;
-import emi.mtg.deckbuilder.controller.Tags;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter;
 import emi.mtg.deckbuilder.controller.serdes.impl.Json;
@@ -27,6 +26,7 @@ import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -40,12 +40,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,6 +56,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1100,10 +1102,71 @@ public class MainWindow extends Stage {
 		}
 	}
 
+	protected DeckImportExport.CopyPaste serdesGrid(String title, Function<DeckImportExport.CopyPaste, DeckImportExport.DataFormat> format) {
+		List<DeckImportExport.CopyPaste> formats = DeckImportExport.COPYPASTE_PROVIDERS.stream()
+				.filter(serdes -> format.apply(serdes) != null)
+				.collect(Collectors.toList());
+
+		int n = formats.size();
+		int s = Math.max(1, n / 4);
+		int i = 0;
+
+		for (; i < s / 2 && n % (s - i) != 0; ++i);
+		if (i >= s / 2) i = 0;
+		s -= i;
+
+		Dialog<DeckImportExport.CopyPaste> dlg = new Dialog<>();
+		dlg.initOwner(this);
+		dlg.initStyle(StageStyle.TRANSPARENT);
+		dlg.setTitle(title);
+		dlg.getDialogPane().setStyle(Preferences.get().theme.style());
+		dlg.getDialogPane().getStyleClass().add("undermouse");
+		dlg.getDialogPane().getScene().setFill(Color.TRANSPARENT);
+		dlg.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL);
+		dlg.setResultConverter(x -> null); // Only dialog button is 'cancel'.
+		dlg.getDialogPane().getScene().getWindow().setOnShown(we -> FxUtils.underMouse(dlg));
+
+		TilePane grid = new TilePane(4, 4);
+		grid.setPrefColumns(s);
+		for (int x = 0; x < formats.size(); ++x) {
+			DeckImportExport.CopyPaste fmt = formats.get(x);
+			Button button = new Button(fmt.toString());
+			button.setTooltip(new Tooltip(format.apply(fmt).description()));
+			button.setMaxSize(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+			button.setOnAction(ae -> dlg.setResult(fmt));
+			grid.getChildren().add(button);
+		}
+
+		dlg.getDialogPane().setContent(grid);
+
+		return dlg.showAndWait().orElse(null);
+	}
+
 	@FXML
 	protected void copyDecklist() throws IOException {
+		if (Preferences.get().copyPasteFormat.exportFormat() == null) {
+			AlertBuilder.notify(MainWindow.this)
+					.type(Alert.AlertType.ERROR)
+					.title("Copy Not Supported")
+					.headerText("Preferred copy/paste format does not support copying.")
+					.contentText("Use Shift+" + KeyCode.SHORTCUT.getName() + "+C to pick a different format.")
+					.showAndWait();
+			return;
+		}
+
+		copyDecklistAs(Preferences.get().copyPasteFormat);
+	}
+
+	@FXML
+	protected void copyDecklistAs() throws IOException {
+		copyDecklistAs(serdesGrid("Copy Format", DeckImportExport::exportFormat));
+	}
+
+	protected void copyDecklistAs(DeckImportExport.CopyPaste format) throws IOException {
+		if (format == null) return;
+
 		ClipboardContent content = new ClipboardContent();
-		Preferences.get().copyPasteFormat.exportDeck(activeDeck(), content);
+		format.exportDeck(activeDeck(), content);
 
 		if (content.isEmpty()) return;
 
@@ -1118,21 +1181,42 @@ public class MainWindow extends Stage {
 	}
 
 	@FXML
-	protected void pasteDecklist() {
+	protected void pasteDecklist() throws IOException {
+		if (Preferences.get().copyPasteFormat.importFormat() == null) {
+			AlertBuilder.notify(MainWindow.this)
+					.type(Alert.AlertType.ERROR)
+					.title("Paste Not Supported")
+					.headerText("Preferred copy/paste format does not support pasting.")
+					.contentText("Use Shift+" + KeyCode.SHORTCUT.getName() + "+V to pick a different format.")
+					.showAndWait();
+			return;
+		}
+
+		pasteDecklistAs(Preferences.get().copyPasteFormat);
+	}
+
+	@FXML
+	protected void pasteDecklistAs() throws IOException {
+		pasteDecklistAs(serdesGrid("Paste Format", DeckImportExport::importFormat));
+	}
+
+	protected void pasteDecklistAs(DeckImportExport.CopyPaste format) {
+		if (format == null) return;
+
 		Set<DataFormat> formats = new HashSet<>(Clipboard.getSystemClipboard().getContentTypes());
 
-		if (!formats.contains(Preferences.get().copyPasteFormat.importFormat().fxFormat())) {
+		if (!formats.contains(format.importFormat().fxFormat())) {
 			AlertBuilder.notify(MainWindow.this)
 					.type(Alert.AlertType.ERROR)
 					.title("No Supported Clipboard Content")
 					.headerText("Nothing to paste!")
-					.contentText("Your clipboard doesn't seem to contain any " + Preferences.get().copyPasteFormat.toString() + " data.")
+					.contentText("Your clipboard doesn't seem to contain any " + format + " data.")
 					.showAndWait();
 			return;
 		}
 
 		try {
-			DeckList list = Preferences.get().copyPasteFormat.importDeck(Clipboard.getSystemClipboard());
+			DeckList list = format.importDeck(Clipboard.getSystemClipboard());
 			list.modifiedProperty().set(true);
 			openDeckPane(list);
 		} catch (IOException ioe) {
@@ -1141,31 +1225,6 @@ public class MainWindow extends Stage {
 					.title("Paste Failed")
 					.headerText("An error occurred while importing.")
 					.contentText(ioe.getMessage())
-					.showAndWait();
-		}
-	}
-
-	@FXML
-	protected void copyImageToClipboard() throws IOException {
-		ClipboardContent content = new ClipboardContent();
-
-		final DeckPane pane = activeDeckPane();
-		WritableImage img = ImageExporter.deckToImage(pane.deck(), (zone, view) -> {
-			view.layout(new FlowGrid.Factory());
-			view.grouping(Preferences.get().zoneGroupings.getOrDefault(zone, new ManaValue()));
-			view.showFlagsProperty().set(false);
-			view.collapseDuplicatesProperty().set(pane.zonePane(zone).view().collapseDuplicatesProperty().get());
-			view.cardScaleProperty().set(pane.zonePane(zone).view().cardScaleProperty().get());
-			view.resize(2500.0, 2500.0);
-		});
-
-		content.put(DataFormat.IMAGE, img);
-
-		if (!Clipboard.getSystemClipboard().setContent(content)) {
-			AlertBuilder.notify(MainWindow.this)
-					.title("Copy Failed")
-					.headerText("Unable to copy deck to clipboard.")
-					.contentText("No idea why, sorry -- maybe try again? Or clear your clipboard?")
 					.showAndWait();
 		}
 	}

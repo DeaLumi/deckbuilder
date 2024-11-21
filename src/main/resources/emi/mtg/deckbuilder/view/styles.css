@@ -4,6 +4,10 @@
     -fx-wrap-text: true;
 }
 
+.dialog-pane.undermouse {
+    -fx-background: rgba(0, 0, 0, 0.75);
+}
+
 .toggle-button {
     -fx-color: derive(-fx-base, 25%);
 }

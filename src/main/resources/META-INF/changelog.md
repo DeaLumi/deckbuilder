@@ -6,6 +6,9 @@
 - Added plugin preferences. External plugins can now provide some simple controls over their behavior.
 - The Scryfall plugin now provides an option to use MessagePack for serialization/deserialization, instead of JSON. MessagePack loses the benefit of JSON's human-readability, but saves a little hard drive space and seems to load decently faster. I'd recommend giving it a try!
 - Added a preference to maximize the deckbuilder on startup.
+- Copy-as-image (Shift+Shortcut+C) has been replaced with a copy format quick-picker, so you don't have to go into preferences and change your format.
+- Paste-as-format (Shift+Shortcut+V) has been added, much like the above.
+- You can now copy deck images as JPEGs, if you're tired of Discord complaining about your image upload sizes. (They're temporary files that are deleted when the program is closed.)
 
 ### Improvements
 

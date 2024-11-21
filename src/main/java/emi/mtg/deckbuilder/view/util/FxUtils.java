@@ -20,8 +20,15 @@ import javafx.stage.Window;
 
 import java.awt.*;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 
 public class FxUtils {
 	public static <T> void FXML(T component) {
@@ -79,6 +86,102 @@ public class FxUtils {
 
 		dialog.setX(dialog.getX() - base.getMinX() + target.getMinX());
 		dialog.setY(dialog.getY() - base.getMinY() + target.getMinY());
+	}
+
+	public static class MutRect2D {
+		public double x1, y1, x2, y2;
+	}
+
+	public static final Collector<Rectangle2D, MutRect2D, Rectangle2D> MAX_BOUNDS = new Collector<Rectangle2D, MutRect2D, Rectangle2D>() {
+		@Override
+		public Supplier<MutRect2D> supplier() {
+			return MutRect2D::new;
+		}
+
+		@Override
+		public BiConsumer<MutRect2D, Rectangle2D> accumulator() {
+			return (a, b) -> {
+				double minX = Math.min(a.x1, b.getMinX());
+				double minY = Math.min(a.y1, b.getMinY());
+				double maxX = Math.max(a.x2, b.getMaxX());
+				double maxY = Math.max(a.y2, b.getMaxY());
+				a.x1 = minX;
+				a.x2 = maxX;
+				a.y1 = minY;
+				a.y2 = maxY;
+			};
+		}
+
+		@Override
+		public BinaryOperator<MutRect2D> combiner() {
+			return (a, b) -> {
+				double minX = Math.min(a.x1, b.x1);
+				double minY = Math.min(a.y1, b.y1);
+				double maxX = Math.max(a.x2, b.x2);
+				double maxY = Math.max(a.y2, b.y2);
+				a.x1 = minX;
+				a.x2 = maxX;
+				a.y1 = minY;
+				a.y2 = maxY;
+				return a;
+			};
+		}
+
+		@Override
+		public Function<MutRect2D, Rectangle2D> finisher() {
+			return a -> new Rectangle2D(a.x1, a.y1, a.x2 - a.x1, a.y2 - a.y1);
+		}
+
+		@Override
+		public Set<Characteristics> characteristics() {
+			return Collections.emptySet();
+		}
+	};
+
+	public static Rectangle2D clampBounds(double x, double y, double w, double h, Rectangle2D bounds) {
+		x = Math.max(bounds.getMinX(), Math.min(x, bounds.getMaxX() - w));
+		y = Math.max(bounds.getMinY(), Math.min(y, bounds.getMaxY() - h));
+
+		return new Rectangle2D(x, y, w, h);
+	}
+
+	public static Rectangle2D clampBounds(Rectangle2D rect, Rectangle2D bounds) {
+		double x = Math.max(bounds.getMinX(), Math.min(rect.getMinX(), bounds.getMaxX() - rect.getWidth()));
+		double y = Math.max(bounds.getMinY(), Math.min(rect.getMinY(), bounds.getMaxY() - rect.getHeight()));
+
+		return new Rectangle2D(x, y, rect.getWidth(), rect.getHeight());
+	}
+
+	public static void underMouse(Dialog<?> dialog) {
+		underMouse(dialog, false);
+	}
+
+	public static void underMouse(Dialog<?> dialog, boolean ignoreScreenEdges) {
+		underMouse(dialog, 0.5, 0.5, ignoreScreenEdges);
+	}
+
+	public static void underMouse(Dialog<?> dialog, double offsetPctX, double offsetPctY) {
+		underMouse(dialog, offsetPctX, offsetPctY, false);
+	}
+
+	public static void underMouse(Dialog<?> dialog, double offsetPctX, double offsetPctY, boolean ignoreScreenEdges) {
+		PointerInfo pointer = MouseInfo.getPointerInfo();
+
+		double x = pointer.getLocation().getX() - dialog.getWidth() * offsetPctX;
+		double y = pointer.getLocation().getY() - dialog.getHeight() * offsetPctY;
+
+		if (!ignoreScreenEdges) {
+			Rectangle2D bounds = Screen.getScreensForRectangle(x, y, dialog.getWidth(), dialog.getHeight()).stream()
+					.map(Screen::getVisualBounds)
+					.collect(MAX_BOUNDS);
+
+			Rectangle2D tmp = clampBounds(x, y, dialog.getWidth(), dialog.getHeight(), bounds);
+			x = tmp.getMinX();
+			y = tmp.getMinY();
+		}
+
+		dialog.setX(x);
+		dialog.setY(y);
 	}
 
 	public static void center(Window window, Screen screen) {

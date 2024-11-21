@@ -25,7 +25,8 @@
                     <MenuItem text="Export" onAction="#exportDeck"/>
                     <MenuItem text="Copy Decklist" onAction="#copyDecklist" accelerator="Shortcut+C"/>
                     <MenuItem text="Paste Decklist" onAction="#pasteDecklist" accelerator="Shortcut+V"/>
-                    <MenuItem text="Copy Image" onAction="#copyImageToClipboard" accelerator="Shift+Shortcut+C"/>
+                    <MenuItem text="Copy Decklist As..." onAction="#copyDecklistAs" accelerator="Shift+Shortcut+C"/>
+                    <MenuItem text="Paste Decklist As..." onAction="#pasteDecklistAs" accelerator="Shift+Shortcut+V"/>
                     <SeparatorMenuItem/>
                     <CheckMenuItem text="Auto-Validate" fx:id="autoValidateDeck"/>
                     <MenuItem text="Validate Now" onAction="#validateDeckAndNotify"/>
