@@ -145,6 +145,11 @@ public class AlertBuilder {
 		return this;
 	}
 
+	public AlertBuilder onShown(Consumer<Alert> action) {
+		alert.getDialogPane().getScene().getWindow().setOnShown(we -> action.accept(alert));
+		return this;
+	}
+
 	private Button button(ButtonType button) {
 		Button btn = (Button) alert.getDialogPane().lookupButton(button);
 		if (btn == null) {

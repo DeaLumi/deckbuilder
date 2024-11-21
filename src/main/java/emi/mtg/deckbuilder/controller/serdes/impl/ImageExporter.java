@@ -198,6 +198,7 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 					.buttons(ButtonType.OK, ButtonType.CANCEL)
 					.title("Image Export Settings")
 					.headerText("Please enter image export settings.")
+					.onShown(x -> FxUtils.transfer(x, FxUtils.pointerScreen()))
 					.get();
 
 			FxUtils.FXML(this, alert.getDialogPane());
