@@ -21,7 +21,6 @@ import emi.mtg.deckbuilder.view.dialogs.DebugConsole;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
-import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
@@ -89,6 +88,8 @@ public class MainWindow extends Stage {
 	private DeckImportExport primarySerdes;
 
 	private Map<FileChooser.ExtensionFilter, DeckImportExport> importSerdes, exportSerdes;
+	private Map<String, DeckImportExport> distinctImportExtensions, distinctExportExtensions;
+	private FileChooser.ExtensionFilter autoImportFilter, autoExportFilter;
 	private FileChooser serdesFileChooser;
 	private final MainApplication owner;
 	private final Consumer<Preferences> prefsListener;
@@ -500,14 +501,44 @@ public class MainWindow extends Stage {
 		this.importSerdes = new HashMap<>();
 		this.exportSerdes = new HashMap<>();
 
+		this.distinctImportExtensions = new HashMap<>();
+		this.distinctExportExtensions = new HashMap<>();
+
+		Set<String> ambiguousImports = new HashSet<>();
+		Set<String> ambiguousExports = new HashSet<>();
+
 		for (DeckImportExport s : DeckImportExport.DECK_FORMAT_PROVIDERS) {
 			if (s.importFormat() != null) {
 				this.importSerdes.put(new FileChooser.ExtensionFilter(s.toString(), "*." + s.importFormat().extension()), s);
+
+				if (ambiguousImports.contains(s.importFormat().extension())) continue;
+
+				if (this.distinctImportExtensions.containsKey(s.importFormat().extension())) {
+					this.distinctImportExtensions.remove(s.importFormat().extension());
+					ambiguousImports.add(s.importFormat().extension());
+				} else {
+					this.distinctImportExtensions.put(s.importFormat().extension(), s);
+				}
 			}
 			if (s.exportFormat() != null) {
 				this.exportSerdes.put(new FileChooser.ExtensionFilter(s.toString(), "*." + s.exportFormat().extension()), s);
+
+				if (ambiguousExports.contains(s.exportFormat().extension())) continue;
+
+				if (this.distinctExportExtensions.containsKey(s.exportFormat().extension())) {
+					this.distinctExportExtensions.remove(s.exportFormat().extension());
+					ambiguousExports.add(s.exportFormat().extension());
+				} else {
+					this.distinctExportExtensions.put(s.exportFormat().extension(), s);
+				}
 			}
 		}
+
+		List<String> importExts = this.distinctImportExtensions.keySet().stream().map(s -> "*." + s).collect(Collectors.toList());
+		this.autoImportFilter = new FileChooser.ExtensionFilter("Automatic (By Extension) (" + String.join(", ", importExts) + ")", importExts);
+
+		List<String> exportExts = this.distinctExportExtensions.keySet().stream().map(s -> "*." + s).collect(Collectors.toList());
+		this.autoExportFilter = new FileChooser.ExtensionFilter("Automatic (By Extension) (" + String.join(", ", exportExts) + ")", exportExts);
 	}
 
 	public MainWindow undock(DeckTab tab) {
@@ -1028,7 +1059,9 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void importDeck() {
-		serdesFileChooser.getExtensionFilters().setAll(importSerdes.entrySet().stream()
+		serdesFileChooser.getExtensionFilters().clear();
+		serdesFileChooser.getExtensionFilters().add(autoImportFilter);
+		serdesFileChooser.getExtensionFilters().addAll(importSerdes.entrySet().stream()
 				.sorted(Comparator.comparing(e -> e.getValue().toString()))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList()));
@@ -1039,7 +1072,24 @@ public class MainWindow extends Stage {
 			return;
 		}
 
-		DeckImportExport importer = importSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
+		DeckImportExport importer;
+		if (autoImportFilter.equals(serdesFileChooser.getSelectedExtensionFilter())) {
+			String fn = f.getName();
+			String ext = fn.substring(fn.lastIndexOf('.') + 1);
+			importer = distinctImportExtensions.get(ext);
+
+			if (importer == null) {
+				AlertBuilder.notify(this)
+						.type(Alert.AlertType.ERROR)
+						.title("Unrecognized File Type")
+						.headerText("No known importers recognize the file type \"" + ext + "\"")
+						.contentText("If this format is supposed to be recognized, you should shoot me an e-mail...")
+						.showAndWait();
+				return;
+			}
+		} else {
+			importer = importSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
+		}
 
 		if (warnAboutSerdes(importer)) {
 			return;
@@ -1068,7 +1118,9 @@ public class MainWindow extends Stage {
 	}
 
 	public void exportDeck(DeckList deck) {
-		serdesFileChooser.getExtensionFilters().setAll(exportSerdes.entrySet().stream()
+		serdesFileChooser.getExtensionFilters().clear();
+		serdesFileChooser.getExtensionFilters().add(autoExportFilter);
+		serdesFileChooser.getExtensionFilters().addAll(exportSerdes.entrySet().stream()
 				.sorted(Comparator.comparing(e -> e.getValue().toString()))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList()));
@@ -1079,7 +1131,24 @@ public class MainWindow extends Stage {
 			return;
 		}
 
-		DeckImportExport exporter = exportSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
+		DeckImportExport exporter;
+		if (autoExportFilter.equals(serdesFileChooser.getSelectedExtensionFilter())) {
+			String fn = f.getName();
+			String ext = fn.substring(fn.lastIndexOf('.') + 1);
+			exporter = distinctExportExtensions.get(ext);
+
+			if (exporter == null) {
+				AlertBuilder.notify(this)
+						.type(Alert.AlertType.ERROR)
+						.title("Unrecognized File Type")
+						.headerText("No known exporters support the file type \"" + ext + "\"")
+						.contentText("If you know the format you want to use, select it from the extension dropdown.")
+						.showAndWait();
+				return;
+			}
+		} else {
+			exporter = exportSerdes.get(serdesFileChooser.getSelectedExtensionFilter());
+		}
 
 		if (warnAboutSerdes(exporter)) {
 			return;

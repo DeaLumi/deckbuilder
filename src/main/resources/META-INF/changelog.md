@@ -22,6 +22,7 @@
 - The search bar now shows an indication when a search is ongoing.
 - Card tooltips now contain the collector number of the card.
 - Tooltips are universally a little larger/more readable.
+- Added "Automatic (By Extension)" options to import and export dialogs to save you a bit of time.
 
 ### Fixes
 
