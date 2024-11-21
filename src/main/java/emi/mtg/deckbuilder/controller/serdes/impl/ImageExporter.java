@@ -23,6 +23,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.FlowPane;
@@ -35,18 +37,16 @@ import javafx.stage.Modality;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
-public class ImageExporter implements DeckImportExport {
-	@Override
-	public String toString() {
-		return "Image";
-	}
-
+public abstract class ImageExporter implements DeckImportExport, DeckImportExport.CopyPaste {
 	@Override
 	public List<String> importExtensions() {
 		return Collections.emptyList();
@@ -54,8 +54,10 @@ public class ImageExporter implements DeckImportExport {
 
 	@Override
 	public List<String> exportExtensions() {
-		return Arrays.asList("jpg", "png", "gif");
+		return Collections.singletonList(extension());
 	}
+
+	public abstract String extension();
 
 	@Override
 	public DeckList importDeck(Path from) {
@@ -63,21 +65,29 @@ public class ImageExporter implements DeckImportExport {
 	}
 
 	public double estimateViewWidth() {
-		return widthHint.getValue() * (Images.CARD_WIDTH * cardScale.getValue() + Images.CARD_PADDING * 2);
+		return UI.widthHint.getValue() * (Images.CARD_WIDTH * UI.cardScale.getValue() + Images.CARD_PADDING * 2);
 	}
 
 	@Override
 	public void exportDeck(DeckList deck, Path to) throws IOException {
-		if (!promptForOptions(deck.format().deckZones())) return;
+		if (!UI.promptForOptions(deck.format().deckZones())) return;
+		ImageExporter.writeSafeImage(deckToImage(deck), extension(), to);
+	}
 
-		deckToImageFile(deck, (zone, view) -> {
-			view.layout(zoneLayouts.get(zone).getValue());
-			view.grouping(zoneGroupings.get(zone).getValue());
+	@Override
+	public DeckList importDeck(Clipboard from) {
+		throw new UnsupportedOperationException();
+	}
+
+	public WritableImage deckToImage(DeckList deck) throws IOException {
+		return ImageExporter.deckToImage(deck, (zone, view) -> {
+			view.layout(UI.zoneLayouts.get(zone).getValue());
+			view.grouping(UI.zoneGroupings.get(zone).getValue());
 			view.showFlagsProperty().set(false);
-			view.collapseDuplicatesProperty().set(collapseCopies.isSelected());
-			view.cardScaleProperty().set(cardScale.getValue());
+			view.collapseDuplicatesProperty().set(UI.collapseCopies.isSelected());
+			view.cardScaleProperty().set(UI.cardScale.getValue());
 			view.resize(estimateViewWidth(), Images.CARD_HEIGHT + Images.CARD_PADDING * 2);
-		}, to);
+		});
 	}
 
 	@Override
@@ -85,90 +95,133 @@ public class ImageExporter implements DeckImportExport {
 		return EnumSet.of(Feature.OtherZones, Feature.CardArt);
 	}
 
-	private Alert alert;
+	public static class PNG extends ImageExporter {
+		@Override
+		public String toString() {
+			return "Image (PNG)";
+		}
 
-	@FXML
-	protected CheckBox collapseCopies;
+		@Override
+		public String extension() {
+			return "png";
+		}
 
-	@FXML
-	protected Slider cardScale;
-
-	@FXML
-	protected Label cardScaleText;
-
-	@FXML
-	protected Spinner<Integer> widthHint;
-
-	@FXML
-	protected GridPane grid;
-
-	private Map<Zone, Label> zoneLabels = new EnumMap<>(Zone.class);
-	private Map<Zone, FlowPane> zoneFlows = new EnumMap<>(Zone.class);
-	private Map<Zone, ComboBox<CardView.LayoutEngine.Factory>> zoneLayouts = new EnumMap<>(Zone.class);
-	private Map<Zone, ComboBox<CardView.Grouping>> zoneGroupings = new EnumMap<>(Zone.class);
-
-	private void initUI() {
-		alert = AlertBuilder.query(null)
-				.modal(Modality.APPLICATION_MODAL)
-				.buttons(ButtonType.OK, ButtonType.CANCEL)
-				.title("Image Export Settings")
-				.headerText("Please enter image export settings.")
-				.get();
-
-		FxUtils.FXML(this, alert.getDialogPane());
-
-		widthHint.getValueFactory().setValue(10);
-		cardScaleText.textProperty().bind(cardScale.valueProperty().multiply(100).asString("%.0f%%"));
-
-		int i = 3;
-		for (Zone zone : Zone.values()) {
-			Label label = new Label(String.format("%s:", zone.name()));
-			GridPane.setHalignment(label, HPos.RIGHT);
-			grid.add(label, 0, i);
-
-			Label layoutLabel = new Label("Layout:");
-			ComboBox<CardView.LayoutEngine.Factory> layout = new ComboBox<>(FXCollections.observableList(CardView.LAYOUT_ENGINES));
-			layout.getSelectionModel().select(zone == Zone.Command ? FlowGrid.Factory.INSTANCE : Piles.Factory.INSTANCE);
-
-			Label groupingLabel = new Label("Grouping:");
-			ComboBox<CardView.Grouping> grouping = new ComboBox<>(FXCollections.observableList(CardView.GROUPINGS));
-			grouping.getSelectionModel().select(Preferences.get().zoneGroupings.getOrDefault(zone, ManaValue.INSTANCE));
-
-			zoneLabels.put(zone, label);
-			zoneFlows.put(zone, new FlowPane(2.0, 0.0, layoutLabel, layout, groupingLabel, grouping));
-			zoneLayouts.put(zone, layout);
-			zoneGroupings.put(zone, grouping);
-
-			grid.add(zoneFlows.get(zone), 1, i);
-			++i;
+		@Override
+		public void exportDeck(DeckList deck, ClipboardContent to) throws IOException {
+			if (!UI.promptForOptions(deck.format().deckZones())) return;
+			to.putImage(deckToImage(deck));
 		}
 	}
 
-	private boolean promptForOptions(Collection<Zone> zones) {
-		if (alert == null) initUI();
+	public static class JPG extends ImageExporter {
+		@Override
+		public String toString() {
+			return "Image (JPEG)";
+		}
 
-		int i = 3;
-		for (Zone zone : Zone.values()) {
-			if (zones.contains(zone)) {
-				GridPane.setRowIndex(zoneLabels.get(zone), i);
-				zoneLabels.get(zone).setManaged(true);
-				zoneLabels.get(zone).setVisible(true);
-				GridPane.setRowIndex(zoneFlows.get(zone), i);
-				zoneFlows.get(zone).setManaged(true);
-				zoneFlows.get(zone).setVisible(true);
+		@Override
+		public String extension() {
+			return "jpg";
+		}
+
+		@Override
+		public void exportDeck(DeckList deck, ClipboardContent to) throws IOException {
+			if (!UI.promptForOptions(deck.format().deckZones())) return;
+			Path tmp = Files.createTempFile(deck.fileSafeName() + "-", ".jpg");
+			writeSafeImage(deckToImage(deck), extension(), tmp);
+			to.putFiles(Collections.singletonList(tmp.toFile()));
+			tmp.toFile().deleteOnExit(); // TODO: Is this really what I want? I wish I could make it live until the system shuts down...
+		}
+	}
+
+	private static class ImageExportUI {
+		private Alert alert;
+
+		@FXML
+		protected CheckBox collapseCopies;
+
+		@FXML
+		protected Slider cardScale;
+
+		@FXML
+		protected Label cardScaleText;
+
+		@FXML
+		protected Spinner<Integer> widthHint;
+
+		@FXML
+		protected GridPane grid;
+
+		private Map<Zone, Label> zoneLabels = new EnumMap<>(Zone.class);
+		private Map<Zone, FlowPane> zoneFlows = new EnumMap<>(Zone.class);
+		private Map<Zone, ComboBox<CardView.LayoutEngine.Factory>> zoneLayouts = new EnumMap<>(Zone.class);
+		private Map<Zone, ComboBox<CardView.Grouping>> zoneGroupings = new EnumMap<>(Zone.class);
+
+		private void initUI() {
+			alert = AlertBuilder.query(null)
+					.modal(Modality.APPLICATION_MODAL)
+					.buttons(ButtonType.OK, ButtonType.CANCEL)
+					.title("Image Export Settings")
+					.headerText("Please enter image export settings.")
+					.get();
+
+			FxUtils.FXML(this, alert.getDialogPane());
+
+			widthHint.getValueFactory().setValue(10);
+			cardScaleText.textProperty().bind(cardScale.valueProperty().multiply(100).asString("%.0f%%"));
+
+			int i = GridPane.getRowIndex(widthHint) + 1;
+			for (Zone zone : Zone.values()) {
+				Label label = new Label(String.format("%s:", zone.name()));
+				GridPane.setHalignment(label, HPos.RIGHT);
+				grid.add(label, 0, i);
+
+				Label layoutLabel = new Label("Layout:");
+				ComboBox<CardView.LayoutEngine.Factory> layout = new ComboBox<>(FXCollections.observableList(CardView.LAYOUT_ENGINES));
+				layout.getSelectionModel().select(zone == Zone.Command ? FlowGrid.Factory.INSTANCE : Piles.Factory.INSTANCE);
+
+				Label groupingLabel = new Label("Grouping:");
+				ComboBox<CardView.Grouping> grouping = new ComboBox<>(FXCollections.observableList(CardView.GROUPINGS));
+				grouping.getSelectionModel().select(Preferences.get().zoneGroupings.getOrDefault(zone, ManaValue.INSTANCE));
+
+				zoneLabels.put(zone, label);
+				zoneFlows.put(zone, new FlowPane(2.0, 0.0, layoutLabel, layout, groupingLabel, grouping));
+				zoneLayouts.put(zone, layout);
+				zoneGroupings.put(zone, grouping);
+
+				grid.add(zoneFlows.get(zone), 1, i);
 				++i;
-			} else {
-				GridPane.setRowIndex(zoneLabels.get(zone), 0);
-				zoneLabels.get(zone).setManaged(false);
-				zoneLabels.get(zone).setVisible(false);
-				GridPane.setRowIndex(zoneFlows.get(zone), 0);
-				zoneFlows.get(zone).setManaged(false);
-				zoneFlows.get(zone).setVisible(false);
 			}
 		}
 
-		return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+		private boolean promptForOptions(Collection<Zone> zones) {
+			if (alert == null) initUI();
+
+			int i = GridPane.getRowIndex(widthHint) + 1;
+			for (Zone zone : Zone.values()) {
+				if (zones.contains(zone)) {
+					GridPane.setRowIndex(zoneLabels.get(zone), i);
+					zoneLabels.get(zone).setManaged(true);
+					zoneLabels.get(zone).setVisible(true);
+					GridPane.setRowIndex(zoneFlows.get(zone), i);
+					zoneFlows.get(zone).setManaged(true);
+					zoneFlows.get(zone).setVisible(true);
+					++i;
+				} else {
+					GridPane.setRowIndex(zoneLabels.get(zone), 0);
+					zoneLabels.get(zone).setManaged(false);
+					zoneLabels.get(zone).setVisible(false);
+					GridPane.setRowIndex(zoneFlows.get(zone), 0);
+					zoneFlows.get(zone).setManaged(false);
+					zoneFlows.get(zone).setVisible(false);
+				}
+			}
+
+			return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+		}
 	}
+
+	private static final ImageExportUI UI = new ImageExportUI();
 
 	public static WritableImage deckToImage(DeckList deck, BiConsumer<Zone, CardView> viewModifier) throws IOException {
 		// Prefetch all deck images.
@@ -235,16 +288,20 @@ public class ImageExporter implements DeckImportExport {
 		return scene.snapshot(null);
 	}
 
-	public static void writeSafeImage(WritableImage fxImg, Path target) throws IOException {
-		String fn = target.getFileName().toString();
-
+	private static void writeSafeImage(WritableImage fxImg, String format, OutputStream stream) throws IOException {
 		BufferedImage img = SwingFXUtils.fromFXImage(fxImg, null);
 		BufferedImage buffer = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.OPAQUE);
 		buffer.createGraphics().drawImage(img, 0, 0, null);
-		ImageIO.write(buffer, fn.substring(fn.indexOf('.') + 1), target.toFile());
+		ImageIO.write(buffer, format, stream);
 	}
 
-	public static void deckToImageFile(DeckList deck, BiConsumer<Zone, CardView> viewModifier, Path to) throws IOException {
-		writeSafeImage(deckToImage(deck, viewModifier), to);
+	private static void writeSafeImage(WritableImage fxImg, String format, Path target) throws IOException {
+		try (OutputStream output = Files.newOutputStream(target)) {
+			writeSafeImage(fxImg, format, output);
+		}
+	}
+
+	public static void deckToImageFile(DeckList deck, BiConsumer<Zone, CardView> viewModifier, String format, Path to) throws IOException {
+		writeSafeImage(deckToImage(deck, viewModifier), format, to);
 	}
 }
