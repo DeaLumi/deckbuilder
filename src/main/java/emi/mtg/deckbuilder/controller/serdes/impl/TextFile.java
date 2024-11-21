@@ -70,7 +70,7 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		}
 	}
 
-	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>[-,A-Za-z0-9 '/]+)(?: \\((?<setCode>[A-Za-z0-9]+)\\)(?: (?<collectorNumber>[A-Za-z0-9]+))?| x(?<postCount>\\d+))?(?![:])$");
+	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>[-,A-Za-z0-9 '/]+)(?: \\((?<setCode>[-A-Za-z0-9]+)\\)(?: (?<collectorNumber>[-A-Za-z0-9]+))?| x(?<postCount>\\d+))?(?![:])$");
 	private static final Pattern ZONE_PATTERN = Pattern.compile("^(?:// )?(?<zoneName>[A-Za-z ]+):?$");
 
 	protected abstract boolean preservePrintings();
