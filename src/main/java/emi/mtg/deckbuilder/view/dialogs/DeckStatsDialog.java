@@ -4,10 +4,10 @@ import emi.lib.mtg.Mana;
 import emi.lib.mtg.enums.Color;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
+import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.chart.PieChart;
 import javafx.scene.chart.StackedBarChart;
 import javafx.scene.chart.XYChart;
@@ -199,10 +199,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 	}
 
 	public DeckStatsDialog(Window window, ObservableList<CardInstance> cardList) throws IOException {
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("DeckStatsDialog.fxml"));
-		loader.setRoot(this);
-		loader.setController(this);
-		loader.load();
+		FxUtils.FXML(this);
 		getDialogPane().setStyle(Preferences.get().theme.style());
 		initOwner(window);
 

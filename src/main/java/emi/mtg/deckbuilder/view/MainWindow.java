@@ -31,7 +31,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -118,14 +117,7 @@ public class MainWindow extends Stage {
 		this.owner.registerMainWindow(this);
 
 		BorderPane root = new BorderPane();
-		FXMLLoader loader = new FXMLLoader();
-		loader.setRoot(root);
-		loader.setControllerFactory(cls -> this);
-		try {
-			loader.load(getClass().getResourceAsStream(getClass().getSimpleName() + ".fxml"));
-		} catch (IOException ioe) {
-			throw new AssertionError(ioe);
-		}
+		FxUtils.FXML(this, root);
 
 		setTitle("Deck Builder v0.0.0");
 		setScene(new Scene(root, 1024, 1024));

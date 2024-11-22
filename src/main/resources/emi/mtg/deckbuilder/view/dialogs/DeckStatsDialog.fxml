@@ -12,7 +12,8 @@
 <?import javafx.scene.chart.NumberAxis?>
 <fx:root type="Dialog"
          xmlns="http://javafx.com/javafx"
-         xmlns:fx="http://javafx.com/fxml">
+         xmlns:fx="http://javafx.com/fxml"
+         fx:controller="emi.mtg.deckbuilder.view.dialogs.DeckStatsDialog">
     <title>Deck Statistics</title>
     <dialogPane>
         <DialogPane>

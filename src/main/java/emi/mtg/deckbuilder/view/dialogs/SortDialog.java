@@ -2,16 +2,15 @@ package emi.mtg.deckbuilder.view.dialogs;
 
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardView;
+import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.ListView;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.stage.Window;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -83,14 +82,7 @@ public class SortDialog extends Dialog<List<CardView.ActiveSorting>> {
 	public SortDialog(Window host, List<CardView.ActiveSorting> currentSorts) {
 		super();
 
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("SortDialog.fxml"));
-		loader.setRoot(getDialogPane());
-		loader.setController(this);
-		try {
-			loader.load();
-		} catch (IOException e) {
-			throw new Error(e);
-		}
+		FxUtils.FXML(this, getDialogPane());
 		getDialogPane().setStyle(Preferences.get().theme.style());
 		initOwner(host);
 

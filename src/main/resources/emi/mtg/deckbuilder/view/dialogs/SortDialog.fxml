@@ -8,7 +8,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.chart.BarChart?>
-<fx:root type="DialogPane" xmlns:fx="http://javafx.com/fxml">
+<fx:root type="DialogPane" xmlns:fx="http://javafx.com/fxml" fx:controller="emi.mtg.deckbuilder.view.dialogs.SortDialog">
     <content>
         <BorderPane>
             <padding>

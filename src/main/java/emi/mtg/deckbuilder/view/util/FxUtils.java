@@ -38,7 +38,6 @@ public class FxUtils {
 	public static <T> void FXML(Object controller, T component) {
 		FXMLLoader loader = new FXMLLoader();
 		loader.setRoot(component);
-		loader.setController(controller);
 		loader.setControllerFactory(theClass -> controller);
 
 		String fileName = controller.getClass().getSimpleName() + ".fxml";

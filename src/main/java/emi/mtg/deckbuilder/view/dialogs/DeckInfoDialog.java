@@ -6,11 +6,8 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.stage.Window;
-
-import java.io.IOException;
 
 public class DeckInfoDialog extends Dialog<Boolean> {
 	@FXML
