@@ -23,6 +23,7 @@
 - Card tooltips now contain the collector number of the card.
 - Tooltips are universally a little larger/more readable.
 - Added "Automatic (By Extension)" options to import and export dialogs to save you a bit of time.
+- If you enable Auto mode on the collection and add a commander to an empty commander deck, it will go to the command zone instead of the library.
 
 ### Fixes
 

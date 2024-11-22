@@ -4,6 +4,7 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.lib.mtg.game.validation.Commander;
 import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
@@ -334,11 +335,20 @@ public class MainWindow extends Stage {
 		Consumer<CardInstance> addCardToActive = ci -> {
 			DeckList list = activeDeck();
 			CardInstance added = new CardInstance(ci);
+
+			Zone zone;
+
+			if (list.format().deckZones().contains(Zone.Command) && list.cards(Zone.Command).isEmpty() && list.cards(Zone.Library).isEmpty() && Commander.isCommander(ci.card())) {
+				zone = Zone.Command;
+			} else {
+				zone = Zone.Library;
+			}
+
 			DeckChanger.change(
 					list,
 					String.format("Add %s", ci.card().name()),
-					l -> l.cards(Zone.Library).add(added), // TODO: These used to be synchronized on the model
-					l -> l.cards(Zone.Library).remove(added)
+					l -> l.cards(zone).add(added), // TODO: These used to be synchronized on the model
+					l -> l.cards(zone).remove(added)
 			);
 		};
 
