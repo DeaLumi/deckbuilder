@@ -8,7 +8,8 @@
 
 <fx:root type="Dialog"
          xmlns="http://javafx.com/javafx"
-         xmlns:fx="http://javafx.com/fxml">
+         xmlns:fx="http://javafx.com/fxml"
+         fx:controller="emi.mtg.deckbuilder.view.dialogs.DebugConsole">
     <title>Debug Console</title>
     <resizable>true</resizable>
     <dialogPane>
