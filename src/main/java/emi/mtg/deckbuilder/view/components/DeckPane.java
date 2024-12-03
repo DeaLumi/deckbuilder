@@ -438,6 +438,7 @@ public class DeckPane extends SplitPane {
 		menu.addTagsMenu();
 		menu.getItems().add(removeAllMenuItem);
 		menu.addSeparator()
+				.addCopyImage()
 				.addCleanupImages();
 
 		return menu;
@@ -448,6 +449,7 @@ public class DeckPane extends SplitPane {
 
 		menu.addTagsMenu()
 				.addSeparator()
+				.addCopyImage()
 				.addCleanupImages();
 
 		return menu;

@@ -11,6 +11,7 @@ import emi.mtg.deckbuilder.util.UniqueList;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.util.PluginUtils;
+import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
@@ -739,6 +740,35 @@ public class CardView extends Canvas {
 		public final SetProperty<CardInstance> cards = new SimpleSetProperty<>();
 		public final SimpleObjectProperty<CardView.Group> group = new SimpleObjectProperty<>();
 		public final SimpleObjectProperty<CardView> view = new SimpleObjectProperty<>();
+
+		public ContextMenu addCopyImage() {
+			MenuItem copyImage = new MenuItem("Copy Image");
+			copyImage.setOnAction(ae -> {
+				if (cards.isEmpty()) return;
+
+				// TODO other faces
+				Card.Printing.Face face = cards.iterator().next().mainFaces().iterator().next();
+				CompletableFuture<Image> img = Context.get().images.getFace(face);
+
+				// Have to farm this to the common pool to avoid deadlock with the rendered image source. (Bleh!)
+				ForkJoinPool.commonPool().submit(() -> {
+					try {
+						ClipboardContent content = new ClipboardContent();
+						content.putImage(img.get());
+						Platform.runLater(() -> Clipboard.getSystemClipboard().setContent(content));
+					} catch (Throwable t) {
+						AlertBuilder.create()
+								.type(Alert.AlertType.ERROR)
+								.title("Error")
+								.headerText("An Error Occurred")
+								.contentText("While trying to copy the image of " + face.face().name() + ": " + t.getMessage());
+					}
+				});
+			});
+			this.getItems().add(copyImage);
+
+			return this;
+		}
 
 		public ContextMenu addCleanupImages() {
 			MenuItem deleteImages = new MenuItem("Delete Saved Images");

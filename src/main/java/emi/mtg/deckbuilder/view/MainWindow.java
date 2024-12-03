@@ -310,6 +310,7 @@ public class MainWindow extends Stage {
 		menu.getItems().add(fillMenu);
 
 		menu.addSeparator()
+				.addCopyImage()
 				.addCleanupImages();
 
 		return menu;
