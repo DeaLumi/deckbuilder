@@ -5,7 +5,7 @@
 
 <fx:root type="DialogPane" xmlns="http://javafx.com/javafx"
          xmlns:fx="http://javafx.com/fxml"
-         fx:controller="emi.mtg.deckbuilder.controller.serdes.impl.TextFile.UserDefined">
+         fx:controller="emi.mtg.deckbuilder.controller.serdes.impl.TextFile$UserDefined">
     <content>
             <GridPane vgap="8.0" hgap="8.0">
                 <Label GridPane.rowIndex="0" GridPane.columnIndex="0" GridPane.columnSpan="2">

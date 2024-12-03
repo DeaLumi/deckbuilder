@@ -3,7 +3,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <fx:root type="DialogPane" xmlns="http://javafx.com/javafx"
-         xmlns:fx="http://javafx.com/fxml">
+         xmlns:fx="http://javafx.com/fxml"
+         fx:controller="emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter$ImageExportUI">
     <content>
         <GridPane vgap="8.0" hgap="8.0" fx:id="grid">
             <Label GridPane.rowIndex="0" GridPane.columnIndex="0" text="Collapse Copies:" GridPane.halignment="RIGHT"/>

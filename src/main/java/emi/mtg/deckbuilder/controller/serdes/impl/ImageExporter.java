@@ -169,7 +169,7 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 		}
 	}
 
-	private static class ImageExportUI {
+	public static class ImageExportUI {
 		private Alert alert;
 
 		@FXML
