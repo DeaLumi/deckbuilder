@@ -42,6 +42,8 @@
 - Fixed a possible cascade-failure when emergency saving a deck with invalid characters in its name.
 - About dialog no longer tells you to contact me on Twitter. (I highly recommend leaving that place alone.)
 - Fixed plain text and Arena importers not recognizing some set codes/collector numbers with dashes in them.
+- Fixed a case where the collection would sometimes just... not load. (Due to a concurrent modification error while loading tags, of all things.)
+- Improved logging the collection loading just in case another error causes it to fail. (Check the new debug console for details to send me if it does!)
 
 ## 2024 April
 

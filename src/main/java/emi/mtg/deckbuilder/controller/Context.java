@@ -70,15 +70,13 @@ public class Context {
 	}
 
 	public void loadTags() throws IOException {
-		ForkJoinPool.commonPool().submit(() -> {
-			try {
-				this.tags.load(TAGS);
-			} catch (NoSuchFileException fnfe) {
-				// do nothing
-			} catch (IOException e) {
-				throw new RuntimeException(e); // TODO do this better
-			}
-		});
+		try {
+			this.tags.load(TAGS);
+		} catch (NoSuchFileException fnfe) {
+			// do nothing
+		} catch (IOException e) {
+			throw new RuntimeException(e); // TODO do this better
+		}
 	}
 
 	public void saveTags() throws IOException {

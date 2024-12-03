@@ -32,10 +32,12 @@ public class Tags {
 	}
 
 	public Set<String> tags(Card card) {
-		return cardsMap.entrySet().stream()
-				.filter(e -> e.getValue().contains(card))
-				.map(Map.Entry::getKey)
-				.collect(Collectors.toSet());
+		synchronized (cardsMap) {
+			return cardsMap.entrySet().stream()
+					.filter(e -> e.getValue().contains(card))
+					.map(Map.Entry::getKey)
+					.collect(Collectors.toSet());
+		}
 	}
 
 	public Set<Card> cards(String tag) {
