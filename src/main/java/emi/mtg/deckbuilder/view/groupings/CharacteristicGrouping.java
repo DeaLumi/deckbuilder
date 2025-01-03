@@ -9,7 +9,7 @@ import java.util.List;
 
 public abstract class CharacteristicGrouping implements CardView.Grouping {
 	protected class CharacteristicGroup implements CardView.Grouping.Group {
-		private final String value;
+		public final String value;
 
 		public CharacteristicGroup(String value) {
 			this.value = value;
@@ -34,6 +34,36 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 		public String toString() {
 			return value;
 		}
+
+		@Override
+		public int compareTo(Group o) {
+			if (o == this || equals(o)) return 0;
+			if (o instanceof CharacteristicGroup) {
+				for (int i = 0; i < CharacteristicGrouping.this.groups.length; ++i) {
+					if (CharacteristicGrouping.this.groups[i] == this) return -1;
+					if (CharacteristicGrouping.this.groups[i] == o) return 1;
+				}
+
+				throw new IllegalStateException();
+			}
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int hashCode() {
+			return value.hashCode() ^ 0x1483abcd;
+		}
+
+		private CharacteristicGrouping parent() {
+			return CharacteristicGrouping.this;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (!(obj instanceof CharacteristicGroup)) return false;
+			CharacteristicGroup other = (CharacteristicGroup) obj;
+			return value.equals(other.value) && CharacteristicGrouping.this == other.parent();
+		}
 	}
 
 	public CharacteristicGrouping() {
@@ -43,7 +73,7 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 	public abstract String[] groupValues();
 	public abstract String extract(CardInstance ci);
 
-	private Group[] groups;
+	private CharacteristicGroup[] groups;
 
 	@Override
 	public boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change) {
@@ -51,16 +81,19 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 		return false;
 	}
 
-	@Override
-	public Group[] groups(DeckList list, List<CardInstance> unused) {
+	private synchronized void ensureGroups() {
 		if (groups == null) {
-			groups = new Group[groupValues().length];
+			groups = new CharacteristicGroup[groupValues().length];
 
 			for (int i = 0; i < groupValues().length; ++i) {
 				groups[i] = new CharacteristicGroup(groupValues()[i]);
 			}
 		}
+	}
 
+	@Override
+	public Group[] groups(DeckList list, List<CardInstance> unused) {
+		ensureGroups();
 		return groups;
 	}
 

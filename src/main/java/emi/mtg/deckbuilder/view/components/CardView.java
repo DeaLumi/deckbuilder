@@ -168,7 +168,7 @@ public class CardView extends Canvas {
 	}
 
 	public interface Grouping {
-		interface Group {
+		interface Group extends Comparable<Group> {
 			void add(CardInstance ci);
 			void remove(CardInstance ci);
 			boolean contains(CardInstance ci);

@@ -31,6 +31,11 @@ public class None implements CardView.Grouping {
 			public String toString() {
 				return "All Cards";
 			}
+
+			@Override
+			public int compareTo(Group o) {
+				return 0;
+			}
 		}
 	};
 

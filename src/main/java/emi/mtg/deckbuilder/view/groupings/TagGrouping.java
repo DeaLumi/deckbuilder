@@ -52,6 +52,26 @@ public class TagGrouping implements CardView.Grouping {
 		public boolean contains(CardInstance ci) {
 			return ci.tags().contains(tag);
 		}
+
+		@Override
+		public int compareTo(Group o) {
+			if (o instanceof Untagged) return 1;
+			if (o instanceof TagGroup) return tag.compareTo(((TagGroup) o).tag);
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int hashCode() {
+			return tag.hashCode() ^ 0x1483abcd;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null) return false;
+			if (!(obj instanceof TagGroup)) return false;
+			TagGroup other = (TagGroup) obj;
+			return Objects.equals(tag, other.tag) && Objects.equals(list, other.list);
+		}
 	}
 
 	private static class Untagged implements CardView.Grouping.Group {
@@ -86,6 +106,23 @@ public class TagGrouping implements CardView.Grouping {
 		@Override
 		public boolean contains(CardInstance ci) {
 			return ci.tags().isEmpty();
+		}
+
+		@Override
+		public int compareTo(Group o) {
+			if (o instanceof Untagged) return 0;
+			if (o instanceof TagGroup) return -1;
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int hashCode() {
+			return 0x1483abcd * 2;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof Untagged;
 		}
 	}
 
