@@ -127,7 +127,7 @@ public class CardInstance implements Card.Printing, Serializable {
 
 	@Override
 	public String toString() {
-		return printingToString(printing);
+		return Card.Printing.Reference.format(this);
 	}
 
 	public boolean hasTooltip() {
@@ -158,56 +158,15 @@ public class CardInstance implements Card.Printing, Serializable {
 		return String.join("\n\n", sections);
 	}
 
-	public PrintingReference reference() {
-		return new PrintingReference(this);
-	}
-
-	public static class PrintingReference {
-		public static final Pattern PATTERN = Pattern.compile("^(?<cardName>[^(]+) \\((?<setCode>[-A-Za-z0-9 ]+)\\) (?<collectorNumber>.+)$");
-
-		public final String cardName, setCode, collectorNumber;
-
-		public static PrintingReference valueOf(String string) {
-			Matcher matcher = PATTERN.matcher(string);
-			if (!matcher.find()) throw new IllegalArgumentException(String.format("String does not appear to be a printing reference: \"%s\".", string));
-
-			return new PrintingReference(matcher.group("cardName"), matcher.group("setCode"), matcher.group("collectorNumber"));
-		}
-
-		public PrintingReference(String cardName, String setCode, String collectorNumber) {
-			this.cardName = cardName;
-			this.setCode = setCode;
-			this.collectorNumber = collectorNumber;
-		}
-
-		public PrintingReference(Card.Printing pr) {
-			this.cardName = pr.card().name();
-			this.setCode = pr.set().code();
-			this.collectorNumber = pr.collectorNumber();
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s (%s) %s", cardName, setCode, collectorNumber);
-		}
-	}
-
-	public static String printingToString(Card.Printing pr) {
-		return new PrintingReference(pr).toString();
-	}
-
 	public static Card.Printing stringToPrinting(String str) {
-		PrintingReference ref = PrintingReference.valueOf(str);
+		Card.Printing.Reference ref = Card.Printing.Reference.valueOf(str);
 
-		emi.lib.mtg.Set set = Context.get().data.set(ref.setCode);
-		if (set == null) throw new IllegalArgumentException("While parsing printing \"" + str + "\": Unable to match set code " + ref.setCode + " -- did the data source change?");
+		emi.lib.mtg.Set set = Context.get().data.set(ref.setCode());
+		if (set == null) throw new IllegalArgumentException("While parsing printing \"" + str + "\": Unable to match set code " + ref.setCode() + " -- did the data source change?");
 
-		for (Card.Printing pr : set.printings()) {
-			if (!ref.collectorNumber.equals(pr.collectorNumber())) continue;
-			if (!ref.cardName.equals(pr.card().name())) continue;
-			return pr;
-		}
-
-		throw new IllegalArgumentException("While parsing printing \"" + str + "\": Unable to match card name " + ref.cardName + " and collector number " + ref.collectorNumber + " -- did the data source change?");
+		Card.Printing pr = set.printing(ref.collectorNumber());
+		if (pr == null) throw new IllegalArgumentException("While parsing printing \"" + str + "\": Set " + set.name() + " contains no print with collector number " + ref.collectorNumber() + " -- did the data source change?");
+		if (!ref.name().equals(pr.card().name())) throw new IllegalArgumentException("While parsing printing \"" + str + "\": Collector number " + ref.collectorNumber() + " matches " + pr.card().fullName() + ", not " + ref.name() + " -- did the data source change?");
+		return pr;
 	}
 }

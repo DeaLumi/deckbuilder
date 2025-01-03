@@ -164,12 +164,12 @@ public class Serialization {
 						@Override
 						public T fromString(String i) throws IOException {
 							try {
-								CardInstance.PrintingReference ref = CardInstance.PrintingReference.valueOf(i);
-								emi.lib.mtg.Set set = Context.get().data.set(ref.setCode);
+								Card.Printing.Reference ref = Card.Printing.Reference.valueOf(i);
+								emi.lib.mtg.Set set = Context.get().data.set(ref.setCode());
 
 								if (set != null) {
-									emi.lib.mtg.Card.Printing pr = set.printing(ref.collectorNumber);
-									if (pr != null && ref.cardName.equals(pr.card().name())) return (T) pr;
+									emi.lib.mtg.Card.Printing pr = set.printing(ref.collectorNumber());
+									if (pr != null && ref.name().equals(pr.card().name())) return (T) pr;
 
 									LOG.err("No exact match for %s in %s; trying by card name.%n", ref, set.name());
 
@@ -177,7 +177,7 @@ public class Serialization {
 									// collector number is of a different card. Either way, we're in the rough. Try to
 									// find any card with the same name in the set.
 									pr = set.printings().stream()
-											.filter(pr2 -> ref.cardName.equals(pr2.card().name()))
+											.filter(pr2 -> ref.name().equals(pr2.card().name()))
 											.findAny()
 											.orElse(null);
 
@@ -189,7 +189,7 @@ public class Serialization {
 								// Either the set wasn't matched or had no card by this name.
 								// Locate the card the hard way, and return the preferred printing.
 								emi.lib.mtg.Card card = Context.get().data.cards().stream()
-										.filter(c -> ref.cardName.equals(c.name()))
+										.filter(c -> ref.name().equals(c.name()))
 										.findAny()
 										.orElse(null);
 
@@ -205,7 +205,7 @@ public class Serialization {
 
 						@Override
 						protected String toString(T pr) throws IOException {
-							return new CardInstance.PrintingReference((Card.Printing) pr).toString();
+							return Card.Printing.Reference.format((Card.Printing) pr);
 						}
 					};
 				} else {
