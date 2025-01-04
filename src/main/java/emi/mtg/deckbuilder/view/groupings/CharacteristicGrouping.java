@@ -1,7 +1,6 @@
 package emi.mtg.deckbuilder.view.groupings;
 
 import emi.mtg.deckbuilder.model.CardInstance;
-import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardView;
 import javafx.collections.ListChangeListener;
 
@@ -13,16 +12,6 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 
 		public CharacteristicGroup(String value) {
 			this.value = value;
-		}
-
-		@Override
-		public void add(CardInstance ci) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void remove(CardInstance ci) {
-			throw new UnsupportedOperationException();
 		}
 
 		@Override
@@ -92,14 +81,9 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 	}
 
 	@Override
-	public Group[] groups(DeckList list, List<CardInstance> unused) {
+	public Group[] groups(List<CardInstance> unused) {
 		ensureGroups();
 		return groups;
-	}
-
-	@Override
-	public boolean supportsModification() {
-		return false;
 	}
 
 	@Override

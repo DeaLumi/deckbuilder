@@ -13,11 +13,9 @@ public class TagGrouping implements CardView.Grouping {
 	public static final TagGrouping INSTANCE = new TagGrouping();
 
 	private static class TagGroup implements CardView.Grouping.Group {
-		private final DeckList list;
 		private final String tag;
 
-		public TagGroup(DeckList list, String tag) {
-			this.list = list;
+		public TagGroup(String tag) {
 			this.tag = tag;
 		}
 
@@ -27,7 +25,7 @@ public class TagGrouping implements CardView.Grouping {
 		}
 
 		@Override
-		public void add(CardInstance ci) {
+		public void add(DeckList list, CardInstance ci) {
 			if (ci.tags().contains(this.tag)) return;
 
 			DeckChanger.addBatchedChange(
@@ -38,7 +36,7 @@ public class TagGrouping implements CardView.Grouping {
 		}
 
 		@Override
-		public void remove(CardInstance ci) {
+		public void remove(DeckList list, CardInstance ci) {
 			if (!ci.tags().contains(this.tag)) return;
 
 			DeckChanger.addBatchedChange(
@@ -70,15 +68,12 @@ public class TagGrouping implements CardView.Grouping {
 			if (obj == null) return false;
 			if (!(obj instanceof TagGroup)) return false;
 			TagGroup other = (TagGroup) obj;
-			return Objects.equals(tag, other.tag) && Objects.equals(list, other.list);
+			return Objects.equals(tag, other.tag);
 		}
 	}
 
 	private static class Untagged implements CardView.Grouping.Group {
-		private final DeckList list;
-
-		public Untagged(DeckList list) {
-			this.list = list;
+		public Untagged() {
 		}
 
 		@Override
@@ -87,7 +82,7 @@ public class TagGrouping implements CardView.Grouping {
 		}
 
 		@Override
-		public void add(CardInstance ci) {
+		public void add(DeckList list, CardInstance ci) {
 			if (ci.tags().isEmpty()) return;
 
 			final Set<String> oldTags = new HashSet<>(ci.tags());
@@ -99,7 +94,7 @@ public class TagGrouping implements CardView.Grouping {
 		}
 
 		@Override
-		public void remove(CardInstance ci) {
+		public void remove(DeckList list, CardInstance ci) {
 			// Do nothing
 		}
 
@@ -157,15 +152,15 @@ public class TagGrouping implements CardView.Grouping {
 	}
 
 	@Override
-	public Group[] groups(DeckList list, List<CardInstance> model) {
+	public Group[] groups(List<CardInstance> model) {
 		Deque<Group> groups = model.stream()
 				.map(CardInstance::tags)
 				.flatMap(Set::stream)
 				.distinct()
 				.sorted()
-				.map(tag -> new TagGroup(list, tag))
+				.map(tag -> new TagGroup(tag))
 				.collect(Collectors.toCollection(LinkedList::new));
-		groups.addFirst(new Untagged(list));
+		groups.addFirst(new Untagged());
 		return groups.toArray(new Group[0]);
 	}
 

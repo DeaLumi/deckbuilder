@@ -11,6 +11,7 @@ import emi.mtg.deckbuilder.util.UniqueList;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.util.PluginUtils;
+import emi.mtg.deckbuilder.view.groupings.None;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -169,16 +170,25 @@ public class CardView extends Canvas {
 
 	public interface Grouping {
 		interface Group extends Comparable<Group> {
-			void add(CardInstance ci);
-			void remove(CardInstance ci);
+			default void add(DeckList deck, CardInstance ci) {
+				throw new UnsupportedOperationException();
+			}
+
+			default void remove(DeckList deck, CardInstance ci) {
+				throw new UnsupportedOperationException();
+			}
+
 			boolean contains(CardInstance ci);
 		}
 
 		String name();
-		boolean supportsModification();
+
+		default boolean supportsModification() {
+			return false;
+		}
 
 		boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change);
-		Group[] groups(DeckList list, List<CardInstance> model);
+		Group[] groups(List<CardInstance> model);
 	}
 
 	public interface Sorting extends Comparator<CardInstance> {
@@ -397,9 +407,11 @@ public class CardView extends Canvas {
 		void dragDropped(DragEvent de) {
 			if (CardView.dragSource == CardView.this) {
 				if (CardView.this.grouping.supportsModification()) {
+					final List<CardInstance> changed = new ArrayList(CardView.this.selectedCards);
+
 					DeckChanger.startChangeBatch(CardView.this.deck);
 
-					CardView.this.selectedCards.forEach(CardView.this.hoverGroup.group::add);
+					changed.forEach(ci -> CardView.this.hoverGroup.group.add(CardView.this.deck, ci));
 
 					if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
 						for (Group group : CardView.this.groupedModel) {
@@ -407,8 +419,8 @@ public class CardView extends Canvas {
 								continue;
 							}
 
-							for (CardInstance ci : selectedCards) {
-								group.group.remove(ci);
+							for (CardInstance ci : changed) {
+								group.group.remove(CardView.this.deck, ci);
 							}
 						}
 					}
@@ -440,7 +452,7 @@ public class CardView extends Canvas {
 					if (source.grouping.supportsModification() && CardView.this.hoverGroup != null && CardView.this.grouping.supportsModification()) {
 						for (Grouping.Group oldGroup : source.groups) {
 							for (CardInstance oldCard : source.selectedCards) {
-								oldGroup.remove(oldCard);
+								oldGroup.remove(sourceDeck, oldCard);
 							}
 						}
 					}
