@@ -46,6 +46,8 @@
 - Fixed a case where the collection would sometimes just... not load. (Due to a concurrent modification error while loading tags, of all things.)
 - Improved logging the collection loading just in case another error causes it to fail. (Check the new debug console for details to send me if it does!)
 
+---
+
 ## 2024 April
 
 ### Features
@@ -61,6 +63,8 @@
 
 - Fixed a bug where both faces of DFCs were using the same underlying card data. Hopefully I'm done changing that code now; it's a mess.
 - Fixed the naming of DFC backface images. I recommend cleaning up your image cache after this change.
+
+---
 
 ## 2023 September
 
@@ -85,6 +89,8 @@
 
 - Dragging cards from one zone to a tag group in another will remove now old tags if you don't hold shift.
 
+---
+
 ## 2023 July
 
 ### Improvements
@@ -100,6 +106,8 @@
 - Saved sortings are correctly applied to the default views again.
 - Updated to Scryfall plugin to support addition of "mutate" and "prototype" card frames.
 - Updates should be correctly applied on Linux now. (Checked on an Ubuntu VM.)
+
+---
 
 ## 2022
 
@@ -129,6 +137,8 @@
 - Fixed some possible exceptions from dragging tabs around. There are possibly some I've missed though.
 - Added Stickers and Universewalker card types to libmtg and fixed an issue with BFM's right half typeline.
 - Changing a printing now marks a deck as modified.
+
+---
 
 ## January 2022
 
