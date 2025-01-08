@@ -137,13 +137,12 @@ public class MainWindow extends Stage {
 			owner.deregisterMainWindow(this);
 		});
 
-		collection.loading().set(true);
-
 		Preferences.listen(prefsListener = this::preferencesChanged);
 
 		ForkJoinPool.commonPool().submit(() -> {
 			try {
 				log.start().log("Preparing collection...");
+				collection.loading().set(true);
 				collection.filter().setText(Preferences.get().defaultQuery);
 				collection.updateFilter();
 				collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));

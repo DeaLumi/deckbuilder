@@ -155,6 +155,7 @@ public class CardPane extends BorderPane {
 			if (preferred != null) return preferred.id().equals(ci.id());
 
 			// TODO: This use of id() is entirely internal and might be able to stay.
+			// TODO: This predicate fails to account for preferred printings being filtered out.
 			synchronized(prefPrintCache) {
 				return ci.id().equals(prefPrintCache.computeIfAbsent(ci.card(), fn -> ci.card().printings().iterator().next().id()));
 			}
@@ -289,11 +290,30 @@ public class CardPane extends BorderPane {
 		filterProgress.getStyleClass().add("inlaid");
 		filterProgress.setMinSize(ProgressBar.USE_PREF_SIZE, ProgressBar.USE_PREF_SIZE);
 		filterProgress.setMaxSize(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+		AtomicLong lastUpdate = new AtomicLong(System.nanoTime());
+		cardView.model.progress().addListener((progvar, oldProgress, newProgress) -> {
+			final double d = newProgress.doubleValue();
+			if (d <= 0.001 || d >= 0.999 || System.nanoTime() - lastUpdate.get() >= 1e9 / 60) {
+				lastUpdate.set(System.nanoTime());
+				Platform.runLater(() -> {
+					filterProgress.setProgress(d);
+					lastUpdate.set(System.nanoTime());
+				});
+			}
+		});
 
 		filter = new TextField();
 		filter.setPromptText(Preferences.get().searchProvider.name() + "...");
 		filter.setMinSize(TextField.USE_PREF_SIZE, TextField.USE_PREF_SIZE);
 		filter.promptTextProperty().bind(Bindings.createStringBinding(() -> searchProvider.get().name(), searchProvider).concat("..."));
+		filter.styleProperty().set("-fx-background-color: transparent;");
+		filter.focusedProperty().addListener((obs, olv, nev) -> {
+			if (nev) {
+				filterProgress.getStyleClass().add("focused");
+			} else {
+				filterProgress.getStyleClass().remove("focused");
+			}
+		});
 
 		filterAutoComplete = new AutoCompleter(filter, name -> {
 			if (name.length() > 3) {
@@ -345,6 +365,7 @@ public class CardPane extends BorderPane {
 		filter.setOnAction(this::updateFilterFx);
 
 		deckStats = new Label("");
+		// TODO This should probably be weak
 		model.addListener((ListChangeListener<CardInstance>) lce -> ForkJoinPool.commonPool().submit(this::updateStats));
 
 		HBox controlBar = new HBox(4.0);
@@ -445,6 +466,7 @@ public class CardPane extends BorderPane {
 			throw new IllegalStateException("updateFilterFx must only be called from the FX Application thread!");
 		}
 
+		filterProgress.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
 		ForkJoinPool.commonPool().submit(this::updateFilter);
 	}
 
@@ -457,16 +479,6 @@ public class CardPane extends BorderPane {
 			return;
 		}
 
-		final boolean clearTooltip = filter.getStyle().contains("#ff8080");
-		Platform.runLater(() -> {
-			if (clearTooltip) {
-				Tooltip.uninstall(filter, filterErrorTooltip);
-				filter.getTooltip().setText("");
-			}
-			filter.setStyle("-fx-background-color: transparent;");
-			filterProgress.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
-		});
-
 		final Predicate<CardInstance> finalFilter;
 		try {
 			finalFilter = calculateFilter();
@@ -474,10 +486,21 @@ public class CardPane extends BorderPane {
 			Platform.runLater(() -> {
 				Tooltip.install(filter, filterErrorTooltip);
 				filter.getTooltip().setText(iae.getMessage());
-				filter.setStyle("-fx-control-inner-background: #ff8080;");
+				filterProgress.setProgress(0.0);
+				filterProgress.getStyleClass().add("error");
 			});
 			return;
 		}
+
+		final boolean clearTooltip = filterProgress.getStyleClass().contains("error");
+		Platform.runLater(() -> {
+			if (clearTooltip) {
+				Tooltip.uninstall(filter, filterErrorTooltip);
+				filter.getTooltip().setText("");
+				filterProgress.getStyleClass().remove("error");
+			}
+			filterProgress.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
+		});
 
 		// TODO: Make interruptible with volatile generation ala CardView
 		changeModel(x -> this.cardView.model.predicate.set(finalFilter));
@@ -505,7 +528,6 @@ public class CardPane extends BorderPane {
 			if (clear) filter.setText("");
 			focusTarget.requestFocus();
 			filterProgress.setProgress(0.0);
-			filter.setStyle("");
 		});
 
 		updateStats();
