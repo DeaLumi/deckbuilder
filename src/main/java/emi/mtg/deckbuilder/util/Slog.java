@@ -81,16 +81,17 @@ public class Slog {
 	}
 
 	public Slog err(String format, Throwable t, Object... args) {
-		PrintWriter writer = new PrintWriter(new StringWriter(1024));
+		StringWriter str = new StringWriter(1024);
+		PrintWriter writer = new PrintWriter(str);
 		t.printStackTrace(writer);
-		return log(System.err, true, format + "%n%n%s", t.getMessage(), writer.toString()); // TODO string concatenation
+		return log(System.err, true, String.format(format, args) + "%n%n%s", str.getBuffer().toString()); // TODO string concatenation
 	}
 
 	private final static DateTimeFormatter TIMESTAMP_FORMAT = new DateTimeFormatterBuilder()
 			.appendLiteral('[')
-			.appendValue(ChronoField.YEAR).appendLiteral('-').appendValue(ChronoField.MONTH_OF_YEAR).appendLiteral('-').appendValue(ChronoField.DAY_OF_MONTH)
+			.appendValue(ChronoField.YEAR, 4).appendLiteral('-').appendValue(ChronoField.MONTH_OF_YEAR, 2).appendLiteral('-').appendValue(ChronoField.DAY_OF_MONTH, 2)
 			.appendLiteral(' ')
-			.appendValue(ChronoField.HOUR_OF_DAY).appendLiteral(':').appendValue(ChronoField.MINUTE_OF_HOUR).appendLiteral(':').appendValue(ChronoField.SECOND_OF_MINUTE).appendLiteral('.').appendValue(ChronoField.MILLI_OF_SECOND)
+			.appendValue(ChronoField.HOUR_OF_DAY, 2).appendLiteral(':').appendValue(ChronoField.MINUTE_OF_HOUR, 2).appendLiteral(':').appendValue(ChronoField.SECOND_OF_MINUTE, 2).appendLiteral('.').appendValue(ChronoField.MILLI_OF_SECOND, 3)
 			.appendLiteral(' ')
 			.appendZoneOrOffsetId()
 			.appendLiteral(']')
