@@ -2,9 +2,9 @@ package emi.mtg.deckbuilder.view.groupings;
 
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
-import javafx.collections.ListChangeListener;
 
-import java.util.List;
+import java.util.Collections;
+import java.util.Set;
 
 public abstract class CharacteristicGrouping implements CardView.Grouping {
 	protected class CharacteristicGroup implements CardView.Grouping.Group {
@@ -64,12 +64,6 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 
 	private CharacteristicGroup[] groups;
 
-	@Override
-	public boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change) {
-		// Characteristics groupings have a fixed set of possible values and never require regrouping.
-		return false;
-	}
-
 	private synchronized void ensureGroups() {
 		if (groups == null) {
 			groups = new CharacteristicGroup[groupValues().length];
@@ -81,9 +75,18 @@ public abstract class CharacteristicGrouping implements CardView.Grouping {
 	}
 
 	@Override
-	public Group[] groups(List<CardInstance> unused) {
+	public Set<Group> groups(CardInstance card) {
 		ensureGroups();
-		return groups;
+
+		final String str = extract(card);
+
+		for (int i = 0; i < groups.length; ++i) {
+			if (str.equals(groups[i].value)) {
+				return Collections.singleton(groups[i]);
+			}
+		}
+
+		throw new IllegalArgumentException();
 	}
 
 	@Override

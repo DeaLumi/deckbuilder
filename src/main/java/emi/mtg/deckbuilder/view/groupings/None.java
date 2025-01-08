@@ -2,9 +2,9 @@ package emi.mtg.deckbuilder.view.groupings;
 
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.view.components.CardView;
-import javafx.collections.ListChangeListener;
 
-import java.util.List;
+import java.util.Collections;
+import java.util.Set;
 
 public class None implements CardView.Grouping {
 	public static final None INSTANCE = new None();
@@ -39,12 +39,7 @@ public class None implements CardView.Grouping {
 	}
 
 	@Override
-	public boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change) {
-		return false;
-	}
-
-	@Override
-	public Group[] groups(List<CardInstance> unused) {
-		return GROUPS;
+	public Set<Group> groups(CardInstance card) {
+		return Collections.singleton(GROUPS[0]);
 	}
 }

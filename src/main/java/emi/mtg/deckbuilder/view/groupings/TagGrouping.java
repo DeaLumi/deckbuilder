@@ -4,7 +4,6 @@ import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.view.components.CardView;
-import javafx.collections.ListChangeListener;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -131,37 +130,16 @@ public class TagGrouping implements CardView.Grouping {
 		return name();
 	}
 
+	// TODO can't make new tag groups all the time.
+	// Make a new grouping instance on demand, based on a decklist; populate it with known groups if possible.
 	@Override
-	public boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change) {
-		Set<String> currentTags = Arrays.stream(existing)
-				.filter(g -> g instanceof TagGroup)
-				.map(g -> ((TagGroup) g).tag)
+	public Set<Group> groups(CardInstance card) {
+		Set<Group> groups = card.tags().stream()
+				.map(TagGroup::new)
 				.collect(Collectors.toSet());
 
-		while (change.next()) {
-			if (change.wasAdded() || change.wasUpdated()) {
-				for (CardInstance ci : change.getList().subList(change.getFrom(), change.getTo())) {
-					for (String tag : ci.tags()) {
-						if (!currentTags.contains(tag)) return true;
-					}
-				}
-			}
-		}
-
-		return false;
-	}
-
-	@Override
-	public Group[] groups(List<CardInstance> model) {
-		Deque<Group> groups = model.stream()
-				.map(CardInstance::tags)
-				.flatMap(Set::stream)
-				.distinct()
-				.sorted()
-				.map(tag -> new TagGroup(tag))
-				.collect(Collectors.toCollection(LinkedList::new));
-		groups.addFirst(new Untagged());
-		return groups.toArray(new Group[0]);
+		if (groups.isEmpty()) groups.add(new Untagged());
+		return groups;
 	}
 
 	@Override

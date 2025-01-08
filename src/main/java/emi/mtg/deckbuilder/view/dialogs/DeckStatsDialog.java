@@ -198,7 +198,7 @@ public class DeckStatsDialog extends Dialog<Void> {
 		};
 	}
 
-	public DeckStatsDialog(Window window, ObservableList<CardInstance> cardList) throws IOException {
+	public DeckStatsDialog(Window window, List<CardInstance> cardList) throws IOException {
 		FxUtils.FXML(this);
 		getDialogPane().setStyle(Preferences.get().theme.style());
 		initOwner(window);

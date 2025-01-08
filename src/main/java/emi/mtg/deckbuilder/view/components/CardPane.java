@@ -250,7 +250,7 @@ public class CardPane extends BorderPane {
 		MenuItem statisticsButton = new MenuItem("Statistics");
 		statisticsButton.setOnAction(ae -> {
 			try {
-				new DeckStatsDialog(getScene().getWindow(), this.cardView.filteredModel).show();
+				new DeckStatsDialog(getScene().getWindow(), this.cardView.model.values().stream().flatMap(List::stream).collect(Collectors.toList())).show();
 			} catch (IOException e) {
 				throw new RuntimeException(e); // TODO: Handle gracefully
 			}
@@ -359,7 +359,6 @@ public class CardPane extends BorderPane {
 		HBox.setHgrow(deckStats, Priority.NEVER);
 		this.setTop(controlBar);
 
-		cardView.filteredModel.setPredicate(calculateFilter());
 		ForkJoinPool.commonPool().submit(this::updateStats);
 	}
 
@@ -368,11 +367,12 @@ public class CardPane extends BorderPane {
 	}
 
 	private synchronized void updateStats() {
-		final long total = cardView.filteredModel.size();
-		AtomicLong land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
+		AtomicLong total = new AtomicLong(0), land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
 
 		try {
-			for (CardInstance ci : cardView.filteredModel) {
+			for (CardInstance ci : cardView.model.values().stream().flatMap(List::stream).collect(Collectors.toList())) {
+				total.incrementAndGet();
+
 				Card.Face front = ci.card().front();
 				if (front != null && front.type().is(CardType.Creature)) {
 					creature.incrementAndGet();
@@ -388,8 +388,8 @@ public class CardPane extends BorderPane {
 
 		StringBuilder str = new StringBuilder();
 
-		if (total != 0) {
-			str.append(total).append(" Card").append(total == 1 ? "" : "s").append(": ");
+		if (total.get() != 0) {
+			str.append(total).append(" Card").append(total.get() == 1 ? "" : "s").append(": ");
 
 			boolean comma = append(str, false, land, "Land");
 			comma = append(str, comma, creature, "Creature");
@@ -479,20 +479,23 @@ public class CardPane extends BorderPane {
 			return;
 		}
 
-		changeModel(x -> this.cardView.filteredModel.setPredicate(finalFilter));
+		// TODO: Make interruptible with volatile generation ala CardView
+		changeModel(x -> this.cardView.model.predicate.set(finalFilter));
 
 		final boolean clear;
 		final Node focusTarget;
 
-		if (autoAction.get() != null && this.cardView.filteredModel.size() <= 1 && autoToggle.isSelected()) {
-			if (!this.cardView.filteredModel.isEmpty()) {
-				autoAction.get().accept(this.cardView.filteredModel.get(0));
+		if (autoAction.get() != null && autoToggle.isSelected() && this.cardView.model.filteredSize() <= 1) {
+			Optional<CardInstance> card = this.cardView.model.values().stream().flatMap(List::stream).findAny();
+
+			if (card.isPresent()) {
+				autoAction.get().accept(card.get());
 				clear = true;
 			} else {
 				clear = false;
 			}
 
-			focusTarget = filter;
+			focusTarget = filter; // TODO Behavioral change -- if we match multiple cards, the focusTarget should be cardView
 		} else {
 			clear = false;
 			focusTarget = cardView;
@@ -525,8 +528,8 @@ public class CardPane extends BorderPane {
 	}
 
 	public void changeModel(Consumer<ObservableList<CardInstance>> mutator) {
-		synchronized(this.cardView.model) {
-			mutator.accept(this.cardView.model);
+		synchronized(this.cardView.model.source) {
+			mutator.accept(this.cardView.model.source);
 		}
 	}
 

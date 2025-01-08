@@ -6,20 +6,16 @@ import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.controller.Tags;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
+import emi.mtg.deckbuilder.model.FilteredGroupedModel;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.UniqueList;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
 import emi.mtg.deckbuilder.util.PluginUtils;
-import emi.mtg.deckbuilder.view.groupings.None;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Platform;
 import javafx.beans.property.*;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import javafx.collections.ObservableSet;
-import javafx.collections.transformation.FilteredList;
+import javafx.collections.*;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
@@ -187,8 +183,7 @@ public class CardView extends Canvas {
 			return false;
 		}
 
-		boolean requireRegroup(Group[] existing, ListChangeListener.Change<? extends CardInstance> change);
-		Group[] groups(List<CardInstance> model);
+		Set<Group> groups(CardInstance card);
 	}
 
 	public interface Sorting extends Comparator<CardInstance> {
@@ -345,7 +340,7 @@ public class CardView extends Canvas {
 			if (!dragging) return;
 			if (me.getButton() != MouseButton.PRIMARY) return;
 
-			CardView.this.selectedCards.retainAll(CardView.this.model);
+			CardView.this.selectedCards.retainAll(CardView.this.model.source);
 
 			if (CardView.this.selectedCards.isEmpty()) {
 				return;
@@ -407,14 +402,14 @@ public class CardView extends Canvas {
 		void dragDropped(DragEvent de) {
 			if (CardView.dragSource == CardView.this) {
 				if (CardView.this.grouping.supportsModification()) {
-					final List<CardInstance> changed = new ArrayList(CardView.this.selectedCards);
+					final List<CardInstance> changed = new ArrayList<>(CardView.this.selectedCards);
 
 					DeckChanger.startChangeBatch(CardView.this.deck);
 
 					changed.forEach(ci -> CardView.this.hoverGroup.group.add(CardView.this.deck, ci));
 
 					if (de.getAcceptedTransferMode() == TransferMode.MOVE) {
-						for (Group group : CardView.this.groupedModel) {
+						for (Group group : CardView.this.groupedModel.values()) {
 							if (group == hoverGroup) {
 								continue;
 							}
@@ -425,11 +420,11 @@ public class CardView extends Canvas {
 						}
 					}
 
-					// I know this looks weird, but the `group.add` and `group.remove` above add the actual batched changes.
+					// Hacky hack to force value changed events since cards can't advertise it.
 					DeckChanger.addBatchedChange(
 							CardView.this.deck,
-							l -> { for (Group group : CardView.this.groupedModel) group.refilter(); },
-							l -> { for (Group group : CardView.this.groupedModel) group.refilter(); }
+							l -> changed.forEach(model::sourceElementChanged),
+							l -> changed.forEach(model::sourceElementChanged)
 					);
 
 					DeckChanger.endChangeBatch(
@@ -446,11 +441,11 @@ public class CardView extends Canvas {
 				if (de.getAcceptedTransferMode() == TransferMode.MOVE && CardView.dragSource.deck != null) {
 					final CardView source = CardView.dragSource;
 					final DeckList sourceDeck = source.deck;
-					final ObservableList<CardInstance> sourceModel = source.model;
+					final ObservableList<CardInstance> sourceModel = source.model.source;
 					DeckChanger.startChangeBatch(sourceDeck);
 
 					if (source.grouping.supportsModification() && CardView.this.hoverGroup != null && CardView.this.grouping.supportsModification()) {
-						for (Grouping.Group oldGroup : source.groups) {
+						for (Grouping.Group oldGroup : source.groupedModel.keySet()) {
 							for (CardInstance oldCard : source.selectedCards) {
 								oldGroup.remove(sourceDeck, oldCard);
 							}
@@ -474,14 +469,14 @@ public class CardView extends Canvas {
 								CardInstance clone = new CardInstance(ci);
 
 								if (CardView.this.hoverGroup != null && CardView.this.grouping.supportsModification()) {
-									CardView.this.hoverGroup.group.add(clone);
+									CardView.this.hoverGroup.group.add(CardView.this.deck, clone);
 								}
 
 								return clone;
 							})
 							.collect(Collectors.toSet());
 
-					final ObservableList<CardInstance> thisModel = CardView.this.model;
+					final ObservableList<CardInstance> thisModel = CardView.this.model.source;
 					DeckChanger.addBatchedChange(
 							CardView.this.deck,
 							l -> thisModel.addAll(newCards),
@@ -706,7 +701,7 @@ public class CardView extends Canvas {
 	public class Group {
 		public final Bounds groupBounds, labelBounds;
 		public final Grouping.Group group;
-		private final FilteredList<CardInstance> filteredModel;
+		private final ObservableList<CardInstance> filteredModel;
 		private final SortedList<CardInstance> sortedModel;
 		private final UniqueList<CardInstance> collapsedModel;
 
@@ -715,21 +710,11 @@ public class CardView extends Canvas {
 			this.groupBounds = new Bounds();
 			this.labelBounds = new Bounds();
 
-			this.filteredModel = modelSource.filtered(group::contains);
+			this.filteredModel = modelSource;
 			this.sortedModel = this.filteredModel.sorted(initialSort);
 			this.collapsedModel = new UniqueList<>(this.sortedModel, CardInstance::printing);
 
 			this.collapsedModel.addListener((ListChangeListener<CardInstance>) x -> CardView.this.layout());
-		}
-
-		public void refilter() {
-			// N.B. This can not be a lambda. We need a new instance.
-			this.filteredModel.setPredicate(new Predicate<CardInstance>() {
-				@Override
-				public boolean test(CardInstance cardInstance) {
-					return Group.this.group.contains(cardInstance);
-				}
-			});
 		}
 
 		public ObservableList<CardInstance> model() {
@@ -805,7 +790,7 @@ public class CardView extends Canvas {
 
 			this.setOnShowing(e -> {
 				ObservableList<MenuItem> tagCBs = FXCollections.observableArrayList();
-				tagCBs.setAll(view.get().model.stream()
+				tagCBs.setAll(view.get().model.source.stream()
 						.map(CardInstance::tags)
 						.flatMap(Set::stream)
 						.distinct()
@@ -916,10 +901,8 @@ public class CardView extends Canvas {
 	}
 
 	private final DeckList deck;
-	final ObservableList<CardInstance> model;
-	final FilteredList<CardInstance> filteredModel;
-	private volatile Grouping.Group[] groups;
-	private volatile Group[] groupedModel;
+	final FilteredGroupedModel<Grouping.Group, CardInstance> model;
+	final Map<Grouping.Group, Group> groupedModel;
 
 	private LayoutEngine engine;
 	private Comparator<CardInstance> sort;
@@ -991,13 +974,44 @@ public class CardView extends Canvas {
 		this.sort = ActiveSorting.merge(sorts);
 		this.grouping = grouping;
 
-		this.model = model;
-		this.filteredModel = model.filtered(x -> true);
-		this.filteredModel.addListener((ListChangeListener<CardInstance>) lce -> {
-			if (this.grouping.requireRegroup(this.groups, lce)) {
-				this.regroup();
+		final Grouping.Group unsorted = new Grouping.Group() {
+			@Override
+			public String toString() {
+				return "Unsorted";
 			}
+
+			@Override
+			public boolean contains(CardInstance ci) {
+				return true;
+			}
+
+			@Override
+			public int compareTo(Grouping.Group o) {
+				return 0;
+			}
+		};
+
+		this.model = new FilteredGroupedModel<>(model, ci -> Collections.singleton(unsorted), ci -> true);
+
+		this.groupedModel = new TreeMap<>();
+
+		final ListChangeListener<? super CardInstance> listListener = change -> layout();
+
+		this.model.addListener((MapChangeListener<? super Grouping.Group, ? super ObservableList<CardInstance>>) mce -> {
+			if (mce.wasRemoved()) {
+				mce.getValueRemoved().removeListener(listListener);
+				this.groupedModel.remove(mce.getKey());
+			}
+
+			if (mce.wasAdded()) {
+				mce.getValueAdded().addListener(listListener);
+				this.groupedModel.put(mce.getKey(), new Group(mce.getKey(), mce.getValueAdded(), sort));
+			}
+
+			layout();
 		});
+
+		this.model.grouping.set(this.grouping::groups);
 
 		this.collapseDuplicatesProperty.addListener((a, b, c) -> layout());
 
@@ -1062,7 +1076,7 @@ public class CardView extends Canvas {
 					}
 
 					if (deck == null) {
-						if (filteredModel.stream().anyMatch(ci -> ci.card() == card.card() && ci.printing() != card.printing())) {
+						if (this.model.values().stream().flatMap(List::stream).anyMatch(ci -> ci.card() == card.card() && ci.printing() != card.printing())) {
 							return; // Other versions are already represented. TODO: I hate this. Bind to CardPane's showVersionsSeparately?
 						}
 					}
@@ -1077,16 +1091,12 @@ public class CardView extends Canvas {
 							for (CardInstance ci : modifyingCards) {
 								if (ci.printing() != pr) {
 									final Card.Printing old = ci.printing();
-									doFn = doFn.andThen(l -> ci.printing(pr));
-									undoFn = undoFn.andThen(l -> ci.printing(old));
+									doFn = doFn.andThen(l -> ci.printing(pr)).andThen(l -> this.model.sourceElementChanged(ci));
+									undoFn = undoFn.andThen(l -> ci.printing(old)).andThen(l -> this.model.sourceElementChanged(ci));
 									modified = true;
 								}
 							}
 							if (modified) {
-								// Irritating hack to trigger listeners.
-								doFn = doFn.andThen(l -> model.set(0, model.get(0))).andThen(l -> scheduleRender());
-								undoFn = undoFn.andThen(l -> model.set(0, model.get(0))).andThen(l -> scheduleRender());
-
 								DeckChanger.change(
 										deck,
 										String.format("Change %d Printing%s", modifyingCards.size(), modifyingCards.size() > 1 ? "s" : ""),
@@ -1107,7 +1117,7 @@ public class CardView extends Canvas {
 				}
 			} else if (me.getButton() == MouseButton.SECONDARY) {
 				if (this.contextMenu != null) {
-					selectedCards.retainAll(this.model);
+					selectedCards.retainAll(this.model.source);
 					if (!selectedCards.isEmpty()) {
 						this.contextMenu.hide();
 						this.contextMenu.view.set(this);
@@ -1168,7 +1178,7 @@ public class CardView extends Canvas {
 
 		Group newHoverGroup = null;
 
-		for (Group g : groupedModel) {
+		for (Group g : groupedModel.values()) {
 			if (g == null) {
 				continue;
 			}
@@ -1218,17 +1228,13 @@ public class CardView extends Canvas {
 				max = new MVec2d(Math.max(x1, x2), Math.max(y1, y2));
 
 		MVec2d localMin = new MVec2d(), localMax = new MVec2d(), buffer = new MVec2d();
-		for (int i = 0; i < groupedModel.length; ++i) {
-			if (groupedModel[i] == null) {
-				continue;
-			}
+		for (Group group : groupedModel.values()) {
+			localMin.set(group.groupBounds.pos).negate().plus(min);
+			localMax.set(group.groupBounds.pos).negate().plus(max);
 
-			localMin.set(groupedModel[i].groupBounds.pos).negate().plus(min);
-			localMax.set(groupedModel[i].groupBounds.pos).negate().plus(max);
-
-			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
-				if (engine.cardInSelection(j, localMin, localMax, buffer, groupedModel[i].model().size())) {
-					selectedCards.addAll(groupedModel[i].hoverCards(groupedModel[i].model().get(j)));
+			for (int j = 0; j < group.model().size(); ++j) {
+				if (engine.cardInSelection(j, localMin, localMax, buffer, group.model().size())) {
+					selectedCards.addAll(group.hoverCards(group.model().get(j)));
 				}
 			}
 		}
@@ -1249,14 +1255,14 @@ public class CardView extends Canvas {
 	}
 
 	private CardHitResult cardAt(double x, double y) {
-		if (this.engine == null || filteredModel.size() == 0) {
+		if (this.engine == null || model.values().stream().mapToLong(List::size).sum() == 0) {
 			return new CardHitResult(null, -1, null);
 		}
 
 		MVec2d point = new MVec2d(x + scrollX.get(), y + scrollY.get());
 
 		Group group = null;
-		for (Group g : groupedModel) {
+		for (Group g : groupedModel.values()) {
 			if (g.groupBounds.contains(point)) {
 				group = g;
 				break;
@@ -1284,10 +1290,7 @@ public class CardView extends Canvas {
 
 	public void grouping(Grouping grouping) {
 		this.grouping = grouping;
-		this.groups = this.grouping.groups(this.deck, this.model);
-		this.groupedModel = Arrays.stream(this.groups)
-				.map(g -> new Group(g, this.filteredModel, this.sort))
-				.toArray(Group[]::new);
+		this.model.grouping.set(this.grouping::groups);
 		layout();
 	}
 
@@ -1300,9 +1303,7 @@ public class CardView extends Canvas {
 	}
 
 	public void refreshCardGrouping() {
-		for (Group group : this.groupedModel) {
-			group.refilter();
-		}
+		this.model.regroup();
 	}
 
 	private synchronized void sort(List<ActiveSorting> sorts, boolean sync) {
@@ -1318,7 +1319,7 @@ public class CardView extends Canvas {
 				this.sortingElements = sorts;
 				this.sort = ActiveSorting.merge(sorts);
 
-				for (Group g : groupedModel) {
+				for (Group g : groupedModel.values()) {
 					g.setSort(this.sort);
 				}
 
@@ -1407,7 +1408,7 @@ public class CardView extends Canvas {
 
 	@Override
 	public double prefWidth(double height) {
-		return Arrays.stream(groupedModel)
+		return groupedModel.values().stream()
 				.mapToDouble(g -> Math.max(g.labelBounds.pos.x, g.groupBounds.pos.x) + Math.max(g.labelBounds.dim.x, g.groupBounds.dim.x))
 				.max()
 				.orElse(getWidth());
@@ -1425,7 +1426,7 @@ public class CardView extends Canvas {
 
 	@Override
 	public double prefHeight(double width) {
-		return Arrays.stream(groupedModel)
+		return groupedModel.values().stream()
 				.mapToDouble(g -> Math.max(g.labelBounds.pos.y, g.groupBounds.pos.y) + Math.max(g.labelBounds.dim.y, g.groupBounds.dim.y))
 				.max()
 				.orElse(getHeight());
@@ -1458,7 +1459,7 @@ public class CardView extends Canvas {
 		}
 
 		Bounds boundingBox = new Bounds();
-		engine.layoutGroups(boundingBox, groupedModel, showEmptyGroupsProperty.get());
+		engine.layoutGroups(boundingBox, groupedModel.values().toArray(new Group[0]), showEmptyGroupsProperty.get()); // TODO inefficient and unordered
 
 		scrollMinX.set(boundingBox.pos.x);
 		scrollMinY.set(boundingBox.pos.y);
@@ -1528,7 +1529,7 @@ public class CardView extends Canvas {
 			return;
 		}
 
-		if (filteredModel == null || filteredModel.isEmpty()) {
+		if (model == null || model.values().stream().mapToLong(List::size).sum() == 0) {
 			Platform.runLater(() -> {
 				GraphicsContext gfx = getGraphicsContext2D();
 				gfx.setFill(Preferences.get().theme.base);
@@ -1657,12 +1658,12 @@ public class CardView extends Canvas {
 			renderMap.hoverGroupBounds.plus(hoverGroup.labelBounds);
 		}
 
-		for (int i = 0; i < groupedModel.length; ++i) {
-			if (groupedModel[i] == null || (!showEmptyGroupsProperty.get() && groupedModel[i].model().isEmpty())) {
+		for (Group group : groupedModel.values()) {
+			if (!showEmptyGroupsProperty.get() && group.model().isEmpty()) {
 				continue;
 			}
 
-			final Bounds bounds = groupedModel[i].groupBounds;
+			final Bounds bounds = group.groupBounds;
 
 			dragStartLocal.set(bounds.pos).negate().plus(dragStart);
 			dragEndLocal.set(bounds.pos).negate().plus(dragEnd);
@@ -1672,11 +1673,11 @@ public class CardView extends Canvas {
 			}
 
 			final Bounds labelBounds = new Bounds();
-			labelBounds.pos.set(groupedModel[i].labelBounds.pos).plus(scroll);
-			labelBounds.dim.set(groupedModel[i].labelBounds.dim);
+			labelBounds.pos.set(group.labelBounds.pos).plus(scroll);
+			labelBounds.dim.set(group.labelBounds.dim);
 
 			if (labelBounds.pos.x > -labelBounds.dim.x && labelBounds.pos.x < getWidth() && labelBounds.pos.y > -labelBounds.dim.y && labelBounds.pos.y < getHeight()) {
-				renderMap.labels.put(labelBounds, String.format("%s (%d)", groupedModel[i].group.toString(), groupedModel[i].sortedModel.size()));
+				renderMap.labels.put(labelBounds, String.format("%s (%d)", group.group.toString(), group.sortedModel.size()));
 			}
 
 			final MVec2d gpos = new MVec2d(bounds.pos).plus(scroll);
@@ -1685,15 +1686,15 @@ public class CardView extends Canvas {
 				continue;
 			}
 
-			for (int j = 0; j < groupedModel[i].model().size(); ++j) {
+			for (int j = 0; j < group.model().size(); ++j) {
 				abs = engine.coordinatesOf(j, abs);
-				loc = loc.set(abs).plus(groupedModel[i].groupBounds.pos).plus(scroll);
+				loc = loc.set(abs).plus(group.groupBounds.pos).plus(scroll);
 
 				if (loc.x < -cardWidth() || loc.x > getWidth() || loc.y < -cardHeight() || loc.y > getHeight()) {
 					continue;
 				}
 
-				final CardInstance ci = groupedModel[i].model().get(j);
+				final CardInstance ci = group.model().get(j);
 				final Card.Printing printing = ci.printing();
 
 				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
@@ -1739,14 +1740,14 @@ public class CardView extends Canvas {
 				if (selectedCards.contains(ci)) {
 					states.add(CardView.CardState.Selected);
 				} else if (selectBehavior.selecting) {
-					if (engine.cardInSelection(abs, dragStartLocal, dragEndLocal, groupedModel[i].model().size())) {
+					if (engine.cardInSelection(abs, dragStartLocal, dragEndLocal, group.model().size())) {
 						states.add(CardView.CardState.Selected);
 					}
 				}
 
 				int count = 1;
 				if (collapseDuplicatesProperty.get()) {
-					count = groupedModel[i].collapsedModel.count(j);
+					count = group.collapsedModel.count(j);
 				}
 
 				renderMap.cards.put(new MVec2d(loc), new RenderMap.CardState(futureImage.getNow(Images.LOADING_CARD), states, count));
