@@ -3,6 +3,7 @@ package emi.mtg.deckbuilder.view.dialogs;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.Slog;
@@ -25,6 +26,8 @@ import javafx.stage.Window;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -796,7 +799,7 @@ public class PreferencesDialog extends Alert {
 							plugin.name(),
 							info.value(),
 							field.getDeclaringClass().getCanonicalName(), field.getName(),
-							field.getType()
+							field.getType().getCanonicalName()
 					);
 					continue;
 				}
@@ -804,6 +807,52 @@ public class PreferencesDialog extends Alert {
 				prefEntry.installGui(grid, ++i);
 				prefEntry.init();
 				this.prefEntries.add(prefEntry);
+			}
+
+			opiter: for (Map.Entry<Method, Preferences.Plugin.Operation> op : Preferences.Plugin.operationMethods(plugin).entrySet()) {
+				Method method = op.getKey();
+				method.setAccessible(true);
+				Preferences.Plugin.Operation operation = op.getValue();
+
+				Object[] args = new Object[method.getParameterCount()];
+				for (int j = 0; j < args.length; ++j) {
+					Class<?> ptype = method.getParameterTypes()[j];
+					if (PreferencesDialog.class.equals(ptype)) {
+						args[j] = PreferencesDialog.this;
+					} else if (MainWindow.class.equals(ptype)) {
+						args[j] = owner;
+					} else if (Context.class.equals(ptype)) {
+						args[j] = Context.get();
+					} else {
+						log.err(
+								"Plugin %s declares an operation %s (%s.%s) with an unhandled parameter %d type %s!%n",
+								plugin.name(),
+								operation.value(),
+								method.getDeclaringClass().getCanonicalName(), method.getName(),
+								j, ptype.getCanonicalName()
+						);
+						continue opiter;
+					}
+				}
+
+				Label label = new Label(operation.value());
+				Button button = new Button(operation.text());
+				button.setOnAction(ae -> {
+					try {
+						method.invoke(plugin, args);
+					} catch (IllegalAccessException e) {
+						log.err("While attempting to perform %s", e, operation.value());
+					} catch (InvocationTargetException e) {
+						log.err("Exception while calling %s", e, operation.value());
+					}
+				});
+				if (!operation.tooltip().isEmpty()) button.setTooltip(new Tooltip(operation.tooltip()));
+				grid.add(label, 0, ++i);
+				grid.add(button, 1, i);
+				GridPane.setHalignment(label, HPos.RIGHT);
+				GridPane.setValignment(label, VPos.BASELINE);
+				GridPane.setHalignment(button, HPos.LEFT);
+				GridPane.setValignment(button, VPos.BASELINE);
 			}
 
 			StackPane pane = new StackPane(grid);

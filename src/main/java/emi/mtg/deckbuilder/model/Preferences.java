@@ -30,6 +30,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.nio.file.Files;
@@ -73,6 +74,25 @@ public class Preferences {
 			String tooltip() default "";
 		}
 
+		@Target(ElementType.METHOD)
+		@Retention(RetentionPolicy.RUNTIME)
+		@interface Operation {
+			/**
+			 * @return A label for the operation in the preferences dialog.
+			 */
+			String value();
+
+			/**
+			 * @return The text of the button on the preferences dialog.
+			 */
+			String text() default "Perform";
+
+			/**
+			 * @return Tooltip to display to the user when hovering over the operation button, to explain what it does.
+			 */
+			String tooltip() default "";
+		}
+
 		/**
 		 * The name for this preferences plugin. Should really be unique. Please be unique.
 		 * @return A unique name for this preferences plugin.
@@ -84,6 +104,12 @@ public class Preferences {
 					.filter(f -> (f.getModifiers() & Modifier.TRANSIENT) == 0)
 					.filter(f -> f.getAnnotation(Preference.class) != null)
 					.collect(Collectors.toMap(f -> f, f -> f.getAnnotation(Preference.class)));
+		}
+
+		static Map<Method, Operation> operationMethods(Plugin plugin) {
+			return Arrays.stream(plugin.getClass().getDeclaredMethods())
+					.filter(m -> (m.getAnnotation(Operation.class) != null))
+					.collect(Collectors.toMap(m -> m, m -> m.getAnnotation(Operation.class)));
 		}
 	}
 
