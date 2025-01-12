@@ -19,17 +19,12 @@ public class RulesText implements Omnifilter.Subfilter {
 	}
 
 	private static BiPredicate<String, String> create(String searchText) {
-		if (searchText.indexOf('~') < 0 && !searchText.contains("CARDNAME")) {
-			return (rules, name) -> rules.toLowerCase().contains(searchText.toLowerCase());
-		}
-
-		List<MatchUtils.SequenceMatcher> rope = Arrays.stream(searchText.split("(~|CARDNAME)"))
+		MatchUtils.DeferredRope<String> rope = new MatchUtils.DeferredRope<>(Arrays.stream(searchText.split("(?<=~|CARDNAME)|(?=~|CARDNAME)"))
 				.filter(s -> !s.isEmpty())
-				.map(String::toLowerCase)
-				.map(MatchUtils::charSequenceMatcher)
-				.collect(Collectors.toList());
+				.map(s -> MatchUtils.cardTextTokenMatcher(s, true, false))
+				.collect(Collectors.toList()));
 
-		return (rules, name) -> MatchUtils.matchesRope(rules, 0, new MatchUtils.Delimited<>(rope, MatchUtils.cardNameOrSubNameMatcher(name))) >= 0;
+		return (rules, name) -> MatchUtils.matchesRope(rules, 0, rope.resolve(name)) >= 0;
 	}
 
 	@Override

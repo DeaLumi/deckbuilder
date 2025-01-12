@@ -126,13 +126,12 @@ public class Regex implements Omnifilter.Subfilter {
 			};
 		}
 
-		List<MatchUtils.SequenceMatcher> rope = Arrays.stream(regex.split("(~|CARDNAME)"))
+		MatchUtils.DeferredRope<String> rope = new MatchUtils.DeferredRope<>(Arrays.stream(regex.split("(?<=~|CARDNAME)|(?=~|CARDNAME)"))
 				.filter(s -> !s.isEmpty())
-				.map(Pattern::compile)
-				.map(MatchUtils::regexMatcher)
-				.collect(Collectors.toList());
+				.map(s -> MatchUtils.cardTextTokenMatcher(s, false, true))
+				.collect(Collectors.toList()));
 
-		return (rules, name) -> MatchUtils.matchesRope(rules, 0, new MatchUtils.Delimited<>(rope, MatchUtils.cardNameOrSubNameMatcher(name))) >= 0;
+		return (rules, name) -> MatchUtils.matchesRope(rules, 0, rope.resolve(name)) >= 0;
 	}
 
 	@Override

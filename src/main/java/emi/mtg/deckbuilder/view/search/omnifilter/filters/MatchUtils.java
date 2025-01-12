@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.function.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class MatchUtils {
@@ -62,20 +63,22 @@ public class MatchUtils {
         return (s, i) -> MatchUtils.matchesCardNameOrSubName(s, i, cardName);
     }
 
-    public static int matchesCharSequence(CharSequence haystack, int start, CharSequence needle) {
+    public static int matchesCharSequence(CharSequence haystack, int start, CharSequence needle, boolean ignoreCase) {
         if (start + needle.length() > haystack.length()) return -1;
 
         int i = 0;
         for (; i < needle.length(); ++i) {
             if (start + i >= haystack.length()) return -1;
-            if (haystack.charAt(start + i) != needle.charAt(i)) return -1;
+            char h = haystack.charAt(start + i), n = needle.charAt(i);
+            if (h != n && !ignoreCase) return -1;
+            if (ignoreCase && Character.toLowerCase(h) != Character.toLowerCase(n) && Character.toUpperCase(h) != Character.toUpperCase(n)) return -1;
         }
 
         return start + i;
     }
 
-    public static NonSkippingSequenceMatcher charSequenceMatcher(String needle) {
-        return (s, i) -> MatchUtils.matchesCharSequence(s, i, needle);
+    public static NonSkippingSequenceMatcher charSequenceMatcher(String needle, boolean ignoreCase) {
+        return (s, i) -> MatchUtils.matchesCharSequence(s, i, needle, ignoreCase);
     }
 
     public static int matchesRegex(CharSequence haystack, int start, Pattern pattern) {
@@ -104,14 +107,12 @@ public class MatchUtils {
         };
     }
 
-    public static int matchesRope(CharSequence haystack, int start, Iterable<? extends SequenceMatcher> rope) {
-        SequenceMatcher[] asArray = StreamSupport.stream(Spliterators.spliteratorUnknownSize(rope.iterator(), Spliterator.IMMUTABLE), false).toArray(SequenceMatcher[]::new);
-
+    public static int matchesRope(CharSequence haystack, int start, SequenceMatcher[] rope) {
         startSearch: for (int i = start; i < haystack.length(); ++i) {
             int tmp = i;
 
-            for (int segment = 0; segment < asArray.length; ++segment) {
-                SequenceMatcher sm = asArray[segment];
+            for (int segment = 0; segment < rope.length; ++segment) {
+                SequenceMatcher sm = rope[segment];
                 tmp = sm.match(haystack, tmp, segment == 0);
                 if (tmp < 0) {
                     if (sm.skipping() && segment == 0) break startSearch;
@@ -127,62 +128,37 @@ public class MatchUtils {
         return -1;
     }
 
-    public static class Delimited<T> implements Iterable<T> {
-        public static class Delimiting<T> implements java.util.Iterator<T> {
-            private final Iterator<T> base;
-            private final Supplier<T> delimiter;
-            private boolean gaveDelimiter;
+    public static int matchesRope(CharSequence haystack, int start, List<? extends SequenceMatcher> rope) {
+        return matchesRope(haystack, start, rope.toArray(new SequenceMatcher[0]));
+    }
 
-            public Delimiting(Iterator<T> base, Supplier<T> delimiterSupplier) {
-                this.base = base;
-                this.delimiter = delimiterSupplier;
-                this.gaveDelimiter = true; // Don't give it on the first one.
-            }
+    public static class DeferredRope<T> {
+        private final List<Function<T, ? extends SequenceMatcher>> source;
 
-            public Delimiting(Iterator<T> base, T delimiter) {
-                this(base, () -> delimiter);
-            }
-
-            @Override
-            public boolean hasNext() {
-                return base.hasNext();
-            }
-
-            @Override
-            public T next() {
-                if (gaveDelimiter) {
-                    gaveDelimiter = false;
-                    return base.next();
-                } else if (hasNext()) {
-                    gaveDelimiter = true;
-                    return delimiter.get();
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-
-            @Override
-            public void remove() {
-                if (gaveDelimiter) return;
-                base.remove();
-            }
+        public DeferredRope(List<Function<T, ? extends SequenceMatcher>> source) {
+            this.source = source;
         }
 
-        private final Iterable<T> base;
-        private final Supplier<T> delimiter;
-
-        public Delimited(Iterable<T> base, Supplier<T> delimiterSupplier) {
-            this.base = base;
-            this.delimiter = delimiterSupplier;
+        public List<? extends SequenceMatcher> resolve(T context) {
+            return source.stream()
+                    .map(s -> s.apply(context))
+                    .collect(Collectors.toList());
         }
+    }
 
-        public Delimited(Iterable<T> base, T delimiter) {
-            this(base, () -> delimiter);
-        }
-
-        @Override
-        public Delimiting<T> iterator() {
-            return new Delimiting<>(base.iterator(), delimiter);
+    public static Function<String, ? extends SequenceMatcher> cardTextTokenMatcher(String token, boolean ignoreCase, boolean regex) {
+        if ("~".equals(token) || "CARDNAME".equals(token)) {
+            return MatchUtils::cardNameOrSubNameMatcher;
+        } else {
+            final SequenceMatcher matcher;
+            if (regex && ignoreCase) {
+                matcher = regexMatcher(Pattern.compile(token, Pattern.CASE_INSENSITIVE));
+            } else if (regex) {
+                matcher = regexMatcher(Pattern.compile(token));
+            } else {
+                matcher = charSequenceMatcher(token.toLowerCase(), ignoreCase);
+            }
+            return t -> matcher;
         }
     }
 
