@@ -11,7 +11,6 @@ import java.util.function.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class MatchUtils {
     public interface SequenceMatcher {
