@@ -389,7 +389,7 @@ public class MainApplication extends Application {
 										.headerText("An error occurred while loading data.")
 										.contentText(DATA_LOAD_ERROR)
 										.longRunning(prg -> {
-											updateable.update(Preferences.get().dataPath, (p, m) -> prg.accept(p));
+											updateable.update(Preferences.get().dataPath, prg);
 											return true;
 										})
 										.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) {
@@ -488,7 +488,7 @@ public class MainApplication extends Application {
 				.headerText(updateable.updateAvailable(Preferences.get().dataPath) ? "New card data available." : "Data appears fresh.")
 				.contentText(updateable.updateAvailable(Preferences.get().dataPath) ? "Would you like to update?" : "Would you like to update anyway?")
 				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), prg -> {
-					updateable.update(Preferences.get().dataPath, (p, m) -> prg.accept(p));
+					updateable.update(Preferences.get().dataPath, prg);
 					data.loadData(Preferences.get().dataPath, prg);
 					return true;
 				}, null, AlertBuilder.Exceptions.Defer)
