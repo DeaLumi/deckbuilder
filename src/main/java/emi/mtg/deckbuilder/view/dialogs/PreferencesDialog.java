@@ -281,6 +281,22 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
+	private static class NumberPreference extends OneControlPreference<Double, Spinner<Double>> {
+		public NumberPreference(String label, double min, double max, Tooltip tooltip, Function<Preferences, Double> fromPrefs, Predicate<Double> validate, BiConsumer<Preferences, Double> toPrefs) {
+			super(() -> {
+				Spinner<Double> spinner = new Spinner<>(min, max, min);
+				spinner.setOnScroll(se -> {
+					if (se.getDeltaY() < 0) {
+						spinner.decrement();
+					} else if (se.getDeltaY() > 0) {
+						spinner.increment();
+					}
+				});
+				return spinner;
+			}, Spinner::getValue, (s, d) -> s.getValueFactory().setValue(d), label, tooltip, fromPrefs, validate, toPrefs);
+		}
+	}
+
 	private static class StringLikePreference<T> extends OneControlPreference<T, TextField> {
 		public StringLikePreference(Consumer<TextField> modifier, Function<String, T> fromString, Function<T, String> toString, String label, Tooltip tooltip, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
 			super(
@@ -792,6 +808,16 @@ public class PreferencesDialog extends Alert {
 							(FromPrefs<Boolean>) prefs -> field.getBoolean(plugin),
 							x -> true,
 							(ToPrefs<Boolean>) (prefs, val) -> field.set(plugin, val)
+					);
+				} else if (field.getType() == double.class) {
+					prefEntry = new NumberPreference(
+							info.value(),
+							info.min(),
+							info.max(),
+							tooltip,
+							(FromPrefs<Double>) prefs -> field.getDouble(plugin),
+							x -> true,
+							(ToPrefs<Double>) (prefs, val) -> field.set(plugin, val)
 					);
 				} else {
 					log.err(

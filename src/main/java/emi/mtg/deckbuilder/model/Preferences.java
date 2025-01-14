@@ -72,6 +72,16 @@ public class Preferences {
 			 * @return Tooltip to display to the user when hovering over the label, to explain what the preference does.
 			 */
 			String tooltip() default "";
+
+			/**
+			 * @return Minimum value, for numeric preferences.
+			 */
+			double min() default Double.NaN;
+
+			/**
+			 * @return Maximum value, for numeric preferences.
+			 */
+			double max() default Double.NaN;
 		}
 
 		@Target(ElementType.METHOD)
