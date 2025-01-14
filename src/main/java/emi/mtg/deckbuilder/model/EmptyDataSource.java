@@ -26,6 +26,11 @@ public class EmptyDataSource implements DataSource {
 	}
 
 	@Override
+	public Card card(String name, char variation) {
+		return null;
+	}
+
+	@Override
 	public Set<? extends Card> cards() {
 		return Collections.emptySet();
 	}
