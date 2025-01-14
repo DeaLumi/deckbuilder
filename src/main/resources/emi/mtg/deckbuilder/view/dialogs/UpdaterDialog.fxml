@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.text.Text?>
+<fx:root type="Dialog"
+         xmlns="http://javafx.com/javafx"
+         xmlns:fx="http://javafx.com/fxml"
+         fx:controller="emi.mtg.deckbuilder.view.dialogs.UpdaterDialog">
+    <title>Updater</title>
+    <dialogPane>
+        <DialogPane>
+            <prefWidth>450</prefWidth>
+            <headerText>Updates are available!</headerText>
+            <content>
+                <VBox spacing="8">
+                    <Label text="Click &quot;Update&quot; to update an individual item, or &quot;Update All&quot; to begin all available updates. Click &quot;Close&quot; to continue without updating one or more items. (Hold Control to force an update.)" wrapText="true"/>
+                    <GridPane fx:id="updatesGrid" hgap="8" vgap="8"/>
+                </VBox>
+            </content>
+            <ButtonType fx:id="updateAllButtonType" text="Update All" buttonData="OK_DONE"/>
+            <ButtonType fx:constant="CLOSE"/>
+        </DialogPane>
+    </dialogPane>
+</fx:root>

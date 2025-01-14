@@ -2,12 +2,14 @@ package emi.mtg.deckbuilder.view;
 
 import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.controller.Updateable;
 import emi.mtg.deckbuilder.controller.Updater;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.model.State;
 import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.dialogs.DebugConsole;
+import emi.mtg.deckbuilder.view.dialogs.UpdaterDialog;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import emi.mtg.deckbuilder.view.util.AppendOnlyViewableText;
 import emi.mtg.deckbuilder.view.util.FxUtils;
@@ -292,6 +294,7 @@ public class MainApplication extends Application {
 			return;
 		}
 
+		if (prefs.autoUpdateData) UpdaterDialog.checkForUpdates(screen, true);
 		selectDataSource();
 
 		prefs.convertOldPreferredPrintings();
@@ -356,16 +359,6 @@ public class MainApplication extends Application {
 							if (Context.instantiated()) return;
 
 							DataSource data = dataSourceCombo.getSelectionModel().getSelectedItem();
-
-							if (Preferences.get().autoUpdateData && data.needsUpdate(Preferences.get().dataPath)) {
-								AlertBuilder.query(dlg.getDialogPane().getScene().getWindow())
-										.title("Auto-Update")
-										.headerText("New card data available.")
-										.contentText("Would you like to update?")
-										.longRunning(prg -> data.update(Preferences.get().dataPath, prg))
-										.showAndWait();
-							}
-
 							try {
 								Context.instantiate(data);
 								dataSourceCombo.setDisable(true);
@@ -387,14 +380,18 @@ public class MainApplication extends Application {
 							return success;
 						},
 						dlg -> {
-							if (Preferences.get().autoUpdateData) {
+							Updateable updateable = (Context.get().data instanceof Updateable) ? ((Updateable) Context.get().data) : null;
+							if (updateable != null && Preferences.get().autoUpdateData) {
 								if(AlertBuilder.notify(dlg.getDialogPane().getScene().getWindow())
 										.type(Alert.AlertType.ERROR)
 										.buttons(ButtonType.YES, ButtonType.NO)
 										.title("Data Load Error")
 										.headerText("An error occurred while loading data.")
 										.contentText(DATA_LOAD_ERROR)
-										.longRunning(prg -> Context.get().data.update(Preferences.get().dataPath, prg))
+										.longRunning(prg -> {
+											updateable.update(Preferences.get().dataPath, (p, m) -> prg.accept(p));
+											return true;
+										})
 										.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) {
 									dlg.close();
 								} else {
