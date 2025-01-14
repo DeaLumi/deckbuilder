@@ -113,13 +113,13 @@ public class Preferences {
 			return Arrays.stream(plugin.getClass().getDeclaredFields())
 					.filter(f -> (f.getModifiers() & Modifier.TRANSIENT) == 0)
 					.filter(f -> f.getAnnotation(Preference.class) != null)
-					.collect(Collectors.toMap(f -> f, f -> f.getAnnotation(Preference.class)));
+					.collect(Collectors.toMap(f -> f, f -> f.getAnnotation(Preference.class), (a, b) -> b, LinkedHashMap::new));
 		}
 
 		static Map<Method, Operation> operationMethods(Plugin plugin) {
 			return Arrays.stream(plugin.getClass().getDeclaredMethods())
 					.filter(m -> (m.getAnnotation(Operation.class) != null))
-					.collect(Collectors.toMap(m -> m, m -> m.getAnnotation(Operation.class)));
+					.collect(Collectors.toMap(m -> m, m -> m.getAnnotation(Operation.class), (a, b) -> b, LinkedHashMap::new));
 		}
 	}
 
