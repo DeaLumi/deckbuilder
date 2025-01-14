@@ -187,7 +187,8 @@ public class AlertBuilder {
 		/**
 		 * Exceptions thrown from long-running operations will be thrown from AlertBuilder.showAndWait. Note that if you
 		 * don't call AlertBuilder.showAndWait -- for instance, because you want to do some unusual alterations to the
-		 * alert after it's fully ready, or want to forcibly fire the dialog immediately.
+		 * alert after it's fully ready, or want to forcibly fire the dialog immediately -- the exception will never be
+		 * thrown.
 		 */
 		Defer,
 
