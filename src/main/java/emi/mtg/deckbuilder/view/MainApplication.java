@@ -481,12 +481,17 @@ public class MainApplication extends Application {
 
 	public void updateData() {
 		final DataSource data = Context.get().data;
-		if(AlertBuilder.query(hostStage)
+		final Updateable updateable = (data instanceof Updateable) ? ((Updateable) data) : null;
+		if(updateable != null && AlertBuilder.query(hostStage)
 				.screen(screen)
 				.title("Update Data")
-				.headerText(data.needsUpdate(Preferences.get().dataPath) ? "New card data available." : "Data appears fresh.")
-				.contentText(data.needsUpdate(Preferences.get().dataPath) ? "Would you like to update?" : "Would you like to update anyway?")
-				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), prg -> data.update(Preferences.get().dataPath, prg), null, AlertBuilder.Exceptions.Defer)
+				.headerText(updateable.updateAvailable(Preferences.get().dataPath) ? "New card data available." : "Data appears fresh.")
+				.contentText(updateable.updateAvailable(Preferences.get().dataPath) ? "Would you like to update?" : "Would you like to update anyway?")
+				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), prg -> {
+					updateable.update(Preferences.get().dataPath, (p, m) -> prg.accept(p));
+					data.loadData(Preferences.get().dataPath, prg);
+					return true;
+				}, null, AlertBuilder.Exceptions.Defer)
 				.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 
 			wrapIOE(Context.get()::loadTags).run();

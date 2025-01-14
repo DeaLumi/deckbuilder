@@ -49,14 +49,4 @@ public class EmptyDataSource implements DataSource {
 	public emi.lib.mtg.Set set(String code) {
 		return null;
 	}
-
-	@Override
-	public boolean update(Path dataDir, DoubleConsumer progress) throws IOException {
-		return false;
-	}
-
-	@Override
-	public boolean needsUpdate(Path dataDir) {
-		return false;
-	}
 }
