@@ -29,6 +29,7 @@
 - Added "Automatic (By Extension)" options to import and export dialogs to save you a bit of time.
 - If you enable Auto mode on the collection and add a commander to an empty commander deck, it will go to the command zone instead of the library.
 - Revamped the data update dialog/process to include support for other updateables (e.g. Scryfall tags).
+- Fallback image rendering (e.g. when not connected to the internet) is massively prettier now thanks to the new libmtg.render library.
 
 ### Fixes
 

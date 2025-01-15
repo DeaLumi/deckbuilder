@@ -61,6 +61,11 @@
             <version>0.0.0</version>
         </dependency>
         <dependency>
+            <groupId>emi.lib.mtg</groupId>
+            <artifactId>render</artifactId>
+            <version>0.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.11.0</version>
