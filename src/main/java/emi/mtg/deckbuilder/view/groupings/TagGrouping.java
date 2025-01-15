@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.view.groupings;
 
+import emi.mtg.deckbuilder.controller.Context;
 import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
@@ -27,22 +28,32 @@ public class TagGrouping implements CardView.Grouping {
 		public void add(DeckList list, CardInstance ci) {
 			if (ci.tags().contains(this.tag)) return;
 
-			DeckChanger.addBatchedChange(
-					list,
-					l -> ci.tags().add(tag),
-					l -> ci.tags().remove(tag)
-			);
+			if (list != null) {
+				DeckChanger.addBatchedChange(
+						list,
+						l -> ci.tags().add(tag),
+						l -> ci.tags().remove(tag)
+				);
+			} else {
+				Context.get().tags.add(ci.card(), tag);
+				ci.tags().add(tag);
+			}
 		}
 
 		@Override
 		public void remove(DeckList list, CardInstance ci) {
 			if (!ci.tags().contains(this.tag)) return;
 
-			DeckChanger.addBatchedChange(
-					list,
-					l -> ci.tags().remove(tag),
-					l -> ci.tags().add(tag)
-			);
+			if (list != null) {
+				DeckChanger.addBatchedChange(
+						list,
+						l -> ci.tags().remove(tag),
+						l -> ci.tags().add(tag)
+				);
+			} else {
+				Context.get().tags.remove(ci.card(), tag);
+				ci.tags().remove(tag);
+			}
 		}
 
 		@Override
@@ -84,12 +95,17 @@ public class TagGrouping implements CardView.Grouping {
 		public void add(DeckList list, CardInstance ci) {
 			if (ci.tags().isEmpty()) return;
 
-			final Set<String> oldTags = new HashSet<>(ci.tags());
-			DeckChanger.addBatchedChange(
-					list,
-					l -> ci.tags().clear(),
-					l -> ci.tags().addAll(oldTags)
-			);
+			if (list != null) {
+				final Set<String> oldTags = new HashSet<>(ci.tags());
+				DeckChanger.addBatchedChange(
+						list,
+						l -> ci.tags().clear(),
+						l -> ci.tags().addAll(oldTags)
+				);
+			} else {
+				for (String tag : Context.get().tags.tags(ci.card())) Context.get().tags.remove(ci.card(), tag);
+				ci.tags().clear();
+			}
 		}
 
 		@Override

@@ -403,7 +403,7 @@ public class CardView extends Canvas {
 				if (CardView.this.grouping.supportsModification()) {
 					final List<CardInstance> changed = new ArrayList<>(CardView.this.selectedCards);
 
-					DeckChanger.startChangeBatch(CardView.this.deck);
+					if (CardView.this.deck != null) DeckChanger.startChangeBatch(CardView.this.deck);
 
 					changed.forEach(ci -> CardView.this.hoverGroup.group.add(CardView.this.deck, ci));
 
@@ -420,16 +420,20 @@ public class CardView extends Canvas {
 					}
 
 					// Hacky hack to force value changed events since cards can't advertise it.
-					DeckChanger.addBatchedChange(
-							CardView.this.deck,
-							l -> changed.forEach(model::sourceElementChanged),
-							l -> changed.forEach(model::sourceElementChanged)
-					);
+					if (CardView.this.deck != null) {
+						DeckChanger.addBatchedChange(
+								CardView.this.deck,
+								l -> changed.forEach(model::sourceElementChanged),
+								l -> changed.forEach(model::sourceElementChanged)
+						);
 
-					DeckChanger.endChangeBatch(
-							CardView.this.deck,
-							"Change Tags"
-					);
+						DeckChanger.endChangeBatch(
+								CardView.this.deck,
+								"Change Tags"
+						);
+					} else {
+						changed.forEach(model::sourceElementChanged);
+					}
 
 					de.setDropCompleted(true);
 					de.consume();
