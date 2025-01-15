@@ -196,7 +196,7 @@ public class CardPane extends BorderPane {
 
 		Menu groupingMenu = new Menu("Grouping");
 		ToggleGroup groupingGroup = new ToggleGroup();
-		for (CardView.Grouping grouping : CardView.GROUPINGS) {
+		for (CardView.Grouping grouping : CardView.GROUPINGS.values()) {
 			RadioMenuItem item = new RadioMenuItem(grouping.name());
 			item.setOnAction(ae -> {
 				this.cardView.grouping(grouping);
@@ -214,7 +214,7 @@ public class CardPane extends BorderPane {
 
 		Menu displayMenu = new Menu("Display");
 		ToggleGroup displayGroup = new ToggleGroup();
-		for (CardView.LayoutEngine.Factory display : CardView.LAYOUT_ENGINES) {
+		for (CardView.LayoutEngine.Factory display : CardView.LAYOUT_ENGINES.values()) {
 			RadioMenuItem item = new RadioMenuItem(display.name());
 			item.setOnAction(ae -> {
 				this.cardView.layout(display);
@@ -542,7 +542,7 @@ public class CardPane extends BorderPane {
 	}
 
 	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {
-		this(title, model, layoutEngine, ManaValue.INSTANCE, CardView.DEFAULT_SORTING);
+		this(title, model, layoutEngine, CardView.GROUPINGS.get(ManaValue.class), CardView.DEFAULT_SORTING);
 	}
 
 	public CardView view() {

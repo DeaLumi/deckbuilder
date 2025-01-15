@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -55,6 +56,45 @@ public class PluginUtils {
 		}
 
 		return jarPath;
+	}
+
+	public static <K, T> Map<K, T> providersMap(Class<T> type, Function<T, K> keyExtractor, Comparator<T> sort, Consumer<T> linkageValidator) {
+		Stream<T> stream = StreamSupport.stream(ServiceLoader.load(type, PLUGIN_CLASS_LOADER).spliterator(), false);
+
+		if (linkageValidator != null) {
+			stream = stream.filter(provider -> {
+				try {
+					linkageValidator.accept(provider);
+					return true;
+				} catch (LinkageError le) {
+					new LinkageError(String.format("Outdated plugin: %s\n", jarPath(provider.getClass()).toAbsolutePath()), le).printStackTrace();
+					return false;
+				}
+			});
+		}
+
+		if (sort != null) {
+			stream = stream.sorted(sort);
+		}
+
+		return Collections.unmodifiableMap(stream.collect(Collectors.toMap(
+				keyExtractor,
+				e -> e,
+				(a, b) -> { throw new AssertionError(String.format("Duplicate providers for %s, this should be impossible.", a.getClass())); },
+				LinkedHashMap::new
+		)));
+	}
+
+	public static <T> Map<Class<? extends T>, T> providersMap(Class<T> type, Comparator<T> sort, Consumer<T> linkageValidator) {
+		return providersMap(type, p -> (Class<? extends T>) p.getClass(), sort, linkageValidator);
+	}
+
+	public static <T> Map<Class<? extends T>, T> providersMap(Class<T> type) {
+		return providersMap(type, null, null);
+	}
+
+	public static <K, T> Map<K, T> providersMap(Class<T> type, Function<T, K> keyExtractor) {
+		return providersMap(type, keyExtractor, null, null);
 	}
 
 	public static <T> List<T> providers(Class<T> type, Comparator<T> sort, Consumer<T> linkageValidator) {

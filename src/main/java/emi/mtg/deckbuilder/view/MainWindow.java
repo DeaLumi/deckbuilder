@@ -321,7 +321,7 @@ public class MainWindow extends Stage {
 
 		collection = new CardPane("Collection",
 				FXCollections.observableArrayList(),
-				FlowGrid.Factory.INSTANCE,
+				CardView.LAYOUT_ENGINES.get(FlowGrid.Factory.class),
 				Preferences.get().collectionGrouping,
 				Preferences.get().collectionSorting);
 

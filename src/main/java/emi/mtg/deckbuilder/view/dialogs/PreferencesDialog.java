@@ -392,7 +392,7 @@ public class PreferencesDialog extends Alert {
 					toPrefs);
 		}
 
-		public ComboBoxPreference(List<T> options, String label, Tooltip tooltip, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
+		public ComboBoxPreference(Collection<T> options, String label, Tooltip tooltip, Function<Preferences, T> fromPrefs, Predicate<T> validate, BiConsumer<Preferences, T> toPrefs) {
 			this(c -> c.getItems().setAll(options), label, tooltip, fromPrefs, validate, toPrefs);
 		}
 
@@ -403,7 +403,7 @@ public class PreferencesDialog extends Alert {
 
 	private static class GroupingPreference extends ComboBoxPreference<CardView.Grouping> {
 		public GroupingPreference(String label, Tooltip tooltip, Function<Preferences, CardView.Grouping> fromPrefs, Predicate<CardView.Grouping> validate, BiConsumer<Preferences, CardView.Grouping> toPrefs) {
-			super(CardView.GROUPINGS, label, tooltip, fromPrefs, validate, toPrefs);
+			super(CardView.GROUPINGS.values(), label, tooltip, fromPrefs, validate, toPrefs);
 		}
 	}
 

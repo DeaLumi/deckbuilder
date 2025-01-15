@@ -7,8 +7,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class Rarity extends CharacteristicGrouping implements CardView.Grouping {
-	public static final Rarity INSTANCE = new Rarity();
-
 	private static final String[] GROUPS;
 
 	static {

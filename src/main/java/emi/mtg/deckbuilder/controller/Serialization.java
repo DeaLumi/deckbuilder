@@ -140,12 +140,12 @@ public class Serialization {
 	}
 
 	public static TypeAdapter<CardView.Grouping> createCardViewGroupingAdapter() {
-		return new FunctionalStringTypeAdapter<>(CardView.Grouping::name, s -> CardView.GROUPINGS.stream()
+		return new FunctionalStringTypeAdapter<>(CardView.Grouping::name, s -> CardView.GROUPINGS.values().stream()
 				.filter(g -> "Converted Mana Cost".equals(s) ? g instanceof emi.mtg.deckbuilder.view.groupings.ManaValue : g.name().equals(s))
 				.findAny()
 				.orElseGet(() -> {
 					LOG.err("Couldn't find grouping factory %s! Did a plugin go away? Defaulting to CMC...", s);
-					return emi.mtg.deckbuilder.view.groupings.ManaValue.INSTANCE;
+					return CardView.GROUPINGS.get(emi.mtg.deckbuilder.view.groupings.ManaValue.class);
 				}));
 	}
 
@@ -259,7 +259,7 @@ public class Serialization {
 	public static TypeAdapter<CardView.ActiveSorting> createActiveSortingTypeAdapter() {
 		return new FunctionalStringTypeAdapter<>(
 				v -> String.format("%s%s", v.descending.get() ? "+" : "-", v.toString()),
-				s -> CardView.SORTINGS.stream()
+				s -> CardView.SORTINGS.values().stream()
 						.filter(n -> s.endsWith("Converted Mana Cost") ? n instanceof emi.mtg.deckbuilder.view.sortings.ManaValue : s.substring(1).equals(n.toString()))
 						.findAny()
 						.map(sorting -> new CardView.ActiveSorting(sorting, s.startsWith("+")))

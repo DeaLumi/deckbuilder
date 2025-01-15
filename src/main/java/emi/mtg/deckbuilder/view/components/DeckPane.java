@@ -258,8 +258,8 @@ public class DeckPane extends SplitPane {
 					CardPane pane = new CardPane(
 							deck,
 							z,
-							Piles.Factory.INSTANCE,
-							Preferences.get().zoneGroupings.getOrDefault(z, ManaValue.INSTANCE),
+							CardView.LAYOUT_ENGINES.get(Piles.Factory.class),
+							Preferences.get().zoneGroupings.getOrDefault(z, CardView.GROUPINGS.get(ManaValue.class)),
 							CardView.DEFAULT_SORTING
 					);
 
@@ -302,7 +302,7 @@ public class DeckPane extends SplitPane {
 				"Cut Cards",
 				deck,
 				deck.cutCards(),
-				Piles.Factory.INSTANCE,
+				CardView.LAYOUT_ENGINES.get(Piles.Factory.class),
 				Preferences.get().cutboardGrouping.get(),
 				CardView.DEFAULT_SORTING
 		);

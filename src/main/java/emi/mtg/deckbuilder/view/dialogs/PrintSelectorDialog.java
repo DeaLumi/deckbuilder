@@ -4,6 +4,7 @@ import emi.lib.mtg.Card;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.components.CardPane;
+import emi.mtg.deckbuilder.view.components.CardView;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -33,7 +34,7 @@ public class PrintSelectorDialog extends Dialog<Card.Print> {
 		ObservableList<CardInstance> tmpModel = FXCollections.observableList(card.prints().stream()
 				.map(CardInstance::new)
 				.collect(Collectors.toList()));
-		pane = new CardPane("Variations", tmpModel, FlowGrid.Factory.INSTANCE);
+		pane = new CardPane("Variations", tmpModel, CardView.LAYOUT_ENGINES.get(FlowGrid.Factory.class));
 
 		setResultConverter(bt -> {
 			if (bt != ButtonType.CANCEL && pane.view().selectedCards.size() == 1) {

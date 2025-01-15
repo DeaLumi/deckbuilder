@@ -86,7 +86,7 @@ public class SortDialog extends Dialog<List<CardView.ActiveSorting>> {
 		getDialogPane().setStyle(Preferences.get().theme.style());
 		initOwner(host);
 
-		List<CardView.Sorting> source = new ArrayList<>(CardView.SORTINGS);
+		List<CardView.Sorting> source = new ArrayList<>(CardView.SORTINGS.values());
 		source.removeAll(currentSorts.stream().map(s -> s.sorting).collect(Collectors.toSet()));
 		sourceList.setItems(FXCollections.observableList(source));
 

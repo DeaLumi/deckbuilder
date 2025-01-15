@@ -4,8 +4,6 @@ import emi.mtg.deckbuilder.view.components.CardView;
 
 public class Piles implements CardView.LayoutEngine {
 	public static class Factory implements CardView.LayoutEngine.Factory {
-		public static final Factory INSTANCE = new Factory();
-
 		@Override
 		public CardView.LayoutEngine create(CardView parent) {
 			return new Piles(parent);

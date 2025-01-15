@@ -215,34 +215,18 @@ public class CardView extends Canvas {
 		}
 	}
 
-	public static final List<LayoutEngine.Factory> LAYOUT_ENGINES = PluginUtils.providers(LayoutEngine.Factory.class);
-	public static final List<Grouping> GROUPINGS = PluginUtils.providers(Grouping.class);
-	public static final List<Sorting> SORTINGS = PluginUtils.providers(Sorting.class);
+	public static final Map<Class<? extends LayoutEngine.Factory>, LayoutEngine.Factory> LAYOUT_ENGINES = PluginUtils.providersMap(LayoutEngine.Factory.class);
+	public static final Map<Class<? extends Grouping>, Grouping> GROUPINGS = PluginUtils.providersMap(Grouping.class);
+	public static final Map<Class<? extends Sorting>, Sorting> SORTINGS = PluginUtils.providersMap(Sorting.class);
 
 	public static final List<ActiveSorting> DEFAULT_SORTING, DEFAULT_COLLECTION_SORTING;
 
 	static {
-		Sorting color = null, mv = null, manaCost = null, name = null, rarity = null;
-
-		for (Sorting sorting : SORTINGS) {
-			switch (sorting.toString()) {
-				case "Color":
-					color = sorting;
-					break;
-				case "Mana Value":
-					mv = sorting;
-					break;
-				case "Mana Cost":
-					manaCost = sorting;
-					break;
-				case "Name":
-					name = sorting;
-					break;
-				case "Rarity":
-					rarity = sorting;
-					break;
-			}
-		}
+		Sorting color = SORTINGS.get(emi.mtg.deckbuilder.view.sortings.Color.class),
+				mv = SORTINGS.get(emi.mtg.deckbuilder.view.sortings.ManaValue.class),
+				manaCost = SORTINGS.get(emi.mtg.deckbuilder.view.sortings.ManaCost.class),
+				name = SORTINGS.get(emi.mtg.deckbuilder.view.sortings.Name.class),
+				rarity = SORTINGS.get(emi.mtg.deckbuilder.view.sortings.Rarity.class);
 
 		assert color != null;
 		assert mv != null;
@@ -250,20 +234,20 @@ public class CardView extends Canvas {
 		assert name != null;
 		assert rarity != null;
 
-		DEFAULT_SORTING = Arrays.asList(
+		DEFAULT_SORTING = Collections.unmodifiableList(Arrays.asList(
 				new ActiveSorting(color, false),
 				new ActiveSorting(mv, false),
 				new ActiveSorting(manaCost, false),
 				new ActiveSorting(name, false)
-		);
+		));
 
-		DEFAULT_COLLECTION_SORTING = Arrays.asList(
+		DEFAULT_COLLECTION_SORTING = Collections.unmodifiableList(Arrays.asList(
 				new ActiveSorting(rarity, true),
 				new ActiveSorting(color, false),
 				new ActiveSorting(mv, false),
 				new ActiveSorting(manaCost, false),
 				new ActiveSorting(name, false)
-		);
+		));
 	}
 
 	private class PanBehavior {

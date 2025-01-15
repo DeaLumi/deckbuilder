@@ -10,8 +10,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TagGrouping implements CardView.Grouping {
-	public static final TagGrouping INSTANCE = new TagGrouping();
-
 	private static class TagGroup implements CardView.Grouping.Group {
 		private final String tag;
 

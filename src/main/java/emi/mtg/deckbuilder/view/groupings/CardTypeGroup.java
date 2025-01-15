@@ -11,8 +11,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CardTypeGroup extends CharacteristicGrouping implements CardView.Grouping {
-	public static final CardTypeGroup INSTANCE = new CardTypeGroup();
-
 	private List<CardType> PRIORITIES = Arrays.asList(
 			CardType.Creature,
 			CardType.Enchantment,

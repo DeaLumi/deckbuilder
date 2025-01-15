@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 public abstract class ImageExporter implements DeckImportExport, DeckImportExport.CopyPaste {
 	public enum ImageFormat implements DeckImportExport.DataFormat {
@@ -213,12 +214,12 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 				grid.add(label, 0, i);
 
 				Label layoutLabel = new Label("Layout:");
-				ComboBox<CardView.LayoutEngine.Factory> layout = new ComboBox<>(FXCollections.observableList(CardView.LAYOUT_ENGINES));
-				layout.getSelectionModel().select(zone == Zone.Command ? FlowGrid.Factory.INSTANCE : Piles.Factory.INSTANCE);
+				ComboBox<CardView.LayoutEngine.Factory> layout = new ComboBox<>(FXCollections.observableArrayList(CardView.LAYOUT_ENGINES.values()));
+				layout.getSelectionModel().select(zone == Zone.Command ? CardView.LAYOUT_ENGINES.get(FlowGrid.Factory.class) : CardView.LAYOUT_ENGINES.get(Piles.Factory.class));
 
 				Label groupingLabel = new Label("Grouping:");
-				ComboBox<CardView.Grouping> grouping = new ComboBox<>(FXCollections.observableList(CardView.GROUPINGS));
-				grouping.getSelectionModel().select(Preferences.get().zoneGroupings.getOrDefault(zone, ManaValue.INSTANCE));
+				ComboBox<CardView.Grouping> grouping = new ComboBox<>(FXCollections.observableArrayList(CardView.GROUPINGS.values()));
+				grouping.getSelectionModel().select(Preferences.get().zoneGroupings.getOrDefault(zone, CardView.GROUPINGS.get(ManaValue.class)));
 
 				zoneLabels.put(zone, label);
 				zoneFlows.put(zone, new FlowPane(2.0, 0.0, layoutLabel, layout, groupingLabel, grouping));

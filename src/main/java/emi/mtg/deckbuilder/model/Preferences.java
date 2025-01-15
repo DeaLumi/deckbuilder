@@ -352,10 +352,10 @@ public class Preferences {
 	public SearchProvider searchProvider = SearchProvider.SEARCH_PROVIDERS.get(Omnifilter.NAME);
 	public String defaultQuery = "";
 
-	public CardView.Grouping collectionGrouping = Rarity.INSTANCE;
+	public CardView.Grouping collectionGrouping = CardView.GROUPINGS.get(Rarity.class);
 	public List<CardView.ActiveSorting> collectionSorting = CardView.DEFAULT_COLLECTION_SORTING;
 	public Map<Zone, CardView.Grouping> zoneGroupings = new HashMap<>();
-	public SimpleObjectProperty<CardView.Grouping> cutboardGrouping = new SimpleObjectProperty<>(None.INSTANCE);
+	public SimpleObjectProperty<CardView.Grouping> cutboardGrouping = new SimpleObjectProperty<>(CardView.GROUPINGS.get(None.class));
 
 	public boolean collapseDuplicates = true;
 	public boolean theFutureIsNow = true;

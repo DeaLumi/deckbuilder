@@ -7,8 +7,6 @@ import java.util.Collections;
 import java.util.Set;
 
 public class None implements CardView.Grouping {
-	public static final None INSTANCE = new None();
-
 	public static Group[] GROUPS = new Group[] {
 		new Group() {
 			@Override

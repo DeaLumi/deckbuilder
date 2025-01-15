@@ -6,8 +6,6 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import java.util.*;
 
 public class ColorGrouping extends CharacteristicGrouping {
-	public static final ColorGrouping INSTANCE = new ColorGrouping();
-
 	private static final Map<Color.Combination, String> GROUPS = groupsMap();
 	private static final String[] GROUP_VALUES = GROUPS.values().toArray(new String[GROUPS.size()]);
 
