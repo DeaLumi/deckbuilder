@@ -51,6 +51,10 @@
 - Fixed a case where the collection would sometimes just... not load. (Due to a concurrent modification error while loading tags, of all things.)
 - Improved logging the collection loading just in case another error causes it to fail. (Check the new debug console for details to send me if it does!)
 
+### Changes
+
+- `Printing` is now `Print` everywhere. ~~It's one syllable shorter; leave me alone.~~
+
 ---
 
 ## 2024 April
@@ -62,7 +66,7 @@
 ### Improvements
 
 - Added a "While Open" option to the cutboard behavior. If chosen, cards will be removed entirely while the cutboard is hidden, or sent to the cutboard while it's shown.
-- Made the default JSON format more resilient against Scryfall changing collector numbers/set codes. If it can't find the exact card, it will try to use your preferred printing of a card with that name.
+- Made the default JSON format more resilient against Scryfall changing collector numbers/set codes. If it can't find the exact card, it will try to use your preferred print of a card with that name.
 
 ### Fixes
 
@@ -87,7 +91,7 @@
 ### Improvements
 
 - Better backend handling of faces-as-printed. You won't notice a difference, probably. :)
-- Added "Delete Saved Images" to cards in deck zones, and made it affect all printings of a card.
+- Added "Delete Saved Images" to cards in deck zones, and made it affect all prints of a card.
 - When you add a non-empty deck to a window, if the window only contains an empty unmodified (e.g. new) deck, that tab will be closed.
 
 ### Fixes
@@ -141,7 +145,7 @@
 - Windows now close when their last tab has been removed.
 - Fixed some possible exceptions from dragging tabs around. There are possibly some I've missed though.
 - Added Stickers and Universewalker card types to libmtg and fixed an issue with BFM's right half typeline.
-- Changing a printing now marks a deck as modified.
+- Changing a print now marks a deck as modified.
 
 ---
 
@@ -151,12 +155,12 @@
 
 - Added the changelog, which you are hopefully now reading! Hi! I hope you're having a great day. :) Happy new year!
 - Added preference to select preferred copy/paste format, though I do recommend leaving it on MtG:A, since that seems to have broad community support.
-- Added preference to ignore various sets when selecting which printings to show/add by default.
+- Added preference to ignore various sets when selecting which prints to show/add by default.
 - Expanded card tooltips to include tags (by default) and detailed card text (as a preference).
 
 ### Improvements
 
-- Printing selector has an OK button and its auto mode works properly now.
+- Print selector has an OK button and its auto mode works properly now.
 - Separated memorized directories for saving/exporting and loading/importing.
 - Added a comprehensible error message when loading a bad JSON file.
 - Added "Export" option to deck tab context menu.
@@ -168,7 +172,7 @@
 - Color identity omnifilter once again correctly uses the entire card's color identity while filtering.
 - Lands once again correctly include the color identity of their land types.
 - Companions once again are validated correctly. Oops. Sorry about that!
-- Reversible cards now properly show up as printings of the root card. Sorry, but you can't choose which side is shown.
+- Reversible cards now properly show up as prints of the root card. Sorry, but you can't choose which side is shown.
 - Outdated import/export plugins no longer prevent the deckbuilder from launching (I hope!).
 
 ### Changes
@@ -186,13 +190,13 @@
 - Relatedly, added a preference to control windowing behavior when you open/create/import a deck: replace current, make a new tab, or make a new window. Asks by default.
 - Up to five recently-opened decks are now remembered and available from Deck -> Open Recent...
 - The deckbuilder now remembers the last directory where you opened, saved, imported, or exported a deck.
-- Added a preference to prefer printings with earlier/later collector numbers (to try to avoid or prefer extended-border and showcase printings).
-- Added a preference to prefer printings from sets which are "standard" (core, expansion, or precons) -- let me know if more precise control is wanted here...
+- Added a preference to prefer prints with earlier/later collector numbers (to try to avoid or prefer extended-border and showcase prints).
+- Added a preference to prefer prints from sets which are "standard" (core, expansion, or precons) -- let me know if more precise control is wanted here...
 - Added a preference to set the initial search query. The narrower the initial search, the quicker the collection loads!
 - Modularized search providers. Choose your preferred search provider in Preferences. Defaults to Omnifilter.
 - Added Simple Text filter which searches card names and rules text for the provided strings.
 - Added Expression Filter, an extremely powerful search tool. Most useful when relating two characteristics of a card.
-- Added Scryfall search, which farms out all the hard work to Scryfall. Requires internet. Limited to results with fewer than 1750 printings, since otherwise it takes an age.
+- Added Scryfall search, which farms out all the hard work to Scryfall. Requires internet. Limited to results with fewer than 1750 prints, since otherwise it takes an age.
 - Omnifilter now supports combining logic like and/or/parentheses. (Only one layer of parentheses, though...)
 - Added mana cost omnifilter (mana, manacost, mc; supports all comparisons)
 - Added "is" omnifilter (is:commander, is:dfc, is:split, is:flip, is:permanent) -- let me know if there are other attributes you'd like!
@@ -213,7 +217,7 @@
 ### Fixes
 
 - The deckbuilder will no longer crash if the update server is down or can't be reached.
-- The option to choose a printing will no longer appear for cards with a single printing.
+- The option to choose a print will no longer appear for cards with a single print.
 - Right clicking over no group will no longer produce an exception.
 - Card type filters will no longer look for substrings of card types (e.g. "orc" matching "sorcery").
 - If the future is now, upcoming supplementary set cards will also appear in the collection.
@@ -229,6 +233,6 @@
 - Tags and decktags are now unified. Tags assigned in the collection are carried into decks, but not the other way around.
 - Pasting into the omnibar has been removed in favor of a global deck pasting function (for Arena mostly)
 - Removed the ability to load decklists with variants. If you still have one, ping me -- I can fix them up manually.
-- The deckbuilder mostly now uses set code + collector number to identify printings. This is used when saving decks or preferred printings. Please let me know if you experience errors related to either of these!
+- The deckbuilder mostly now uses set code + collector number to identify prints. This is used when saving decks or preferred prints. Please let me know if you experience errors related to either of these!
 
 ---
