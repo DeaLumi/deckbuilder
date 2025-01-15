@@ -832,10 +832,6 @@ public class CardView extends Canvas {
 											.map(CardInstance::card)
 											.distinct()
 											.forEach(c -> tags.remove(c, tag));
-
-									if (tags.cards(tag) != null && tags.cards(tag).isEmpty()) {
-										tags.tags().remove(tag);
-									}
 								}
 								view.refreshCardGrouping();
 							}
@@ -873,7 +869,6 @@ public class CardView extends Canvas {
 						);
 					} else {
 						final Tags tags = Context.get().tags;
-						tags.add(tag);
 						cards.stream()
 								.peek(ci -> ci.tags().add(tag))
 								.map(CardInstance::card)

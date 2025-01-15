@@ -5,6 +5,8 @@
 - Added a preference to control automatic data loading. Disable it to see your options for data sources. (There's probably only one.)
 - Added plugin preferences. External plugins can now provide some simple controls over their behavior.
 - The Scryfall plugin now provides an option to use MessagePack for serialization/deserialization, instead of JSON. MessagePack loses the benefit of JSON's human-readability, but saves a little hard drive space and seems to load decently faster. I'd recommend giving it a try!
+- Added support for downloading a specific set of tags from Scryfall. Check the preferences dialog to choose which are included; the default is okay but not comprehensive.
+  - Please note that downloading tags from Scryfall is a laborious process! It may take several minutes, and the more tags you want to download, the longer it will take.
 - Added a preference to maximize the deckbuilder on startup.
 - Copy-as-image (Shift+Shortcut+C) has been replaced with a copy format quick-picker, so you don't have to go into preferences and change your format.
 - Paste-as-format (Shift+Shortcut+V) has been added, much like the above.

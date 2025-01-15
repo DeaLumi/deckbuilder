@@ -245,6 +245,7 @@ public class MainWindow extends Stage {
 				.map(CardInstance::new)
 				.peek(ci -> ci.flags.add(CardInstance.Flags.Unlimited))
 				.peek(ci -> ci.tags().addAll(Context.get().tags.tags(ci.card())))
+				.peek(ci -> ci.tags().addAll(Context.get().tags.tags(ci.printing())))
 				.peek(this::flagCollectionCardLegality)
 				.collect(Collectors.toList()));
 	}

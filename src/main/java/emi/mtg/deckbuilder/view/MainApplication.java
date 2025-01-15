@@ -100,7 +100,8 @@ public class MainApplication extends Application {
 			try {
 				Preferences.save();
 				State.save();
-				Context.get().saveTags();
+				// TODO: Tags saved/loaded without progress report.
+				Context.get().saveTags(d -> {});
 			} catch (IOException ioe) {
 				throw new RuntimeException(ioe);
 			} finally {
@@ -480,6 +481,7 @@ public class MainApplication extends Application {
 	}
 
 	public void updateData() {
+		// TODO: Tags saved/loaded without progress report
 		final DataSource data = Context.get().data;
 		final Updateable updateable = (data instanceof Updateable) ? ((Updateable) data) : null;
 		if(updateable != null && AlertBuilder.query(hostStage)
@@ -487,14 +489,14 @@ public class MainApplication extends Application {
 				.title("Update Data")
 				.headerText(updateable.updateAvailable(Preferences.get().dataPath) ? "New card data available." : "Data appears fresh.")
 				.contentText(updateable.updateAvailable(Preferences.get().dataPath) ? "Would you like to update?" : "Would you like to update anyway?")
-				.longRunning(ButtonType.YES, wrapIOE(Context.get()::saveTags), prg -> {
+				.longRunning(ButtonType.YES, wrapIOE(() -> Context.get().saveTags(d -> {})), prg -> {
 					updateable.update(Preferences.get().dataPath, prg);
 					data.loadData(Preferences.get().dataPath, prg);
 					return true;
 				}, null, AlertBuilder.Exceptions.Defer)
 				.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
 
-			wrapIOE(Context.get()::loadTags).run();
+			wrapIOE(() -> Context.get().loadTags(d -> {})).run();
 			for (MainWindow child : mainWindows) {
 				child.remodel();
 			}

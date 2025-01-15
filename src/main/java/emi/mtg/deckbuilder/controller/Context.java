@@ -5,17 +5,11 @@ import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.Images;
-import emi.mtg.deckbuilder.view.MainApplication;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoubleConsumer;
 
 public class Context {
-	private static final Path TAGS = MainApplication.JAR_DIR.resolve("tags.json");
-
 	private static Context instance;
 
 	public static void instantiate(DataSource data) throws IOException {
@@ -57,29 +51,23 @@ public class Context {
 				.create();
 
 		this.images = new Images(Preferences.get().imagesPath);
-		this.tags = new Tags(this);
+		this.tags = new Tags();
 	}
 
 	public boolean loadData(DoubleConsumer progress) throws IOException {
 		if (this.data.loadData(Preferences.get().dataPath, progress)) {
-			loadTags();
+			loadTags(progress);
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	public void loadTags() throws IOException {
-		try {
-			this.tags.load(TAGS);
-		} catch (NoSuchFileException fnfe) {
-			// do nothing
-		} catch (IOException e) {
-			throw new RuntimeException(e); // TODO do this better
-		}
+	public void loadTags(DoubleConsumer progress) throws IOException {
+		this.tags.load(this.data, Preferences.get().dataPath, progress);
 	}
 
-	public void saveTags() throws IOException {
-		this.tags.save(TAGS);
+	public void saveTags(DoubleConsumer progress) throws IOException {
+		this.tags.save(Preferences.get().dataPath, progress);
 	}
 }
