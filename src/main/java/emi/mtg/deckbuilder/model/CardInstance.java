@@ -1,5 +1,6 @@
 package emi.mtg.deckbuilder.model;
 
+import com.google.gson.annotations.SerializedName;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.enums.Rarity;
 import emi.lib.mtg.game.Format;
@@ -22,6 +23,7 @@ public class CardInstance implements Card.Print, Serializable {
 	public transient final EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
 	public transient Format.Validator.Result.CardResult lastValidation = null;
 	private final Set<String> tags = new HashSet<>();
+	@SerializedName(value="print", alternate={ "printing" })
 	private Card.Print print;
 
 	// Declare this so GSON doesn't nullify flags.
