@@ -148,14 +148,14 @@ public class Cockatrice extends NameOnlyImporter implements DeckImportExport.Mon
 		commentsEl.setTextContent(comments.toString());
 		rootEl.appendChild(commentsEl);
 
-		for (Map.Entry<Zone, ? extends List<? extends Card.Printing>> zone : deck.cards().entrySet()) {
+		for (Map.Entry<Zone, ? extends List<? extends Card.Print>> zone : deck.cards().entrySet()) {
 			if (zone.getValue().isEmpty()) continue;
 
 			Element zoneEl = xml.createElement("zone");
 			zoneEl.setAttribute("name", COCKATRICE_ZONE_MAP_REVERSE.get(zone.getKey()));
 
 			Map<Card, Element> cardsElMap = new HashMap<>();
-			for (Card.Printing pr : zone.getValue()) {
+			for (Card.Print pr : zone.getValue()) {
 				Card c = pr.card();
 				Element cardEl = cardsElMap.computeIfAbsent(c, x -> {
 					Element el = xml.createElement("card");

@@ -298,7 +298,7 @@ public class MainApplication extends Application {
 		if (prefs.autoUpdateData) UpdaterDialog.checkForUpdates(screen, true);
 		selectDataSource();
 
-		prefs.convertOldPreferredPrintings();
+		prefs.convertOldPreferredPrints();
 
 		MainWindow window = new MainWindow(this);
 		window.addDeck(new DeckList("", prefs.authorName, prefs.defaultFormat, "", Collections.emptyMap()));

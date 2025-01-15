@@ -152,15 +152,15 @@ public class DeckList implements Deck {
 		return cutCards().isEmpty() && cards.values().stream().allMatch(List::isEmpty);
 	}
 
-	public Map<CardInstance, AtomicInteger> printingHisto(Zone zone) {
-		Map<Card.Printing, AtomicInteger> tmp = new LinkedHashMap<>();
+	public Map<CardInstance, AtomicInteger> printHisto(Zone zone) {
+		Map<Card.Print, AtomicInteger> tmp = new LinkedHashMap<>();
 		Map<CardInstance, AtomicInteger> replace = new HashMap<>();
 
 		for (CardInstance ci : cards(zone)) {
-			AtomicInteger i = tmp.get(ci.printing());
+			AtomicInteger i = tmp.get(ci.print());
 			if (i == null) {
 				i = new AtomicInteger();
-				tmp.put(ci.printing(), i);
+				tmp.put(ci.print(), i);
 				replace.put(ci, i);
 			}
 			i.incrementAndGet();
@@ -170,14 +170,14 @@ public class DeckList implements Deck {
 	}
 
 	public Map<CardInstance, AtomicInteger> cardHisto(Zone zone) {
-		Map<Card.Printing, AtomicInteger> tmp = new LinkedHashMap<>();
+		Map<Card, AtomicInteger> tmp = new LinkedHashMap<>();
 		Map<CardInstance, AtomicInteger> replace = new HashMap<>();
 
 		for (CardInstance ci : cards(zone)) {
-			AtomicInteger i = tmp.get(ci.printing());
+			AtomicInteger i = tmp.get(ci.card());
 			if (i == null) {
 				i = new AtomicInteger();
-				tmp.put(ci.printing(), i);
+				tmp.put(ci.card(), i);
 				replace.put(ci, i);
 			}
 			i.incrementAndGet();

@@ -73,7 +73,7 @@ public class RenderedImageSource implements ImageSource {
 
 		private Map<Characteristic, Node> nodes = new EnumMap<>(Characteristic.class);
 
-		public CardRenderLayout(Card.Printing.Face face) {
+		public CardRenderLayout(Card.Print.Face face) {
 			setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(WIDTH / 20.0), new BorderWidths(WIDTH / 30.0))));
 
 			Color bgColor;
@@ -130,7 +130,7 @@ public class RenderedImageSource implements ImageSource {
 			}
 
 			{
-				Label set = new Label(String.format("%s-%s", face.printing().set().code(), face.printing().rarity().name().substring(0, 1)));
+				Label set = new Label(String.format("%s-%s", face.print().set().code(), face.print().rarity().name().substring(0, 1)));
 				set.setFont(NAME_FONT);
 				getChildren().add(set);
 				nodes.put(Characteristic.SetCode, set);
@@ -262,7 +262,7 @@ public class RenderedImageSource implements ImageSource {
 	}
 
 	@Override
-	public BufferedImage open(Card.Printing.Face face) throws IOException {
+	public BufferedImage open(Card.Print.Face face) throws IOException {
 		CardRenderLayout layout = new CardRenderLayout(face);
 
 		CompletableFuture<WritableImage> render = new CompletableFuture<>();
@@ -283,11 +283,11 @@ public class RenderedImageSource implements ImageSource {
 	}
 
 	@Override
-	public BufferedImage open(Card.Printing printing) throws IOException {
-		if (printing.card().mainFaces().isEmpty()) {
+	public BufferedImage open(Card.Print print) throws IOException {
+		if (print.card().mainFaces().isEmpty()) {
 			return null;
 		} else {
-			return open(printing.faces(printing.card().mainFaces().iterator().next()).iterator().next());
+			return open(print.faces(print.card().mainFaces().iterator().next()).iterator().next());
 		}
 	}
 

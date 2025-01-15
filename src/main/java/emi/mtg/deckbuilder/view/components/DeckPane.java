@@ -7,7 +7,7 @@ import emi.mtg.deckbuilder.controller.DeckChanger;
 import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
-import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
+import emi.mtg.deckbuilder.view.dialogs.PrintSelectorDialog;
 import emi.mtg.deckbuilder.view.groupings.ManaValue;
 import emi.mtg.deckbuilder.view.layouts.Piles;
 import javafx.beans.binding.Bindings;
@@ -329,12 +329,12 @@ public class DeckPane extends SplitPane {
 	private CardView.ContextMenu createDeckContextMenu(CardPane pane, Zone zone) {
 		CardView.ContextMenu menu = new CardView.ContextMenu();
 
-		MenuItem changePrintingMenuItem = new MenuItem("Choose Printing");
-		changePrintingMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> {
+		MenuItem changePrintMenuItem = new MenuItem("Choose Print");
+		changePrintMenuItem.visibleProperty().bind(Bindings.createBooleanBinding(() -> {
 			Set<Card> cards = menu.cards.stream().map(CardInstance::card).collect(Collectors.toSet());
-			return cards.size() == 1 && cards.iterator().next().printings().size() > 1;
+			return cards.size() == 1 && cards.iterator().next().prints().size() > 1;
 		}, menu.cards));
-		changePrintingMenuItem.setOnAction(ae -> {
+		changePrintMenuItem.setOnAction(ae -> {
 			if (menu.cards.isEmpty()) {
 				return;
 			}
@@ -346,14 +346,14 @@ public class DeckPane extends SplitPane {
 
 			final Card card = cards.iterator().next();
 			final Set<CardInstance> modify = new HashSet<>(menu.cards.get());
-			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
+			PrintSelectorDialog.show(getScene(), card).ifPresent(pr -> {
 				boolean modified = false;
 				Consumer<DeckList> doFn = l -> {}, undoFn = l -> {};
 				for (CardInstance ci : modify) {
-					if (ci.printing() != pr) {
-						final Card.Printing old = ci.printing();
-						doFn = doFn.andThen(l -> ci.printing(pr));
-						undoFn = undoFn.andThen(l -> ci.printing(old));
+					if (ci.print() != pr) {
+						final Card.Print old = ci.print();
+						doFn = doFn.andThen(l -> ci.print(pr));
+						undoFn = undoFn.andThen(l -> ci.print(old));
 						modified = true;
 					}
 				}
@@ -364,7 +364,7 @@ public class DeckPane extends SplitPane {
 
 					DeckChanger.change(
 							deck,
-							String.format("Change %d Printing%s", modify.size(), modify.size() > 1 ? "s" : ""),
+							String.format("Change %d Print%s", modify.size(), modify.size() > 1 ? "s" : ""),
 							doFn,
 							undoFn
 					);
@@ -434,7 +434,7 @@ public class DeckPane extends SplitPane {
 			menu.getItems().add(moveMenu);
 		}
 
-		menu.getItems().addAll(changePrintingMenuItem);
+		menu.getItems().addAll(changePrintMenuItem);
 		menu.addTagsMenu();
 		menu.getItems().add(removeAllMenuItem);
 		menu.addSeparator()

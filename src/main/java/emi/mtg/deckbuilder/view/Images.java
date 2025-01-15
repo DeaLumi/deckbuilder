@@ -68,8 +68,8 @@ public class Images {
 
 	private static final List<ImageSource> sources = PluginUtils.providers(ImageSource.class, Comparator.comparing(s -> -s.priority()));
 
-	private final Map<Card.Printing.Face, SoftReference<CompletableFuture<Image>>> faceCache = new HashMap<>();
-	private final Map<Card.Printing, SoftReference<CompletableFuture<Image>>> frontCache = new HashMap<>();
+	private final Map<Card.Print.Face, SoftReference<CompletableFuture<Image>>> faceCache = new HashMap<>();
+	private final Map<Card.Print, SoftReference<CompletableFuture<Image>>> frontCache = new HashMap<>();
 
 	private final Path fronts, faces;
 
@@ -91,37 +91,37 @@ public class Images {
 	}
 
 	private <T> Path pathTo(T object) {
-		Card.Printing printing;
-		Card.Printing.Face face;
+		Card.Print print;
+		Card.Print.Face face;
 
 		String file;
 
-		if (object instanceof Card.Printing.Face) {
-			face = (Card.Printing.Face) object;
-			printing = face.printing();
+		if (object instanceof Card.Print.Face) {
+			face = (Card.Print.Face) object;
+			print = face.print();
 
-			file = face.printing().card().fullName();
-		} else if (object instanceof Card.Printing) {
+			file = face.print().card().fullName();
+		} else if (object instanceof Card.Print) {
 			face = null;
-			printing = (Card.Printing) object;
+			print = (Card.Print) object;
 
-			file = printing.card().fullName();
+			file = print.card().fullName();
 		} else {
 			throw new IllegalArgumentException();
 		}
 
-		String parent = String.format("s%s", printing.set().code().toLowerCase());
+		String parent = String.format("s%s", print.set().code().toLowerCase());
 
 		file = file.toLowerCase().replaceAll("[^a-z0-9 ]+", "").replaceAll("\\s+", "-") +
-				'-' + printing.variation();
+				'-' + print.variation();
 
-		if (object instanceof Card.Printing.Face) {
+		if (object instanceof Card.Print.Face) {
 			file += '-' + face.face().name().toLowerCase().replaceAll("[^a-z0-9 ]+", "").replaceAll("\\s+", "-"); // TODO: This change loses all cached face names.
 		}
 
 		file += '.' + CACHE_EXTENSION;
 
-		return (object instanceof Card.Printing ? this.fronts : this.faces).resolve(parent).resolve(file);
+		return (object instanceof Card.Print ? this.fronts : this.faces).resolve(parent).resolve(file);
 	}
 
 	@FunctionalInterface
@@ -157,7 +157,7 @@ public class Images {
 										Image image = SwingFXUtils.toFXImage(imgSrc, null);
 										ret.complete(image);
 
-										if (key instanceof Card.Printing || source.cacheable()) {
+										if (key instanceof Card.Print || source.cacheable()) {
 											if (!Files.exists(p.getParent())) {
 												Files.createDirectories(p.getParent());
 											}
@@ -187,12 +187,12 @@ public class Images {
 		}
 	}
 
-	public CompletableFuture<Image> getFace(Card.Printing.Face face) {
+	public CompletableFuture<Image> getFace(Card.Print.Face face) {
 		return open(face, faceCache, source -> source.open(face), MtgAwtImageUtils::clearCorners);
 	}
 
-	public CompletableFuture<Image> getThumbnail(Card.Printing printing) {
-		return open(printing, frontCache, source -> source.open(printing), img -> MtgAwtImageUtils.scaled(MtgAwtImageUtils.clearCorners(img), CARD_WIDTH, CARD_HEIGHT, true));
+	public CompletableFuture<Image> getThumbnail(Card.Print print) {
+		return open(print, frontCache, source -> source.open(print), img -> MtgAwtImageUtils.scaled(MtgAwtImageUtils.clearCorners(img), CARD_WIDTH, CARD_HEIGHT, true));
 	}
 
 	public static class CacheCleanupResults {
@@ -275,7 +275,7 @@ public class Images {
 		return new CacheCleanupResults(deletedFiles, deletedBytes);
 	}
 
-	public void deleteSavedImages(Card.Printing pr) throws IOException {
+	public void deleteSavedImages(Card.Print pr) throws IOException {
 		frontCache.remove(pr);
 
 		Path frontPath = pathTo(pr);
@@ -283,7 +283,7 @@ public class Images {
 			Files.delete(frontPath);
 		}
 
-		for (Card.Printing.Face prf : pr.faces()) {
+		for (Card.Print.Face prf : pr.faces()) {
 			faceCache.remove(prf);
 
 			Path facePath = pathTo(prf);

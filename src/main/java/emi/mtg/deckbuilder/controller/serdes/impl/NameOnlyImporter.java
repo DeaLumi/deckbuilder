@@ -11,7 +11,6 @@ import emi.mtg.deckbuilder.model.Preferences;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class NameOnlyImporter implements DeckImportExport {
@@ -42,26 +41,26 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 		return card;
 	}
 
-	public static Card.Printing findPrinting(String name) {
-		return findPrinting(name, null, null);
+	public static Card.Print findPrint(String name) {
+		return findPrint(name, null, null);
 	}
 
-	public static Card.Printing findPrinting(String name, String setCode, String collectorNumber) {
+	public static Card.Print findPrint(String name, String setCode, String collectorNumber) {
 		Card card = findCard(name);
 
 		if (card == null) {
 			return null;
 		}
 
-		Stream<? extends Card.Printing> printings = card.printings().stream();
+		Stream<? extends Card.Print> printings = card.prints().stream();
 		if (setCode != null) {
 			if (!setCode.isEmpty())
 				printings = printings.filter(pr -> pr.set().code().equalsIgnoreCase(setCode));
 			if (collectorNumber != null && !collectorNumber.isEmpty())
 				printings = printings.filter(pr -> pr.collectorNumber().equalsIgnoreCase(collectorNumber));
-			return printings.findAny().map(pr -> (Card.Printing) pr).orElse(Preferences.get().anyPrinting(card));
+			return printings.findAny().map(pr -> (Card.Print) pr).orElse(Preferences.get().anyPrint(card));
 		} else {
-			return Preferences.get().anyPrinting(card);
+			return Preferences.get().anyPrint(card);
 		}
 	}
 
@@ -114,7 +113,7 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 	}
 
 	protected void addCard(String name, String setCode, String collectorNumber, int quantity) throws IOException {
-		Card.Printing pr = findPrinting(name, setCode, collectorNumber);
+		Card.Print pr = findPrint(name, setCode, collectorNumber);
 
 		if (pr == null) {
 			throw new IOException(String.format("The deck refers to an unidentifiable card \"%s\"", name));
@@ -123,7 +122,7 @@ public abstract class NameOnlyImporter implements DeckImportExport {
 		addCard(pr, quantity);
 	}
 
-	protected void addCard(Card.Printing printing, int quantity) {
+	protected void addCard(Card.Print printing, int quantity) {
 		for (int k = 0; k < quantity; ++k) {
 			deckCards.get(zone).add(new CardInstance(printing));
 		}

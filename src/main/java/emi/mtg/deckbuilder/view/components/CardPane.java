@@ -151,13 +151,13 @@ public class CardPane extends BorderPane {
 		Map<Card, UUID> prefPrintCache = new HashMap<>();
 
 		return ci -> {
-			Card.Printing preferred = Preferences.get().preferredPrinting(ci.card());
+			Card.Print preferred = Preferences.get().preferredPrint(ci.card());
 			if (preferred != null) return preferred.id().equals(ci.id());
 
 			// TODO: This use of id() is entirely internal and might be able to stay.
-			// TODO: This predicate fails to account for preferred printings being filtered out.
+			// TODO: This predicate fails to account for preferred prints being filtered out.
 			synchronized(prefPrintCache) {
-				return ci.id().equals(prefPrintCache.computeIfAbsent(ci.card(), fn -> ci.card().printings().iterator().next().id()));
+				return ci.id().equals(prefPrintCache.computeIfAbsent(ci.card(), fn -> ci.card().prints().iterator().next().id()));
 			}
 		};
 	}

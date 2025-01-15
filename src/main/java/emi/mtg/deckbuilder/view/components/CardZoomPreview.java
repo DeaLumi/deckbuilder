@@ -40,20 +40,20 @@ public class CardZoomPreview extends Stage {
 	private final HBox row;
 	private ParallelTransition runningAnimation;
 
-	public CardZoomPreview(CardView owner, Rectangle2D start, Card.Printing printing) throws ExecutionException, InterruptedException {
+	public CardZoomPreview(CardView owner, Rectangle2D start, Card.Print print) throws ExecutionException, InterruptedException {
 		super(StageStyle.TRANSPARENT);
 
 		this.start = start;
 		this.owner = owner;
 
 		// work out the images
-		List<Card.Printing.Face> faces = printing.faces().stream()
-				.filter(f -> printing.faces().stream().noneMatch(other -> f != other && other.contains(f)))
+		List<Card.Print.Face> faces = print.faces().stream()
+				.filter(f -> print.faces().stream().noneMatch(other -> f != other && other.contains(f)))
 				.collect(Collectors.toList());
 
 		this.imageViewList = new ArrayList<>(faces.size());
 
-		for (Card.Printing.Face face : faces) {
+		for (Card.Print.Face face : faces) {
 			CompletableFuture<Image> image = Context.get().images.getFace(face);
 
 			Image img = image.getNow(Images.LOADING_CARD_LARGE);

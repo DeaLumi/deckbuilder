@@ -10,7 +10,6 @@ import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.MainApplication;
-import javafx.scene.input.DataFormat;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -70,7 +69,7 @@ public class MTGO implements DeckImportExport.Monotype {
 			throw new IOException(e);
 		}
 
-		Map<Integer, Card.Printing> printingsCache = new HashMap<>();
+		Map<Integer, Card.Print> printsCache = new HashMap<>();
 
 		NodeList cardss = xml.getDocumentElement().getElementsByTagName("Cards");
 		for (int i = 0; i < cardss.getLength(); ++i) {
@@ -80,32 +79,32 @@ public class MTGO implements DeckImportExport.Monotype {
 			Boolean sb = Boolean.parseBoolean(element.getAttributes().getNamedItem("Sideboard").getNodeValue());
 			String name = element.getAttributes().getNamedItem("Name").getNodeValue();
 
-			Card.Printing printing = printingsCache.get(catId);
-			if (printing == null) {
-				for (Card.Printing pr : Context.get().data.printings()) {
+			Card.Print print = printsCache.get(catId);
+			if (print == null) {
+				for (Card.Print pr : Context.get().data.prints()) {
 					if (catId.equals(pr.mtgoCatalogId())) {
-						printing = pr;
+						print = pr;
 						break;
 					} else {
-						printingsCache.put(pr.mtgoCatalogId(), pr);
+						printsCache.put(pr.mtgoCatalogId(), pr);
 					}
 				}
 			};
 
-			if (printing == null) {
+			if (print == null) {
 				Card card = Context.get().data.cards().stream().filter(c -> c.name().equals(name)).findAny().orElse(null);
 
 				if (card == null) {
 					throw new IOException("Couldn't find card " + name + " / " + catId);
 				}
 
-				printing = Preferences.get().preferredPrinting(card);
-				if (printing == null) printing = card.printings().iterator().next();
-				log.err("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name; using preferred printing. This won't export back to MTGO.");
+				print = Preferences.get().preferredPrint(card);
+				if (print == null) print = card.prints().iterator().next();
+				log.err("Warning: Couldn't find card " + name + " by catId " + catId + "; found by name; using preferred print. This won't export back to MTGO.");
 			}
 
 			for (int n = 0; n < qty; ++n) {
-				(sb ? sideboard : library).add(new CardInstance(printing));
+				(sb ? sideboard : library).add(new CardInstance(print));
 			}
 		}
 
@@ -116,18 +115,18 @@ public class MTGO implements DeckImportExport.Monotype {
 		return new DeckList(from.getFileName().toString().substring(0, from.getFileName().toString().lastIndexOf('.')), "", Format.Freeform, "Imported from MTGO.", cards);
 	}
 
-	private static void appendZone(Document xml, Element deckEl, Collection<? extends Card.Printing> printings, boolean sideboard, Set<String> missingCards, Set<String> subbedCards) {
-		Map<Card.Printing, Integer> multiset = new LinkedHashMap<>();
-		for (Card.Printing pr : printings) {
+	private static void appendZone(Document xml, Element deckEl, Collection<? extends Card.Print> prints, boolean sideboard, Set<String> missingCards, Set<String> subbedCards) {
+		Map<Card.Print, Integer> multiset = new LinkedHashMap<>();
+		for (Card.Print pr : prints) {
 			multiset.compute(pr, (p, v) -> v == null ? 1 : v + 1);
 		}
 
-		for (Map.Entry<Card.Printing, Integer> e : multiset.entrySet()) {
-			Card.Printing pr = e.getKey();
+		for (Map.Entry<Card.Print, Integer> e : multiset.entrySet()) {
+			Card.Print pr = e.getKey();
 			if (pr.mtgoCatalogId() == null) {
 				// Try to find another version.
 
-				for (Card.Printing otherPrint : e.getKey().card().printings()) {
+				for (Card.Print otherPrint : e.getKey().card().prints()) {
 					if (otherPrint.mtgoCatalogId() != null) {
 						subbedCards.add(String.format("%s: used %s version", otherPrint.card().name(), otherPrint.set().name()));
 						pr = otherPrint;
@@ -202,7 +201,7 @@ public class MTGO implements DeckImportExport.Monotype {
 		}
 
 		if (!subbedCards.isEmpty()) {
-			throw new IOException("Some of your chosen versions were not available on MTGO.\nThe following substitutions have been made:\n\u2022 " + subbedCards.stream().collect(Collectors.joining("\n\u2022 ")) + "\n\nYour deck was exported successfully with these printings.");
+			throw new IOException("Some of your chosen versions were not available on MTGO.\nThe following substitutions have been made:\n\u2022 " + subbedCards.stream().collect(Collectors.joining("\n\u2022 ")) + "\n\nYour deck was exported successfully with these prints.");
 		}
 	}
 

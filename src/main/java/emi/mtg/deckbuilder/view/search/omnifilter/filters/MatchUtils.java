@@ -183,7 +183,7 @@ public class MatchUtils {
             firstCount = 0;
             firstStart = System.nanoTime();
 
-            for (Card.Printing pr : data.printings()) {
+            for (Card.Print pr : data.prints()) {
                 for (Card.Face face : pr.card().faces()) {
                     if (pred.test(face.rules(), face.name())) ++firstCount;
                 }
@@ -195,7 +195,7 @@ public class MatchUtils {
             secondCount = 0;
             secondStart = System.nanoTime();
 
-            for (Card.Printing pr : data.printings()) {
+            for (Card.Print pr : data.prints()) {
                 for (Card.Face face : pr.card().faces()) {
                     if (pred.test(face.rules(), face.name())) ++secondCount;
                 }

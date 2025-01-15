@@ -10,7 +10,7 @@ import emi.mtg.deckbuilder.model.FilteredGroupedModel;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.UniqueList;
 import emi.mtg.deckbuilder.view.Images;
-import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
+import emi.mtg.deckbuilder.view.dialogs.PrintSelectorDialog;
 import emi.mtg.deckbuilder.util.PluginUtils;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import javafx.application.Platform;
@@ -37,7 +37,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -356,7 +355,7 @@ public class CardView extends Canvas {
 			}
 
 			if (view != null) {
-				Context.get().images.getThumbnail(view.printing()).thenApply(img -> {
+				Context.get().images.getThumbnail(view.print()).thenApply(img -> {
 					db.setDragView(img, -8.0, -8.0);
 					return img;
 				}).getNow(Images.LOADING_CARD);
@@ -689,7 +688,7 @@ public class CardView extends Canvas {
 				Rectangle2D start = new Rectangle2D(zoomLoc.x, zoomLoc.y, cardWidth(), cardHeight());
 
 				try {
-					zoomPreview = new CardZoomPreview(CardView.this, start, zoomedCard.printing());
+					zoomPreview = new CardZoomPreview(CardView.this, start, zoomedCard.print());
 					requestFocus();
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
@@ -712,7 +711,7 @@ public class CardView extends Canvas {
 
 			this.filteredModel = modelSource;
 			this.sortedModel = this.filteredModel.sorted(initialSort);
-			this.collapsedModel = new UniqueList<>(this.sortedModel, CardInstance::printing);
+			this.collapsedModel = new UniqueList<>(this.sortedModel, CardInstance::print);
 
 			this.collapsedModel.addListener((ListChangeListener<CardInstance>) x -> CardView.this.layout());
 		}
@@ -744,7 +743,7 @@ public class CardView extends Canvas {
 				if (cards.isEmpty()) return;
 
 				// TODO other faces
-				Card.Printing.Face face = cards.iterator().next().mainFaces().iterator().next();
+				Card.Print.Face face = cards.iterator().next().mainFaces().iterator().next();
 				CompletableFuture<Image> img = Context.get().images.getFace(face);
 
 				// Have to farm this to the common pool to avoid deadlock with the rendered image source. (Bleh!)
@@ -772,7 +771,7 @@ public class CardView extends Canvas {
 			deleteImages.setOnAction(ae -> {
 				try {
 					for (CardInstance ci : cards) {
-						for (Card.Printing pr : ci.card().printings()) {
+						for (Card.Print pr : ci.card().prints()) {
 							Context.get().images.deleteSavedImages(pr);
 						}
 					}
@@ -1066,35 +1065,35 @@ public class CardView extends Canvas {
 			if (me.getButton() == MouseButton.PRIMARY) {
 				if (me.isAltDown()) {
 					final CardInstance card = hoverCard;
-					if (card == null || card.card().printings().size() == 1) {
+					if (card == null || card.card().prints().size() == 1) {
 						return;
 					}
 
 					if (deck == null) {
-						if (this.model.values().stream().flatMap(List::stream).anyMatch(ci -> ci.card() == card.card() && ci.printing() != card.printing())) {
+						if (this.model.values().stream().flatMap(List::stream).anyMatch(ci -> ci.card() == card.card() && ci.print() != card.print())) {
 							return; // Other versions are already represented. TODO: I hate this. Bind to CardPane's showVersionsSeparately?
 						}
 					}
 
 					final List<? extends CardInstance> modifyingCards = hoverGroup.hoverCards(card);
-					PrintingSelectorDialog.show(getScene(), card.card()).ifPresent(pr -> {
+					PrintSelectorDialog.show(getScene(), card.card()).ifPresent(pr -> {
 						if (deck == null) {
-							Preferences.get().preferredPrintings.put(card.card().fullName(), new Preferences.PreferredPrinting(pr.set().code(), pr.collectorNumber()));
+							Preferences.get().preferredPrints.put(card.card().fullName(), new Preferences.PreferredPrint(pr.set().code(), pr.collectorNumber()));
 						} else {
 							boolean modified = false;
 							Consumer<DeckList> doFn = l -> {}, undoFn = l -> {};
 							for (CardInstance ci : modifyingCards) {
-								if (ci.printing() != pr) {
-									final Card.Printing old = ci.printing();
-									doFn = doFn.andThen(l -> ci.printing(pr)).andThen(l -> this.model.sourceElementChanged(ci));
-									undoFn = undoFn.andThen(l -> ci.printing(old)).andThen(l -> this.model.sourceElementChanged(ci));
+								if (ci.print() != pr) {
+									final Card.Print old = ci.print();
+									doFn = doFn.andThen(l -> ci.print(pr)).andThen(l -> this.model.sourceElementChanged(ci));
+									undoFn = undoFn.andThen(l -> ci.print(old)).andThen(l -> this.model.sourceElementChanged(ci));
 									modified = true;
 								}
 							}
 							if (modified) {
 								DeckChanger.change(
 										deck,
-										String.format("Change %d Printing%s", modifyingCards.size(), modifyingCards.size() > 1 ? "s" : ""),
+										String.format("Change %d Print%s", modifyingCards.size(), modifyingCards.size() > 1 ? "s" : ""),
 										doFn,
 										undoFn
 								);
@@ -1690,9 +1689,9 @@ public class CardView extends Canvas {
 				}
 
 				final CardInstance ci = group.model().get(j);
-				final Card.Printing printing = ci.printing();
+				final Card.Print print = ci.print();
 
-				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(printing);
+				CompletableFuture<Image> futureImage = Context.get().images.getThumbnail(print);
 
 				if (blocking) {
 					try {

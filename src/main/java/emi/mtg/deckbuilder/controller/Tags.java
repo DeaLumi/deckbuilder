@@ -229,9 +229,9 @@ public class Tags {
 
 		Set<Card> cards(String tag);
 
-		Set<String> tags(Card.Printing printing);
+		Set<String> tags(Card.Print print);
 
-		Set<Card.Printing> printings(String tag);
+		Set<Card.Print> prints(String tag);
 
 		default boolean modifiable() {
 			return false;
@@ -245,7 +245,7 @@ public class Tags {
 			throw new UnsupportedOperationException();
 		}
 
-		default void tag(Card.Printing printing, String tag) {
+		default void tag(Card.Print print, String tag) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -253,14 +253,14 @@ public class Tags {
 			throw new UnsupportedOperationException();
 		}
 
-		default void untag(Card.Printing printing, String tag) {
+		default void untag(Card.Print print, String tag) {
 			throw new UnsupportedOperationException();
 		}
 
 		interface Graphed extends Provider {
 			TagGraph<Card> cardTags();
 
-			TagGraph<Card.Printing> printingTags();
+			TagGraph<Card.Print> printTags();
 
 			@Override
 			default Set<String> tags(Card card) {
@@ -273,13 +273,13 @@ public class Tags {
 			}
 
 			@Override
-			default Set<String> tags(Card.Printing printing) {
-				return printingTags().tags(printing);
+			default Set<String> tags(Card.Print print) {
+				return printTags().tags(print);
 			}
 
 			@Override
-			default Set<Card.Printing> printings(String tag) {
-				return printingTags().objects(tag);
+			default Set<Card.Print> prints(String tag) {
+				return printTags().objects(tag);
 			}
 
 			@Override
@@ -288,8 +288,8 @@ public class Tags {
 			}
 
 			@Override
-			default void tag(Card.Printing printing, String tag) {
-				if (modifiable()) printingTags().tag(printing, tag);
+			default void tag(Card.Print print, String tag) {
+				if (modifiable()) printTags().tag(print, tag);
 			}
 
 			@Override
@@ -298,8 +298,8 @@ public class Tags {
 			}
 
 			@Override
-			default void untag(Card.Printing printing, String tag) {
-				if (modifiable()) printingTags().untag(printing, tag);
+			default void untag(Card.Print print, String tag) {
+				if (modifiable()) printTags().untag(print, tag);
 			}
 		}
 	}
@@ -309,11 +309,11 @@ public class Tags {
 		private static final String FILE_NAME = "json-tags.json";
 
 		private final TagGraph<Card> cardTags;
-		private final TagGraph<Card.Printing> printingTags;
+		private final TagGraph<Card.Print> printTags;
 
 		public JsonProvider() {
 			this.cardTags = new TagGraph<>();
-			this.printingTags = new TagGraph<>();
+			this.printTags = new TagGraph<>();
 		}
 
 		@Override
@@ -324,12 +324,12 @@ public class Tags {
 			cardTags.clear();
 
 			Map<String, Set<Card>> cardNameCache = new HashMap<>();
-			Map<String, Card.Printing> printingCache = new HashMap<>();
+			Map<String, Card.Print> printCache = new HashMap<>();
 			for (Card card : context.data.cards()) {
 				cardNameCache.computeIfAbsent(card.name(), c -> new HashSet<>()).add(card);
 
-				for (Card.Printing pr : card.printings()) {
-					printingCache.put(Card.Printing.Reference.format(pr), pr);
+				for (Card.Print pr : card.prints()) {
+					printCache.put(Card.Print.Reference.format(pr), pr);
 				}
 			}
 
@@ -348,12 +348,12 @@ public class Tags {
 									cards.forEach(c -> cardTags.tag(c, tag));
 								}
 							});
-						} else if ("printings".equals(block)) {
-							readBlock(reader, (tag, printingRef) -> {
+						} else if ("prints".equals(block)) {
+							readBlock(reader, (tag, printRef) -> {
 								try {
-									printingTags.tag(CardInstance.stringToPrinting(printingRef), tag);
+									printTags.tag(CardInstance.stringToPrint(printRef), tag);
 								} catch (IllegalArgumentException iae) {
-									MainApplication.LOG.err("Tags file %s refers to unknown printing %s -- are we in the right universe?", filePath, printingRef);
+									MainApplication.LOG.err("Tags file %s refers to unknown print %s -- are we in the right universe?", filePath, printRef);
 								}
 							});
 						} else {
@@ -423,14 +423,14 @@ public class Tags {
 				}
 				writer.endObject();
 
-				writer.name("printings");
+				writer.name("prints");
 				writer.beginObject();
-				for (Map.Entry<String, Set<Card.Printing>> tagsEntry : printingTags.tagToObjs.entrySet()) { // TODO private access
+				for (Map.Entry<String, Set<Card.Print>> tagsEntry : printTags.tagToObjs.entrySet()) { // TODO private access
 					writer.name(tagsEntry.getKey());
 
 					writer.beginArray();
-					for (Card.Printing pr : tagsEntry.getValue()) {
-						writer.value(Card.Printing.Reference.format(pr));
+					for (Card.Print pr : tagsEntry.getValue()) {
+						writer.value(Card.Print.Reference.format(pr));
 					}
 					writer.endArray();
 				}
@@ -448,8 +448,8 @@ public class Tags {
 		}
 
 		@Override
-		public TagGraph<Card.Printing> printingTags() {
-			return printingTags;
+		public TagGraph<Card.Print> printTags() {
+			return printTags;
 		}
 	}
 
@@ -461,7 +461,7 @@ public class Tags {
 				.collect(Collectors.toSet());
 	}
 
-	public Set<String> tags(Card.Printing pr) {
+	public Set<String> tags(Card.Print pr) {
 		return PROVIDERS.stream()
 				.flatMap(p -> p.tags(pr).stream())
 				.collect(Collectors.toSet());
@@ -473,9 +473,9 @@ public class Tags {
 				.collect(Collectors.toSet());
 	}
 
-	public Set<Card.Printing> printings(String tag) {
+	public Set<Card.Print> prints(String tag) {
 		return PROVIDERS.stream()
-				.flatMap(p -> p.printings(tag).stream())
+				.flatMap(p -> p.prints(tag).stream())
 				.collect(Collectors.toSet());
 	}
 

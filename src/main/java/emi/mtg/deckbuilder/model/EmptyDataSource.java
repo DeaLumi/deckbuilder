@@ -36,12 +36,12 @@ public class EmptyDataSource implements DataSource {
 	}
 
 	@Override
-	public Set<? extends Card.Printing> printings() {
+	public Set<? extends Card.Print> prints() {
 		return Collections.emptySet();
 	}
 
 	@Override
-	public Card.Printing printing(UUID id) {
+	public Card.Print print(UUID id) {
 		return null;
 	}
 

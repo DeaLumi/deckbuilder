@@ -29,7 +29,7 @@ public class IsFilter implements Omnifilter.Subfilter {
 		docs.put("tdfc", "Finds transforming two-faced cards.");
 		opts.put("mdfc", ci -> ci.card().transformedFaces().isEmpty() && ci.faces().stream().anyMatch(f -> f.onBack() && ci.card().front() != f.face()));
 		docs.put("mdfc", "Finds modal dual-faced cards.");
-		opts.put("dfc", ci -> ci.faces().stream().anyMatch(Card.Printing.Face::onBack));
+		opts.put("dfc", ci -> ci.faces().stream().anyMatch(Card.Print.Face::onBack));
 		docs.put("dfc", "Finds dual-faced cards (transforming, modal, or otherwise).");
 		opts.put("flip", ci -> ci.card().flipped() != null); // TODO: This will fail if a flip face is ever not available by default (no cards like this exist yet).
 		docs.put("flip", "Finds cards which flip over (rotating 180 degrees).");

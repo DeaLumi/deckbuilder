@@ -100,7 +100,7 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 			writer.append('\n');
 			++row;
 
-			Map<CardInstance, AtomicInteger> histo = deck.printingHisto(zone);
+			Map<CardInstance, AtomicInteger> histo = deck.printHisto(zone);
 			for (Map.Entry<CardInstance, AtomicInteger> entry : histo.entrySet()) {
 				first = true;
 				for (BiFunction<CardInstance, Integer, String> column : fns.values()) {
@@ -151,7 +151,7 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 			int count = Integer.parseInt(values[0]);
 
 			emi.lib.mtg.Set set = Context.get().data.set(values[2]);
-			for (Card.Printing pr : set.printings()) {
+			for (Card.Print pr : set.prints()) {
 				if (!pr.collectorNumber().equals(values[3])) continue;
 				if (!pr.card().name().equals(values[1])) continue;
 
@@ -236,7 +236,7 @@ public abstract class SeparatedValues implements DeckImportExport.Textual {
 			int count = Integer.parseInt(values[0]);
 
 			emi.lib.mtg.Set set = Context.get().data.set(values[2]);
-			for (Card.Printing pr : set.printings()) {
+			for (Card.Print pr : set.prints()) {
 				if (!pr.collectorNumber().equals(values[3])) continue;
 				if (!pr.card().name().equals(values[1])) continue;
 

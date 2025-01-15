@@ -26,6 +26,6 @@ public class Rarity implements Omnifilter.Subfilter {
 				.orElseThrow(() -> new IllegalArgumentException("Couldn't find a card rarity matching \"" + svalue + "\""));
 
 		if (operator == Omnifilter.Operator.DIRECT) operator = Omnifilter.Operator.EQUALS;
-		return Omnifilter.Operator.comparison(operator, ci -> ci.printing().rarity().ordinal() - value.ordinal());
+		return Omnifilter.Operator.comparison(operator, ci -> ci.print().rarity().ordinal() - value.ordinal());
 	}
 }

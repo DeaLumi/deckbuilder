@@ -17,40 +17,40 @@ import javafx.stage.Modality;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class PrintingSelectorDialog extends Dialog<Card.Printing> {
-	public static Optional<Card.Printing> show(Scene scene, Card card) {
-		return new PrintingSelectorDialog(scene, card).showAndWait();
+public class PrintSelectorDialog extends Dialog<Card.Print> {
+	public static Optional<Card.Print> show(Scene scene, Card card) {
+		return new PrintSelectorDialog(scene, card).showAndWait();
 	}
 
 	private final CardPane pane;
 
-	public PrintingSelectorDialog(Scene scene, Card card) {
+	public PrintSelectorDialog(Scene scene, Card card) {
 		super();
 
-		setTitle("Printing Selector");
+		setTitle("Print Selector");
 		setResult(null);
 
-		ObservableList<CardInstance> tmpModel = FXCollections.observableList(card.printings().stream()
+		ObservableList<CardInstance> tmpModel = FXCollections.observableList(card.prints().stream()
 				.map(CardInstance::new)
 				.collect(Collectors.toList()));
 		pane = new CardPane("Variations", tmpModel, FlowGrid.Factory.INSTANCE);
 
 		setResultConverter(bt -> {
 			if (bt != ButtonType.CANCEL && pane.view().selectedCards.size() == 1) {
-				return pane.view().selectedCards.iterator().next().printing();
+				return pane.view().selectedCards.iterator().next().print();
 			} else {
 				return null;
 			}
 		});
 
 		pane.view().doubleClick(ci -> {
-			setResult(ci.printing());
+			setResult(ci.print());
 			close();
 		});
 
 		pane.autoAction.set(ci -> {
 			Platform.runLater(() -> {
-				setResult(ci.printing());
+				setResult(ci.print());
 				close();
 			});
 		});

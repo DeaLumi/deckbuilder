@@ -53,7 +53,7 @@ public class Serialization {
 				.registerTypeAdapterFactory(Serialization.createInstanceMapTypeAdapterFactory())
 				.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
 				.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
-				.registerTypeAdapterFactory(Serialization.createPreferredPrintingAdapterFactory());
+				.registerTypeAdapterFactory(Serialization.createPreferredPrintAdapterFactory());
 
 		Preferences.registerPluginTypeAdapters(builder);
 
@@ -153,22 +153,22 @@ public class Serialization {
 		return new FunctionalStringTypeAdapter<>(Card::fullName, NameOnlyImporter::findCard);
 	}
 
-	public static TypeAdapterFactory createCardPrintingAdapterFactory() {
+	public static TypeAdapterFactory createCardPrintAdapterFactory() {
 		return new TypeAdapterFactory() {
 			@Override
 			public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
 				if (CardInstance.class.isAssignableFrom(type.getRawType())) {
 					return gson.getDelegateAdapter(this, type);
-				} else if (Card.Printing.class.isAssignableFrom(type.getRawType())) {
+				} else if (Card.Print.class.isAssignableFrom(type.getRawType())) {
 					return new StringTypeAdapter<T>() {
 						@Override
 						public T fromString(String i) throws IOException {
 							try {
-								Card.Printing.Reference ref = Card.Printing.Reference.valueOf(i);
+								Card.Print.Reference ref = Card.Print.Reference.valueOf(i);
 								emi.lib.mtg.Set set = Context.get().data.set(ref.setCode());
 
 								if (set != null) {
-									emi.lib.mtg.Card.Printing pr = set.printing(ref.collectorNumber());
+									emi.lib.mtg.Card.Print pr = set.print(ref.collectorNumber());
 									if (pr != null && ref.name().equals(pr.card().name())) return (T) pr;
 
 									LOG.err("No exact match for %s in %s; trying by card name.%n", ref, set.name());
@@ -176,7 +176,7 @@ public class Serialization {
 									// Either the set has no printing by that collector number, or the printing by that
 									// collector number is of a different card. Either way, we're in the rough. Try to
 									// find any card with the same name in the set.
-									pr = set.printings().stream()
+									pr = set.prints().stream()
 											.filter(pr2 -> ref.name().equals(pr2.card().name()))
 											.findAny()
 											.orElse(null);
@@ -194,18 +194,18 @@ public class Serialization {
 										.orElse(null);
 
 								if (card != null) {
-									return (T) Preferences.get().preferredPrinting(card);
+									return (T) Preferences.get().preferredPrint(card);
 								}
 
 								throw new IOException("Unable to find any card/printing matching " + ref + "; are we in the right universe?");
 							} catch (IllegalArgumentException iae) {
-								return (T) Context.get().data.printing(UUID.fromString(i));
+								return (T) Context.get().data.print(UUID.fromString(i));
 							}
 						}
 
 						@Override
 						protected String toString(T pr) throws IOException {
-							return Card.Printing.Reference.format((Card.Printing) pr);
+							return Card.Print.Reference.format((Card.Print) pr);
 						}
 					};
 				} else {
@@ -215,22 +215,22 @@ public class Serialization {
 		};
 	}
 
-	public static TypeAdapterFactory createPreferredPrintingAdapterFactory() {
+	public static TypeAdapterFactory createPreferredPrintAdapterFactory() {
 		return new TypeAdapterFactory() {
 			@Override
 			public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-				if (!Preferences.PreferredPrinting.class.isAssignableFrom(type.getRawType())) return null;
+				if (!Preferences.PreferredPrint.class.isAssignableFrom(type.getRawType())) return null;
 
-				TypeAdapter<Preferences.PreferredPrinting> reflective = gson.getDelegateAdapter(this, (TypeToken<Preferences.PreferredPrinting>) type);
+				TypeAdapter<Preferences.PreferredPrint> reflective = gson.getDelegateAdapter(this, (TypeToken<Preferences.PreferredPrint>) type);
 
-				return (TypeAdapter<T>) new TypeAdapter<Preferences.PreferredPrinting>() {
+				return (TypeAdapter<T>) new TypeAdapter<Preferences.PreferredPrint>() {
 					@Override
-					public void write(JsonWriter out, Preferences.PreferredPrinting value) throws IOException {
+					public void write(JsonWriter out, Preferences.PreferredPrint value) throws IOException {
 						reflective.write(out, value);
 					}
 
 					@Override
-					public Preferences.PreferredPrinting read(JsonReader in) throws IOException {
+					public Preferences.PreferredPrint read(JsonReader in) throws IOException {
 						String val;
 						if (in.peek() == JsonToken.STRING) {
 							val = in.nextString();
@@ -241,7 +241,7 @@ public class Serialization {
 						}
 
 						if (val != null) {
-							Preferences.deferredPreferredPrintings.add(UUID.fromString(val));
+							Preferences.deferredPreferredPrints.add(UUID.fromString(val));
 							return null;
 						}
 

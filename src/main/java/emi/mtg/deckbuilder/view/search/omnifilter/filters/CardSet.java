@@ -17,7 +17,7 @@ public class CardSet implements Omnifilter.Subfilter {
 
 	@Override
 	public String description() {
-		return "Find cards printed in the named set, by full name or set code. `=` will show _only_ printings in that set.";
+		return "Find cards printed in the named set, by full name or set code. `=` will show _only_ prints in that set.";
 	}
 
 	@Override
@@ -38,12 +38,12 @@ public class CardSet implements Omnifilter.Subfilter {
 				case NOT_EQUALS:
 					return ci.set() != set;
 				case GREATER_THAN:
-					return ci.card().printings().stream().anyMatch(x -> x.set() == set) && ci.set() != set;
+					return ci.card().prints().stream().anyMatch(x -> x.set() == set) && ci.set() != set;
 				case DIRECT:
 				case GREATER_OR_EQUALS:
-					return ci.card().printings().stream().anyMatch(x -> x.set() == set);
+					return ci.card().prints().stream().anyMatch(x -> x.set() == set);
 				case LESS_THAN:
-					return ci.card().printings().stream().noneMatch(x -> x.set() == set);
+					return ci.card().prints().stream().noneMatch(x -> x.set() == set);
 				default:
 					assert false;
 					return false;

@@ -263,7 +263,7 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 		// Prefetch all deck images.
 		CompletableFuture[] futures = deck.cards().values().stream()
 				.flatMap(List::stream)
-				.map(CardInstance::printing)
+				.map(CardInstance::print)
 				.map(Context.get().images::getThumbnail)
 				.toArray(CompletableFuture[]::new);
 

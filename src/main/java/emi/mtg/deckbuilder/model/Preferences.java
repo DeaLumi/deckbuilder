@@ -199,17 +199,17 @@ public class Preferences {
 		}
 	}
 
-	public static HashSet<UUID> deferredPreferredPrintings = new HashSet<>();
+	public static HashSet<UUID> deferredPreferredPrints = new HashSet<>();
 
 	/**
 	 * Preference value types
 	 */
 
-	public static class PreferredPrinting {
+	public static class PreferredPrint {
 		public final String setCode;
 		public final String collectorNumber;
 
-		public PreferredPrinting(String setCode, String collectorNumber) {
+		public PreferredPrint(String setCode, String collectorNumber) {
 			this.setCode = setCode;
 			this.collectorNumber = collectorNumber;
 		}
@@ -368,7 +368,7 @@ public class Preferences {
 	 */
 
 	// N.B. Preferences get loaded *before* card data, so we can't reference Card.Printings here.
-	public HashMap<String, PreferredPrinting> preferredPrintings = new HashMap<>();
+	public HashMap<String, PreferredPrint> preferredPrints = new HashMap<>();
 	public DefaultPrintings defaultPrintings = new DefaultPrintings();
 
 	public PreferAge preferAge = PreferAge.Any;
@@ -393,11 +393,11 @@ public class Preferences {
 	 * Instance utilities (e.g. simplifying accessors)
 	 */
 
-	public Card.Printing preferredPrinting(Card card) {
-		PreferredPrinting pref = preferredPrintings.get(card.fullName());
-		if (pref != null) return card.printing(pref.setCode, pref.collectorNumber);
+	public Card.Print preferredPrint(Card card) {
+		PreferredPrint pref = preferredPrints.get(card.fullName());
+		if (pref != null) return card.print(pref.setCode, pref.collectorNumber);
 
-		Stream<? extends Card.Printing> stream = card.printings().stream();
+		Stream<? extends Card.Print> stream = card.prints().stream();
 
 		if (preferNotPromo) stream = stream.filter(pr -> !pr.promo());
 		if (!defaultPrintings.ignoredSets.isEmpty()) stream = stream.filter(pr -> !defaultPrintings.ignoredSets.contains(pr.set().code()));
@@ -413,20 +413,20 @@ public class Preferences {
 		return stream.findFirst().orElse(null);
 	}
 
-	public Card.Printing anyPrinting(Card card) {
-		Card.Printing preferred = preferredPrinting(card);
-		if (preferred == null) preferred = card.printings().iterator().next();
+	public Card.Print anyPrint(Card card) {
+		Card.Print preferred = preferredPrint(card);
+		if (preferred == null) preferred = card.prints().iterator().next();
 
 		return preferred;
 	}
 
-	public void convertOldPreferredPrintings() {
-		for (UUID old : deferredPreferredPrintings) {
-			Card.Printing pr = Context.get().data.printing(old);
-			preferredPrintings.put(pr.card().fullName(), new PreferredPrinting(pr.set().code(), pr.collectorNumber()));
+	public void convertOldPreferredPrints() {
+		for (UUID old : deferredPreferredPrints) {
+			Card.Print pr = Context.get().data.print(old);
+			preferredPrints.put(pr.card().fullName(), new PreferredPrint(pr.set().code(), pr.collectorNumber()));
 		}
 
-		deferredPreferredPrintings.clear();
+		deferredPreferredPrints.clear();
 	}
 
 	public <T extends Plugin> T plugin(Class<T> type) {

@@ -21,7 +21,7 @@ import emi.mtg.deckbuilder.view.components.DeckTab;
 import emi.mtg.deckbuilder.view.dialogs.DebugConsole;
 import emi.mtg.deckbuilder.view.dialogs.DeckInfoDialog;
 import emi.mtg.deckbuilder.view.dialogs.PreferencesDialog;
-import emi.mtg.deckbuilder.view.dialogs.PrintingSelectorDialog;
+import emi.mtg.deckbuilder.view.dialogs.PrintSelectorDialog;
 import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
@@ -228,7 +228,7 @@ public class MainWindow extends Stage {
 				ci.flags.add(CardInstance.Flags.Invalid);
 				break;
 			case NotLegal:
-				if (Preferences.get().theFutureIsNow && (ci.card().legality(Format.Future) == Card.Legality.Legal || ci.card().printings().stream().allMatch(pr -> pr.releaseDate().isAfter(LocalDate.now())))) {
+				if (Preferences.get().theFutureIsNow && (ci.card().legality(Format.Future) == Card.Legality.Legal || ci.card().prints().stream().allMatch(pr -> pr.releaseDate().isAfter(LocalDate.now())))) {
 					ci.flags.add(CardInstance.Flags.Warning);
 				} else {
 					ci.flags.add(CardInstance.Flags.Invalid);
@@ -241,11 +241,11 @@ public class MainWindow extends Stage {
 	}
 
 	private ObservableList<CardInstance> collectionModel(DataSource cs) {
-		return FXCollections.observableList(cs.printings().stream()
+		return FXCollections.observableList(cs.prints().stream()
 				.map(CardInstance::new)
 				.peek(ci -> ci.flags.add(CardInstance.Flags.Unlimited))
 				.peek(ci -> ci.tags().addAll(Context.get().tags.tags(ci.card())))
-				.peek(ci -> ci.tags().addAll(Context.get().tags.tags(ci.printing())))
+				.peek(ci -> ci.tags().addAll(Context.get().tags.tags(ci.print())))
 				.peek(this::flagCollectionCardLegality)
 				.collect(Collectors.toList()));
 	}
@@ -253,10 +253,10 @@ public class MainWindow extends Stage {
 	private CardView.ContextMenu createCollectionContextMenu() {
 		CardView.ContextMenu menu = new CardView.ContextMenu();
 
-		MenuItem changePrintingMenuItem = new MenuItem("Prefer Printing");
-		changePrintingMenuItem.visibleProperty().bind(collection.showingVersionsSeparately.not()
-				.and(Bindings.createBooleanBinding(() -> menu.cards.size() == 1 && menu.cards.iterator().next().card().printings().size() > 1, menu.cards)));
-		changePrintingMenuItem.setOnAction(ae -> {
+		MenuItem changePrintMenuItem = new MenuItem("Prefer Print");
+		changePrintMenuItem.visibleProperty().bind(collection.showingVersionsSeparately.not()
+				.and(Bindings.createBooleanBinding(() -> menu.cards.size() == 1 && menu.cards.iterator().next().card().prints().size() > 1, menu.cards)));
+		changePrintMenuItem.setOnAction(ae -> {
 			if (collection.showingVersionsSeparately.get()) {
 				return;
 			}
@@ -272,12 +272,12 @@ public class MainWindow extends Stage {
 
 			final Card card = cards.iterator().next();
 
-			if (card.printings().size() <= 1) {
+			if (card.prints().size() <= 1) {
 				return;
 			}
 
-			PrintingSelectorDialog.show(getScene(), card).ifPresent(pr -> {
-				Preferences.get().preferredPrintings.put(card.fullName(), new Preferences.PreferredPrinting(pr.set().code(), pr.collectorNumber()));
+			PrintSelectorDialog.show(getScene(), card).ifPresent(pr -> {
+				Preferences.get().preferredPrints.put(card.fullName(), new Preferences.PreferredPrint(pr.set().code(), pr.collectorNumber()));
 				ForkJoinPool.commonPool().submit(collection::updateFilter);
 			});
 		});
@@ -305,7 +305,7 @@ public class MainWindow extends Stage {
 			fillMenu.getItems().add(fillZoneMenuItem);
 		}
 
-		menu.getItems().add(changePrintingMenuItem);
+		menu.getItems().add(changePrintMenuItem);
 		menu.addTagsMenu();
 		menu.getItems().add(fillMenu);
 
@@ -851,8 +851,8 @@ public class MainWindow extends Stage {
 			"\u2022 Toggle on 'Auto' mode to immediately add any single-result searches to the deck.",
 			"",
 			"Card versions:",
-			"\u2022 Alt+Click on cards to show all printings.",
-			"\u2022 Double-click a printing to change the version of the card you clicked on.",
+			"\u2022 Alt+Click on cards to show all prints.",
+			"\u2022 Double-click a print to change the version of the card you clicked on.",
 			"",
 			"Tags:",
 			"\u2022 Right click a card to assign tags.",

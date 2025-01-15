@@ -35,6 +35,6 @@ public class Rarity extends CharacteristicGrouping implements CardView.Grouping 
 
 	@Override
 	public String extract(CardInstance ci) {
-		return ci.printing().rarity().toString();
+		return ci.print().rarity().toString();
 	}
 }

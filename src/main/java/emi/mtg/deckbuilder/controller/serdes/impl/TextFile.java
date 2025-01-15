@@ -15,7 +15,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.input.DataFormat;
 import javafx.stage.Modality;
 
 import java.io.IOException;
@@ -73,21 +72,21 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 	private static final Pattern LINE_PATTERN = Pattern.compile("^(?<!// )(?:(?<preCount>\\d+)x? )?(?<cardName>[-,A-Za-z0-9 '/]+)(?: \\((?<setCode>[-A-Za-z0-9]+)\\)(?: (?<collectorNumber>[-A-Za-z0-9]+))?| x(?<postCount>\\d+))?(?![:])$");
 	private static final Pattern ZONE_PATTERN = Pattern.compile("^(?:// )?(?<zoneName>[A-Za-z ]+):?$");
 
-	protected abstract boolean preservePrintings();
+	protected abstract boolean preservePrints();
 
 	protected abstract String zoneToName(Zone zone);
 
 	protected abstract Zone nameToZone(String name);
 
-	protected String formatCardLine(int quantity, Card.Printing pr) {
-		if (preservePrintings()) {
+	protected String formatCardLine(int quantity, Card.Print pr) {
+		if (preservePrints()) {
 			return String.format("%1$d %2$s (%3$s) %4$s", quantity, pr.card().name(), pr.set().code().toUpperCase(), pr.collectorNumber());
 		} else {
 			return String.format("%1$d %2$s", quantity, pr.card().name());
 		}
 	}
 
-	public boolean parseCardLine(String line, BiConsumer<Card.Printing, Integer> handler) {
+	public boolean parseCardLine(String line, BiConsumer<Card.Print, Integer> handler) {
 		Matcher m = LINE_PATTERN.matcher(line.trim());
 
 		if (!m.matches()) return false;
@@ -114,7 +113,7 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 			collectorNumber = m.group("collectorNumber");
 		}
 
-		Card.Printing pr = NameOnlyImporter.findPrinting(m.group("cardName"), setCode, collectorNumber);
+		Card.Print pr = NameOnlyImporter.findPrint(m.group("cardName"), setCode, collectorNumber);
 
 		if (pr == null) return false;
 
@@ -160,11 +159,11 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 	}
 
 	protected void writeList(List<CardInstance> list, Writer writer) throws IOException {
-		Map<Card.Printing, AtomicInteger> qtyMap = new HashMap<>();
+		Map<Card.Print, AtomicInteger> qtyMap = new HashMap<>();
 
 		listing: for (CardInstance ci : list) {
-			if (!preservePrintings()) {
-				for (Card.Printing pr : ci.card().printings()) {
+			if (!preservePrints()) {
+				for (Card.Print pr : ci.card().prints()) {
 					if (qtyMap.containsKey(pr)) {
 						qtyMap.get(pr).incrementAndGet();
 						continue listing;
@@ -172,10 +171,10 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 				}
 			}
 
-			qtyMap.computeIfAbsent(ci.printing(), x -> new AtomicInteger()).incrementAndGet();
+			qtyMap.computeIfAbsent(ci.print(), x -> new AtomicInteger()).incrementAndGet();
 		}
 
-		for (Map.Entry<Card.Printing, AtomicInteger> entry : qtyMap.entrySet()) {
+		for (Map.Entry<Card.Print, AtomicInteger> entry : qtyMap.entrySet()) {
 			writer.append(formatCardLine(entry.getValue().get(), entry.getKey())).append('\n');
 		}
 	}
@@ -212,7 +211,7 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		}
 
 		@Override
-		protected boolean preservePrintings() {
+		protected boolean preservePrints() {
 			return false;
 		}
 
@@ -250,7 +249,7 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		}
 
 		@Override
-		protected boolean preservePrintings() {
+		protected boolean preservePrints() {
 			return true;
 		}
 
@@ -279,22 +278,22 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		private enum Keyword {
 			CardName ("name", false, pr -> pr.card().name(), "The card's ordinary name, not including back sides."),
 			CardFullName ("fullname", false, pr -> pr.card().fullName(), "The card's full name, including all faces."),
-			SetCode ("set", true, pr -> pr.set().code().toUpperCase(), "The printing's three- or four-letter set code, in all caps."),
-			SetName ("setname", true, pr -> pr.set().name(), "The printing's set's full name."),
-			CollectorNumber ("no", true, Card.Printing::collectorNumber, "The printing's collector number."),
+			SetCode ("set", true, pr -> pr.set().code().toUpperCase(), "The print's three- or four-letter set code, in all caps."),
+			SetName ("setname", true, pr -> pr.set().name(), "The print's set's full name."),
+			CollectorNumber ("no", true, Card.Print::collectorNumber, "The print's collector number."),
 			;
 
 			public static final Map<String, Keyword> KEYWORD_MAP = Collections.unmodifiableMap(Arrays.stream(Keyword.values())
 					.collect(Collectors.toMap(k -> k.key, k -> k)));
 
 			public final String key;
-			public final boolean preservesPrintings;
-			public final Function<Card.Printing, String> formatter;
+			public final boolean preservesPrints;
+			public final Function<Card.Print, String> formatter;
 			public final String desc;
 
-			Keyword(String key, boolean preservesPrintings, Function<Card.Printing, String> formatter, String desc) {
+			Keyword(String key, boolean preservesPrints, Function<Card.Print, String> formatter, String desc) {
 				this.key = key;
-				this.preservesPrintings = preservesPrintings;
+				this.preservesPrints = preservesPrints;
 				this.formatter = formatter;
 				this.desc = desc;
 			}
@@ -302,11 +301,11 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 
 		private static final String HELP_TEXT = String.join("\n",
 				"The following keywords are automatically replaced:\n" +
-						"\u2022 {qty} \u2014 The number of copies of this card or printing.\n" +
+						"\u2022 {qty} \u2014 The number of copies of this card or print.\n" +
 						Arrays.stream(Keyword.values())
-								.map(k -> String.format("\u2022 %s{%s} \u2014 %s", k.preservesPrintings ? "*" : "", k.key, k.desc))
+								.map(k -> String.format("\u2022 %s{%s} \u2014 %s", k.preservesPrints ? "*" : "", k.key, k.desc))
 								.collect(Collectors.joining("\n")),
-						"\nIf any of the starred keywords are included, different printings of the same card will appear on different lines.\n");
+						"\nIf any of the starred keywords are included, different prints of the same card will appear on different lines.\n");
 
 		@FXML
 		private transient TextField cardFormat;
@@ -318,7 +317,7 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		private transient Label helpLabel;
 
 		@Override
-		protected String formatCardLine(int quantity, Card.Printing pr) {
+		protected String formatCardLine(int quantity, Card.Print pr) {
 			String fmt = cardFormat.getText().replace("{qty}", Integer.toString(quantity));
 
 			for (Map.Entry<String, Keyword> keyword : Keyword.KEYWORD_MAP.entrySet()) {
@@ -329,17 +328,17 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 		}
 
 		@Override
-		protected boolean preservePrintings() {
+		protected boolean preservePrints() {
 			final String fmt = cardFormat.getText();
 			return Arrays.stream(Keyword.values())
-					.anyMatch(k -> k.preservesPrintings && fmt.contains("{" + k.key + "}"));
+					.anyMatch(k -> k.preservesPrints && fmt.contains("{" + k.key + "}"));
 		}
 
-		private Card.Printing randomPrinting() {
-			return Context.get().data.printings()
+		private Card.Print randomPrint() {
+			return Context.get().data.prints()
 					.parallelStream()
 					.filter(pr -> pr.card().faces().size() != pr.card().mainFaces().size())
-					.findAny().orElseThrow(() -> new NoSuchElementException("Unable to find any DFC printing! Bwuh!?"));
+					.findAny().orElseThrow(() -> new NoSuchElementException("Unable to find any DFC print! Bwuh!?"));
 		}
 
 		private Alert formatPrompt() {
@@ -352,7 +351,7 @@ public abstract class TextFile extends NameOnlyImporter implements DeckImportExp
 
 			FxUtils.FXML(this, alert.getDialogPane());
 
-			cardPreview.textProperty().bind(Bindings.createStringBinding(() -> formatCardLine(1 + (int) (Math.random() * 4), randomPrinting()), cardFormat.textProperty()));
+			cardPreview.textProperty().bind(Bindings.createStringBinding(() -> formatCardLine(1 + (int) (Math.random() * 4), randomPrint()), cardFormat.textProperty()));
 			helpLabel.setText(HELP_TEXT);
 
 			return alert;

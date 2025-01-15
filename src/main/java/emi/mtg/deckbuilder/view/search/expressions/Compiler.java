@@ -412,7 +412,7 @@ public class Compiler {
 			case "card":
 				return Value.of(Card.class, ci -> ci.card());
 			case "pr":
-				return Value.of(Card.Printing.class, ci -> ci.printing());
+				return Value.of(Card.Print.class, ci -> ci.print());
 			case "o":
 			case "rules":
 				return Value.of(String.class, ci -> ci.card().faces().stream().map(Card.Face::rules).collect(Collectors.joining("\n//\n")));
@@ -468,7 +468,7 @@ public class Compiler {
 			}
 
 			start = System.nanoTime();
-			afc.printings().stream()
+			afc.prints().stream()
 					.map(CardInstance::new)
 					.filter(ci -> {
 						Object result = evaluator.get(ci);
@@ -478,7 +478,7 @@ public class Compiler {
 					})
 					.forEach(ci -> System.out.printf("< %s (%s) %s\n", ci.card().name(), ci.set().code(), ci.collectorNumber()));
 			end = System.nanoTime();
-			System.out.printf("# Filter %d cards: %.1f msec\n", afc.printings().size(), (end - start) / 1e6);
+			System.out.printf("# Filter %d cards: %.1f msec\n", afc.prints().size(), (end - start) / 1e6);
 		}
 	}
 }
