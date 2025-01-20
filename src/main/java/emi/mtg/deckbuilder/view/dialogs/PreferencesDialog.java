@@ -466,19 +466,19 @@ public class PreferencesDialog extends Alert {
 		}
 	}
 
-	private static class DefaultPrintingsPreference extends OneControlPreference<Preferences.DefaultPrintings, Button> {
-		public DefaultPrintingsPreference(String label, Tooltip tooltip, Function<Preferences, Preferences.DefaultPrintings> fromPrefs, Predicate<Preferences.DefaultPrintings> validate, BiConsumer<Preferences, Preferences.DefaultPrintings> toPrefs) {
+	private static class DefaultPrintsPreference extends OneControlPreference<Preferences.DefaultPrints, Button> {
+		public DefaultPrintsPreference(String label, Tooltip tooltip, Function<Preferences, Preferences.DefaultPrints> fromPrefs, Predicate<Preferences.DefaultPrints> validate, BiConsumer<Preferences, Preferences.DefaultPrints> toPrefs) {
 			super(
 					() -> {
 						Button btn = new Button("Configure");
 						btn.setOnAction(ae -> {
-							DefaultPrintingsDialog dlg = new DefaultPrintingsDialog(btn.getScene().getWindow(), (Preferences.DefaultPrintings) btn.getUserData());
+							DefaultPrintsDialog dlg = new DefaultPrintsDialog(btn.getScene().getWindow(), (Preferences.DefaultPrints) btn.getUserData());
 							dlg.initModality(Modality.APPLICATION_MODAL);
 							dlg.showAndWait().ifPresent(btn::setUserData);
 						});
 						return btn;
 					},
-					c -> (Preferences.DefaultPrintings) c.getUserData(),
+					c -> (Preferences.DefaultPrints) c.getUserData(),
 					Button::setUserData,
 					label,
 					tooltip,
@@ -636,9 +636,9 @@ public class PreferencesDialog extends Alert {
 				reflectField(BooleanPreference::new, "Show Debug Options", "showDebugOptions", x -> true),
 		});
 
-		map.put("Printing Selection", new PrefEntry[] {
-				reflectField(DefaultPrintingsPreference::new, "Ignored/Preferred Sets", "defaultPrintings", x -> true),
-				reflectField(PreferAgePreference::new, "Default Printing", "preferAge", x -> true),
+		map.put("Print Selection", new PrefEntry[] {
+				reflectField(DefaultPrintsPreference::new, "Ignored/Preferred Sets", "defaultPrints", x -> true),
+				reflectField(PreferAgePreference::new, "Prefer Age", "preferAge", x -> true),
 				reflectField(PreferVariationPreference::new, "Prefer Variation", "preferVariation", x -> true),
 				reflectField(BooleanPreference::new, "Prefer Non-Promo Versions","preferNotPromo", x -> true),
 		});

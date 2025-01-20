@@ -277,7 +277,7 @@ public class MainWindow extends Stage {
 			}
 
 			PrintSelectorDialog.show(getScene(), card).ifPresent(pr -> {
-				Preferences.get().preferredPrints.put(card.fullName(), new Preferences.PreferredPrint(pr.set().code(), pr.collectorNumber()));
+				Preferences.get().preferredPrints.put(card.fullName(), Card.Print.Reference.to(pr));
 				ForkJoinPool.commonPool().submit(collection::updateFilter);
 			});
 		});

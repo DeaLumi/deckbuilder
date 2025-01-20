@@ -53,7 +53,8 @@ public class Serialization {
 				.registerTypeAdapterFactory(Serialization.createInstanceMapTypeAdapterFactory())
 				.registerTypeAdapterFactory(Serialization.createPropertyTypeAdapterFactory())
 				.registerTypeAdapterFactory(Serialization.createObservableListTypeAdapterFactory())
-				.registerTypeAdapterFactory(Serialization.createPreferredPrintAdapterFactory());
+				.registerTypeAdapterFactory(Serialization.createPreferredPrintAdapterFactory())
+				.registerTypeAdapter(Card.Print.Reference.class, Serialization.createCardPrintReferenceAdapter());
 
 		Preferences.registerPluginTypeAdapters(builder);
 
@@ -151,6 +152,10 @@ public class Serialization {
 
 	public static TypeAdapter<Card> createCardAdapter() {
 		return new FunctionalStringTypeAdapter<>(Card::fullName, NameOnlyImporter::findCard);
+	}
+
+	public static TypeAdapter<Card.Print.Reference> createCardPrintReferenceAdapter() {
+		return new FunctionalStringTypeAdapter<>(Card.Print.Reference::format, Card.Print.Reference::valueOf);
 	}
 
 	public static TypeAdapterFactory createCardPrintAdapterFactory() {

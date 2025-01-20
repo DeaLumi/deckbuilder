@@ -1066,7 +1066,7 @@ public class CardView extends Canvas {
 					final List<? extends CardInstance> modifyingCards = hoverGroup.hoverCards(card);
 					PrintSelectorDialog.show(getScene(), card.card()).ifPresent(pr -> {
 						if (deck == null) {
-							Preferences.get().preferredPrints.put(card.card().fullName(), new Preferences.PreferredPrint(pr.set().code(), pr.collectorNumber()));
+							Preferences.get().preferredPrints.put(card.card().fullName(), Card.Print.Reference.to(pr));
 						} else {
 							boolean modified = false;
 							Consumer<DeckList> doFn = l -> {}, undoFn = l -> {};

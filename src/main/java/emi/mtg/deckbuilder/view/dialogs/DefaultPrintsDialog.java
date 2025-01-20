@@ -16,7 +16,7 @@ import javafx.stage.Window;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DefaultPrintingsDialog extends Dialog<Preferences.DefaultPrintings> {
+public class DefaultPrintsDialog extends Dialog<Preferences.DefaultPrints> {
 	@FXML
 	protected ListView<emi.lib.mtg.Set> ignoredSets;
 
@@ -148,7 +148,7 @@ public class DefaultPrintingsDialog extends Dialog<Preferences.DefaultPrintings>
 		sort(allSets);
 	}
 
-	public DefaultPrintingsDialog(Window host, Preferences.DefaultPrintings source) {
+	public DefaultPrintsDialog(Window host, Preferences.DefaultPrints source) {
 		setTitle("Default Printings");
 		initOwner(host);
 		getDialogPane().getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
@@ -196,7 +196,7 @@ public class DefaultPrintingsDialog extends Dialog<Preferences.DefaultPrintings>
 
 		setResultConverter(bt -> {
 			if (bt == ButtonType.OK) {
-				return new Preferences.DefaultPrintings(this.preferredSets.getItems().stream().map(s -> s.code().toLowerCase()).collect(Collectors.toList()), this.ignoredSets.getItems().stream().map(s -> s.code().toLowerCase()).collect(Collectors.toSet()));
+				return new Preferences.DefaultPrints(this.preferredSets.getItems().stream().map(s -> s.code().toLowerCase()).collect(Collectors.toList()), this.ignoredSets.getItems().stream().map(s -> s.code().toLowerCase()).collect(Collectors.toSet()));
 			} else {
 				return source;
 			}

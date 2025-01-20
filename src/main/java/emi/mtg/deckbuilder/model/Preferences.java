@@ -2,6 +2,7 @@ package emi.mtg.deckbuilder.model;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
+import com.google.gson.annotations.SerializedName;
 import emi.lib.mtg.Card;
 import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
@@ -227,17 +228,17 @@ public class Preferences {
 		Variant
 	}
 
-	public static class DefaultPrintings {
+	public static class DefaultPrints {
 		public final List<String> preferredSets;
 		public final Set<String> ignoredSets;
 
 		protected transient Map<String, Integer> preferredMap;
 
-		public DefaultPrintings() {
+		public DefaultPrints() {
 			this(new ArrayList<>(), new HashSet<>());
 		}
 
-		public DefaultPrintings(List<String> preferredSets, Set<String> ignoredSets) {
+		public DefaultPrints(List<String> preferredSets, Set<String> ignoredSets) {
 			this.preferredSets = preferredSets;
 			this.ignoredSets = ignoredSets;
 			this.preferredMap = null;
@@ -368,8 +369,11 @@ public class Preferences {
 	 */
 
 	// N.B. Preferences get loaded *before* card data, so we can't reference Card.Printings here.
-	public HashMap<String, PreferredPrint> preferredPrints = new HashMap<>();
-	public DefaultPrintings defaultPrintings = new DefaultPrintings();
+	@Deprecated
+	public HashMap<String, PreferredPrint> preferredPrintings = new HashMap<>();
+	public HashMap<String, Card.Print.Reference> preferredPrints = new HashMap<>();
+	@SerializedName(value="defaultPrints", alternate={ "defaultPrintings" })
+	public DefaultPrints defaultPrints = new DefaultPrints();
 
 	public PreferAge preferAge = PreferAge.Any;
 	public PreferVariation preferVariation = PreferVariation.Any;
@@ -394,13 +398,14 @@ public class Preferences {
 	 */
 
 	public Card.Print preferredPrint(Card card) {
-		PreferredPrint pref = preferredPrints.get(card.fullName());
-		if (pref != null) return card.print(pref.setCode, pref.collectorNumber);
+		Card.Print.Reference prefRef = preferredPrints.get(card.fullName());
+		Card.Print pref = prefRef == null ? null : card.print(prefRef);
+		if (pref != null) return pref;
 
 		Stream<? extends Card.Print> stream = card.prints().stream();
 
 		if (preferNotPromo) stream = stream.filter(pr -> !pr.promo());
-		if (!defaultPrintings.ignoredSets.isEmpty()) stream = stream.filter(pr -> !defaultPrintings.ignoredSets.contains(pr.set().code()));
+		if (!defaultPrints.ignoredSets.isEmpty()) stream = stream.filter(pr -> !defaultPrints.ignoredSets.contains(pr.set().code()));
 
 		if (preferAge != PreferAge.Any) stream = stream.sorted(preferAge == PreferAge.Newest ?
 				(a1, a2) -> a2.releaseDate().compareTo(a1.releaseDate()) :
@@ -408,7 +413,7 @@ public class Preferences {
 		if (preferVariation != PreferVariation.Any) stream = stream.sorted(preferVariation == PreferVariation.Primary ?
 				(a1, a2) -> a1.variation() - a2.variation() :
 				(a1, a2) -> a2.variation() - a1.variation());
-		if (!defaultPrintings.preferredSets.isEmpty()) stream = stream.sorted(Comparator.comparingInt(a -> defaultPrintings.prefPriority(a.set().code())));
+		if (!defaultPrints.preferredSets.isEmpty()) stream = stream.sorted(Comparator.comparingInt(a -> defaultPrints.prefPriority(a.set().code())));
 
 		return stream.findFirst().orElse(null);
 	}
@@ -423,10 +428,16 @@ public class Preferences {
 	public void convertOldPreferredPrints() {
 		for (UUID old : deferredPreferredPrints) {
 			Card.Print pr = Context.get().data.print(old);
-			preferredPrints.put(pr.card().fullName(), new PreferredPrint(pr.set().code(), pr.collectorNumber()));
+			preferredPrintings.put(pr.card().fullName(), new PreferredPrint(pr.set().code(), pr.collectorNumber()));
 		}
 
 		deferredPreferredPrints.clear();
+
+		for (Map.Entry<String, PreferredPrint> badref : preferredPrintings.entrySet()) {
+			preferredPrints.put(badref.getKey(), Card.Print.Reference.to(badref.getKey(), badref.getValue().setCode, badref.getValue().collectorNumber));
+		}
+
+		preferredPrintings.clear();
 	}
 
 	public <T extends Plugin> T plugin(Class<T> type) {

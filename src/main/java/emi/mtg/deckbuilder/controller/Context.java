@@ -47,6 +47,7 @@ public class Context {
 
 		this.gson = Serialization.GSON.newBuilder()
 				.registerTypeAdapter(Card.class, Serialization.createCardAdapter())
+				.registerTypeAdapter(Card.Print.Reference.class, Serialization.createCardPrintReferenceAdapter())
 				.registerTypeAdapterFactory(Serialization.createCardPrintAdapterFactory())
 				.create();
 
