@@ -1608,12 +1608,12 @@ public class CardView extends Canvas {
 
 			if (str.getValue().count != 1) {
 				gfx.setTextAlign(TextAlignment.RIGHT);
-				gfx.setFill(Color.WHITE);
-				gfx.setEffect(new DropShadow(8.0, Color.BLACK));
-				gfx.setFont(Font.font(null, FontWeight.BOLD,null, ch / 12.0));
+				gfx.setFill(Color.WHITE.deriveColor(1.0, 1.0, 1.0, 1.0));
+				gfx.setEffect(new DropShadow(8.0, Color.BLACK.deriveColor(1.0, 1.0, 1.0, 1.0)));
+				gfx.setFont(Font.font(null, FontWeight.BOLD,null, ch / 16.0));
 				gfx.fillText(String.format("x%d", str.getValue().count),
 						str.getKey().x + cw * 0.95,
-						str.getKey().y + cw * 0.075,
+						str.getKey().y + cw * 0.035,
 						cw);
 				gfx.setEffect(null);
 			}
