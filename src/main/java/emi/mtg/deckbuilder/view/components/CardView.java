@@ -990,7 +990,7 @@ public class CardView extends Canvas {
 				this.groupedModel.put(mce.getKey(), new Group(mce.getKey(), mce.getValueAdded(), sort));
 			}
 
-			layout();
+			scheduleLayout();
 		});
 
 		this.model.grouping.set(this.grouping::groups);
@@ -1428,14 +1428,18 @@ public class CardView extends Canvas {
 		}
 	}
 
-	private volatile long renderGeneration = 0;
+	private volatile long renderGeneration = 0, layoutGeneration = 0;
 
 	public synchronized void scheduleRender() {
 		final long nextGen = ++renderGeneration;
 		ForkJoinPool.commonPool().submit(() -> this.render(nextGen));
 	}
 
-	public synchronized void layout() {
+	private synchronized void layout(long generation) {
+		if (generation < layoutGeneration) {
+			return;
+		}
+
 		if (engine == null || grouping == null || model == null || groupedModel == null) {
 			return;
 		}
@@ -1443,15 +1447,28 @@ public class CardView extends Canvas {
 		Bounds boundingBox = new Bounds();
 		engine.layoutGroups(boundingBox, groupedModel.values().toArray(new Group[0]), showEmptyGroupsProperty.get()); // TODO inefficient and unordered
 
+		if (generation < layoutGeneration) {
+			return;
+		}
+
 		scrollMinX.set(boundingBox.pos.x);
 		scrollMinY.set(boundingBox.pos.y);
 		scrollMaxX.set(boundingBox.dim.x - getWidth());
 		scrollMaxY.set(boundingBox.dim.y - getHeight());
 
-		scrollX.set(Math.max(boundingBox.pos.x, Math.min(scrollX.get(), boundingBox.pos.x - getWidth())));
-		scrollY.set(Math.max(boundingBox.pos.y, Math.min(scrollY.get(), boundingBox.pos.y - getHeight())));
+		scrollX.set(Math.max(boundingBox.pos.x, Math.min(scrollX.get(), boundingBox.dim.x - getWidth())));
+		scrollY.set(Math.max(boundingBox.pos.y, Math.min(scrollY.get(), boundingBox.dim.y - getHeight())));
 
 		scheduleRender();
+	}
+
+	public synchronized void layout() {
+		layout(++layoutGeneration);
+	}
+
+	public synchronized void scheduleLayout() {
+		final long nextGen = ++layoutGeneration;
+		Platform.runLater(() -> this.layout(nextGen));
 	}
 
 	private enum CardState {
