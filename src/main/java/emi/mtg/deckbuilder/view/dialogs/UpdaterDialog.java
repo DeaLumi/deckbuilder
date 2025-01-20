@@ -21,6 +21,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Screen;
@@ -99,6 +100,7 @@ public class UpdaterDialog extends Dialog<Boolean> {
 
 			Text progressText = new Text("Checking for updates...");
 			progressText.setTextAlignment(TextAlignment.CENTER);
+			progressText.setFill(Color.WHITE);
 
 			StackPane progressStack = new StackPane(progress, progressText);
 			GridPane.setHgrow(progressStack, Priority.ALWAYS);
