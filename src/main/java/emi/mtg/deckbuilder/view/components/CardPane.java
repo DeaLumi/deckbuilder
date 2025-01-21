@@ -32,6 +32,7 @@ import javafx.scene.shape.SVGPath;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -147,21 +148,6 @@ public class CardPane extends BorderPane {
 		}
 	}
 
-	private static Predicate<CardInstance> uniquenessPredicate() {
-		Map<Card, UUID> prefPrintCache = new HashMap<>();
-
-		return ci -> {
-			Card.Print preferred = Preferences.get().preferredPrint(ci.card());
-			if (preferred != null) return preferred.id().equals(ci.id());
-
-			// TODO: This use of id() is entirely internal and might be able to stay.
-			// TODO: This predicate fails to account for preferred prints being filtered out.
-			synchronized(prefPrintCache) {
-				return ci.id().equals(prefPrintCache.computeIfAbsent(ci.card(), fn -> ci.card().prints().iterator().next().id()));
-			}
-		};
-	}
-
 	private final static Predicate<CardInstance> STANDARD_CARDS = c -> c.card().faces().stream().flatMap(f -> f.type().cardTypes().stream()).allMatch(CardType::constructed);
 
 	private final MenuButton deckMenuButton;
@@ -173,8 +159,8 @@ public class CardPane extends BorderPane {
 	private final CardViewScrollPane scrollPane;
 	private final Label deckStats;
 	private final CheckMenuItem showIllegalCards;
-	private final CheckMenuItem showVersionsSeparately;
-	private final CheckMenuItem collapseDuplicates;
+	private final ToggleGroup uniquenessGroup;
+	private final CheckMenuItem uniqueAcrossGroups;
 	private final CheckMenuItem findOtherCards;
 	private final ToggleButton autoToggle;
 
@@ -182,7 +168,6 @@ public class CardPane extends BorderPane {
 	public final ObjectProperty<Consumer<CardInstance>> autoAction = new SimpleObjectProperty<>(null);
 	public final BooleanProperty autoEnabled = new SimpleBooleanProperty(true);
 	public final BooleanProperty showingIllegalCards = new SimpleBooleanProperty(true);
-	public final BooleanProperty showingVersionsSeparately = new SimpleBooleanProperty(true);
 
 	public CardPane(String title, DeckList deck, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
 		super();
@@ -211,6 +196,35 @@ public class CardPane extends BorderPane {
 		CheckMenuItem showEmptyGroups = new CheckMenuItem("Show Empty Groups");
 		showEmptyGroups.selectedProperty().bindBidirectional(this.cardView.showEmptyGroupsProperty());
 		groupingMenu.getItems().add(showEmptyGroups);
+
+		uniquenessGroup = new ToggleGroup();
+		Menu uniquenessMenu = new Menu("Unique", null);
+
+		for (CardView.Uniqueness uniqueness : CardView.Uniqueness.values()) {
+			RadioMenuItem item = new RadioMenuItem(uniqueness.name());
+			item.setUserData(uniqueness);
+			item.setToggleGroup(uniquenessGroup);
+			item.setSelected(uniqueness == CardView.Uniqueness.Prints);
+			uniquenessMenu.getItems().add(item);
+		}
+
+		final AtomicBoolean updating = new AtomicBoolean(false);
+		uniquenessGroup.selectedToggleProperty().addListener((prop, oldt, newt) -> {
+			if (updating.compareAndSet(false, true)) {
+				cardView.uniqueness.set((CardView.Uniqueness) newt.getUserData());
+				updating.set(false);
+			}
+		});
+		cardView.uniqueness.addListener((prop, oldu, newu) -> {
+			if (updating.compareAndSet(false, true)) {
+				uniquenessGroup.selectToggle(uniquenessGroup.getToggles().stream().filter(t -> t.getUserData() == newu).findAny().orElse(null));
+				updating.set(false);
+			}
+		});
+
+		uniqueAcrossGroups = new CheckMenuItem("Across Groups");
+		uniqueAcrossGroups.selectedProperty().bindBidirectional(this.cardView.uniqueAcrossGroups);
+		uniquenessMenu.getItems().addAll(new SeparatorMenuItem(), uniqueAcrossGroups);
 
 		Menu displayMenu = new Menu("Display");
 		ToggleGroup displayGroup = new ToggleGroup();
@@ -263,24 +277,18 @@ public class CardPane extends BorderPane {
 		showIllegalCards = new CheckMenuItem("Show Invalid Cards");
 		showIllegalCards.selectedProperty().bindBidirectional(this.showingIllegalCards);
 
-		showVersionsSeparately = new CheckMenuItem("Show Versions Separately");
-		showVersionsSeparately.selectedProperty().bindBidirectional(this.showingVersionsSeparately);
-
-		collapseDuplicates = new CheckMenuItem("Collapse Duplicates");
-		collapseDuplicates.selectedProperty().bindBidirectional(cardView.collapseDuplicatesProperty());
-
 		deckMenuButton.getItems().setAll(
-				groupingMenu,
 				displayMenu,
-				sortButton,
 				cardScale,
+				new SeparatorMenuItem(),
+				groupingMenu,
+				uniquenessMenu,
+				sortButton,
 				new SeparatorMenuItem(),
 				statisticsButton,
 				new SeparatorMenuItem(),
 				showIllegalCards,
-				findOtherCards,
-				showVersionsSeparately,
-				collapseDuplicates
+				findOtherCards
 		);
 
 		StackPane filterStack = new StackPane();
@@ -361,7 +369,6 @@ public class CardPane extends BorderPane {
 
 		findOtherCards.setOnAction(this::updateFilterFx);
 		showIllegalCards.setOnAction(this::updateFilterFx);
-		showVersionsSeparately.setOnAction(this::updateFilterFx);
 		filter.setOnAction(this::updateFilterFx);
 
 		deckStats = new Label("");
@@ -452,10 +459,6 @@ public class CardPane extends BorderPane {
 
 		if (!showIllegalCards.isSelected()) {
 			compositeFilter = compositeFilter.and(c -> !c.flags.contains(CardInstance.Flags.Invalid));
-		}
-
-		if (!showVersionsSeparately.isSelected()) {
-			compositeFilter = compositeFilter.and(uniquenessPredicate());
 		}
 
 		return compositeFilter;
@@ -561,5 +564,13 @@ public class CardPane extends BorderPane {
 
 	public BooleanProperty loading() {
 		return scrollPane.loading();
+	}
+
+	public ObjectProperty<CardView.Uniqueness> uniqueness() {
+		return cardView.uniqueness;
+	}
+
+	public BooleanProperty uniquePerGroup() {
+		return cardView.uniqueAcrossGroups;
 	}
 }

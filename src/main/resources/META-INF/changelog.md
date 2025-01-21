@@ -17,6 +17,7 @@
 
 - Hehe purple.
 - The collection is now multithreaded! Modern processors should see a massive performance increase when searching.
+- `Collapse Duplicates` and `Show Versions Separately` have been replaced with the `Unique` menu.
 - You can finally zoom in on cards by holding the Z key. You have no idea how much work this took in the background.
 - Selection in piles views is more precise -- the selection has to overlap with the name line of the card to include it.
 - Selection in all views is now unaffected by scrolling, so you can select whole swathes of cards if you really want to.
@@ -34,6 +35,8 @@
 
 ### Fixes
 
+- The `Unique` menu changes also fixed some search queries not always finding cards when they should.
+  - Specifically, if your search query matched some versions of a card, but not your most preferred version, it would previously show no results.
 - `Dragon's Approach` now correctly allows unlimited copies.
 - Added `{L}` and `{D}` mana symbols and `Poly` card type added in MB2.
 - Added `Kindred` card type replacing deprecated `Tribal` card type.

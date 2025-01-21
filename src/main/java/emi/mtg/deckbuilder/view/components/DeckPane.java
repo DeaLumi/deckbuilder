@@ -290,7 +290,6 @@ public class DeckPane extends SplitPane {
 						}
 					});
 					pane.view().contextMenu(createDeckContextMenu(pane, z));
-					pane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
 
 					return pane;
 				})
@@ -317,7 +316,6 @@ public class DeckPane extends SplitPane {
 			);
 		});
 		cutCardsPane.view().contextMenu(createCutboardContextMenu());
-		cutCardsPane.view().collapseDuplicatesProperty().set(Preferences.get().collapseDuplicates);
 	}
 
 	public void closing() {

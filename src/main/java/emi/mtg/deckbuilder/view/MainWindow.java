@@ -254,10 +254,10 @@ public class MainWindow extends Stage {
 		CardView.ContextMenu menu = new CardView.ContextMenu();
 
 		MenuItem changePrintMenuItem = new MenuItem("Prefer Print");
-		changePrintMenuItem.visibleProperty().bind(collection.showingVersionsSeparately.not()
-				.and(Bindings.createBooleanBinding(() -> menu.cards.size() == 1 && menu.cards.iterator().next().card().prints().size() > 1, menu.cards)));
+		changePrintMenuItem.visibleProperty().bind(Bindings.equal(CardView.Uniqueness.Cards, collection.uniqueness())
+				.and(Bindings.createBooleanBinding(() -> menu.cards.size() > 1 && menu.cards.stream().map(CardInstance::card).distinct().count() == 1, menu.cards)));
 		changePrintMenuItem.setOnAction(ae -> {
-			if (collection.showingVersionsSeparately.get()) {
+			if (collection.uniqueness().get() != CardView.Uniqueness.Cards) {
 				return;
 			}
 
@@ -351,7 +351,7 @@ public class MainWindow extends Stage {
 		collection.view().contextMenu(createCollectionContextMenu());
 
 		collection.showingIllegalCards.set(false);
-		collection.showingVersionsSeparately.set(false);
+		collection.uniqueness().set(CardView.Uniqueness.Cards);
 
 		this.collectionSplitter.getItems().add(0, collection);
 

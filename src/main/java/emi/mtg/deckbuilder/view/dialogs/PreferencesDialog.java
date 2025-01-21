@@ -648,7 +648,6 @@ public class PreferencesDialog extends Alert {
 				reflectField(StringPreference::new, "New Window Search", "defaultQuery", x -> true),
 				new PrefSeparator(),
 				reflectField(BooleanPreference::new, "The Future is Now", "theFutureIsNow", x -> true),
-				reflectField(BooleanPreference::new, "Collapse Duplicates", "collapseDuplicates", x -> true),
 				reflectField(GroupingPreference::new, "Collection Grouping", "collectionGrouping", x -> true),
 				reflectField(SortingPreference::new, "Collection Sorting", "collectionSorting", x -> true),
 				new PrefSeparator(),

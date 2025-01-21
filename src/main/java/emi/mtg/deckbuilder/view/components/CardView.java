@@ -8,7 +8,6 @@ import emi.mtg.deckbuilder.model.CardInstance;
 import emi.mtg.deckbuilder.model.DeckList;
 import emi.mtg.deckbuilder.model.FilteredGroupedModel;
 import emi.mtg.deckbuilder.model.Preferences;
-import emi.mtg.deckbuilder.util.UniqueList;
 import emi.mtg.deckbuilder.view.Images;
 import emi.mtg.deckbuilder.view.dialogs.PrintSelectorDialog;
 import emi.mtg.deckbuilder.util.PluginUtils;
@@ -37,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -685,27 +685,41 @@ public class CardView extends Canvas {
 		}
 	}
 
+	public enum Uniqueness implements Function<CardInstance, Object> {
+		Copies (ci -> ci),
+		Prints (CardInstance::print),
+		Cards (CardInstance::card),
+		;
+
+		public final Function<CardInstance, Object> extractor;
+
+		Uniqueness(Function<CardInstance, Object> extractor) {
+			this.extractor = extractor;
+		}
+
+		@Override
+		public Object apply(CardInstance cardInstance) {
+			return extractor.apply(cardInstance);
+		}
+	}
+
 	public class Group {
 		public final Bounds groupBounds, labelBounds;
 		public final Grouping.Group group;
-		private final ObservableList<CardInstance> filteredModel;
+		public final FilteredGroupedModel.SubList<CardInstance> model;
 		private final SortedList<CardInstance> sortedModel;
-		private final UniqueList<CardInstance> collapsedModel;
 
-		public Group(Grouping.Group group, ObservableList<CardInstance> modelSource, Comparator<CardInstance> initialSort) {
+		public Group(Grouping.Group group, FilteredGroupedModel.SubList<CardInstance> modelSource, Comparator<CardInstance> initialSort) {
 			this.group = group;
 			this.groupBounds = new Bounds();
 			this.labelBounds = new Bounds();
 
-			this.filteredModel = modelSource;
-			this.sortedModel = this.filteredModel.sorted(initialSort);
-			this.collapsedModel = new UniqueList<>(this.sortedModel, CardInstance::print);
-
-			this.collapsedModel.addListener((ListChangeListener<CardInstance>) x -> CardView.this.layout());
+			this.model = modelSource;
+			this.sortedModel = this.model.sorted(initialSort);
 		}
 
 		public ObservableList<CardInstance> model() {
-			return CardView.this.collapseDuplicatesProperty.get() ? collapsedModel : sortedModel;
+			return sortedModel;
 		}
 
 		public synchronized void setSort(Comparator<CardInstance> sort) {
@@ -714,9 +728,9 @@ public class CardView extends Canvas {
 
 		public List<? extends CardInstance> hoverCards(CardInstance ci) {
 			if (ci == null) return Collections.emptyList();
-			if (!collapseDuplicatesProperty.get()) return Collections.singletonList(ci);
 
-			return collapsedModel.getAll(collapsedModel.indexOf(ci));
+			// TODO might be faster to just pass the ci somehow?
+			return model.getAll(model.indexOf(ci));
 		}
 	}
 
@@ -890,6 +904,8 @@ public class CardView extends Canvas {
 	private Comparator<CardInstance> sort;
 	private List<ActiveSorting> sortingElements;
 	private Grouping grouping;
+	public final ObjectProperty<Uniqueness> uniqueness;
+	public final BooleanProperty uniqueAcrossGroups;
 
 	private final DoubleProperty scrollMinX, scrollMinY, scrollX, scrollY, scrollMaxX, scrollMaxY;
 
@@ -908,7 +924,6 @@ public class CardView extends Canvas {
 
 	private final DoubleProperty cardScaleProperty;
 	private final BooleanProperty showEmptyGroupsProperty;
-	private final BooleanProperty collapseDuplicatesProperty;
 	private final BooleanProperty showFlags;
 
 	private static boolean dragModified = false;
@@ -927,8 +942,8 @@ public class CardView extends Canvas {
 		this.cardScaleProperty = new SimpleDoubleProperty(Screen.getPrimary().getVisualBounds().getWidth() / 1920.0);
 		this.cardScaleProperty.addListener(ce -> layout());
 
-		// Collapsing duplicates might require regrouping for deck tags...
-		this.collapseDuplicatesProperty = new SimpleBooleanProperty(false);
+		this.uniqueness = new SimpleObjectProperty<>(Uniqueness.Prints);
+		this.uniqueAcrossGroups = new SimpleBooleanProperty(true);
 
 		this.showEmptyGroupsProperty = new SimpleBooleanProperty(false);
 		this.showEmptyGroupsProperty.addListener(ce -> layout());
@@ -973,13 +988,12 @@ public class CardView extends Canvas {
 			}
 		};
 
-		this.model = new FilteredGroupedModel<>(model, ci -> Collections.singleton(unsorted), ci -> true);
-
+		this.model = new FilteredGroupedModel<>(model, ci -> true, Uniqueness.Prints, true, Preferences.get().PREFER_PRINT_COMPARATOR, ci -> Collections.singleton(unsorted));
 		this.groupedModel = new TreeMap<>();
 
 		final ListChangeListener<? super CardInstance> listListener = change -> layout();
 
-		this.model.addListener((MapChangeListener<? super Grouping.Group, ? super ObservableList<CardInstance>>) mce -> {
+		this.model.addListener((MapChangeListener<Grouping.Group, FilteredGroupedModel.SubList<CardInstance>>) mce -> {
 			if (mce.wasRemoved()) {
 				mce.getValueRemoved().removeListener(listListener);
 				this.groupedModel.remove(mce.getKey());
@@ -994,8 +1008,8 @@ public class CardView extends Canvas {
 		});
 
 		this.model.grouping.set(this.grouping::groups);
-
-		this.collapseDuplicatesProperty.addListener((a, b, c) -> layout());
+		this.model.hash.bind(this.uniqueness);
+		this.model.globallyUnique.bind(this.uniqueAcrossGroups);
 
 		grouping(grouping);
 		layout(layout);
@@ -1328,10 +1342,6 @@ public class CardView extends Canvas {
 
 	public DoubleProperty cardScaleProperty() {
 		return cardScaleProperty;
-	}
-
-	public BooleanProperty collapseDuplicatesProperty() {
-		return collapseDuplicatesProperty;
 	}
 
 	public BooleanProperty showEmptyGroupsProperty() {
@@ -1676,7 +1686,7 @@ public class CardView extends Canvas {
 			labelBounds.dim.set(group.labelBounds.dim);
 
 			if (labelBounds.pos.x > -labelBounds.dim.x && labelBounds.pos.x < getWidth() && labelBounds.pos.y > -labelBounds.dim.y && labelBounds.pos.y < getHeight()) {
-				renderMap.labels.put(labelBounds, String.format("%s (%d)", group.group.toString(), group.sortedModel.size()));
+				renderMap.labels.put(labelBounds, String.format("%s (%d)", group.group.toString(), group.model.total()));
 			}
 
 			final MVec2d gpos = new MVec2d(bounds.pos).plus(scroll);
@@ -1744,12 +1754,7 @@ public class CardView extends Canvas {
 					}
 				}
 
-				int count = 1;
-				if (collapseDuplicatesProperty.get()) {
-					count = group.collapsedModel.count(j);
-				}
-
-				renderMap.cards.put(new MVec2d(loc), new RenderMap.CardState(futureImage.getNow(Images.LOADING_CARD), states, count));
+				renderMap.cards.put(new MVec2d(loc), new RenderMap.CardState(futureImage.getNow(Images.LOADING_CARD), states, group.model.count(group.sortedModel.getSourceIndex(j))));
 			}
 		}
 

@@ -14,19 +14,33 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class FilteredGroupedModel<G extends Comparable<G>, T> implements ObservableMap<G, FilteredGroupedModel.SubList<T>> {
+	protected static class Element {
+		public final Object hash;
+		public final Set<Integer> all;
+		public final AtomicInteger preferred;
+
+		public Element(Object hash, int preferred) {
+			this.hash = hash;
+			this.preferred = new AtomicInteger(preferred);
+			this.all = new HashSet<>(4);
+		}
+	}
+
 	public static class SubList<T> extends ObservableListBase<T> {
 		private final List<T> source;
-		private int[] indices;
-		private int count;
+		private Element[] elements;
+		private int count, total;
 
-		public SubList(List<T> source, int[] indices, int count) {
+		protected SubList(List<T> source, Element[] elements, int count) {
 			this.source = source;
-			this.indices = indices;
+			this.elements = elements;
 			this.count = count;
+			this.total = Arrays.stream(elements, 0, count).mapToInt(e -> e.all.size()).sum();
 		}
 
 		protected int reindexOf(int index, int min, int max) {
-			int reid = Arrays.binarySearch(indices, min, max, index);
+			// TODO: This does not work.
+			int reid = Arrays.binarySearch(elements, min, max, index);
 			if (reid < 0) reid = ~reid;
 			return reid;
 		}
@@ -43,8 +57,8 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 			beginChange();
 
 			for (int i = highestReindex; i < count; ++i) {
-				nextRemove(i - delta, removed.get(indices[i - delta] - lowest));
-				indices[i - delta] = indices[i];
+				nextRemove(i - delta, removed.get(elements[i - delta].preferred.get() - lowest));
+				elements[i - delta] = elements[i];
 			}
 
 			count -= delta;
@@ -52,28 +66,28 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 			endChange();
 		}
 
-		protected void insertIndices(int index, int[] newIds) {
+		protected void insertIndices(int index, Element[] newIds) {
 			final int delta = newIds.length;
 			final int reindex = reindexOf(index);
-			int[] dest;
+			Element[] dest;
 
-			if (newIds.length > indices.length - count) {
-				dest = new int[(count + newIds.length) * 3 / 2];
-				System.arraycopy(this.indices, 0, dest, 0, reindex);
+			if (newIds.length > elements.length - count) {
+				dest = new Element[(count + newIds.length) * 3 / 2];
+				System.arraycopy(this.elements, 0, dest, 0, reindex);
 			} else {
-				dest = indices;
+				dest = elements;
 			}
 
 			// TODO There's probably an off-by-one error in here.
 			for (int i = count - 1; i > reindex + delta; --i) {
-				dest[i] = indices[i - delta];
+				dest[i] = elements[i - delta];
 			}
 
 			for (int i = 0; i < delta; ++i) {
 				dest[reindex + i] = newIds[i];
 			}
 
-			indices = dest;
+			elements = dest;
 			count += delta;
 
 			beginChange();
@@ -89,47 +103,73 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 
 		@Override
 		public T get(int index) {
-			return source.get(indices[index]);
+			return source.get(elements[index].preferred.get());
+		}
+
+		public int count(int index) {
+			return elements[index].all.size();
+		}
+
+		public List<T> getAll(int index) {
+			return elements[index].all.stream().map(source::get).collect(Collectors.toList());
 		}
 
 		@Override
 		public int size() {
 			return count;
 		}
+
+		public int total() {
+			return total;
+		}
 	}
 
-	private final ObservableMap<G, SubList<T>> groups;
-
 	public final ObservableList<T> source;
-	public final ObjectProperty<Function<T, Set<G>>> grouping;
+
 	public final ObjectProperty<Predicate<T>> predicate;
+	public final ObjectProperty<Function<? super T, Object>> hash;
+	public final BooleanProperty globallyUnique;
+	public final ObjectProperty<Comparator<? super T>> compare;
+	public final ObjectProperty<Function<T, Set<G>>> grouping;
 
 	private int filteredElements;
+	private final ObservableMap<G, SubList<T>> groups;
 
 	private final DoubleProperty progress;
 
-	// TODO probably need G to be comparable, or to request a comparator for G?
-	// This model is doing a lot, but it feels like ordering its keys isn't too much more.
-	// But isn't order supposed to be a part of the grouping function, in concept?
-	public FilteredGroupedModel(ObservableList<T> source, Function<T, Set<G>> grouping, Predicate<T> predicate) {
+	public FilteredGroupedModel(ObservableList<T> source, Predicate<T> predicate, Function<? super T, Object> hash, boolean globallyUnique, Comparator<? super T> compare, Function<T, Set<G>> grouping) {
 		this.source = source;
 		this.groups = FXCollections.observableMap(new TreeMap<>());
-		this.grouping = new SimpleObjectProperty<>();
-		this.predicate = new SimpleObjectProperty<>(ci -> true); // TODO safe to have a value here?
+		this.predicate = new SimpleObjectProperty<>(predicate);
+		this.hash = new SimpleObjectProperty<>(hash);
+		this.globallyUnique = new SimpleBooleanProperty(globallyUnique);
+		this.compare = new SimpleObjectProperty<>(compare);
+		this.grouping = new SimpleObjectProperty<>(grouping);
 		this.progress = new SimpleDoubleProperty(ProgressIndicator.INDETERMINATE_PROGRESS);
 
 		this.source.addListener(this::sourceChanged);
 
-		this.grouping.addListener((prop, oldGrouping, newGrouping) -> {
-			regroup(); // TODO skip filtering(?)
-		});
-
 		this.predicate.addListener((prop, oldPredicate, newPredicate) -> {
-			regroup(); // TODO skip grouping(?)
+			regroup(); // TODO skip grouping/hashing?
 		});
 
-		this.grouping.set(grouping);
-		this.predicate.set(predicate);
+		this.hash.addListener((prop, oldHash, newHash) -> {
+			regroup(); // TODO skip filtering/grouping?
+		});
+
+		this.globallyUnique.addListener((prop, oldGlobal, newGlobal) -> {
+			regroup(); // TODO skip filtering/grouping?
+		});
+
+		this.compare.addListener((prop, oldCompare, newCompare) -> {
+			regroup(); // TODO skip filtering/grouping?
+		});
+
+		this.grouping.addListener((prop, oldGrouping, newGrouping) -> {
+			regroup(); // TODO skip filtering/hashing?
+		});
+
+		regroup();
 	}
 
 	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), r -> {
@@ -212,8 +252,11 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 
 		slog.start();
 
-		final Function<T, Set<G>> grouping = this.grouping.get();
+		final Function<? super T, Object> hash = this.hash.get();
+		final Comparator<? super T> compare = this.compare.get();
+		final boolean global = this.globallyUnique.get();
 		final Predicate<T> predicate = this.predicate.get();
+		final Function<T, Set<G>> grouping = this.grouping.get();
 
 		int cores = Runtime.getRuntime().availableProcessors();
 		int elementsPerCore = elements / cores + 1;
@@ -224,7 +267,9 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 		}
 
 		Future[] futures = new Future[cores];
-		ConcurrentMap<G, int[]> regrouped = new ConcurrentHashMap<>();
+		ConcurrentMap<G, Element[]> regrouped = new ConcurrentHashMap<>();
+		ConcurrentMap<Object, Element> globalWitness = global ? new ConcurrentHashMap<>() : null;
+		ConcurrentMap<G, ConcurrentMap<Object, Element>> witness = global ? null : new ConcurrentHashMap<>();
 		ConcurrentMap<G, AtomicInteger> pointers = new ConcurrentHashMap<>();
 
 		progress.set(0.0);
@@ -234,7 +279,7 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 			final int start = i * elementsPerCore;
 			final int end = Math.min((i + 1) * elementsPerCore, elements);
 
-			futures[i] = EXECUTOR.submit(() -> groupRegion(source, start, end, grouping, predicate, regrouped, pointers, () -> progress.set(processed.incrementAndGet() / (double) elements)));
+			futures[i] = EXECUTOR.submit(() -> groupRegion(source, start, end, predicate, grouping, regrouped, pointers, () -> progress.set(processed.incrementAndGet() / (double) elements), hash, compare, globalWitness, witness));
 		}
 
 		for (int i = 0; i < cores; ++i) {
@@ -247,25 +292,46 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 			}
 		}
 
+		if (global) {
+			// Clean up any nulls from degrouping.
+			for (G group : regrouped.keySet()) {
+				Element[] els = regrouped.get(group);
+				int limit = pointers.get(group).get();
+				for (int p = 0, j = 0; j < limit; ++j) {
+					if (els[j] == null) {
+						pointers.get(group).decrementAndGet();
+						continue;
+					}
+					if (p != j) {
+						els[p] = els[j];
+					}
+					++p;
+				}
+			}
+		}
+
 		// TODO Include shifting in progress?
 		progress.set(1.0);
 
-		slog.log("Finished in %.4f seconds; storing.", slog.elapsed());
+		slog.log("Finished in %.4f seconds; storing.", slog.lap());
 
 		// TODO generate change events and actually update groups
 		// If our grouping has any overlap with the old groups, we could just replace their lists' contents.
 		// Although, we can't be certain of their indices anymore.
-		groups.keySet().removeIf(x -> !regrouped.containsKey(x));
+		//groups.keySet().removeIf(x -> !regrouped.containsKey(x));
+		groups.clear();
 		filteredElements = 0;
-		for (Map.Entry<G, int[]> entry : regrouped.entrySet()) {
+		for (Map.Entry<G, Element[]> entry : regrouped.entrySet()) {
 			groups.put(entry.getKey(), new SubList<>(this.source, entry.getValue(), pointers.get(entry.getKey()).get()));
 			filteredElements += pointers.get(entry.getKey()).get();
 		}
 
+		slog.log("Stored in %.4f seconds; what's taking so damn long?", slog.lap());
+
 		progress.set(0.0);
 	}
 
-	private static <T, G> void groupRegion(List<? extends T> source, int start, int end, Function<T, Set<G>> grouping, Predicate<T> predicate, Map<G, int[]> concreteGroups, ConcurrentMap<G, AtomicInteger> pointers, Runnable increment) {
+	private static <T, G> void groupRegion(List<? extends T> source, int start, int end, Predicate<T> predicate, Function<T, Set<G>> grouping, Map<G, Element[]> concreteGroups, ConcurrentMap<G, AtomicInteger> pointers, Runnable increment, Function<? super T, Object> hash, Comparator<? super T> compare, ConcurrentMap<Object, Element> globalWitness, ConcurrentMap<G, ConcurrentMap<Object, Element>> witness) {
 		Slog slog = SLOG.child(String.format("%d..%d", start, end));
 		slog.start();
 		for (int i = start; i < end; ++i) {
@@ -276,11 +342,82 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 			if (!predicate.test(element)) continue;
 
 			Set<G> groups = grouping.apply(element);
+			Object hasho = hash == null ? null : hash.apply(element);
+			Element el;
 
-			for (G group : groups) {
-				int idx = pointers.computeIfAbsent(group, g -> new AtomicInteger(0)).getAndIncrement();
-				int[] arr = concreteGroups.computeIfAbsent(group, g -> new int[source.size()]);
-				arr[idx] = i;
+			if (hasho == null) {
+				el = new Element(element, i);
+				for (G group : groups) {
+					int idx = pointers.computeIfAbsent(group, g -> new AtomicInteger(0)).getAndIncrement();
+					Element[] arr = concreteGroups.computeIfAbsent(group, g -> new Element[source.size()]);
+					arr[idx] = el;
+				}
+			} else if (globalWitness != null) {
+				Set<G> oldGroups = null;
+				boolean add = false;
+
+				synchronized (globalWitness) {
+					el = globalWitness.get(hasho);
+					if (el == null) {
+						el = new Element(hasho, i);
+						globalWitness.put(hasho, el);
+						add = true;
+					} else {
+						T old = source.get(el.preferred.get());
+						if (compare.compare(old, element) > 0) {
+							oldGroups = grouping.apply(old);
+							el.preferred.set(i);
+							add = true;
+						}
+					}
+				}
+
+				if (add) {
+					for (G group : groups) {
+						if (oldGroups != null && oldGroups.contains(group)) continue;
+						int idx = pointers.computeIfAbsent(group, g -> new AtomicInteger(0)).getAndIncrement();
+						Element[] arr = concreteGroups.computeIfAbsent(group, g -> new Element[source.size()]);
+						arr[idx] = el;
+					}
+
+					if (oldGroups != null) {
+						for (G group : oldGroups) {
+							if (groups.contains(group)) continue;
+							Element[] els = concreteGroups.get(group);
+							int limit = pointers.get(group).get();
+							for (int j = 0; j < limit; ++j) {
+								if (els[j] != null && els[j].hash == hasho) els[j] = null;
+							}
+						}
+					}
+				}
+
+				el.all.add(i);
+			} else if (witness != null) {
+				for (G group : groups) {
+					Map<Object, Element> wit = witness.computeIfAbsent(group, g -> new ConcurrentHashMap<>());
+					boolean add = false;
+
+					// TODO: Not sure if synchronizing on wit is correct or necessary here.
+					synchronized (wit) {
+						el = wit.get(hasho);
+						if (el == null) {
+							el = new Element(hasho, i);
+							wit.put(hasho, el);
+							add = true;
+						} else if (compare.compare(source.get(el.preferred.get()), element) > 0) {
+							el.preferred.set(i);
+						}
+					}
+
+					if (add) {
+						int idx = pointers.computeIfAbsent(group, g -> new AtomicInteger(0)).getAndIncrement();
+						Element[] arr = concreteGroups.computeIfAbsent(group, g -> new Element[source.size()]);
+						arr[idx] = el;
+					}
+
+					el.all.add(i);
+				}
 			}
 		}
 		slog.log("Finished in %.4f seconds.", slog.elapsed());
@@ -486,7 +623,7 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 			return Collections.unmodifiableSet(tmp);
 		};
 
-		FilteredGroupedModel<String, Integer> test = new FilteredGroupedModel<>(numbers, grouping, i -> true);
+		FilteredGroupedModel<String, Integer> test = new FilteredGroupedModel<>(numbers, i -> true, i -> i, true, Comparator.comparingInt(a -> a), grouping);
 
 		Consumer<Predicate<Integer>> checkConsistency = filter -> {
 			for (int i : numbers) {

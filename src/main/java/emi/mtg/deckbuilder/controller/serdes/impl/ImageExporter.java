@@ -119,8 +119,9 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 		return ImageExporter.deckToImage(deck, (zone, view) -> {
 			view.layout(UI.zoneLayouts.get(zone).getValue());
 			view.grouping(UI.zoneGroupings.get(zone).getValue());
+			view.uniqueness.set(UI.uniqueness.getValue());
+			view.uniqueAcrossGroups.set(UI.uniqueAcrossGroups.isSelected());
 			view.showFlagsProperty().set(false);
-			view.collapseDuplicatesProperty().set(UI.collapseCopies.isSelected());
 			view.cardScaleProperty().set(UI.cardScale.getValue());
 			view.resize(estimateViewWidth(), Images.CARD_HEIGHT + Images.CARD_PADDING * 2);
 		});
@@ -174,7 +175,10 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 		private Alert alert;
 
 		@FXML
-		protected CheckBox collapseCopies;
+		protected ComboBox<CardView.Uniqueness> uniqueness;
+
+		@FXML
+		protected CheckBox uniqueAcrossGroups;
 
 		@FXML
 		protected Slider cardScale;
@@ -205,6 +209,9 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 			FxUtils.FXML(this, alert.getDialogPane());
 
 			widthHint.getValueFactory().setValue(10);
+			uniqueness.setItems(FXCollections.observableArrayList(CardView.Uniqueness.values()));
+			uniqueness.getSelectionModel().select(CardView.Uniqueness.Prints);
+			uniqueAcrossGroups.setSelected(true);
 			cardScaleText.textProperty().bind(cardScale.valueProperty().multiply(100).asString("%.0f%%"));
 
 			int i = GridPane.getRowIndex(widthHint) + 1;

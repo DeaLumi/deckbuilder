@@ -7,13 +7,16 @@
          fx:controller="emi.mtg.deckbuilder.controller.serdes.impl.ImageExporter$ImageExportUI">
     <content>
         <GridPane vgap="8.0" hgap="8.0" fx:id="grid">
-            <Label GridPane.rowIndex="0" GridPane.columnIndex="0" text="Collapse Copies:" GridPane.halignment="RIGHT"/>
-            <CheckBox GridPane.rowIndex="0" GridPane.columnIndex="1" fx:id="collapseCopies" selected="true"/>
-
-            <Label GridPane.rowIndex="1" GridPane.columnIndex="0" text="Card Scale:" GridPane.halignment="RIGHT"/>
-            <HBox GridPane.rowIndex="1" GridPane.columnIndex="1">
+            <Label GridPane.rowIndex="0" GridPane.columnIndex="0" text="Card Scale:" GridPane.halignment="RIGHT"/>
+            <HBox GridPane.rowIndex="0" GridPane.columnIndex="1">
                 <Slider min="0.1" value="1.0" max="2.0" blockIncrement="0.05" majorTickUnit="0.05" minorTickCount="0" snapToTicks="true" fx:id="cardScale"/>
                 <Label style="-fx-text-fill: -fx-text-background-color;" fx:id="cardScaleText"/>
+            </HBox>
+
+            <Label GridPane.rowIndex="1" GridPane.columnIndex="0" text="Show Unique:" GridPane.halignment="RIGHT"/>
+            <HBox GridPane.rowIndex="1" GridPane.columnIndex="1" spacing="8">
+                <ComboBox fx:id="uniqueness"/>
+                <CheckBox fx:id="uniqueAcrossGroups" text="Across Groups"/>
             </HBox>
 
             <Label GridPane.rowIndex="2" GridPane.columnIndex="0" text="Width (cards):" GridPane.halignment="RIGHT"/>

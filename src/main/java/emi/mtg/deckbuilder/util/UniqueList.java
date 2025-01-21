@@ -41,7 +41,7 @@ public class UniqueList<T> extends TransformationList<T, T> {
 	 * @param hashExtractor a function which returns, for a given element, that element's "identity".
 	 * @param comparer Given two elements, returns which one is preferable to keep. Others will be dropped.
 	 */
-	public UniqueList(ObservableList<? extends T> source, Function<T, Object> hashExtractor, BinaryOperator<T> comparer) {
+	public UniqueList(ObservableList<? extends T> source, Function<T, Object> hashExtractor, BinaryOperator<? super T> comparer) {
 		super(source);
 
 		this.filtered = new ArrayList<>();
@@ -60,11 +60,11 @@ public class UniqueList<T> extends TransformationList<T, T> {
 		this(source, x -> x, (a, b) -> a);
 	}
 
-	private ObjectProperty<BinaryOperator<T>> comparer;
+	private ObjectProperty<BinaryOperator<? super T>> comparer;
 
-	public final ObjectProperty<BinaryOperator<T>> comparerProperty() {
+	public final ObjectProperty<BinaryOperator<? super T>> comparerProperty() {
 		if (comparer == null) {
-			comparer = new ObjectPropertyBase<BinaryOperator<T>>() {
+			comparer = new ObjectPropertyBase<BinaryOperator<? super T>>() {
 				@Override
 				protected void invalidated() {
 					refilter();
@@ -124,7 +124,7 @@ public class UniqueList<T> extends TransformationList<T, T> {
 		reverse.clear();
 
 		final Function<T, Object> extract = extractor.get();
-		final BinaryOperator<T> prefer = comparer.get();
+		final BinaryOperator<? super T> prefer = comparer.get();
 
 		int i = 0;
 		for (final T next : getSource()) {

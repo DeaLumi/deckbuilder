@@ -358,7 +358,6 @@ public class Preferences {
 	public Map<Zone, CardView.Grouping> zoneGroupings = new HashMap<>();
 	public SimpleObjectProperty<CardView.Grouping> cutboardGrouping = new SimpleObjectProperty<>(CardView.GROUPINGS.get(None.class));
 
-	public boolean collapseDuplicates = true;
 	public boolean theFutureIsNow = true;
 
 	public boolean cardInfoTooltips = false;
@@ -396,6 +395,61 @@ public class Preferences {
 	/**
 	 * Instance utilities (e.g. simplifying accessors)
 	 */
+
+	/**
+	 * Given two prints A and B, returns which the user would rather see, if either. If it's a toss-up, returns null!
+	 * @param a The first option
+	 * @param b The second option
+	 * @return Which print the user prefers, if either. Null if their preferences don't help decide between the two.
+	 * @param <T> Kludge because I think this should be able to work with any card print including CardInstances but it won't.
+	 */
+	public <T extends Card.Print> T preferPrint(T a, T b) {
+		Objects.requireNonNull(a);
+		Objects.requireNonNull(b);
+		if (a.card() != b.card()) throw new IllegalArgumentException(String.format("Can't compare %s with %s; they're not the same card???", a, b));
+
+		Card.Print.Reference prefRef = preferredPrints.get(a.card().name());
+		if (prefRef != null) {
+			if (a.reference().equals(prefRef)) return a;
+			if (b.reference().equals(prefRef)) return b;
+		}
+
+		if (!defaultPrints.preferredSets.isEmpty()) {
+			int ia = defaultPrints.prefPriority(a.set().code()), ib = defaultPrints.prefPriority(b.set().code());
+			if (ia < Integer.MAX_VALUE || ib < Integer.MAX_VALUE) return ia < ib ? a : b;
+		}
+
+		if (!defaultPrints.ignoredSets.isEmpty()) {
+			boolean ignoreA = defaultPrints.ignoredSets.contains(a.set().code()), ignoreB = defaultPrints.ignoredSets.contains(b.set().code());
+			if (ignoreA ^ ignoreB) return ignoreA ? b : a;
+		}
+
+		if (preferNotPromo && a.promo() ^ b.promo()) return a.promo() ? b : a;
+
+		if (preferAge != PreferAge.Any) {
+			if (a.releaseDate().isAfter(b.releaseDate())) return preferAge == PreferAge.Newest ? a : b;
+			if (b.releaseDate().isAfter(a.releaseDate())) return preferAge == PreferAge.Newest ? b : a;
+		}
+
+		if (preferVariation != PreferVariation.Any) {
+			// TODO: Collector number preference?
+			if (a.variation() < b.variation()) return preferVariation == PreferVariation.Primary ? a : b;
+			if (b.variation() < a.variation()) return preferVariation == PreferVariation.Primary ? b : a;
+		}
+
+		return null;
+	}
+
+	public final transient Comparator<Card.Print> PREFER_PRINT_COMPARATOR = (a, b) -> {
+		Card.Print pref = preferPrint(a, b);
+		if (pref == a) {
+			return -1;
+		} else if (pref == b) {
+			return 1;
+		} else {
+			return 0;
+		}
+	};
 
 	public Card.Print preferredPrint(Card card) {
 		Card.Print.Reference prefRef = preferredPrints.get(card.fullName());
