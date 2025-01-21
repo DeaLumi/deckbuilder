@@ -290,8 +290,8 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 			CardView view = new CardView(
 					null,
 					zone.getValue(),
-					CardView.LAYOUT_ENGINES.get(0),
-					CardView.GROUPINGS.get(0),
+					CardView.LAYOUT_ENGINES.get(Piles.Factory.class),
+					CardView.GROUPINGS.get(ManaValue.class),
 					CardView.DEFAULT_SORTING);
 			viewModifier.accept(zone.getKey(), view);
 			view.resize(view.prefWidth(-1), view.prefHeight(1800.0));
