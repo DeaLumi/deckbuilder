@@ -11,7 +11,7 @@ import javafx.stage.Modality;
 
 public class DebugConsole extends Dialog<Void> {
     @FXML
-    private TextArea log;
+    protected TextArea log;
 
     public DebugConsole() {
         FxUtils.FXML(this);
