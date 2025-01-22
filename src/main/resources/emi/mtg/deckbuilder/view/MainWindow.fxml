@@ -34,6 +34,8 @@
                 </Menu>
                 <Menu text="Application">
                     <!--<MenuItem text="Settings..."/>-->
+                    <MenuItem text="New Search Tab" onAction="#openNewSearchTab" accelerator="Shortcut+T"/>
+                    <SeparatorMenuItem/>
                     <MenuItem text="Preferences" onAction="#showPreferencesDialog"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Update Deck Builder" onAction="#updateDeckbuilder"/>
@@ -63,7 +65,8 @@
         </MenuBar>
     </top>
     <center>
-        <SplitPane orientation="VERTICAL" fx:id="collectionSplitter">
+        <SplitPane orientation="VERTICAL">
+            <TabPane styleClass="flashy-tabs" fx:id="searchTabs" tabClosingPolicy="ALL_TABS"/>
             <StackPane>
                 <TabPane fx:id="deckTabs">
                 </TabPane>

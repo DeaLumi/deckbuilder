@@ -26,6 +26,7 @@ import emi.mtg.deckbuilder.view.layouts.FlowGrid;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import emi.mtg.deckbuilder.view.util.FxUtils;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -59,13 +60,13 @@ import java.util.stream.Stream;
 
 public class MainWindow extends Stage {
 	@FXML
-	private SplitPane collectionSplitter;
-
-	@FXML
 	private Menu newDeckMenu;
 
 	@FXML
 	private Menu openRecentDeckMenu;
+
+	@FXML
+	private TabPane searchTabs;
 
 	@FXML
 	private TabPane deckTabs;
@@ -82,7 +83,7 @@ public class MainWindow extends Stage {
 	@FXML
 	private MenuItem undo, redo;
 
-	private CardPane collection;
+	private final ObservableList<CardInstance> collectionModel;
 
 	private FileChooser primaryFileChooser;
 	private DeckImportExport primarySerdes;
@@ -115,6 +116,9 @@ public class MainWindow extends Stage {
 
 		this.owner = owner;
 		this.owner.registerMainWindow(this);
+		this.collectionModel = FXCollections.observableArrayList();
+
+		collectionModel.setAll(collectionModel(Context.get().data));
 
 		BorderPane root = new BorderPane();
 		FxUtils.FXML(this, root);
@@ -138,21 +142,6 @@ public class MainWindow extends Stage {
 		});
 
 		Preferences.listen(prefsListener = this::preferencesChanged);
-
-		ForkJoinPool.commonPool().submit(() -> {
-			try {
-				log.start().log("Preparing collection...");
-				collection.loading().set(true);
-				collection.filter().setText(Preferences.get().defaultQuery);
-				collection.updateFilter();
-				collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
-				collection.loading().set(false);
-				log.log("Collection ready in %.3f seconds", log.elapsed());
-			} catch (Throwable t) {
-				log.err("Unable to ready collection!");
-				t.printStackTrace();
-			}
-		});
 	}
 
 	@FXML
@@ -199,7 +188,7 @@ public class MainWindow extends Stage {
 	}
 
 	public DeckTab activeTab() {
-		return (DeckTab) deckTabs.getSelectionModel().getSelectedItem();
+		return deckTabs == null ? null : (DeckTab) deckTabs.getSelectionModel().getSelectedItem();
 	}
 
 	public DeckPane activeDeckPane() {
@@ -250,7 +239,7 @@ public class MainWindow extends Stage {
 				.collect(Collectors.toList()));
 	}
 
-	private CardView.ContextMenu createCollectionContextMenu() {
+	private CardView.ContextMenu createCollectionContextMenu(CardPane collection) {
 		CardView.ContextMenu menu = new CardView.ContextMenu();
 
 		MenuItem changePrintMenuItem = new MenuItem("Prefer Print");
@@ -316,15 +305,7 @@ public class MainWindow extends Stage {
 		return menu;
 	}
 
-	private void setupUI() {
-		debugMenu.setVisible(Preferences.get().showDebugOptions);
-
-		collection = new CardPane("Collection",
-				FXCollections.observableArrayList(),
-				CardView.LAYOUT_ENGINES.get(FlowGrid.Factory.class),
-				Preferences.get().collectionGrouping,
-				Preferences.get().collectionSorting);
-
+	private Tab newSearchTab() {
 		Consumer<CardInstance> addCardToActive = ci -> {
 			DeckList list = activeDeck();
 			CardInstance added = new CardInstance(ci);
@@ -345,15 +326,62 @@ public class MainWindow extends Stage {
 			);
 		};
 
-		collection.view().doubleClick(addCardToActive);
-		collection.autoAction.set(addCardToActive);
+		CardPane searchPane = new CardPane("Collection",
+				FXCollections.observableArrayList(),
+				CardView.LAYOUT_ENGINES.get(FlowGrid.Factory.class),
+				Preferences.get().collectionGrouping,
+				Preferences.get().collectionSorting);
+		searchPane.view().doubleClick(addCardToActive);
+		searchPane.autoAction.set(addCardToActive);
+		searchPane.view().contextMenu(createCollectionContextMenu(searchPane));
+		searchPane.showingIllegalCards.set(false);
+		searchPane.uniqueness().set(CardView.Uniqueness.Cards);
 
-		collection.view().contextMenu(createCollectionContextMenu());
+		Tab newSearchTab = new Tab("Search", searchPane);
+		newSearchTab.textProperty().bind(Bindings.when(Bindings.isEmpty(searchPane.filter().textProperty())).then("Search").otherwise(searchPane.filter().textProperty()));
+		newSearchTab.closableProperty().bind(Bindings.size(searchTabs.getTabs()).greaterThan(2));
 
-		collection.showingIllegalCards.set(false);
-		collection.uniqueness().set(CardView.Uniqueness.Cards);
+		Platform.runLater(() -> {
+			log.start().log("Preparing search pane...");
+			searchPane.loading().set(true);
+			searchPane.filter().setText(Preferences.get().defaultQuery);
 
-		this.collectionSplitter.getItems().add(0, collection);
+			ForkJoinPool.commonPool().submit(() -> {
+				try {
+					searchPane.updateFilter();
+					searchPane.changeModel(x -> x.setAll(collectionModel));
+					Platform.runLater(() -> searchPane.loading().set(false));
+					log.log("Search pane ready in %.3f seconds", log.elapsed());
+				} catch (Throwable t) {
+					log.err("Unable to ready searchPane!");
+					t.printStackTrace();
+				}
+			});
+		});
+
+		return newSearchTab;
+	}
+
+	@FXML
+	protected void openNewSearchTab() {
+		Tab tab = newSearchTab();
+		searchTabs.getTabs().add(searchTabs.getTabs().size() - 1, tab);
+		searchTabs.getSelectionModel().select(tab);
+	}
+
+	private void setupUI() {
+		debugMenu.setVisible(Preferences.get().showDebugOptions);
+
+		Tab firstSearchTab = newSearchTab();
+		Tab spawnSearchTab = new Tab("+");
+		spawnSearchTab.setClosable(false);
+		searchTabs.getSelectionModel().selectedItemProperty().addListener((prop, oldtab, newtab) -> {
+			if (newtab != spawnSearchTab) return;
+			openNewSearchTab();
+		});
+
+		searchTabs.getTabs().addAll(firstSearchTab, spawnSearchTab);
+		searchTabs.tabMaxHeightProperty().bind(Bindings.when(Bindings.size(searchTabs.getTabs()).greaterThan(2)).then(Double.MAX_VALUE).otherwise(-2));
 
 		autoValidateDeck.setSelected(true);
 		allPanes().forEach(pane -> {
@@ -370,9 +398,14 @@ public class MainWindow extends Stage {
 			DeckPane newp = newTab == null ? null : (DeckPane) newTab.getContent();
 
 			ForkJoinPool.commonPool().submit(() -> {
-				if (old != null && newp != null && !old.deck().format().equals(newp.deck().format())) collection.updateFilter();
 				updateCollectionState();
-				collection.view().scheduleRender();
+
+				final boolean refilter = (old != null && newp != null && !old.deck().format().equals(newp.deck().format()));
+
+				searchPanesAction(p -> {
+					if (refilter) p.updateFilter();
+					p.view().scheduleRender();
+				});
 			});
 
 			MainWindow.this.titleProperty().unbind();
@@ -914,17 +947,29 @@ public class MainWindow extends Stage {
 				.showAndWait();
 	}
 
+	private void searchPanesAction(Consumer<CardPane> action) {
+		searchTabs.getTabs().stream()
+				.map(Tab::getContent)
+				.filter(Objects::nonNull)
+				.map(n -> (CardPane) n)
+				.forEach(action);
+	}
+
+	private void redrawSearchPanes() {
+		searchPanesAction(p -> p.view().scheduleRender());
+	}
+
 	private void updateCollectionState() {
 		Set<Card> fullCards = activeDeckPane().fullCards();
-		collection.changeModel(x -> x.forEach(ci -> {
+		collectionModel.forEach(ci -> {
 			flagCollectionCardLegality(ci);
 			if (fullCards.contains(ci.card())) {
 				ci.flags.add(CardInstance.Flags.Full);
 			} else {
 				ci.flags.remove(CardInstance.Flags.Full);
 			}
-		}));
-		collection.view().scheduleRender();
+		});
+		redrawSearchPanes();
 	}
 
 	private void updateCardStates(Format.Validator.Result result) {
@@ -1023,8 +1068,12 @@ public class MainWindow extends Stage {
 	void preferencesChanged(Preferences prefs) {
 		getScene().getRoot().setStyle(Preferences.get().theme.style());
 
-		ForkJoinPool.commonPool().submit(collection::updateFilter);
-		collection.view().scheduleRender();
+		ForkJoinPool.commonPool().submit(() -> {
+			searchPanesAction(pane -> {
+				pane.updateFilter();
+				pane.view().scheduleRender();
+			});
+		});
 		allPanes().forEach(DeckPane::rerenderViews);
 
 		for (MenuItem mi : newDeckMenu.getItems()) {
@@ -1050,7 +1099,8 @@ public class MainWindow extends Stage {
 
 	@FXML
 	protected void remodel() {
-		collection.changeModel(x -> x.setAll(collectionModel(Context.get().data)));
+		collectionModel.setAll(collectionModel(Context.get().data));
+		searchPanesAction(p -> p.changeModel(x -> x.setAll(collectionModel)));
 
 		// We need to fix all the card instances in the current deck. They're hooked to old objects.
 		allDecks().flatMap(deck -> deck.cards().values().stream())
