@@ -59,14 +59,14 @@ public class Regex implements Omnifilter.Subfilter {
 
 	static BiPredicate<String, String> create(String regex, boolean forceMonolithic) {
 		// If the pattern doesn't contain `~|CARDNAME`, we can just precompile it.
-		// Otherwise, as long as the pattern doesn't contain backreferences and there's no `~|CARDNAME` within a group,
-		// we can split the pattern on those and do a rope-match.
+		// Otherwise, as long as the pattern doesn't contain backreferences and there's no `~|CARDNAME` within a group
+		// or alternation, we can split the pattern on those and do a rope-match.
 		// But if one of the above is the case, we'll have to substitute card names into the pattern for each face and
 		// recompile it.
 		// (forceMonolithic is for profiling the algorithm in MatchUtils)
 
 		int parentheses = 0, cardname = 0;
-		boolean escape = false;
+		boolean escape = false, alternation = false;
 		boolean anyCardname = false, segmentDisqualified = false;
 		for (int i = 0; i < regex.length(); ++i) {
 			switch (regex.charAt(i)) {
@@ -81,8 +81,12 @@ public class Regex implements Omnifilter.Subfilter {
 					if (!escape) --parentheses;
 					escape = false;
 					break;
+				case '|':
+					if (!escape) alternation = true;
+					escape = false;
+					break;
 				case '~':
-					if (parentheses > 0) segmentDisqualified = true;
+					if (parentheses > 0 || alternation) segmentDisqualified = true;
 					anyCardname = true;
 					escape = false;
 					break;
