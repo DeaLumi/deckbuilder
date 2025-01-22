@@ -239,7 +239,7 @@ public class CardPane extends BorderPane {
 			displayMenu.getItems().add(item);
 		}
 
-		MenuItem sortButton = new MenuItem("Sort");
+		MenuItem sortButton = new MenuItem("Sort...");
 		sortButton.setOnAction(ae -> {
 			SortDialog dlg = new SortDialog(getScene().getWindow(), this.cardView.sort());
 			dlg.initOwner(CardPane.this.getScene().getWindow());
@@ -262,7 +262,7 @@ public class CardPane extends BorderPane {
 		cardScale.setContent(new HBox(cardScaleSlider, cardScaleText));
 		cardScale.setHideOnClick(false);
 
-		MenuItem statisticsButton = new MenuItem("Statistics");
+		MenuItem statisticsButton = new MenuItem("Statistics...");
 		statisticsButton.setOnAction(ae -> {
 			try {
 				new DeckStatsDialog(getScene().getWindow(), this.cardView.model.values().stream().flatMap(List::stream).collect(Collectors.toList())).show();
