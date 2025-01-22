@@ -385,8 +385,10 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 							if (groups.contains(group)) continue;
 							Element[] els = concreteGroups.get(group);
 							int limit = pointers.get(group).get();
-							for (int j = 0; j < limit; ++j) {
-								if (els[j] != null && els[j].hash == hasho) els[j] = null;
+							synchronized (els) {
+								for (int j = 0; j < limit; ++j) {
+									if (els[j] != null && els[j].hash == hasho) els[j] = null;
+								}
 							}
 						}
 					}
