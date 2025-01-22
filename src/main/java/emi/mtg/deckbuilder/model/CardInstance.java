@@ -138,27 +138,47 @@ public class CardInstance implements Card.Print, Serializable {
 	}
 
 	public String tooltip() {
-		List<String> sections = new ArrayList<>();
+		StringBuilder builder = new StringBuilder(256);
 
 		if (Preferences.get().cardInfoTooltips) {
-			sections.add(card().faces().stream().map(f -> f.name() + " " + f.manaCost().toString() + " (" + ((int) f.manaValue()) + ")\n" +
-					f.type().toString() + "\n\n" +
-					f.rules().replaceAll("\n", "\n\n") +
-					(f.printedPower().isEmpty() ? (f.printedLoyalty().isEmpty() ? "" : "\n\nStarting Loyalty: " + f.printedLoyalty()) : "\n\nP/T: " + f.printedPower() + "/" + f.printedToughness())
-			).collect(Collectors.joining("\n\n//\n\n")));
+			boolean first = true;
 
-			sections.add(rarity().toString() + " #" +  collectorNumber() + " from " + set().name() + " (" + set().code().toUpperCase() + ")");
+			for (Card.Face face : card().faces()) {
+				if (first) {
+					first = false;
+				} else {
+					builder.append("\n\n//\n\n");
+				}
+
+				builder.append(face.name());
+				if (!face.manaCost().isEmpty()) builder.append(' ').append(face.manaCost().toString());
+				builder.append(" (").append(face.manaValue()).append(')');
+				builder.append('\n').append(face.type());
+				if (!face.rules().isEmpty()) builder.append("\n\n").append(face.rules().replaceAll("\n", "\n\n"));
+				if (face.ptldBox().isEmpty()) continue;
+				builder.append("\n");
+				if (!face.printedPower().isEmpty()) builder.append("\nP/T: ").append(face.printedPower()).append('/').append(face.printedToughness());
+				if (!face.printedLoyalty().isEmpty()) builder.append("\nStarting Loyalty: ").append(face.printedLoyalty());
+				if (!face.printedDefense().isEmpty()) builder.append("\nDefense: ").append(face.printedDefense());
+			}
+
+			builder.append("\n\n")
+					.append(rarity())
+					.append(" #").append(collectorNumber())
+					.append(" from ").append(set().name()).append(" (").append(set().code().toUpperCase())
+					.append("), var. ").append(variation()).append(promo() ? ", promo" : ", non-promo")
+					.append(", released ").append(releaseDate());
 		}
 
 		if (Preferences.get().cardTagsTooltips && !tags.isEmpty()) {
-			sections.add("Tags: " + String.join(", ", tags));
+			builder.append("\n\nTags: ").append(String.join(", ", tags));
 		}
 
 		if (lastValidation != null) {
-			sections.add(lastValidation.toString());
+			builder.append("\n\n").append(lastValidation);
 		}
 
-		return String.join("\n\n", sections);
+		return builder.toString();
 	}
 
 	public static Card.Print stringToPrint(String str) {

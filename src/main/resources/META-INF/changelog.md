@@ -25,7 +25,7 @@
 - Improved regex matching efficiency where `~` or `CARDNAME` is used.
 - Search provider selection is now shown on the search bar itself (as long as it's wide enough). Easy access to Scryfall's `function:` tag search!
 - The search bar now shows an indication when a search is ongoing.
-- Card tooltips now contain the collector number of the card.
+- Added more information to card tooltips, including collector number, variation number, and release date.
 - Tooltips are universally a little larger/more readable.
 - Added "Automatic (By Extension)" options to import and export dialogs to save you a bit of time.
 - If you enable Auto mode on the collection and add a commander to an empty commander deck, it will go to the command zone instead of the library.
