@@ -8,8 +8,6 @@ import emi.mtg.deckbuilder.util.PluginUtils;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Omnifilter implements SearchProvider {
@@ -93,7 +91,7 @@ public class Omnifilter implements SearchProvider {
 		}
 	}
 
-	private static final Map<String, Subfilter> SUBFILTER_FACTORIES = subfilterFactories();
+	public static final Map<String, Subfilter> SUBFILTER_FACTORIES = subfilterFactories();
 
 	private static Map<String, Subfilter> subfilterFactories() {
 		Map<String, Subfilter> map = new HashMap<>();
@@ -107,10 +105,6 @@ public class Omnifilter implements SearchProvider {
 
 		return Collections.unmodifiableMap(map);
 	}
-
-	private static final Pattern PAREN_PATTERN = Pattern.compile("\"[^\"]+\"|(?<preor> or )?(?<negate>[!-])?\\((?<subexpr>[^()]+)\\)");
-	private static final Pattern OR_PATTERN = Pattern.compile("\"[^\"]+\"| or (?<orterm>.+)");
-	private static final Pattern PATTERN = Pattern.compile("(?<negate>[-!])?(?:(?<key>[A-Za-z]+)(?<op>[><][=]?|[!]?=|:))?(?<value>\"[^\"]+\"|[^\\s]+)");
 
 	public static final String NAME = "Omnifilter";
 
@@ -160,81 +154,6 @@ public class Omnifilter implements SearchProvider {
 
 	@Override
 	public Predicate<CardInstance> parse(String expression) throws IllegalArgumentException {
-		Predicate<CardInstance> predicate = null;
-
-		Matcher pm = PAREN_PATTERN.matcher(expression);
-		int lastEnd = 0;
-		while (pm.find()) {
-			if (pm.group("subexpr") == null) continue;
-
-			if (pm.start() > lastEnd) {
-				String prefaceStr = expression.substring(lastEnd, pm.start()).trim();
-				boolean or = false;
-				if (prefaceStr.startsWith("or")) {
-					or = true;
-					prefaceStr = prefaceStr.substring(2).trim();
-				}
-				Predicate<CardInstance> preface = parse(prefaceStr);
-				predicate = predicate == null ? preface : (or ? predicate.or(preface) : predicate.and(preface));
-			}
-
-			Predicate<CardInstance> parenthesized = parse(pm.group("subexpr").trim());
-			if (pm.group("negate") != null) parenthesized = parenthesized.negate();
-			predicate = predicate == null ? parenthesized : (pm.group("preor") == null ? predicate.and(parenthesized) : predicate.or(parenthesized));
-
-			lastEnd = pm.end();
-		}
-
-		expression = expression.substring(lastEnd).trim();
-
-		pm = OR_PATTERN.matcher(expression);
-		lastEnd = 0;
-		while (pm.find()) {
-			if (pm.group("orterm") == null) continue;
-
-			Predicate<CardInstance> result;
-			if (pm.start() > lastEnd) {
-				String prefaceStr = expression.substring(lastEnd, pm.start()).trim();
-				result = parse(prefaceStr);
-			} else {
-				throw new IllegalArgumentException("???");
-			}
-
-			result = result.or(parse(pm.group("orterm")));
-			return result;
-		}
-
-		Matcher m = PATTERN.matcher(expression);
-
-		while (m.find()) {
-			String tmp = m.group("value");
-			if (tmp.startsWith("\"") && tmp.endsWith("\"")) {
-				tmp = tmp.substring(1, tmp.length() - 1);
-			}
-			String value = tmp;
-
-			String key = m.group("key");
-
-			Predicate<CardInstance> append;
-
-			if (key != null) {
-				Operator op = Operator.forString(m.group("op"));
-
-				Subfilter factory = SUBFILTER_FACTORIES.get(key);
-
-				if (factory == null) {
-					throw new IllegalArgumentException("Unrecognized filter " + key);
-				}
-
-				append = factory.create(op, value);
-			} else {
-				append = ci -> ci.card().faces().stream().anyMatch(cf -> cf.name().toLowerCase().contains(value.toLowerCase())) || ci.card().fullName().toLowerCase().contains(value.toLowerCase());
-			}
-
-			if (m.group("negate") != null) append = append.negate();
-			predicate = predicate == null ? append : predicate.and(append);
-		}
-
-		return predicate;
+		return Parser.parse(expression);
 	}
 }

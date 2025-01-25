@@ -22,6 +22,7 @@
 - You can finally zoom in on cards by holding the Z key. You have no idea how much work this took in the background.
 - Selection in piles views is more precise -- the selection has to overlap with the name line of the card to include it.
 - Selection in all views is now unaffected by scrolling, so you can select whole swathes of cards if you really want to.
+- Rewrote Omnifilter with a proper parser. No more weird parentheses nesting issues! Probably!
 - Modified `~` and `CARDNAME` in regex and oracle searches to match cases where only a partial form of the card name is used (e.g. Derevi).
 - Improved regex matching efficiency where `~` or `CARDNAME` is used.
 - Search provider selection is now shown on the search bar itself (as long as it's wide enough). Easy access to Scryfall's `function:` tag search!
