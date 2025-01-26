@@ -128,7 +128,7 @@ public interface Lexer {
 			if (c >= '0' && c <= '9') {
 				return classSequence(Token.Type.LiteralNumber, i -> i >= '0' && i <= '9' || i == '.');
 			} else if (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z') {
-				return classSequence(Token.Type.Identifier, i -> i >= 'A' && i <= 'Z' || i >= 'a' && i <= 'z');
+				return classSequence(Token.Type.Identifier, i -> i >= 'A' && i <= 'Z' || i >= 'a' && i <= 'z' || i == '\'' || i == ',' || i == '.');
 			}
 
 			throw new IllegalArgumentException("Unrecognized token near: " + source.substring(pos, Math.max(source.length(), pos + 12)));
