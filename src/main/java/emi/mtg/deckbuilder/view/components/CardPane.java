@@ -169,7 +169,7 @@ public class CardPane extends BorderPane {
 	public final BooleanProperty autoEnabled = new SimpleBooleanProperty(true);
 	public final BooleanProperty showingIllegalCards = new SimpleBooleanProperty(true);
 
-	public CardPane(String title, DeckList deck, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, DeckList deck, ObservableList<CardInstance> model, CardView.LayoutEngine initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
 		super();
 
 		this.cardView = new CardView(deck, model, initEngine, initGrouping, sortings);
@@ -228,7 +228,7 @@ public class CardPane extends BorderPane {
 
 		Menu displayMenu = new Menu("Display");
 		ToggleGroup displayGroup = new ToggleGroup();
-		for (CardView.LayoutEngine.Factory display : CardView.LAYOUT_ENGINES.values()) {
+		for (CardView.LayoutEngine display : CardView.LAYOUT_ENGINES.values()) {
 			RadioMenuItem item = new RadioMenuItem(display.name());
 			item.setOnAction(ae -> {
 				this.cardView.layout(display);
@@ -536,15 +536,15 @@ public class CardPane extends BorderPane {
 		updateStats();
 	}
 
-	public CardPane(DeckList deck, Zone zone, CardView.LayoutEngine.Factory initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
+	public CardPane(DeckList deck, Zone zone, CardView.LayoutEngine initEngine, CardView.Grouping initGrouping, List<CardView.ActiveSorting> sortings) {
 		this(zone.name(), deck, deck.cards(zone), initEngine, initGrouping, sortings);
 	}
 
-	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine, CardView.Grouping grouping, List<CardView.ActiveSorting> sortings) {
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine layoutEngine, CardView.Grouping grouping, List<CardView.ActiveSorting> sortings) {
 		this(title, null, model, layoutEngine, grouping, sortings);
 	}
 
-	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine.Factory layoutEngine) {
+	public CardPane(String title, ObservableList<CardInstance> model, CardView.LayoutEngine layoutEngine) {
 		this(title, model, layoutEngine, CardView.GROUPINGS.get(ManaValue.class), CardView.DEFAULT_SORTING);
 	}
 

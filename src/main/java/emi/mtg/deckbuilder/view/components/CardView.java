@@ -145,21 +145,18 @@ public class CardView extends Canvas {
 	}
 
 	public interface LayoutEngine {
-		interface Factory {
-			String name();
-			LayoutEngine create(CardView parent);
-		}
+		String name();
 
-		void layoutGroups(Bounds boundingBox, Group[] groups, boolean includeEmpty);
+		void layoutGroups(CardView view, Bounds boundingBox, Group[] groups, boolean includeEmpty);
 
-		MVec2d coordinatesOf(int card, MVec2d buffer);
-		int cardAt(MVec2d point, int groupSize);
+		MVec2d coordinatesOf(CardView view, int card, MVec2d buffer);
+		int cardAt(CardView view, MVec2d point, int groupSize);
 
-		boolean cardInSelection(MVec2d cardPos, MVec2d min, MVec2d max, int groupSize);
+		boolean cardInSelection(CardView view, MVec2d cardPos, MVec2d min, MVec2d max, int groupSize);
 
-		default boolean cardInSelection(int card, MVec2d min, MVec2d max, MVec2d buffer, int groupSize) {
-			buffer = coordinatesOf(card, buffer);
-			return cardInSelection(buffer, min, max, groupSize);
+		default boolean cardInSelection(CardView view, int card, MVec2d min, MVec2d max, MVec2d buffer, int groupSize) {
+			buffer = coordinatesOf(view, card, buffer);
+			return cardInSelection(view, buffer, min, max, groupSize);
 		}
 	}
 
@@ -215,7 +212,7 @@ public class CardView extends Canvas {
 		}
 	}
 
-	public static final Map<Class<? extends LayoutEngine.Factory>, LayoutEngine.Factory> LAYOUT_ENGINES = PluginUtils.providersMap(LayoutEngine.Factory.class);
+	public static final Map<Class<? extends LayoutEngine>, LayoutEngine> LAYOUT_ENGINES = PluginUtils.providersMap(LayoutEngine.class);
 	public static final Map<Class<? extends Grouping>, Grouping> GROUPINGS = PluginUtils.providersMap(Grouping.class);
 	public static final Map<Class<? extends Sorting>, Sorting> SORTINGS = PluginUtils.providersMap(Sorting.class);
 
@@ -667,7 +664,7 @@ public class CardView extends Canvas {
 
 			if (zoomedCard != null) {
 				MVec2d zoomLoc = new MVec2d(0.0, 0.0);
-				CardView.this.engine.coordinatesOf(idx, zoomLoc);
+				CardView.this.engine.coordinatesOf(CardView.this, idx, zoomLoc);
 				zoomLoc.plus(group.groupBounds.pos.x, group.groupBounds.pos.y);
 				zoomLoc.plus(-scrollX.get(), -scrollY.get());
 				javafx.geometry.Point2D point = CardView.this.localToScreen(0.0, 0.0);
@@ -931,7 +928,7 @@ public class CardView extends Canvas {
 
 	private final Tooltip tooltip;
 
-	public CardView(DeckList deck, ObservableList<CardInstance> model, LayoutEngine.Factory layout, Grouping grouping, List<ActiveSorting> sorts) {
+	public CardView(DeckList deck, ObservableList<CardInstance> model, LayoutEngine layout, Grouping grouping, List<ActiveSorting> sorts) {
 		super(1024, 1024);
 
 		setFocusTraversable(true);
@@ -1202,7 +1199,7 @@ public class CardView extends Canvas {
 		}
 
 		rel.plus(hoverGroup.groupBounds.pos.copy().negate());
-		int newHoverIdx = this.engine.cardAt(rel, hoverGroup.model().size());
+		int newHoverIdx = this.engine.cardAt(this, rel, hoverGroup.model().size());
 		CardInstance newHoverCard = newHoverIdx >= 0 ? hoverGroup.model().get(newHoverIdx) : null;
 
 		if (newHoverCard != hoverCard) {
@@ -1229,7 +1226,7 @@ public class CardView extends Canvas {
 			localMax.set(group.groupBounds.pos).negate().plus(max);
 
 			for (int j = 0; j < group.model().size(); ++j) {
-				if (engine.cardInSelection(j, localMin, localMax, buffer, group.model().size())) {
+				if (engine.cardInSelection(CardView.this, j, localMin, localMax, buffer, group.model().size())) {
 					selectedCards.addAll(group.hoverCards(group.model().get(j)));
 				}
 			}
@@ -1270,7 +1267,7 @@ public class CardView extends Canvas {
 		}
 
 		point.plus(group.groupBounds.pos.copy().negate());
-		int card = this.engine.cardAt(point, group.model().size());
+		int card = this.engine.cardAt(this, point, group.model().size());
 
 		if (card < 0) {
 			return new CardHitResult(group, -1, null);
@@ -1279,8 +1276,8 @@ public class CardView extends Canvas {
 		return new CardHitResult(group, card, group.model().get(card));
 	}
 
-	public void layout(LayoutEngine.Factory factory) {
-		this.engine = factory.create(this);
+	public void layout(LayoutEngine engine) {
+		this.engine = engine;
 		layout();
 	}
 
@@ -1455,7 +1452,7 @@ public class CardView extends Canvas {
 		}
 
 		Bounds boundingBox = new Bounds();
-		engine.layoutGroups(boundingBox, groupedModel.values().toArray(new Group[0]), showEmptyGroupsProperty.get()); // TODO inefficient and unordered
+		engine.layoutGroups(this, boundingBox, groupedModel.values().toArray(new Group[0]), showEmptyGroupsProperty.get()); // TODO inefficient and unordered
 
 		if (generation < layoutGeneration) {
 			return;
@@ -1696,7 +1693,7 @@ public class CardView extends Canvas {
 			}
 
 			for (int j = 0; j < group.model().size(); ++j) {
-				abs = engine.coordinatesOf(j, abs);
+				abs = engine.coordinatesOf(this, j, abs);
 				loc = loc.set(abs).plus(group.groupBounds.pos).plus(scroll);
 
 				if (loc.x < -cardWidth() || loc.x > getWidth() || loc.y < -cardHeight() || loc.y > getHeight()) {
@@ -1749,7 +1746,7 @@ public class CardView extends Canvas {
 				if (selectedCards.contains(ci)) {
 					states.add(CardView.CardState.Selected);
 				} else if (selectBehavior.selecting) {
-					if (engine.cardInSelection(abs, dragStartLocal, dragEndLocal, group.model().size())) {
+					if (engine.cardInSelection(this, abs, dragStartLocal, dragEndLocal, group.model().size())) {
 						states.add(CardView.CardState.Selected);
 					}
 				}

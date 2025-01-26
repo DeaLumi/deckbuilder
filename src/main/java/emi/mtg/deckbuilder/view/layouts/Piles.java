@@ -3,36 +3,23 @@ package emi.mtg.deckbuilder.view.layouts;
 import emi.mtg.deckbuilder.view.components.CardView;
 
 public class Piles implements CardView.LayoutEngine {
-	public static class Factory implements CardView.LayoutEngine.Factory {
-		@Override
-		public CardView.LayoutEngine create(CardView parent) {
-			return new Piles(parent);
-		}
+	@Override
+	public String name() {
+		return "Piles";
+	}
 
-		@Override
-		public String name() {
-			return "Piles";
-		}
-
-		@Override
-		public String toString() {
-			return name();
-		}
+	@Override
+	public String toString() {
+		return name();
 	}
 
 	private final static double OVERLAP_FACTOR = 0.110;
 
-	private final CardView parent;
-
-	public Piles(CardView parent) {
-		this.parent = parent;
-	}
-
 	@Override
-	public void layoutGroups(CardView.Bounds boundingBox, CardView.Group[] groups, boolean showEmpty) {
-		double p = parent.cardPadding();
-		double w = parent.cardWidth();
-		double h = parent.cardHeight();
+	public void layoutGroups(CardView view, CardView.Bounds boundingBox, CardView.Group[] groups, boolean showEmpty) {
+		double p = view.cardPadding();
+		double w = view.cardWidth();
+		double h = view.cardHeight();
 
 		double pwp = p + w + p;
 
@@ -76,13 +63,13 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public CardView.MVec2d coordinatesOf(int card, CardView.MVec2d buffer) {
+	public CardView.MVec2d coordinatesOf(CardView view, int card, CardView.MVec2d buffer) {
 		if (buffer == null) {
 			buffer = new CardView.MVec2d();
 		}
 
-		double p = parent.cardPadding();
-		double h = parent.cardHeight();
+		double p = view.cardPadding();
+		double h = view.cardHeight();
 
 		buffer.x = p;
 		buffer.y = p + (h * OVERLAP_FACTOR) * card;
@@ -91,10 +78,10 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public int cardAt(CardView.MVec2d point, int groupSize) {
-		double p = parent.cardPadding();
-		double w = parent.cardWidth();
-		double h = parent.cardHeight();
+	public int cardAt(CardView view, CardView.MVec2d point, int groupSize) {
+		double p = view.cardPadding();
+		double w = view.cardWidth();
+		double h = view.cardHeight();
 
 		double x = point.x;
 		if (x < p || x > p + w) {
@@ -115,11 +102,11 @@ public class Piles implements CardView.LayoutEngine {
 	}
 
 	@Override
-	public boolean cardInSelection(CardView.MVec2d cardPos, CardView.MVec2d min, CardView.MVec2d max, int groupSize) {
-		double p = parent.cardPadding();
-		double h = parent.cardHeight();
+	public boolean cardInSelection(CardView view, CardView.MVec2d cardPos, CardView.MVec2d min, CardView.MVec2d max, int groupSize) {
+		double p = view.cardPadding();
+		double h = view.cardHeight();
 		boolean last = cardPos.y >= p + (h * OVERLAP_FACTOR) * (groupSize - 1);
 
-		return cardPos.x + parent.cardWidth() >= min.x && cardPos.x <= max.x && cardPos.y + parent.cardHeight() * OVERLAP_FACTOR + (last ? h : 0) >= min.y && cardPos.y <= max.y;
+		return cardPos.x + view.cardWidth() >= min.x && cardPos.x <= max.x && cardPos.y + view.cardHeight() * OVERLAP_FACTOR + (last ? h : 0) >= min.y && cardPos.y <= max.y;
 	}
 }

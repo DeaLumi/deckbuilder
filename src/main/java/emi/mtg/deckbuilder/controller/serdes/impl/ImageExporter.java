@@ -194,7 +194,7 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 
 		private Map<Zone, Label> zoneLabels = new EnumMap<>(Zone.class);
 		private Map<Zone, FlowPane> zoneFlows = new EnumMap<>(Zone.class);
-		private Map<Zone, ComboBox<CardView.LayoutEngine.Factory>> zoneLayouts = new EnumMap<>(Zone.class);
+		private Map<Zone, ComboBox<CardView.LayoutEngine>> zoneLayouts = new EnumMap<>(Zone.class);
 		private Map<Zone, ComboBox<CardView.Grouping>> zoneGroupings = new EnumMap<>(Zone.class);
 
 		private void initUI() {
@@ -221,8 +221,8 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 				grid.add(label, 0, i);
 
 				Label layoutLabel = new Label("Layout:");
-				ComboBox<CardView.LayoutEngine.Factory> layout = new ComboBox<>(FXCollections.observableArrayList(CardView.LAYOUT_ENGINES.values()));
-				layout.getSelectionModel().select(zone == Zone.Command ? CardView.LAYOUT_ENGINES.get(FlowGrid.Factory.class) : CardView.LAYOUT_ENGINES.get(Piles.Factory.class));
+				ComboBox<CardView.LayoutEngine> layout = new ComboBox<>(FXCollections.observableArrayList(CardView.LAYOUT_ENGINES.values()));
+				layout.getSelectionModel().select(zone == Zone.Command ? CardView.LAYOUT_ENGINES.get(FlowGrid.class) : CardView.LAYOUT_ENGINES.get(Piles.class));
 
 				Label groupingLabel = new Label("Grouping:");
 				ComboBox<CardView.Grouping> grouping = new ComboBox<>(FXCollections.observableArrayList(CardView.GROUPINGS.values()));
@@ -297,7 +297,7 @@ public abstract class ImageExporter implements DeckImportExport, DeckImportExpor
 			CardView view = new CardView(
 					null,
 					zone.getValue(),
-					CardView.LAYOUT_ENGINES.get(Piles.Factory.class),
+					CardView.LAYOUT_ENGINES.get(Piles.class),
 					CardView.GROUPINGS.get(ManaValue.class),
 					CardView.DEFAULT_SORTING);
 			viewModifier.accept(zone.getKey(), view);

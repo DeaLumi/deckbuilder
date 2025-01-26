@@ -328,7 +328,7 @@ public class MainWindow extends Stage {
 
 		CardPane searchPane = new CardPane("Collection",
 				FXCollections.observableArrayList(),
-				CardView.LAYOUT_ENGINES.get(FlowGrid.Factory.class),
+				CardView.LAYOUT_ENGINES.get(FlowGrid.class),
 				Preferences.get().collectionGrouping,
 				Preferences.get().collectionSorting);
 		searchPane.view().doubleClick(addCardToActive);

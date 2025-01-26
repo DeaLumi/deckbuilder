@@ -34,7 +34,7 @@ public class PrintSelectorDialog extends Dialog<Card.Print> {
 		ObservableList<CardInstance> tmpModel = FXCollections.observableList(card.prints().stream()
 				.map(CardInstance::new)
 				.collect(Collectors.toList()));
-		pane = new CardPane("Variations", tmpModel, CardView.LAYOUT_ENGINES.get(FlowGrid.Factory.class));
+		pane = new CardPane("Variations", tmpModel, CardView.LAYOUT_ENGINES.get(FlowGrid.class));
 
 		setResultConverter(bt -> {
 			if (bt != ButtonType.CANCEL && pane.view().selectedCards.size() == 1) {
