@@ -398,7 +398,7 @@ public class CardPane extends BorderPane {
 		AtomicLong total = new AtomicLong(0), land = new AtomicLong(0), creature = new AtomicLong(0), other = new AtomicLong(0);
 
 		try {
-			for (CardInstance ci : cardView.model.values().stream().flatMap(List::stream).collect(Collectors.toList())) {
+			for (CardInstance ci : cardView.model.filtered()) {
 				total.incrementAndGet();
 
 				Card.Face front = ci.card().front();
@@ -511,7 +511,7 @@ public class CardPane extends BorderPane {
 		final boolean clear;
 		final Node focusTarget;
 
-		if (autoAction.get() != null && autoToggle.isSelected() && this.cardView.model.filteredSize() <= 1) {
+		if (autoAction.get() != null && autoToggle.isSelected() && this.cardView.model.filtered().size() <= 1) {
 			Optional<CardInstance> card = this.cardView.model.values().stream().flatMap(List::stream).findAny();
 
 			if (card.isPresent()) {
