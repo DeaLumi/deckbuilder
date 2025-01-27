@@ -1452,7 +1452,11 @@ public class CardView extends Canvas {
 		}
 
 		Bounds boundingBox = new Bounds();
-		engine.layoutGroups(this, boundingBox, groupedModel.values().toArray(new Group[0]), showEmptyGroupsProperty.get()); // TODO inefficient and unordered
+		try {
+			engine.layoutGroups(this, boundingBox, groupedModel.values().toArray(new Group[0]), showEmptyGroupsProperty.get()); // TODO inefficient and unordered
+		} catch (ConcurrentModificationException comod) {
+			return; // Groups is still changing; let's wait.
+		}
 
 		if (generation < layoutGeneration) {
 			return;

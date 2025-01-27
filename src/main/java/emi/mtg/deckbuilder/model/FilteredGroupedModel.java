@@ -387,6 +387,7 @@ public class FilteredGroupedModel<G extends Comparable<G>, T> implements Observa
 						for (G group : oldGroups) {
 							if (groups.contains(group)) continue;
 							Element[] els = concreteGroups.get(group);
+							if (els == null) continue; // TODO This seems to be a race condition...
 							int limit = pointers.get(group).get();
 							synchronized (els) {
 								for (int j = 0; j < limit; ++j) {
