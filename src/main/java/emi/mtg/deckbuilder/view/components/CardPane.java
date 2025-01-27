@@ -265,7 +265,7 @@ public class CardPane extends BorderPane {
 		MenuItem statisticsButton = new MenuItem("Statistics...");
 		statisticsButton.setOnAction(ae -> {
 			try {
-				new DeckStatsDialog(getScene().getWindow(), this.cardView.model.values().stream().flatMap(List::stream).collect(Collectors.toList())).show();
+				new DeckStatsDialog(getScene().getWindow(), this.cardView.model.source).show();
 			} catch (IOException e) {
 				throw new RuntimeException(e); // TODO: Handle gracefully
 			}
