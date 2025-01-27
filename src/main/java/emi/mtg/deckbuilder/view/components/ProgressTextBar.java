@@ -50,7 +50,15 @@ public class ProgressTextBar extends StackPane {
 	}
 
 	public void set(double progress, String message) {
+		if (!Double.isNaN(progress)) this.bar.setProgress(progress);
+		if (message != null && !message.isEmpty()) this.text.setText(message);
+	}
+
+	public void setProgress(double progress) {
 		this.bar.setProgress(progress);
-		this.text.setText(message);
+	}
+
+	public void setText(String text) {
+		this.text.setText(text);
 	}
 }

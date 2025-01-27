@@ -4,6 +4,7 @@ import emi.mtg.deckbuilder.controller.Updateable;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.PluginUtils;
 import emi.mtg.deckbuilder.view.MainApplication;
+import emi.mtg.deckbuilder.view.components.ProgressTextBar;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
 import emi.mtg.deckbuilder.view.util.FxUtils;
 import javafx.application.Platform;
@@ -92,19 +93,11 @@ public class UpdaterDialog extends Dialog<Boolean> {
 			label.setTooltip(tooltip);
 			GridPane.setHalignment(label, HPos.RIGHT);
 
-			ProgressBar progress = new ProgressBar(ProgressBar.INDETERMINATE_PROGRESS);
+			ProgressTextBar progress = new ProgressTextBar(ProgressBar.INDETERMINATE_PROGRESS, "Checking for updates...");
 			progress.setMaxWidth(Double.MAX_VALUE);
 			progress.setMaxHeight(Double.MAX_VALUE);
 			progress.setTooltip(tooltip);
 			GridPane.setHgrow(progress, Priority.ALWAYS);
-
-			Text progressText = new Text("Checking for updates...");
-			progressText.setTextAlignment(TextAlignment.CENTER);
-			progressText.setFill(Color.WHITE);
-
-			StackPane progressStack = new StackPane(progress, progressText);
-			GridPane.setHgrow(progressStack, Priority.ALWAYS);
-			GridPane.setVgrow(progressStack, Priority.ALWAYS);
 
 			final AtomicLong guiUpdate = new AtomicLong(System.nanoTime());
 
@@ -115,7 +108,7 @@ public class UpdaterDialog extends Dialog<Boolean> {
 			button.setDisable(true);
 			button.disableProperty().bind(Bindings.createBooleanBinding(() -> updatesAvailable.contains(button) || (updatesUnavailable.contains(button) && forceEnabled.get()), updatesAvailable, updatesUnavailable, forceEnabled).not());
 			button.setOnAction(ae -> {
-				progressText.setText("Updating...");
+				progress.set(0.0, "Updating...");
 				progress.setDisable(false);
 				updatesRunning.add(button);
 				updatesAvailable.remove(button);
@@ -126,14 +119,11 @@ public class UpdaterDialog extends Dialog<Boolean> {
 						target.update(Preferences.get().dataPath,
 								(p, m) -> {
 									if (p != 0.0 && p != 1.0 && System.nanoTime() < guiUpdate.get()) return;
-									Platform.runLater(() -> {
-										if (!Double.isNaN(p)) progress.setProgress(p);
-										if (m != null && !m.isEmpty()) progressText.setText(m);
-									});
+									Platform.runLater(() -> progress.set(p, m));
 									guiUpdate.set(System.nanoTime() + 1000*1000/60);
 								});
 						Platform.runLater(() -> {
-							progressText.setText("Done!");
+							progress.set(1.0, "Done!");
 							updatesRunning.remove(button);
 
 							if (autoclose && updatesAvailable.isEmpty() && updatesRunning.isEmpty()) {
@@ -142,7 +132,7 @@ public class UpdaterDialog extends Dialog<Boolean> {
 						});
 					} catch (IOException ioe) {
 						Platform.runLater(() -> {
-							progressText.setText("Failed!");
+							progress.setText("Failed!");
 							AlertBuilder.notify(null)
 									.type(Alert.AlertType.ERROR)
 									.title("Error Updating " + target)
@@ -160,7 +150,7 @@ public class UpdaterDialog extends Dialog<Boolean> {
 				}
 			});
 
-			updatesGrid.addRow(++row, label, progressStack, button);
+			updatesGrid.addRow(++row, label, progress, button);
 
 			updatesChecking.add(button);
 			++checkCount;
@@ -172,16 +162,14 @@ public class UpdaterDialog extends Dialog<Boolean> {
 					Platform.runLater(() -> {
 						updatesAvailable.add(button);
 						updatesChecking.remove(button);
-						progress.setProgress(0.0);
-						progressText.setText("Update Available!");
+						progress.set(0.0, "Update Available!");
 					});
 				} else {
 					Platform.runLater(() -> {
 						updatesUnavailable.add(button);
 						updatesChecking.remove(button);
-						progress.setProgress(0.0);
 						progress.setDisable(true);
-						progressText.setText("Up-to-Date");
+						progress.set(0.0, "Up-to-Date");
 					});
 				}
 			});

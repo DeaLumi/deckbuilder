@@ -3,16 +3,14 @@ package emi.mtg.deckbuilder.view.util;
 import emi.mtg.deckbuilder.controller.Updateable;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.view.MainApplication;
+import emi.mtg.deckbuilder.view.components.ProgressTextBar;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextAlignment;
 import javafx.scene.web.WebView;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
@@ -27,7 +25,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 
 public class AlertBuilder {
@@ -274,24 +271,19 @@ public class AlertBuilder {
 
 		final ButtonType btn = button;
 		final DialogPane pane = alert.getDialogPane();
-		final ProgressBar progress = new ProgressBar(0.0);
+		final ProgressTextBar progress = new ProgressTextBar(0.0);
 		progress.setMaxWidth(Double.MAX_VALUE);
 		progress.setMaxHeight(Double.MAX_VALUE);
 		progress.setManaged(false);
-
-		final Text progressText = new Text("");
-		progressText.setTextAlignment(TextAlignment.CENTER);
-
-		final StackPane progressStack = new StackPane(progress, progressText);
-		progressStack.setManaged(false);
+		progress.bar.setManaged(false);
 
 		VBox box;
 		if (pane.getContent() != null) {
 			if (pane.getContent() instanceof VBox) {
 				box = (VBox) pane.getContent();
-				box.getChildren().add(progressStack);
+				box.getChildren().add(progress);
 			} else {
-				box = new VBox(pane.getContent(), progressStack);
+				box = new VBox(pane.getContent(), progress);
 				box.setSpacing(10.0);
 			}
 		} else {
@@ -300,7 +292,7 @@ public class AlertBuilder {
 			label.setMaxHeight(Double.MAX_VALUE);
 			label.setWrapText(true);
 			label.getStyleClass().add("content");
-			box = new VBox(10.0, label, progressStack);
+			box = new VBox(10.0, label, progress);
 		}
 		box.setFillWidth(true);
 		pane.setContent(box);
@@ -312,8 +304,8 @@ public class AlertBuilder {
 
 		button(btn).addEventFilter(ActionEvent.ACTION, event -> {
 			event.consume();
-			progressStack.setManaged(true);
 			progress.setManaged(true);
+			progress.bar.setManaged(true);
 			pane.getScene().getWindow().sizeToScene();
 
 			// Disable buttons except cancel button.
@@ -327,10 +319,7 @@ public class AlertBuilder {
 				boolean result;
 				Exception exc;
 				try {
-					result = operation.execute((p, m) -> Platform.runLater(() -> {
-						if (!Double.isNaN(p)) progress.setProgress(p);
-						if (m != null && !m.isEmpty()) progressText.setText(m);
-					}));
+					result = operation.execute((p, m) -> Platform.runLater(() -> progress.set(p, m)));
 					exc = null;
 
 					Platform.runLater(() -> {
@@ -345,8 +334,7 @@ public class AlertBuilder {
 				if (!result) {
 					Platform.runLater(() -> {
 						alert.getButtonTypes().forEach(x -> button(x).setDisable(x == ButtonType.CANCEL && cancelDisabled));
-						progress.setProgress(0.0);
-						progressText.setText("");
+						progress.set(0.0, "");
 						if (onFail != null) onFail.accept(alert);
 					});
 				}
@@ -371,10 +359,7 @@ public class AlertBuilder {
 				@Override
 				public void handle(Event event) {
 					if (lrThread.isAlive()) {
-						Platform.runLater(() -> {
-							progress.setProgress(0.0);
-							progressText.setText("");
-						});
+						Platform.runLater(() -> progress.set(0.0, ""));
 						lrThread.interrupt();
 						cancel.removeEventFilter(ActionEvent.ACTION,this);
 						window.removeEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, this);
