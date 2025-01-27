@@ -102,6 +102,11 @@ public class Preferences {
 			 * @return Tooltip to display to the user when hovering over the operation button, to explain what it does.
 			 */
 			String tooltip() default "";
+
+			/**
+			 * @return True if the operation will take a while. Displays a progress bar and operates on a separate thread.
+			 */
+			boolean longRunning() default false;
 		}
 
 		/**

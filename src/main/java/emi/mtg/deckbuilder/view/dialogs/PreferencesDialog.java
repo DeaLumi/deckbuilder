@@ -4,14 +4,17 @@ import emi.lib.mtg.DataSource;
 import emi.lib.mtg.game.Format;
 import emi.lib.mtg.game.Zone;
 import emi.mtg.deckbuilder.controller.Context;
+import emi.mtg.deckbuilder.controller.Updateable;
 import emi.mtg.deckbuilder.controller.serdes.DeckImportExport;
 import emi.mtg.deckbuilder.model.Preferences;
 import emi.mtg.deckbuilder.util.Slog;
 import emi.mtg.deckbuilder.view.MainApplication;
 import emi.mtg.deckbuilder.view.MainWindow;
 import emi.mtg.deckbuilder.view.components.CardView;
+import emi.mtg.deckbuilder.view.components.ProgressTextBar;
 import emi.mtg.deckbuilder.view.search.SearchProvider;
 import emi.mtg.deckbuilder.view.util.AlertBuilder;
+import javafx.application.Platform;
 import javafx.beans.property.Property;
 import javafx.event.ActionEvent;
 import javafx.geometry.*;
@@ -33,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
@@ -838,6 +842,8 @@ public class PreferencesDialog extends Alert {
 				Method method = op.getKey();
 				method.setAccessible(true);
 				Preferences.Plugin.Operation operation = op.getValue();
+				final ProgressTextBar progBar = operation.longRunning() ? new ProgressTextBar(0.0, "Ready") : null;
+				final Updateable.Progress progress = operation.longRunning() ? (p, m) -> Platform.runLater(() -> progBar.set(p, m)) : null;
 
 				Object[] args = new Object[method.getParameterCount()];
 				for (int j = 0; j < args.length; ++j) {
@@ -848,6 +854,10 @@ public class PreferencesDialog extends Alert {
 						args[j] = owner;
 					} else if (Context.class.equals(ptype)) {
 						args[j] = Context.get();
+					} else if (Preferences.class.equals(ptype)) {
+						args[j] = Preferences.get();
+					} else if (Updateable.Progress.class.equals(ptype)) {
+						args[j] = progress;
 					} else {
 						log.err(
 								"Plugin %s declares an operation %s (%s.%s) with an unhandled parameter %d type %s!%n",
@@ -860,24 +870,72 @@ public class PreferencesDialog extends Alert {
 					}
 				}
 
-				Label label = new Label(operation.value());
+				Label label = new Label(operation.value() + ":");
 				Button button = new Button(operation.text());
-				button.setOnAction(ae -> {
-					try {
-						method.invoke(plugin, args);
-					} catch (IllegalAccessException e) {
-						log.err("While attempting to perform %s", e, operation.value());
-					} catch (InvocationTargetException e) {
-						log.err("Exception while calling %s", e, operation.value());
-					}
-				});
-				if (!operation.tooltip().isEmpty()) button.setTooltip(new Tooltip(operation.tooltip()));
+				HBox progBox = null;
+
+				if (!operation.longRunning()) {
+					button.setOnAction(ae -> {
+						try {
+							method.invoke(plugin, args);
+						} catch (IllegalAccessException e) {
+							log.err("While attempting to perform %s", e, operation.value());
+						} catch (InvocationTargetException e) {
+							log.err("Exception while calling %s", e, operation.value());
+							Platform.runLater(() -> AlertBuilder.notify(owner)
+									.type(AlertType.ERROR)
+									.title("Error Occurred")
+									.headerText(e.getCause().getMessage())
+									.contentText("I dunno. Send me the debug console contents, maybe?")
+									.modal(Modality.APPLICATION_MODAL)
+									.showAndWait());
+						}
+					});
+					if (!operation.tooltip().isEmpty()) button.setTooltip(new Tooltip(operation.tooltip()));
+				} else {
+					progBox = new HBox(4.0, progBar, button);
+					progBox.setAlignment(Pos.BASELINE_LEFT);
+					HBox.setHgrow(progBar, Priority.ALWAYS);
+					GridPane.setHgrow(progBox, Priority.ALWAYS);
+					GridPane.setVgrow(progBox, Priority.ALWAYS);
+
+					progBar.setDisable(true);
+					button.setOnAction(ae -> {
+						button.setDisable(true);
+						progBar.setDisable(false);
+						progBar.set(0.0, "Starting...");
+						ForkJoinPool.commonPool().submit(() -> {
+							try {
+								method.invoke(plugin, args);
+							} catch (IllegalAccessException e) {
+								log.err("While attempting to perform %s", e, operation.value());
+							} catch (InvocationTargetException e) {
+								log.err("Exception while calling %s", e, operation.value());
+								Platform.runLater(() -> AlertBuilder.notify(owner)
+										.type(AlertType.ERROR)
+										.title("Error Occurred")
+										.headerText(e.getCause().getMessage())
+										.contentText("I dunno. Send me the debug console contents, maybe?")
+										.modal(Modality.APPLICATION_MODAL)
+										.showAndWait());
+							} finally {
+								Platform.runLater(() -> {
+									button.setDisable(false);
+									progBar.setDisable(true);
+									progBar.set(1.0, "Done!");
+								});
+							}
+						});
+					});
+				}
+				Node component = progBox != null ? progBox : button;
+
 				grid.add(label, 0, ++i);
-				grid.add(button, 1, i);
+				grid.add(component, 1, i);
 				GridPane.setHalignment(label, HPos.RIGHT);
 				GridPane.setValignment(label, VPos.BASELINE);
-				GridPane.setHalignment(button, HPos.LEFT);
-				GridPane.setValignment(button, VPos.BASELINE);
+				GridPane.setHalignment(component, HPos.LEFT);
+				GridPane.setValignment(component, VPos.BASELINE);
 			}
 
 			StackPane pane = new StackPane(grid);
