@@ -212,7 +212,8 @@ public class Parser {
 					switch (lhs.token.type) {
 						case Identifier:
 						case LiteralString:
-							tmp = ci -> ci.card().fullName().contains(literal);
+							final String lower = literal.toLowerCase();
+							tmp = ci -> ci.card().fullName().toLowerCase().contains(lower);
 							break;
 						case LiteralRegex:
 							final Pattern pattern = Pattern.compile(literal);
