@@ -482,25 +482,24 @@ public class MainApplication extends Application {
 
 	public void updateData() {
 		// TODO: Tags saved/loaded without progress report
-		final DataSource data = Context.get().data;
-		final Updateable updateable = (data instanceof Updateable) ? ((Updateable) data) : null;
-		if(updateable != null && AlertBuilder.query(hostStage)
-				.screen(screen)
-				.title("Update Data")
-				.headerText(updateable.updateAvailable(Preferences.get().dataPath) ? "New card data available." : "Data appears fresh.")
-				.contentText(updateable.updateAvailable(Preferences.get().dataPath) ? "Would you like to update?" : "Would you like to update anyway?")
-				.longRunning(ButtonType.YES, wrapIOE(() -> Context.get().saveTags(d -> {})), prg -> {
-					updateable.update(Preferences.get().dataPath, prg);
-					data.loadData(Preferences.get().dataPath, prg);
-					return true;
-				}, null, AlertBuilder.Exceptions.Defer)
-				.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+		UpdaterDialog.checkForUpdates(screen, false);
 
-			wrapIOE(() -> Context.get().loadTags(d -> {})).run();
-			for (MainWindow child : mainWindows) {
-				child.remodel();
-			}
-		}
+		Alert alert = AlertBuilder.notify(hostStage)
+				.screen(screen)
+				.title("Loading Data")
+				.headerText("Please wait...")
+				.contentText("The data source is being reloaded.")
+				.buttons(ButtonType.OK)
+				.longRunning(ButtonType.OK, wrapIOE(() -> Context.get().saveTags(d -> {})), progress -> {
+					Context.get().loadData(progress);
+					return true;
+				}, null, AlertBuilder.Exceptions.Throw)
+				.get();
+
+		Platform.runLater(() -> alert.getDialogPane().lookupButton(ButtonType.OK).executeAccessibleAction(AccessibleAction.FIRE));
+		alert.showAndWait();
+
+		for (MainWindow child : mainWindows) child.remodel();
 	}
 
 	public void trimImageDiskCache() {
