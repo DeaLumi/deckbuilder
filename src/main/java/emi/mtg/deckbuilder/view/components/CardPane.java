@@ -511,17 +511,10 @@ public class CardPane extends BorderPane {
 		final boolean clear;
 		final Node focusTarget;
 
-		if (autoAction.get() != null && autoToggle.isSelected() && this.cardView.model.filtered().size() <= 1) {
-			Optional<CardInstance> card = this.cardView.model.values().stream().flatMap(List::stream).findAny();
-
-			if (card.isPresent()) {
-				autoAction.get().accept(card.get());
-				clear = true;
-			} else {
-				clear = false;
-			}
-
-			focusTarget = filter; // TODO Behavioral change -- if we match multiple cards, the focusTarget should be cardView
+		if (autoAction.get() != null && autoToggle.isSelected() && this.cardView.model.size() == 1 && this.cardView.model.values().iterator().next().size() == 1) {
+			autoAction.get().accept(this.cardView.model.values().iterator().next().get(0));
+			clear = true;
+			focusTarget = filter;
 		} else {
 			clear = false;
 			focusTarget = cardView;
