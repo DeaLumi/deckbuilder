@@ -34,6 +34,7 @@
 - Revamped the data update dialog/process to include support for other updateables (e.g. Scryfall tags).
 - Fallback image rendering (e.g. when not connected to the internet) is massively prettier now thanks to the new libmtg.render library.
 - Slightly adjusted copies count to not hide mana costs.
+- Autocompleted card names are automatically quoted as well, so you can add Sol Ring easily. (Sorry, Solemn Offering.)
 
 ### Fixes
 

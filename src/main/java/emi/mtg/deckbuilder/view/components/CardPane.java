@@ -334,7 +334,10 @@ public class CardPane extends BorderPane {
 			} else {
 				return Collections.emptyList();
 			}
-		}, name -> filter.fireEvent(new ActionEvent(filter, filter)));
+		}, name -> {
+			filter.setText(String.format("\"%s\"", filter.getText()));
+			filter.fireEvent(new ActionEvent(filter, filter));
+		});
 
 		filterAutoComplete.enabledProperty().bind(autoEnabled);
 
